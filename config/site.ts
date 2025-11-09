@@ -75,6 +75,14 @@ export const siteConfig = {
       href: "/help-feedback",
     },
     {
+      label: "Diagnostics",
+      href: "/diagnostics",
+    },
+    {
+      label: "Connectivity Check",
+      href: "/connectivity-check",
+    },
+    {
       label: "Logout",
       href: "/logout",
     },
