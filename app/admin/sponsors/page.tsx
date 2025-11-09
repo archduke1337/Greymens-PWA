@@ -17,7 +17,7 @@ import {
   CheckIcon,
   XIcon 
 } from "lucide-react";
-import { Sponsor, sponsorService } from "@/lib/sponsors";
+import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
 
 export default function AdminSponsorsPage() {
@@ -28,7 +28,7 @@ export default function AdminSponsorsPage() {
   const [saving, setSaving] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Sponsor>({
     name: "",
     logo: "",
     website: "",
@@ -232,7 +232,7 @@ export default function AdminSponsorsPage() {
                 <Select
                   label="Tier"
                   selectedKeys={[formData.tier]}
-                  onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   isRequired
                 >
                   <SelectItem key="platinum">Platinum Partner</SelectItem>
