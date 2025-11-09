@@ -1,11 +1,14 @@
 // app/verify-email/page.tsx
 "use client";
+
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
