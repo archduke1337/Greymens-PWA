@@ -3,13 +3,6 @@
   "outputDirectory": ".next",
   "devCommand": "next dev",
   "installCommand": "npm install --legacy-peer-deps",
-  "env": {
-    "NEXT_PUBLIC_APPWRITE_PROJECT_ID": "@next_public_appwrite_project_id",
-    "NEXT_PUBLIC_APPWRITE_PROJECT_NAME": "@next_public_appwrite_project_name",
-    "NEXT_PUBLIC_APPWRITE_ENDPOINT": "@next_public_appwrite_endpoint",
-    "NEXT_PUBLIC_APPWRITE_DATABASE_ID": "@next_public_appwrite_database_id",
-    "NEXT_PUBLIC_APPWRITE_BUCKET_ID": "@next_public_appwrite_bucket_id"
-  },
   "regions": ["iad1"],
   "functions": {
     "api/**/*.ts": {
