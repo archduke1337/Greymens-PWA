@@ -8,8 +8,6 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
 
-export const dynamic = "force-dynamic";
-
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
