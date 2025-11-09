@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "type-check": "tsc --noEmit",
     "vercel-build": "npm install --legacy-peer-deps && next build"
   },
   "dependencies": {
