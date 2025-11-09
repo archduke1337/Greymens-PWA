@@ -1,6 +1,7 @@
 // lib/database.ts
 import { ID, Query } from "appwrite";
 import { databases, storage } from "./appwrite";
+import { getErrorMessage } from "./errorHandler";
 
 // Database and Collection IDs
 export const DATABASE_ID = "68ee09da002cce9f7e39";
@@ -270,8 +271,8 @@ export const eventService = {
       });
 
       return registration as unknown as Registration;
-    } catch (error: any) {
-      console.error("Error registering for event:", error);
+    } catch (error) {
+      console.error("Error registering for event:", getErrorMessage(error));
       throw error;
     }
   },

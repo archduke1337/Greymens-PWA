@@ -13,6 +13,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventService, Event } from "@/lib/database";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
 
 export default function AdminEventsPage() {
@@ -114,9 +115,10 @@ export default function AdminEventsPage() {
       await loadEvents();
       handleCloseModal();
       alert(editingEvent ? "Event updated successfully!" : "Event created successfully!");
-    } catch (error: any) {
-      console.error("Error saving event:", error);
-      alert(error.message || "Failed to save event");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error saving event:", message);
+      alert(message || "Failed to save event");
     } finally {
       setSubmitting(false);
     }

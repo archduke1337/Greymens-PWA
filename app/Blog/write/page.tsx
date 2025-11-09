@@ -10,6 +10,7 @@ import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
 
 export default function WriteBlogPage() {
@@ -115,9 +116,10 @@ export default function WriteBlogPage() {
         "Blog submitted successfully! It will be reviewed by our team before publishing."
       );
       router.push("/blog");
-    } catch (error: any) {
-      console.error("Error submitting blog:", error);
-      alert(error.message || "Failed to submit blog");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error submitting blog:", message);
+      alert(message || "Failed to submit blog");
     } finally {
       setSubmitting(false);
     }

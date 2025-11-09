@@ -17,7 +17,8 @@ import {
   CheckIcon,
   XIcon 
 } from "lucide-react";
-import { sponsorService, Sponsor, sponsorTiers } from "@/lib/sponsors";
+import { Sponsor, sponsorService } from "@/lib/sponsors";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -99,9 +100,10 @@ export default function AdminSponsorsPage() {
       // Reset form and reload
       resetForm();
       await loadSponsors();
-    } catch (error: any) {
-      console.error("Error saving sponsor:", error);
-      alert(error.message || "Failed to save sponsor");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error saving sponsor:", message);
+      alert(message || "Failed to save sponsor");
     } finally {
       setSaving(false);
     }

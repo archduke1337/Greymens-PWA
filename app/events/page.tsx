@@ -13,7 +13,8 @@ import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService, Event } from "@/lib/database";
+import { eventService } from "@/lib/database";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
 import {
   CalendarIcon,
@@ -203,9 +204,10 @@ export default function EventsPage() {
       
       // Reload events to update registration count
       await loadEvents();
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      alert("❌ " + (error.message || "Failed to register for event"));
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Registration error:", message);
+      alert("❌ " + message);
     } finally {
       setRegistering(null);
     }

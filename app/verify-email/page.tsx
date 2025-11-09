@@ -38,10 +38,13 @@ export default function VerifyEmailPage() {
           router.push("/profile");
         }, 3000);
 
-      } catch (error: any) {
+      } catch (error) {
         console.error("Verification error:", error);
         setStatus("error");
-        setErrorMessage(error.message || "Verification failed. The link may have expired.");
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : "Verification failed. The link may have expired.";
+        setErrorMessage(errorMessage);
       }
     };
 

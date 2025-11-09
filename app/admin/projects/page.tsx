@@ -11,6 +11,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
 
 export default function AdminProjectsPage() {
@@ -203,9 +204,10 @@ export default function AdminProjectsPage() {
       onClose();
       fetchProjects();
       resetForm();
-    } catch (error: any) {
-      console.error("Error saving project:", error);
-      alert(`❌ Failed to save project: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error saving project:", message);
+      alert(`❌ Failed to save project: ${message}`);
     } finally {
       setSaving(false);
     }
@@ -219,9 +221,10 @@ export default function AdminProjectsPage() {
       await projectService.deleteProject(projectId);
       alert("✅ Project deleted successfully!");
       fetchProjects();
-    } catch (error: any) {
-      console.error("Error deleting project:", error);
-      alert(`❌ Failed to delete project: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error deleting project:", message);
+      alert(`❌ Failed to delete project: ${message}`);
     }
   };
 

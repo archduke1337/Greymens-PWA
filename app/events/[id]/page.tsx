@@ -12,7 +12,8 @@ import { title } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService, Event } from "@/lib/database";
+import { eventService } from "@/lib/database";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
 import {
   CalendarIcon,
@@ -178,9 +179,10 @@ export default function EventDetailPage() {
         alert("✅ Registration successful!\n\n⚠️ However, we couldn't send your e-ticket email. Please contact support with your registration details.");
         await loadEvent();
       }
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      alert(error.message || "Failed to register for event");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Registration error:", message);
+      alert(message || "Failed to register for event");
     } finally {
       setRegistering(false);
     }
