@@ -6,13 +6,10 @@ const nextConfig = {
       'cloud.appwrite.io',
       'fra.cloud.appwrite.io'
     ],
-    unoptimized: true
+    unoptimized: process.env.NODE_ENV === 'production' ? false : true
   },
   typescript: {
-    ignoreBuildErrors: true
-  },
-  eslint: {
-    ignoreDuringBuilds: true
+    tsconfigPath: './tsconfig.json'
   },
   swcMinify: true,
   webpack: (config) => {
