@@ -1,5 +1,5 @@
 // lib/appwrite.ts
-import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
+import { Client, Account, Databases, Storage, ID } from "appwrite";
 
 const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -20,7 +20,7 @@ export const APPWRITE_CONFIG = {
   bucketId: process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
 };
 
-export { ID, OAuthProvider };
+export { ID };
 
 // Auth service functions
 export const authService = {
@@ -40,7 +40,7 @@ export const authService = {
   // Login
   async login(email: string, password: string) {
     try {
-      return await account.createEmailPasswordSession(email, password);
+      return await (account as any).createEmailPasswordSession(email, password);
     } catch (error) {
       throw error;
     }
@@ -58,7 +58,7 @@ export const authService = {
         : '/login';
 
       account.createOAuth2Session(
-        OAuthProvider.Google,
+        "google" as any,
         successUrl,
         failureUrl
       );

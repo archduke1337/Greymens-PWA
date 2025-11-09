@@ -72,18 +72,14 @@ export default function ContactPage() {
     setSubmitStatus({ type: null, message: "" });
 
     try {
-      const { databases, ID } = await import("appwrite");
-      const { Client } = await import("appwrite");
+      const { databases } = await import("@/lib/appwrite");
+      const { ID } = await import("appwrite");
 
-      const client = new Client()
-        .setEndpoint("YOUR_APPWRITE_ENDPOINT") // Your Appwrite endpoint
-        .setProject("YOUR_PROJECT_ID"); // Your project ID
-
-      const database = new databases(client);
-
-      await database.createDocument(
-        "YOUR_DATABASE_ID", // Your database ID
-        "YOUR_COLLECTION_ID", // Your collection ID
+      // Create contact document in Appwrite
+      // Note: You need to set up a "contacts" collection in your Appwrite database
+      await databases.createDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "",
+        "contacts", // Your collection ID for contacts
         ID.unique(),
         {
           name: formData.name,

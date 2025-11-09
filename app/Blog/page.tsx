@@ -153,9 +153,11 @@ export default function BlogPage() {
                 className="min-w-[200px]"
               >
                 <SelectItem key="all">All Categories</SelectItem>
-                {blogCategories.map((cat) => {
-                  return <SelectItem key={cat.value}>{cat.label}</SelectItem>;
-                })}
+                <SelectItem key="tutorial">Tutorial</SelectItem>
+                <SelectItem key="news">News</SelectItem>
+                <SelectItem key="event">Event</SelectItem>
+                <SelectItem key="project">Project</SelectItem>
+                <SelectItem key="technology">Technology</SelectItem>
               </Select>
             </div>
           </CardBody>
