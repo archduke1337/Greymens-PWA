@@ -13,7 +13,7 @@ import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService } from "@/lib/database";
+import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
 import {
@@ -41,7 +41,7 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState("date");
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState<string | null>(null);
 

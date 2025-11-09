@@ -12,7 +12,7 @@ import { title } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService } from "@/lib/database";
+import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
 import {
@@ -40,7 +40,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const eventId = params.id as string;
 
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventType | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
