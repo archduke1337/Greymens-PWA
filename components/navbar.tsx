@@ -127,13 +127,19 @@ export const Navbar = () => {
                       <p className="font-semibold">Signed in as</p>
                       <p className="font-semibold">{user.email}</p>
                     </DropdownItem>
+                    <DropdownItem key="dashboard" href="/dashboard">
+                      Dashboard
+                    </DropdownItem>
                     <DropdownItem key="my-profile" href="/profile">
                       My Profile
                     </DropdownItem>
                     <DropdownItem key="settings" href="/settings">
                       Settings
                     </DropdownItem>
-                    <DropdownItem key="logout" color="danger" onPress={handleLogout}>
+                    <DropdownItem key="help-feedback" href="/help-feedback">
+                      Help & Feedback
+                    </DropdownItem>
+                    <DropdownItem key="logout" color="danger" href="/logout">
                       Log Out
                     </DropdownItem>
                   </DropdownMenu>
