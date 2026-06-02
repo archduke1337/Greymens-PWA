@@ -11,8 +11,7 @@ import {
   EyeIcon,
   TrashIcon,
   ClockIcon,
-  StarIcon,
-} from "lucide-react";
+  StarIcon } from "lucide-react";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -136,8 +135,7 @@ export default function AdminBlogsPage() {
       day: "numeric",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
-    });
+      minute: "2-digit" });
   };
 
   if (loading) {

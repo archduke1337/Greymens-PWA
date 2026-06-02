@@ -1,8 +1,8 @@
 'use client';
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,  , Chip } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Chip } from "@heroui/react";
 import { useState } from 'react';
-import {   } from "@/components/compat";
+import {} from "@/components/compat";
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
 interface FormData {
@@ -19,8 +19,7 @@ export default function HelpFeedbackPage() {
     email: '',
     type: 'general',
     subject: '',
-    message: '',
-  });
+    message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 

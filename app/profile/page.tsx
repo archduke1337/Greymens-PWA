@@ -116,9 +116,7 @@ export default function ProfilePage() {
       await account.updatePrefs({
         prefs: {
           ...user?.prefs,
-          profilePictureId: response.$id,
-        },
-      });
+          profilePictureId: response.$id } });
 
       // FIXED: Get preview URL properly
       const fileUrl = storage.getFilePreview(
@@ -284,8 +282,7 @@ export default function ProfilePage() {
                   {new Date(user.$createdAt).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
-                    day: "numeric",
-                  })}
+                    day: "numeric" })}
                 </p>
               </div>
             </div>

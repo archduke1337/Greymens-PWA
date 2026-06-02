@@ -1,6 +1,6 @@
-import { Card, CardContent, Avatar,  , Chip } from "@heroui/react";
+import { Card, CardContent, Avatar, Chip } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
-import {   } from "@/components/compat";
+import {} from "@/components/compat";
 export default function AboutPage() {
   const stats = [
     { label: "Active Members", value: "500+", color: "primary" },
@@ -13,23 +13,19 @@ export default function AboutPage() {
     {
       icon: "💡",
       title: "Innovation",
-      description: "We foster creativity and encourage thinking outside the box",
-    },
+      description: "We foster creativity and encourage thinking outside the box" },
     {
       icon: "🤝",
       title: "Collaboration",
-      description: "Building connections and working together to achieve more",
-    },
+      description: "Building connections and working together to achieve more" },
     {
       icon: "🚀",
       title: "Growth",
-      description: "Continuous learning and development for all members",
-    },
+      description: "Continuous learning and development for all members" },
     {
       icon: "🌟",
       title: "Excellence",
-      description: "Striving for quality in everything we create",
-    },
+      description: "Striving for quality in everything we create" },
   ];
 
   const teamMembers = [
@@ -62,7 +58,7 @@ export default function AboutPage() {
 
 
       {/* Story Section */}
-      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30"  className="shadow-lg">
+      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 shadow-lg">
         <CardContent className="p-8 md:p-12">
           <h2 className={title({ size: "sm" })}>Our Story</h2>
           <p className="text-default-600 mt-4 text-lg leading-relaxed">
@@ -88,9 +84,7 @@ export default function AboutPage() {
           {values.map((value, index) => (
             <Card
               key={index}
-              className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl"
-              
-             className="shadow-sm">
+              className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">{value.icon}</div>
@@ -106,7 +100,7 @@ export default function AboutPage() {
       </div>
 
       {/* Team Section */}
-      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30"  className="shadow-lg">
+      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30 shadow-lg">
         <CardContent className="p-8 text-center">
           <h2 className={title({ size: "sm", class: "mb-4" })}>Meet Our Team</h2>
           <p className="text-default-600 mb-6">

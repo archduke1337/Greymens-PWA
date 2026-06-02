@@ -16,8 +16,7 @@ export default function TeamPage() {
       github: "https://github.com/alexjohnson",
       bio: "Visionary leader with 8+ years in tech. Passionate about building communities that drive innovation.",
       achievements: ["Forbes 30 Under 30", "TEDx Speaker"],
-      color: "secondary" as const,
-    },
+      color: "secondary" as const },
     {
       name: "Sarah Chen",
       role: "Vice President",
@@ -26,8 +25,7 @@ export default function TeamPage() {
       github: "https://github.com/sarahchen",
       bio: "Strategic thinker with MBA from Stanford. Expert in scaling communities and driving engagement.",
       achievements: ["Top 100 Women in Tech", "Community Builder"],
-      color: "primary" as const,
-    },
+      color: "primary" as const },
     {
       name: "Marcus Williams",
       role: "Technical Lead",
@@ -36,8 +34,7 @@ export default function TeamPage() {
       github: "https://github.com/marcuswilliams",
       bio: "Full-stack engineer and open-source contributor. Building scalable solutions for tomorrow.",
       achievements: ["GitHub Stars 50k+", "Tech Innovation Award"],
-      color: "warning" as const,
-    },
+      color: "warning" as const },
     {
       name: "Emily Rodriguez",
       role: "Creative Director",
@@ -46,8 +43,7 @@ export default function TeamPage() {
       github: "https://github.com/emilyrodriguez",
       bio: "Award-winning designer with a keen eye for aesthetics. Creating experiences that inspire.",
       achievements: ["Webby Award Winner", "Design Excellence"],
-      color: "danger" as const,
-    },
+      color: "danger" as const },
     {
       name: "David Kim",
       role: "Operations Manager",
@@ -56,8 +52,7 @@ export default function TeamPage() {
       github: "https://github.com/davidkim",
       bio: "Operations expert with background in logistics. Making things run like clockwork.",
       achievements: ["Excellence in Operations", "Process Optimizer"],
-      color: "success" as const,
-    },
+      color: "success" as const },
     {
       name: "Maya Patel",
       role: "Community Manager",
@@ -66,8 +61,7 @@ export default function TeamPage() {
       github: "https://github.com/mayapatel",
       bio: "Community advocate with heart. Connecting people and fostering meaningful relationships.",
       achievements: ["Community Champion", "Engagement Expert"],
-      color: "primary" as const,
-    },
+      color: "primary" as const },
   ];
 
   useEffect(() => {
@@ -200,13 +194,10 @@ export default function TeamPage() {
                         opacity: direction ? (isActive ? 0.3 : opacity) : opacity,
                         zIndex,
                         filter: `brightness(${isActive ? 1 : 0.7}) blur(${blur}px)`,
-                        pointerEvents: isActive ? 'auto' : 'none',
-                      }}
+                        pointerEvents: isActive ? 'auto' : 'none' }}
                     >
                       <Card 
-                        className="h-full border-none overflow-hidden"
-                        
-                       className="shadow-lg">
+                        className="h-full border-none overflow-hidden shadow-lg">
                         <CardContent className="p-6 md:p-8 relative overflow-hidden">
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
@@ -400,7 +391,7 @@ export default function TeamPage() {
               { label: "Events Organized", value: "150+" },
               { label: "Community Size", value: "8K+" },
             ].map((stat) => (
-              <Card key={stat.label} className="border-none"  className="shadow-sm">
+              <Card key={stat.label} className="border-none shadow-sm">
                 <CardContent className="text-center p-4">
                   <p className="text-2xl md:text-3xl font-bold text-secondary">
                     {stat.value}

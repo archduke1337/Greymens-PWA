@@ -1,6 +1,5 @@
 export default function PricingLayout({
-  children,
-}: {
+  children }: {
   children: React.ReactNode;
 }) {
   return (

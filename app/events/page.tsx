@@ -1,7 +1,7 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select,   } from "@heroui/react";
+import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -18,10 +18,9 @@ import {
   TicketIcon,
   SparklesIcon,
   StarIcon,
-  CrownIcon,
-} from "lucide-react";
+  CrownIcon } from "lucide-react";
 import { toast } from "sonner";
-import {   } from "@/components/compat";
+import {} from "@/components/compat";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -145,8 +144,7 @@ export default function EventsPage() {
           image: event.image,
           organizerName: event.organizerName,
           price: event.price,
-          discountPrice: event.discountPrice,
-        }
+          discountPrice: event.discountPrice }
       );
 
       // Store ticket data locally
@@ -160,8 +158,7 @@ export default function EventsPage() {
         time: event.time,
         venue: event.venue,
         location: event.location,
-        registeredAt: new Date().toISOString(),
-      };
+        registeredAt: new Date().toISOString() };
       
       localStorage.setItem(`ticket_${eventId}`, JSON.stringify(ticketData));
       

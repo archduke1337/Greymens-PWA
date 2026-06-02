@@ -11,8 +11,7 @@ import {
   ClockIcon,
   EyeIcon,
   CalendarIcon,
-  ShareIcon,
-} from "lucide-react";
+  ShareIcon } from "lucide-react";
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -62,8 +61,7 @@ export default function BlogPostPage() {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
-      year: "numeric",
-    });
+      year: "numeric" });
   };
 
   const handleShare = () => {
@@ -71,8 +69,7 @@ export default function BlogPostPage() {
       navigator.share({
         title: blog?.title,
         text: blog?.excerpt,
-        url: window.location.href,
-      });
+        url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Link copied to clipboard!");

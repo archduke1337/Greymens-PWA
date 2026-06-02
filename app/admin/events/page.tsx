@@ -1,6 +1,6 @@
 // app/admin/events/page.tsx
 "use client";
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,  , Switch, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter,  , Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Switch, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import {  ,   } from "@/components/compat";
+import {} from "@/components/compat";
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();

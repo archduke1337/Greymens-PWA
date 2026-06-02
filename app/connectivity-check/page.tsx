@@ -42,8 +42,7 @@ export default function ConnectivityCheckPage() {
           errors: [
             !endpoint ? "Missing NEXT_PUBLIC_APPWRITE_ENDPOINT" : "",
             !projectId ? "Missing NEXT_PUBLIC_APPWRITE_PROJECT_ID" : "",
-          ].filter(Boolean),
-        });
+          ].filter(Boolean) });
         setLoading(false);
         return;
       }
@@ -53,9 +52,7 @@ export default function ConnectivityCheckPage() {
         const response = await fetch(endpoint, {
           method: "GET",
           headers: {
-            Accept: "application/json",
-          },
-        });
+            Accept: "application/json" } });
 
         const databaseReachable = response.ok || response.status < 500;
 
@@ -67,10 +64,8 @@ export default function ConnectivityCheckPage() {
             projectId: projectId.substring(0, 8) + "...",
             appwriteReachable: true,
             databaseReachable,
-            timestamp: new Date().toISOString(),
-          },
-          errors: databaseReachable ? [] : ["Backend responded with error"],
-        });
+            timestamp: new Date().toISOString() },
+          errors: databaseReachable ? [] : ["Backend responded with error"] });
       } catch (error) {
         setResult({
           status: "error",
@@ -79,18 +74,15 @@ export default function ConnectivityCheckPage() {
             endpoint,
             projectId: projectId.substring(0, 8) + "...",
             appwriteReachable: false,
-            timestamp: new Date().toISOString(),
-          },
-          errors: [`Network error: ${String(error)}`],
-        });
+            timestamp: new Date().toISOString() },
+          errors: [`Network error: ${String(error)}`] });
       }
     } catch (error) {
       setResult({
         status: "error",
         message: "Unexpected error during connectivity check",
         details: {},
-        errors: [String(error)],
-      });
+        errors: [String(error)] });
     } finally {
       setLoading(false);
     }

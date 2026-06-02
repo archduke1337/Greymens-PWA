@@ -13,8 +13,7 @@ import {
   PlugIcon,
   AlertTriangleIcon,
   CheckCircle2Icon,
-  XCircleIcon,
-} from "lucide-react";
+  XCircleIcon } from "lucide-react";
 
 interface ServiceStatus {
   name: string;
@@ -50,14 +49,11 @@ export default function DiagnosticsPage() {
           hasEnvVars:
             !!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT &&
             !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-          requiredVarsPresent: true,
-        },
+          requiredVarsPresent: true },
         services: [],
         buildInfo: {
           nextVersion: "14.x",
-          typescript: true,
-        },
-      };
+          typescript: true } };
 
       // Check Appwrite connectivity
       const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -72,9 +68,7 @@ export default function DiagnosticsPage() {
           details: {
             endpoint: endpoint ? "✓ Set" : "✗ Missing",
             projectId: projectId ? "✓ Set" : "✗ Missing",
-            databaseId: databaseId ? "✓ Set" : "✗ Missing",
-          },
-        });
+            databaseId: databaseId ? "✓ Set" : "✗ Missing" } });
       } else {
         data.services.push({
           name: "Appwrite Configuration",
@@ -83,29 +77,24 @@ export default function DiagnosticsPage() {
           details: {
             endpoint: endpoint.substring(0, 50) + "...",
             projectId: projectId.substring(0, 12) + "...",
-            databaseId: databaseId ? databaseId.substring(0, 12) + "..." : "Not set",
-          },
-        });
+            databaseId: databaseId ? databaseId.substring(0, 12) + "..." : "Not set" } });
 
         // Try to test Appwrite connectivity
         try {
           const response = await fetch(endpoint, {
             method: "GET",
-            headers: { Accept: "application/json" },
-          });
+            headers: { Accept: "application/json" } });
           data.services.push({
             name: "Appwrite Endpoint",
             status: response.ok ? "connected" : "disconnected",
             message: response.ok
               ? "Endpoint is reachable"
-              : `Endpoint returned status ${response.status}`,
-          });
+              : `Endpoint returned status ${response.status}` });
         } catch (error) {
           data.services.push({
             name: "Appwrite Endpoint",
             status: "disconnected",
-            message: `Cannot reach endpoint: ${String(error).substring(0, 100)}`,
-          });
+            message: `Cannot reach endpoint: ${String(error).substring(0, 100)}` });
         }
       }
 
@@ -116,8 +105,7 @@ export default function DiagnosticsPage() {
         status: emailJsServiceId ? "connected" : "unknown",
         message: emailJsServiceId
           ? "EmailJS is configured"
-          : "EmailJS not configured (optional)",
-      });
+          : "EmailJS not configured (optional)" });
 
       setDiagnostics(data);
       setLoading(false);

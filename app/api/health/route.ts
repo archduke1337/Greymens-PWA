@@ -10,14 +10,11 @@ export async function GET() {
       status: "operational",
       services: {
         frontend: "healthy",
-        appwrite: "checking",
-      },
+        appwrite: "checking" },
       checks: {
         environment: true,
         nodejs: process.version,
-        nextjs: "14.x",
-      },
-    };
+        nextjs: "14.x" } };
 
     // Check Appwrite connectivity
     const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -30,10 +27,8 @@ export async function GET() {
           status: "degraded",
           services: {
             ...status.services,
-            appwrite: "unconfigured",
-          },
-          error: "Missing Appwrite environment variables",
-        },
+            appwrite: "unconfigured" },
+          error: "Missing Appwrite environment variables" },
         { status: 503 }
       );
     }
@@ -51,16 +46,14 @@ export async function GET() {
           : "degraded";
 
       return Response.json(status, {
-        status: status.services.appwrite === "healthy" ? 200 : 503,
-      });
+        status: status.services.appwrite === "healthy" ? 200 : 503 });
     } catch (error) {
       status.services.appwrite = "unreachable";
       return Response.json(
         {
           ...status,
           status: "degraded",
-          error: `Appwrite endpoint unreachable: ${String(error).substring(0, 100)}`,
-        },
+          error: `Appwrite endpoint unreachable: ${String(error).substring(0, 100)}` },
         { status: 503 }
       );
     }
@@ -69,8 +62,7 @@ export async function GET() {
       {
         status: "error",
         error: String(error),
-        timestamp: new Date().toISOString(),
-      },
+        timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }

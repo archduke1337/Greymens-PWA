@@ -11,15 +11,14 @@ export default function RouteError({
   error,
   reset,
   title = "Something went wrong",
-  description = "We couldn't load this page. Please try again.",
-}: RouteErrorProps) {
+  description = "We couldn't load this page. Please try again." }: RouteErrorProps) {
   useEffect(() => {
     console.error(`${title} error:`, error);
   }, [error, title]);
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
-      <Card className="w-full max-w-lg border-none shadow-xl"  className="shadow-lg">
+      <Card className="w-full max-w-lg border-none shadow-xl shadow-lg">
         <CardContent className="text-center py-16 space-y-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-danger-100 dark:bg-danger-900/30 flex items-center justify-center">
             <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">

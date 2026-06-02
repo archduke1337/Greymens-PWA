@@ -4,8 +4,7 @@ import RouteError from "@/components/RouteError";
 
 export default function BlogError({
   error,
-  reset,
-}: {
+  reset }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {

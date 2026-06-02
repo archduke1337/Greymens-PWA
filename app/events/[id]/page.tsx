@@ -140,8 +140,7 @@ export default function EventDetailPage() {
           image: event!.image,
           organizerName: event!.organizerName,
           price: event!.price,
-          discountPrice: event!.discountPrice,
-        }
+          discountPrice: event!.discountPrice }
       );
 
       if (emailResult.success) {
@@ -189,8 +188,7 @@ export default function EventDetailPage() {
       navigator.share({
         title: event?.title,
         text: event?.description,
-        url: window.location.href,
-      });
+        url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Link copied to clipboard!");

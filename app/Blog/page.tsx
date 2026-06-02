@@ -1,14 +1,14 @@
 // app/blog/page.tsx
 "use client";
 
-import { Card, CardContent, CardFooter, Button, Input, Select,  , Chip, Avatar } from "@heroui/react";
+import { Card, CardContent, CardFooter, Button, Input, Select, Chip, Avatar } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { 
-import {   } from "@/components/compat";
+import {} from "@/components/compat";
   SearchIcon, 
   PenIcon, 
   ClockIcon, 
@@ -74,8 +74,7 @@ export default function BlogPage() {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
-    });
+      year: "numeric" });
   };
 
   if (loading) {

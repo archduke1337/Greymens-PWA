@@ -1,6 +1,5 @@
 export default function ProjectsLayout({
-  children,
-}: {
+  children }: {
   children: React.ReactNode;
 }) {
   return (

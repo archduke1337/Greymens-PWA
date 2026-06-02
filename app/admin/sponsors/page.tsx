@@ -1,7 +1,7 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,  , Switch, Chip } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Switch, Chip } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import {   } from "@/components/compat";
+import {} from "@/components/compat";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -35,8 +35,7 @@ export default function AdminSponsorsPage() {
     displayOrder: 0,
     featured: false,
     startDate: new Date().toISOString().split('T')[0],
-    endDate: "",
-  });
+    endDate: "" });
 
   useEffect(() => {
     loadSponsors();
@@ -107,8 +106,7 @@ export default function AdminSponsorsPage() {
       displayOrder: sponsor.displayOrder,
       featured: sponsor.featured,
       startDate: sponsor.startDate,
-      endDate: sponsor.endDate || "",
-    });
+      endDate: sponsor.endDate || "" });
     setShowForm(true);
   };
 
@@ -136,8 +134,7 @@ export default function AdminSponsorsPage() {
       displayOrder: 0,
       featured: false,
       startDate: new Date().toISOString().split('T')[0],
-      endDate: "",
-    });
+      endDate: "" });
     setEditingSponsor(null);
     setShowForm(false);
   };

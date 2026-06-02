@@ -1,12 +1,12 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter,  , TextArea, Select,  , Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Select, Switch } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import {  ,   } from "@/components/compat";
+import {} from "@/components/compat";
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +30,7 @@ export default function AdminProjectsPage() {
     isFeatured: false,
     demoUrl: "",
     repoUrl: "",
-    teamMembers: "",
-  });
+    teamMembers: "" });
 
   const categories = [
     { key: "ai-ml", label: "🤖 AI & ML" },
@@ -93,8 +92,7 @@ export default function AdminProjectsPage() {
       isFeatured: false,
       demoUrl: "",
       repoUrl: "",
-      teamMembers: "",
-    });
+      teamMembers: "" });
   };
 
   // Open modal for adding new project
@@ -124,8 +122,7 @@ export default function AdminProjectsPage() {
       isFeatured: project.isFeatured,
       demoUrl: project.demoUrl || "",
       repoUrl: project.repoUrl || "",
-      teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "",
-    });
+      teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "" });
     onOpen();
   };
 
@@ -183,8 +180,7 @@ export default function AdminProjectsPage() {
           .split(",")
           .map(t => t.trim())
           .filter(t => t),
-        createdAt: isEditing ? selectedProject?.createdAt || new Date().toISOString() : new Date().toISOString(),
-      };
+        createdAt: isEditing ? selectedProject?.createdAt || new Date().toISOString() : new Date().toISOString() };
 
       if (isEditing && selectedProject?.$id) {
         await projectService.updateProject(selectedProject.$id, projectData);
@@ -287,7 +283,7 @@ export default function AdminProjectsPage() {
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Projects Table */}
           <div className="lg:col-span-3">
-            <Card className="border-none shadow-xl"  className="shadow-lg">
+            <Card className="border-none shadow-xl shadow-lg">
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
@@ -336,8 +332,7 @@ export default function AdminProjectsPage() {
                       classNames={{
                         wrapper: "shadow-none border-none",
                         th: "bg-transparent text-gray-700 dark:text-gray-300 font-semibold border-b border-gray-200 dark:border-gray-700",
-                        td: "border-b border-gray-100 dark:border-gray-800",
-                      }}
+                        td: "border-b border-gray-100 dark:border-gray-800" }}
                     >
                       <TableHeader>
                         <TableColumn className="text-sm">PROJECT</TableColumn>
@@ -462,7 +457,7 @@ export default function AdminProjectsPage() {
           {/* Stats Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <Card className="border-none shadow-xl"  className="shadow-lg">
+            <Card className="border-none shadow-xl shadow-lg">
               <CardHeader className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
               </CardHeader>
@@ -519,8 +514,7 @@ export default function AdminProjectsPage() {
           scrollBehavior="inside"
           classNames={{
             base: "border-none",
-            backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
-          }}
+            backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20" }}
         >
           <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
@@ -553,8 +547,7 @@ export default function AdminProjectsPage() {
                     isRequired
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   />
                   <Input
                     label="Duration"
@@ -564,8 +557,7 @@ export default function AdminProjectsPage() {
                     isRequired
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   />
                 </div>
 
@@ -578,8 +570,7 @@ export default function AdminProjectsPage() {
                   variant="bordered"
                   minRows={3}
                   classNames={{
-                    label: "text-gray-700 dark:text-gray-300",
-                  }}
+                    label: "text-gray-700 dark:text-gray-300" }}
                 />
 
                 <Input
@@ -592,8 +583,7 @@ export default function AdminProjectsPage() {
                   description="Use high-quality images from Unsplash or similar platforms"
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                    description: "text-gray-500 dark:text-gray-400" }}
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -603,8 +593,7 @@ export default function AdminProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   >
                     {categories.map((cat) => (
                       <  key={cat.key} textValue={cat.label}>
@@ -619,8 +608,7 @@ export default function AdminProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   >
                     {statuses.map((status) => (
                       <  key={status.key} textValue={status.label}>
@@ -654,8 +642,7 @@ export default function AdminProjectsPage() {
                       variant="bordered"
                       className="w-20"
                       classNames={{
-                        input: "text-center",
-                      }}
+                        input: "text-center" }}
                     />
                   </div>
 
@@ -669,8 +656,7 @@ export default function AdminProjectsPage() {
                       variant="bordered"
                       startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                        label: "text-gray-700 dark:text-gray-300" }}
                     />
                     <Input
                       label="Forks"
@@ -681,8 +667,7 @@ export default function AdminProjectsPage() {
                       variant="bordered"
                       startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                        label: "text-gray-700 dark:text-gray-300" }}
                     />
                     <Input
                       label="Contributors"
@@ -693,8 +678,7 @@ export default function AdminProjectsPage() {
                       variant="bordered"
                       startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                        label: "text-gray-700 dark:text-gray-300" }}
                     />
                   </div>
                 </div>
@@ -709,8 +693,7 @@ export default function AdminProjectsPage() {
                   minRows={2}
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                    description: "text-gray-500 dark:text-gray-400" }}
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -721,8 +704,7 @@ export default function AdminProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   />
 
                   <Input
@@ -732,8 +714,7 @@ export default function AdminProjectsPage() {
                     onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
                     variant="bordered"
                     classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                      label: "text-gray-700 dark:text-gray-300" }}
                   />
                 </div>
 
@@ -747,8 +728,7 @@ export default function AdminProjectsPage() {
                   minRows={2}
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                    description: "text-gray-500 dark:text-gray-400" }}
                 />
 
                 <Switch
@@ -756,8 +736,7 @@ export default function AdminProjectsPage() {
                   onValueChange={(value) => setFormData({ ...formData, isFeatured: value })}
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
-                    label: "text-gray-700 dark:text-gray-300 text-sm",
-                  }}
+                    label: "text-gray-700 dark:text-gray-300 text-sm" }}
                 >
                   Feature this project on the homepage
                 </Switch>
