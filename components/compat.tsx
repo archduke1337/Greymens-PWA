@@ -282,19 +282,23 @@ export const Switch = ({ checked, onChange, onValueChange, children, className =
 // ============================================================
 
 export const Tabs = ({ children, selectedKey, onSelectionChange, className = "", ...props }: any) => {
-  const tabs = React.Children.toArray(children) as React.ReactElement[];
-  const activeKey = selectedKey || tabs[0]?.key || "";
+  const tabsArray = React.Children.toArray(children) as React.ReactElement[];
+  // React.Children.toArray prefixes keys with .,$ so we must extract the original keys
+  const tabEntries = tabsArray.map((tab, i) => {
+    const rawKey = String(tab.key || "").replace(/^\.\$?/, "");
+    return { tab, key: rawKey, index: i };
+  });
+  const activeKey = selectedKey || tabEntries[0]?.key || "";
 
   return (
     <div className={className}>
       {/* Tab headers */}
       <div className="flex gap-1 border-b border-default-200 mb-4" role="tablist">
-        {tabs.map((tab) => {
-          const key = String(tab.key || "");
+        {tabEntries.map(({ tab, key, index }) => {
           const isActive = key === activeKey;
           return (
             <button
-              key={key}
+              key={key || index}
               type="button"
               role="tab"
               aria-selected={isActive}
@@ -311,11 +315,10 @@ export const Tabs = ({ children, selectedKey, onSelectionChange, className = "",
         })}
       </div>
       {/* Active tab content */}
-      {tabs.map((tab) => {
-        const key = String(tab.key || "");
+      {tabEntries.map(({ tab, key, index }) => {
         if (key !== activeKey) return null;
         return (
-          <div key={key} role="tabpanel">
+          <div key={key || index} role="tabpanel">
             {(tab.props as any)?.children}
           </div>
         );
@@ -341,7 +344,9 @@ const chipColorMap: Record<string, string> = {
   danger: "bg-danger-100 text-danger-700",
 };
 
-const chipSolidColorMap: Record<string, string> = {
+const chipSolidColorMap = chipColorMap;
+
+const chipSolidColorMap2: Record<string, string> = {
   default: "bg-default-100 text-default-700",
   primary: "bg-primary-100 text-primary-700",
   secondary: "bg-secondary-100 text-secondary-700",
