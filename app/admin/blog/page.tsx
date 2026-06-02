@@ -364,7 +364,7 @@ export default function AdminBlogsPage() {
       </div>
 
       {/* Rejection Modal */}
-      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
+      <Modal isOpen={rejectModalOpen} onClose={undefined}>
         <Modal.Dialog>
           <Modal.Header>Reject Blog</Modal.Header>
           <Modal.Body>

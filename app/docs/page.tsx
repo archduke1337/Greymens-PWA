@@ -30,11 +30,8 @@ export default function TermsPage() {
           </p>
         </Card.Header>
         <Card.Content className="px-6 pb-6">
-          <Accordion variant="outline" selectionMode="multiple">
-            <Accordion.Item
-              key="eligibility"
-              aria-label="Eligibility"
-              title="Eligibility"
+          <Accordion variant="default" >
+            <Accordion.Item title="Eligibility"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -44,10 +41,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="benefits"
-              aria-label="Benefits"
-              title="Member Benefits"
+            <Accordion.Item title="Member Benefits"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -59,10 +53,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="responsibilities"
-              aria-label="Responsibilities"
-              title="Member Responsibilities"
+            <Accordion.Item title="Member Responsibilities"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -73,10 +64,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="conduct"
-              aria-label="Code of Conduct"
-              title="Code of Conduct"
+            <Accordion.Item title="Code of Conduct"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -87,10 +75,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="termination"
-              aria-label="Termination"
-              title="Termination"
+            <Accordion.Item title="Termination"
               className="text-sm"
             >
               <p className="text-default-600 mb-2">
@@ -116,11 +101,8 @@ export default function TermsPage() {
           </p>
         </Card.Header>
         <Card.Content className="px-6 pb-6">
-          <Accordion variant="outline" selectionMode="multiple">
-            <Accordion.Item
-              key="tiers"
-              aria-label="Sponsorship Tiers"
-              title="Sponsorship Tiers"
+          <Accordion variant="default" >
+            <Accordion.Item title="Sponsorship Tiers"
               className="text-sm"
             >
               <div className="text-default-600 space-y-3">
@@ -145,10 +127,7 @@ export default function TermsPage() {
               </div>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="obligations"
-              aria-label="Obligations"
-              title="Sponsor Obligations"
+            <Accordion.Item title="Sponsor Obligations"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -159,10 +138,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="ip"
-              aria-label="Intellectual Property"
-              title="Intellectual Property"
+            <Accordion.Item title="Intellectual Property"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -172,10 +148,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="duration"
-              aria-label="Contract Duration"
-              title="Contract Duration"
+            <Accordion.Item title="Contract Duration"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -197,11 +170,8 @@ export default function TermsPage() {
           </p>
         </Card.Header>
         <Card.Content className="px-6 pb-6">
-          <Accordion variant="outline" selectionMode="multiple">
-            <Accordion.Item
-              key="collection"
-              aria-label="Data Collection"
-              title="Data We Collect"
+          <Accordion variant="default" >
+            <Accordion.Item title="Data We Collect"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -212,10 +182,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="usage"
-              aria-label="Data Usage"
-              title="How We Use Data"
+            <Accordion.Item title="How We Use Data"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -226,10 +193,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="protection"
-              aria-label="Data Protection"
-              title="Data Protection"
+            <Accordion.Item title="Data Protection"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -241,10 +205,7 @@ export default function TermsPage() {
               </ul>
             </Accordion.Item>
 
-            <Accordion.Item
-              key="rights"
-              aria-label="Your Rights"
-              title="Your Rights"
+            <Accordion.Item title="Your Rights"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">

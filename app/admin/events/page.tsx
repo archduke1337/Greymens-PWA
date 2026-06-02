@@ -408,7 +408,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
                         onChange={(e: any) => handleInputChange("image", e.target.value)}
-                        required
+                        required
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -550,20 +550,20 @@ export default function AdminEventsPage() {
                         placeholder="0"
                         value={formData.price?.toString()}
                         onChange={(e: any) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                        required
+                        required
                       />
                       <Input
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
-                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
+                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
                       />
                       <Input
                         type="number"
                         placeholder="50"
                         value={formData.capacity?.toString()}
                         onChange={(e: any) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
-                        required
+                        required
                       />
                     </div>
 
@@ -616,7 +616,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
                         onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
-                        required
+                        required
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">

@@ -66,7 +66,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(e: any) => setName(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             <Input
               placeholder="Enter your email"
@@ -74,7 +74,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(e: any) => setEmail(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             <Input
               placeholder="Create a password (min 8 characters)"
@@ -82,7 +82,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e: any) => setPassword(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             <Input
               placeholder="Confirm your password"
@@ -90,7 +90,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e: any) => setConfirmPassword(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             {error && (
               <div className="text-danger text-small">{error}</div>

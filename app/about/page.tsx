@@ -62,7 +62,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-
       {/* Story Section */}
       <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
         <Card.Content className="p-8 md:p-12">

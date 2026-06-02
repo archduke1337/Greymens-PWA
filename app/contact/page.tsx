@@ -208,7 +208,7 @@ export default function ContactPage() {
                     onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                     variant="outline"
                     size="lg"
-                    isDisabled={isSubmitting}
+                    disabled={isSubmitting}
                   />
                   <Input
                     required
@@ -218,7 +218,7 @@ export default function ContactPage() {
                     onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
                     variant="outline"
                     size="lg"
-                    isDisabled={isSubmitting}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <Input
@@ -228,7 +228,7 @@ export default function ContactPage() {
                   onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
                   variant="outline"
                   size="lg"
-                  isDisabled={isSubmitting}
+                  disabled={isSubmitting}
                 />
                 <TextArea
                   required
@@ -238,7 +238,7 @@ export default function ContactPage() {
                   variant="outline"
                   minRows={6}
                   size="lg"
-                  isDisabled={isSubmitting}
+                  disabled={isSubmitting}
                 />
                 <Button
                   type="submit"

@@ -671,7 +671,7 @@ export default function AdminProjectsPage() {
               </div>
             </Modal.Body>
             <Modal.Footer className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="ghost" onPress={close} isDisabled={saving}>
+              <Button variant="ghost" onPress={close} disabled={saving}>
                 Cancel
               </Button>
               <Button onPress={handleSave}

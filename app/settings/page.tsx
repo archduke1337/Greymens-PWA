@@ -216,7 +216,7 @@ export default function SettingsPage() {
                 onChange={(e: any) => setOldPassword(e.target.value)}
                 placeholder="Enter current password"
                 required
-                isDisabled={passwordLoading}
+                disabled={passwordLoading}
               />
               <Input
                 type="password"
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                 onChange={(e: any) => setNewPassword(e.target.value)}
                 placeholder="Enter new password (min 8 characters)"
                 required
-                isDisabled={passwordLoading}
+                disabled={passwordLoading}
               />
               <Input
                 type="password"
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                 onChange={(e: any) => setConfirmNewPassword(e.target.value)}
                 placeholder="Confirm new password"
                 required
-                isDisabled={passwordLoading}
+                disabled={passwordLoading}
               />
 
               {passwordError && (
@@ -412,7 +412,7 @@ export default function SettingsPage() {
                 value={phoneNumber}
                 onChange={(e: any) => setPhoneNumber(e.target.value)}
                 required
-                isDisabled={phoneLoading}
+                disabled={phoneLoading}
               />
               <Input
                 type="password"
@@ -420,7 +420,7 @@ export default function SettingsPage() {
                 value={phonePassword}
                 onChange={(e: any) => setPhonePassword(e.target.value)}
                 required
-                isDisabled={phoneLoading}
+                disabled={phoneLoading}
               />
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
@@ -455,7 +455,7 @@ export default function SettingsPage() {
                 onChange={(e: any) => setVerificationCode(e.target.value)}
                 required
                 maxLength={6}
-                isDisabled={phoneVerifyLoading}
+                disabled={phoneVerifyLoading}
               />
               {phoneVerifyError && (
                 <div className="text-danger text-sm">{phoneVerifyError}</div>

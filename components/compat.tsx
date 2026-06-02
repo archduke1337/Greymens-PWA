@@ -28,7 +28,7 @@ type ComponentSize = "sm" | "md" | "lg";
 // ============================================================
 
 export const Button = forwardRef<HTMLButtonElement, any>(
-  ({ className = "", children, color = "default", variant = "solid", size = "md", isLoading, isIconOnly, isDisabled, onPress, onClick, startContent, endContent, type = "button", onMouseEnter, onMouseLeave, ...props }: any, ref) => {
+  ({ className = "", children, color = "default", variant = "solid", size = "md", isPending, isIconOnly, disabled, onPress, onClick, startContent, endContent, type = "button", onMouseEnter, onMouseLeave, ...props }: any, ref) => {
     const colorClass = variant === "solid" || variant === "primary" || variant === "dot" ? (colorMap[color] || colorMap.default) : "";
     const variantClass = variant !== "solid" && variant !== "primary" && variant !== "dot" ? (variantMap[variant] || "") : "";
     const sizeClass = isIconOnly ? "p-2" : (sizeMap[size] || sizeMap.md);
@@ -37,14 +37,14 @@ export const Button = forwardRef<HTMLButtonElement, any>(
       <button
         ref={ref}
         type={type}
-        disabled={isDisabled || isLoading}
+        disabled={disabled || isPending}
         className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${colorClass} ${variantClass} ${sizeClass} ${className}`}
         onClick={onPress || onClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         {...props}
       >
-        {isLoading ? (
+        {isPending ? (
           <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
         ) : startContent}
         {children}
@@ -127,7 +127,7 @@ CardFooter.displayName = "CardFooter";
 // ============================================================
 
 export const Input = forwardRef<HTMLInputElement, any>(
-  ({ className = "", label, placeholder, value, onChange, type = "text", startContent, endContent, description, isDisabled, isRequired, required, classNames, onKeyPress, maxLength, name, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, value, onChange, type = "text", startContent, endContent, description, disabled, required, required, classNames, onKeyPress, maxLength, name, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
@@ -142,7 +142,7 @@ export const Input = forwardRef<HTMLInputElement, any>(
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          disabled={isDisabled}
+          disabled={disabled}
           required={required || required}
           onKeyPress={onKeyPress}
           maxLength={maxLength}
@@ -163,7 +163,7 @@ Input.displayName = "Input";
 // ============================================================
 
 export const TextArea = forwardRef<HTMLTextAreaElement, any>(
-  ({ className = "", label, placeholder, value, onChange, minRows = 3, rows, isDisabled, isRequired, required, classNames, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, value, onChange, minRows = 3, rows, disabled, required, required, classNames, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
@@ -176,7 +176,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, any>(
         value={value}
         onChange={onChange}
         rows={rows || minRows}
-        disabled={isDisabled}
+        disabled={disabled}
         required={required || required}
         className={`rounded-lg border border-default-300 bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y ${classNames?.input || ""}`}
         {...props}
@@ -191,7 +191,7 @@ TextArea.displayName = "TextArea";
 // ============================================================
 
 export const Select = forwardRef<HTMLSelectElement, any>(
-  ({ className = "", label, placeholder, selectedKeys, onChange, isRequired, required, classNames, children, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, selectedKeys, onChange, required, required, classNames, children, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
@@ -254,7 +254,7 @@ export const ModalFooter = ({ children, className = "", ...props }: any) => (
 // SWITCH
 // ============================================================
 
-export const Switch = ({ checked, onChange, onValueChange, children, className = "", isDisabled, size = "md", isSelected, ...props }: any) => {
+export const Switch = ({ checked, onChange, onValueChange, children, className = "", disabled, size = "md", isSelected, ...props }: any) => {
   const isChecked = checked ?? isSelected ?? false;
   const handler = onChange || onValueChange;
   const sizeClasses = size === "sm" ? "w-8 h-4" : size === "lg" ? "w-14 h-7" : "w-11 h-6";
@@ -262,7 +262,7 @@ export const Switch = ({ checked, onChange, onValueChange, children, className =
   const translateClasses = size === "sm" ? "translate-x-4" : size === "lg" ? "translate-x-7" : "translate-x-5";
 
   return (
-    <label className={`inline-flex items-center gap-2 cursor-pointer ${isDisabled ? "opacity-50 pointer-events-none" : ""} ${className}`}>
+    <label className={`inline-flex items-center gap-2 cursor-pointer ${disabled ? "opacity-50 pointer-events-none" : ""} ${className}`}>
       <button
         type="button"
         role="switch"

@@ -53,7 +53,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e: any) => setEmail(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             <Input
               placeholder="Enter your password"
@@ -61,7 +61,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e: any) => setPassword(e.target.value)}
               required
-              isDisabled={loading}
+              disabled={loading}
             />
             {error && (
               <div className="text-danger text-small">{error}</div>

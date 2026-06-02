@@ -311,7 +311,7 @@ export default function ProfilePage() {
                   onChange={(e: any) => setName(e.target.value)}
                   placeholder="Enter your name"
                   required
-                  isDisabled={updateLoading}
+                  disabled={updateLoading}
                 />
 
                 <div className="flex gap-2">
@@ -329,7 +329,7 @@ export default function ProfilePage() {
                       setUpdateError("");
                       setUpdateSuccess(false);
                     }}
-                    isDisabled={updateLoading}
+                    disabled={updateLoading}
                   >
                     Cancel
                   </Button>

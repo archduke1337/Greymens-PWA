@@ -311,7 +311,7 @@ export default function TeamPage() {
                 isIconOnly
                 variant="primary"
                 onPress={handlePrev}
-                isDisabled={currentIndex === 0}
+                disabled={currentIndex === 0}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
               >
@@ -348,7 +348,7 @@ export default function TeamPage() {
                 isIconOnly
                 variant="primary"
                 onPress={handleNext}
-                isDisabled={currentIndex === coreTeam.length - 1}
+                disabled={currentIndex === coreTeam.length - 1}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
               >
