@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader, Accordion, AccordionItem, Chip, Divider } from "@heroui/react";
+import { Card, CardContent, CardHeader, Accordion, AccordionItem, Chip, Separator } from "@heroui/react";
 "use client";
 
 export default function TermsPage() {

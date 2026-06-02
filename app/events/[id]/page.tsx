@@ -27,7 +27,7 @@ import {
   Mail
 } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardBody, CardHeader, Button, Badge, Avatar, Chip, Progress, Divider } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Badge, Avatar, Chip, ProgressBar, Separator } from "@heroui/react";
 
 export default function EventDetailPage() {
   const { user } = useAuth();

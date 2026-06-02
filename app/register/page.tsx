@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardHeader, CardBody, CardFooter, Input, Button, Link } from "@heroui/react";
+import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@heroui/react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");

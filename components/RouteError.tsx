@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Button, Card, CardBody } from "@heroui/react";
+import { Button, Card, CardContent } from "@heroui/react";
 
 interface RouteErrorProps {
   error: Error & { digest?: string };

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-react";
-import { Card, CardBody, CardHeader, Button, Spinner } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Spinner } from "@heroui/react";
 
 interface ConnectivityResult {
   status: "checking" | "success" | "error";

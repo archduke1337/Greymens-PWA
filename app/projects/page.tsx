@@ -3,7 +3,7 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
-import { Card, CardBody, CardFooter, Button, Badge, Chip, Avatar, Progress } from "@heroui/react";
+import { Card, CardContent, CardFooter, Button, Badge, Chip, Avatar, ProgressBar } from "@heroui/react";
 import {
   CodeIcon,
   UsersIcon,
@@ -208,10 +208,10 @@ export default function ProjectsPage() {
                         </p>
                       </div>
 
-                      {/* Progress Bar */}
+                      {/* ProgressBar Bar */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-default-600">Progress</span>
+                          <span className="text-default-600">ProgressBar</span>
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
                         <ProgressBar 

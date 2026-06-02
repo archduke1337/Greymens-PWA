@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Select, SelectItem, Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Select, SelectItem, Switch } from "@heroui/react";
 import { useDisclosure } from "@/components/compat";
 
 export default function AdminProjectsPage() {
@@ -45,7 +45,7 @@ export default function AdminProjectsPage() {
 
   const statuses = [
     { key: "planning", label: "📋 Planning" },
-    { key: "in-progress", label: "🚧 In Progress" },
+    { key: "in-progress", label: "🚧 In ProgressBar" },
     { key: "completed", label: "✅ Completed" },
   ];
 
@@ -149,7 +149,7 @@ export default function AdminProjectsPage() {
       return false;
     }
     if (formData.progress < 0 || formData.progress > 100) {
-      toast.error("Progress must be between 0 and 100");
+      toast.error("ProgressBar must be between 0 and 100");
       return false;
     }
     return true;
@@ -477,7 +477,7 @@ export default function AdminProjectsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">In ProgressBar</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {projects.filter(p => p.status === 'in-progress').length}
                     </p>
@@ -635,7 +635,7 @@ export default function AdminProjectsPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
-                        Progress: {formData.progress}%
+                        ProgressBar: {formData.progress}%
                       </label>
                       <input
                         type="range"

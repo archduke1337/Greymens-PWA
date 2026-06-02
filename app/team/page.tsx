@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardBody, CardFooter, Chip, Button, Avatar, Divider } from "@heroui/react";
+import { Card, CardContent, CardFooter, Chip, Button, Avatar, Separator } from "@heroui/react";
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -344,7 +344,7 @@ export default function TeamPage() {
                 </svg>
               </Button>
 
-              {/* Progress Dots */}
+              {/* ProgressBar Dots */}
               <div className="flex items-center gap-2">
                 {coreTeam.map((_, index) => (
                   <button
