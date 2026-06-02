@@ -337,19 +337,25 @@ export const Avatar = ({ src, name, size = "md", className = "", isBordered, ...
   const borderClass = isBordered ? "ring-2 ring-primary" : "";
   const initials = name ? name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
 
-  return (
-    <div className={`relative inline-flex ${sizeClass}`} {...props}>
-      {src && (
+  if (src) {
+    return (
+      <div className={`relative inline-flex ${sizeClass}`} {...props}>
         <img
           src={src}
           alt={name || "Avatar"}
           className={`absolute inset-0 rounded-full object-cover ${borderClass} ${className}`}
-          onError={(e: any) => { e.currentTarget.style.display = "none"; }}
+          onError={(e: any) => { e.currentTarget.style.display = "none"; e.currentTarget.nextElementSibling?.classList.remove("hidden"); }}
         />
-      )}
-      <div className={`absolute inset-0 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold ${borderClass} ${className} ${src ? "" : ""}`}>
-        {initials}
+        <div className={`hidden absolute inset-0 rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold ${borderClass} ${className}`}>
+          {initials}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-full bg-primary/20 text-primary flex items-center justify-center font-semibold ${sizeClass} ${borderClass} ${className}`} {...props}>
+      {initials}
     </div>
   );
 };
