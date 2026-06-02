@@ -282,15 +282,15 @@ export const Switch = ({ checked, onChange, onValueChange, children, className =
 // ============================================================
 
 export const Tabs = ({ children, selectedKey, onSelectionChange, className = "", ...props }: any) => {
-  const tabs = React.Children.toArray(children).filter(React.isValidElement);
-  const activeKey = selectedKey || tabs[0]?.props?.key || "";
+  const tabs = React.Children.toArray(children) as React.ReactElement[];
+  const activeKey = selectedKey || tabs[0]?.key || "";
 
   return (
     <div className={className}>
       {/* Tab headers */}
       <div className="flex gap-1 border-b border-default-200 mb-4" role="tablist">
-        {tabs.map((tab: any) => {
-          const key = tab.props?.key || "";
+        {tabs.map((tab) => {
+          const key = String(tab.key || "");
           const isActive = key === activeKey;
           return (
             <button
@@ -311,8 +311,8 @@ export const Tabs = ({ children, selectedKey, onSelectionChange, className = "",
         })}
       </div>
       {/* Active tab content */}
-      {tabs.map((tab: any) => {
-        const key = tab.props?.key || "";
+      {tabs.map((tab) => {
+        const key = String(tab.key || "");
         if (key !== activeKey) return null;
         return (
           <div key={key} role="tabpanel">
@@ -341,29 +341,43 @@ const chipColorMap: Record<string, string> = {
   danger: "bg-danger-100 text-danger-700",
 };
 
-const chipVariantMap: Record<string, string> = {
-  solid: "",
-  bordered: "border border-current",
-  light: "bg-transparent",
-  flat: "bg-default-100",
-  faded: "bg-default-50",
-  shadow: "shadow-md",
-  ghost: "bg-transparent",
-  primary: "",
-  outline: "border border-current",
-  dot: "",
+const chipSolidColorMap: Record<string, string> = {
+  default: "bg-default-100 text-default-700",
+  primary: "bg-primary-100 text-primary-700",
+  secondary: "bg-secondary-100 text-secondary-700",
+  success: "bg-success-100 text-success-700",
+  warning: "bg-warning-100 text-warning-700",
+  danger: "bg-danger-100 text-danger-700",
+};
+
+const chipOutlineColorMap: Record<string, string> = {
+  default: "bg-transparent border border-default-300 text-default-700",
+  primary: "bg-transparent border border-primary text-primary",
+  secondary: "bg-transparent border border-secondary text-secondary",
+  success: "bg-transparent border border-success text-success",
+  warning: "bg-transparent border border-warning text-warning",
+  danger: "bg-transparent border border-danger text-danger",
+};
+
+const chipLightColorMap: Record<string, string> = {
+  default: "bg-transparent text-default-700",
+  primary: "bg-transparent text-primary",
+  secondary: "bg-transparent text-secondary",
+  success: "bg-transparent text-success",
+  warning: "bg-transparent text-warning",
+  danger: "bg-transparent text-danger",
 };
 
 export const Chip = ({ children, size = "md", color = "default", variant = "solid", onClose, className = "", ...props }: any) => {
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : size === "lg" ? "px-4 py-1.5 text-base" : "px-3 py-1 text-sm";
-  const baseColor = chipColorMap[color] || chipColorMap.default;
-  const variantStyle = chipVariantMap[variant] || "";
-  // For outline/bordered variants, use border styling instead of filled background
-  const colorStyle = (variant === "outline" || variant === "bordered")
-    ? `bg-transparent border ${color === "default" ? "border-default-300 text-default-700" : `border-${color} text-${color}`}`
-    : baseColor;
+  let colorStyle = chipSolidColorMap[color] || chipSolidColorMap.default;
+  if (variant === "outline" || variant === "bordered") {
+    colorStyle = chipOutlineColorMap[color] || chipOutlineColorMap.default;
+  } else if (variant === "light" || variant === "ghost") {
+    colorStyle = chipLightColorMap[color] || chipLightColorMap.default;
+  }
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${variantStyle} ${color === "default" && variant === "solid" ? baseColor : colorStyle} ${sizeClass} ${className}`} {...props}>
+    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${colorStyle} ${sizeClass} ${className}`} {...props}>
       {children}
       {onClose && (
         <button onClick={onClose} className="ml-0.5 hover:opacity-70 cursor-pointer" type="button">×</button>
