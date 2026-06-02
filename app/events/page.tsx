@@ -20,18 +20,14 @@ import {
   CalendarIcon,
   MapPinIcon,
   UsersIcon,
-  ClockIcon,
   SearchIcon,
-  StarIcon,
   HeartIcon,
-  ShareIcon,
   TicketIcon,
   SparklesIcon,
+  StarIcon,
   CrownIcon,
-  ZapIcon,
-  TrendingUpIcon,
-  ArrowRightIcon
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EventsPage() {
   const { user } = useAuth();

@@ -3,6 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const ADMIN_EMAILS = ["sahilmanecode@gmail.com", "mane50205@gmail.com"];
+
 export default function AdminLayout({
   children,
 }: {
@@ -15,17 +17,14 @@ export default function AdminLayout({
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        // Not logged in → go to login
         router.push("/login");
         return;
       }
 
-      // 🧠 Simple Admin Check — customize this
-      const adminEmails = ["sahilmanecode@gmail.com", "mane50205@gmail.com"];
-      const userIsAdmin = adminEmails.includes(user.email);
+      const userIsAdmin = ADMIN_EMAILS.includes(user.email);
 
       if (!userIsAdmin) {
-        router.push("/unauthorized"); // Create a simple unauthorized page
+        router.push("/unauthorized");
         return;
       }
 
@@ -34,7 +33,14 @@ export default function AdminLayout({
   }, [user, loading, router]);
 
   if (loading || isAdmin === null) {
-    return <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-default-500">Verifying access...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

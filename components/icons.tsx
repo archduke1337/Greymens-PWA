@@ -2,19 +2,12 @@ import * as React from "react";
 
 import { IconSvgProps } from "@/types";
 
-export const Logo: React.FC<IconSvgProps> = ({
-  size = 48,
-  width,
-  height,
-  ...props
-}) => (
- <img 
-  src="/logo.png" 
-  alt="My Logo" 
-  className="w-10 h-10 md:w-12 md:h-12 object-contain" 
-/>
-
-  
+export const Logo = ({ className }: { className?: string }) => (
+  <img
+    src="/logo.png"
+    alt="Mind Mesh"
+    className={`w-10 h-10 md:w-12 md:h-12 object-contain ${className || ""}`}
+  />
 );
 
 export const DiscordIcon: React.FC<IconSvgProps> = ({

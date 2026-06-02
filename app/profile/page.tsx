@@ -9,6 +9,7 @@ import { Chip } from "@heroui/chip";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
+import { toast } from "sonner";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
@@ -134,12 +135,7 @@ export default function ProfilePage() {
       setProfilePicture(urlString);
       
       setUpdateSuccess(true);
-      setUpdateError("Profile picture updated successfully!");
-      
-      // Reload after showing success message
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      toast.success("Profile picture updated successfully!");
     } catch (err: any) {
       console.error("Upload error:", err);
       setUpdateError(err.message || "Failed to upload profile picture. Please check bucket permissions.");
@@ -157,12 +153,9 @@ export default function ProfilePage() {
     try {
       await account.updateName(name);
       setUpdateSuccess(true);
-      setUpdateError("Profile updated successfully!");
       setIsEditing(false);
       
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
       console.error("Update error:", err);
       setUpdateError(err.message || "Failed to update profile");

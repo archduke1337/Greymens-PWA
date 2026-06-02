@@ -16,23 +16,24 @@ import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
 import {
-  CalendarIcon,
-  MapPinIcon,
-  UsersIcon,
-  ClockIcon,
-  StarIcon,
-  HeartIcon,
-  ShareIcon,
-  TicketIcon,
-  CrownIcon,
-  ArrowLeftIcon,
-  BuildingIcon,
-  TagIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  TrendingUpIcon,
-  MailIcon
+  Calendar,
+  MapPin,
+  Users,
+  Clock,
+  Star,
+  Heart,
+  Share,
+  Ticket,
+  Crown,
+  ArrowLeft,
+  Building,
+  Tag,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Mail
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -106,23 +107,24 @@ export default function EventDetailPage() {
 
   const handleRegister = async () => {
     if (!user) {
-      alert("Please login to register for events");
+      toast.error("Please login to register for events");
       router.push("/login");
       return;
     }
 
     if (isRegistered) {
-      const confirmed = confirm("Are you sure you want to unregister from this event?");
+      const confirmed = window.confirm("Are you sure you want to unregister from this event?");
       if (!confirmed) return;
       
-      const registered = localStorage.getItem("registeredEvents");
-      const registeredEvents = registered ? JSON.parse(registered) : [];
-      const filtered = registeredEvents.filter((id: string) => id !== eventId);
-      localStorage.setItem("registeredEvents", JSON.stringify(filtered));
+      const existing = localStorage.getItem("registeredEvents");
+      const existingEvents = existing ? JSON.parse(existing) : [];
+      const updated = existingEvents.filter((id: string) => id !== eventId);
+      localStorage.setItem("registeredEvents", JSON.stringify(updated));
       localStorage.removeItem(`ticket_${eventId}`);
       setIsRegistered(false);
       setEmailSent(false);
       setTicketId("");
+      toast.success("Successfully unregistered from event");
       return;
     }
 
@@ -166,7 +168,7 @@ export default function EventDetailPage() {
         
         setIsRegistered(true);
         
-        alert(`✅ Registration successful! \n\n🎫 Your ticket ID: ${emailResult.ticketId}\n📧 E-ticket sent to: ${user.email}\n\nCheck your email for your e-ticket with QR code!`);
+        toast.success("Registration successful! Check your email for your e-ticket.");
         await loadEvent();
       } else {
         // Registration succeeded but email failed
@@ -176,13 +178,13 @@ export default function EventDetailPage() {
         localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
         setIsRegistered(true);
         
-        alert("✅ Registration successful!\n\n⚠️ However, we couldn't send your e-ticket email. Please contact support with your registration details.");
+        toast.warning("Registration successful! But we couldn't send your e-ticket email. Contact support for help.");
         await loadEvent();
       }
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Registration error:", message);
-      alert(message || "Failed to register for event");
+      toast.error(message || "Failed to register for event");
     } finally {
       setRegistering(false);
     }
@@ -197,7 +199,7 @@ export default function EventDetailPage() {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
+      toast.success("Link copied to clipboard!");
     }
   };
 
@@ -239,7 +241,7 @@ export default function EventDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <XCircleIcon className="w-16 h-16 text-danger mx-auto mb-4" />
+          <XCircle className="w-16 h-16 text-danger mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Event Not Found</h2>
           <p className="text-default-500 mb-6">The event you're looking for doesn't exist.</p>
           <Button color="primary" onPress={() => router.push("/events")}>
@@ -256,7 +258,7 @@ export default function EventDetailPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
           variant="light"
-          startContent={<ArrowLeftIcon className="w-4 h-4" />}
+          startContent={<ArrowLeft className="w-4 h-4" />}
           onPress={() => router.back()}
         >
           Back to Events
@@ -280,7 +282,7 @@ export default function EventDetailPage() {
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={toggleSave}
           >
-            <HeartIcon 
+            <Heart 
               className={`w-5 h-5 ${
                 isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
               }`} 
@@ -292,7 +294,7 @@ export default function EventDetailPage() {
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={handleShare}
           >
-            <ShareIcon className="w-5 h-5" />
+            <Share className="w-5 h-5" />
           </Button>
         </div>
 
@@ -302,13 +304,13 @@ export default function EventDetailPage() {
             <div className="flex flex-wrap gap-2 mb-4">
               {event.isFeatured && (
                 <Badge color="warning" variant="solid" className="font-bold">
-                  <StarIcon className="w-3 h-3 mr-1" />
+                  <Star className="w-3 h-3 mr-1" />
                   Featured
                 </Badge>
               )}
               {event.isPremium && (
                 <Badge color="secondary" variant="solid" className="font-bold">
-                  <CrownIcon className="w-3 h-3 mr-1" />
+                  <Crown className="w-3 h-3 mr-1" />
                   Premium
                 </Badge>
               )}
@@ -323,15 +325,15 @@ export default function EventDetailPage() {
             
             <div className="flex flex-wrap items-center gap-6 text-white/90">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5" />
+                <Calendar className="w-5 h-5" />
                 <span className="font-medium">{formatDate(event.date)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <ClockIcon className="w-5 h-5" />
+                <Clock className="w-5 h-5" />
                 <span className="font-medium">{event.time}</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPinIcon className="w-5 h-5" />
+                <MapPin className="w-5 h-5" />
                 <span className="font-medium">{event.location}</span>
               </div>
             </div>
@@ -365,7 +367,7 @@ export default function EventDetailPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                      <CalendarIcon className="w-6 h-6 text-purple-600" />
+                      <Calendar className="w-6 h-6 text-purple-600" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Date</p>
@@ -375,7 +377,7 @@ export default function EventDetailPage() {
 
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                      <ClockIcon className="w-6 h-6 text-blue-600" />
+                      <Clock className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Time</p>
@@ -385,7 +387,7 @@ export default function EventDetailPage() {
 
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                      <BuildingIcon className="w-6 h-6 text-green-600" />
+                      <Building className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Venue</p>
@@ -395,7 +397,7 @@ export default function EventDetailPage() {
 
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
-                      <MapPinIcon className="w-6 h-6 text-orange-600" />
+                      <MapPin className="w-6 h-6 text-orange-600" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Location</p>
@@ -411,7 +413,7 @@ export default function EventDetailPage() {
               <Card className="border-none shadow-lg">
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
-                    <TagIcon className="w-5 h-5 text-purple-600" />
+                    <Tag className="w-5 h-5 text-purple-600" />
                     <h2 className="text-2xl font-bold">Topics</h2>
                   </div>
                 </CardHeader>
@@ -490,7 +492,7 @@ export default function EventDetailPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <UsersIcon className="w-5 h-5 text-default-500" />
+                      <Users className="w-5 h-5 text-default-500" />
                       <span className="text-default-600">Registered</span>
                     </div>
                     <span className="font-bold text-lg">
@@ -537,8 +539,8 @@ export default function EventDetailPage() {
                     onPress={handleRegister}
                     startContent={
                       isRegistered ? 
-                      <CheckCircleIcon className="w-5 h-5" /> : 
-                      <TicketIcon className="w-5 h-5" />
+                      <CheckCircle className="w-5 h-5" /> : 
+                      <Ticket className="w-5 h-5" />
                     }
                   >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
@@ -547,7 +549,7 @@ export default function EventDetailPage() {
                   {isRegistered && (
                     <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-xl border border-success-200 dark:border-success-800">
                       <div className="flex items-start gap-2">
-                        <CheckCircleIcon className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                        <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <p className="font-semibold text-success text-sm">
                             Registration Confirmed!
@@ -555,7 +557,7 @@ export default function EventDetailPage() {
                           {emailSent && ticketId && (
                             <>
                               <p className="text-xs text-success-700 dark:text-success-300 mt-1">
-                                <MailIcon className="w-3 h-3 inline mr-1" />
+                                <Mail className="w-3 h-3 inline mr-1" />
                                 E-ticket sent to your email
                               </p>
                               <p className="text-xs text-success-700 dark:text-success-300 mt-1 font-mono bg-success-100 dark:bg-success-900/30 p-2 rounded">
@@ -576,7 +578,7 @@ export default function EventDetailPage() {
                   {!isRegistered && getSpotsLeft() !== null && getSpotsLeft()! < 10 && (
                     <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-xl border border-warning-200 dark:border-warning-800">
                       <div className="flex items-start gap-2">
-                        <TrendingUpIcon className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                        <TrendingUp className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                         <p className="text-sm text-warning-700 dark:text-warning-300">
                           <span className="font-semibold">Filling fast!</span> Only {getSpotsLeft()} spots left
                         </p>
@@ -590,20 +592,20 @@ export default function EventDetailPage() {
                 {/* Features */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
-                    <CheckCircleIcon className="w-5 h-5 text-success" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                     <span>Instant confirmation</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <CheckCircleIcon className="w-5 h-5 text-success" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                     <span>E-ticket included</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <CheckCircleIcon className="w-5 h-5 text-success" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                     <span>Certificate of attendance</span>
                   </div>
                   {event.isPremium && (
                     <div className="flex items-center gap-3 text-sm">
-                      <CrownIcon className="w-5 h-5 text-purple-600" />
+                      <Crown className="w-5 h-5 text-purple-600" />
                       <span className="font-semibold text-purple-600">Premium perks included</span>
                     </div>
                   )}

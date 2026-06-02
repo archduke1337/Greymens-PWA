@@ -5,6 +5,7 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "@/components/toaster";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -46,14 +47,13 @@ export default function RootLayout({
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
             <div className="relative flex flex-col min-h-screen">
-              {/* <CustomCursor /> */}
               <Navbar />
               <main className="flex-grow w-full">
                 {children}
               </main>
-              {/* Footer already includes FooterSponsors inside it */}
               <Footer />
             </div>
+            <Toaster />
           </AuthProvider>
         </Providers>
       </body>
