@@ -14,6 +14,7 @@
     "vercel-build": "npm install --legacy-peer-deps && next build"
   },
   "dependencies": {
+    "@heroui/react": "^3.1.0",
     "@tailwindcss/postcss": "^4.3.0",
     "appwrite": "^25.2.0",
     "clsx": "^2.1.1",
