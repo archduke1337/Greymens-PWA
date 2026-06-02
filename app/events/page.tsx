@@ -270,7 +270,7 @@ export default function EventsPage() {
                   <  key="date">Date</ >
                   <  key="price">Price</ >
                   <  key="popularity">Popularity</ >
-                </Select>
+                </select>
 
                 <Select
                   label="Category"
@@ -282,7 +282,7 @@ export default function EventsPage() {
                   {categories.map(category => (
                     <  key={category.key}>{category.label}</ >
                   ))}
-                </Select>
+                </select>
               </div>
             </div>
           </CardContent>

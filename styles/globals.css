@@ -10,7 +10,7 @@
 }
 
 /* HeroUI CSS variables */
-@import "@heroui/react";
+@import "@heroui/react/dist/styles.css";
 
 /* Base styles */
 @layer base {

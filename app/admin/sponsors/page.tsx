@@ -221,7 +221,7 @@ export default function AdminSponsorsPage() {
                   <  key="silver">Silver Sponsor</ >
                   <  key="bronze">Bronze Sponsor</ >
                   <  key="partner">Community Partner</ >
-                </Select>
+                </select>
 
                 <Select
                   label="Category"
@@ -233,7 +233,7 @@ export default function AdminSponsorsPage() {
                   <  key="finance">Finance</ >
                   <  key="healthcare">Healthcare</ >
                   <  key="other">Other</ >
-                </Select>
+                </select>
 
                 <Input
                   type="number"

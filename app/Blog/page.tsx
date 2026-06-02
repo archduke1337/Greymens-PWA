@@ -153,7 +153,7 @@ export default function BlogPage() {
                 <  key="event">Event</ >
                 <  key="project">Project</ >
                 <  key="technology">Technology</ >
-              </Select>
+              </select>
             </div>
           </CardContent>
         </Card>

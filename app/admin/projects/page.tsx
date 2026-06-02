@@ -600,7 +600,7 @@ export default function AdminProjectsPage() {
                         {cat.label}
                       </ >
                     ))}
-                  </Select>
+                  </select>
 
                   <Select
                     label="Status"
@@ -615,7 +615,7 @@ export default function AdminProjectsPage() {
                         {status.label}
                       </ >
                     ))}
-                  </Select>
+                  </select>
                 </div>
 
                 <div className="space-y-4">

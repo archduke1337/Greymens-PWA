@@ -107,7 +107,7 @@ export default function AboutPage() {
             Passionate leaders driving innovation and growth
           </p>
           <div className="flex justify-center">
-            <  isBordered max={5} size="lg">
+            <AvatarGroup max={5} className="flex -space-x-2">
               {teamMembers.map((avatar, index) => (
                 <Avatar key={index} src={avatar} />
               ))}

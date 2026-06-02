@@ -190,7 +190,7 @@ export default function WriteBlogPage() {
               {blogCategories.map((cat) => (
                 <  key={cat.value}>{cat.label}</ >
               ))}
-            </Select>
+            </select>
 
             {/* Tags */}
             <Input

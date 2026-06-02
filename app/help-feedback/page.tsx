@@ -118,7 +118,7 @@ export default function HelpFeedbackPage() {
                   {type.label}
                 </ >
               ))}
-            </Select>
+            </select>
 
             <Input
               label="Subject"

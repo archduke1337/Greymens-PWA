@@ -488,7 +488,7 @@ export default function AdminEventsPage() {
                       <  key="competition">Competition</ >
                       <  key="bootcamp">Bootcamp</ >
                       <  key="forum">Forum</ >
-                    </Select>
+                    </select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch
