@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Chip } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, Switch, TextArea } from "@/components/compat";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);

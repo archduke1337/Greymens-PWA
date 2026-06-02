@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider, type Attribute } from "next-themes";
 
 export interface ProvidersProps {
@@ -11,14 +10,6 @@ export interface ProvidersProps {
     defaultTheme?: string;
     storageKey?: string;
   };
-}
-
-declare module "@react-types/shared" {
-  interface RouterConfig {
-    routerOptions: NonNullable<
-      Parameters<ReturnType<typeof useRouter>["push"]>[1]
-    >;
-  }
 }
 
 export function Providers({ children, themeProps }: ProvidersProps) {

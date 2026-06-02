@@ -50,7 +50,7 @@ export default function ThreeCanvas() {
     const loader = new GLTFLoader();
     loader.load(
       '/model.glb',
-      (gltf) => {
+      (gltf: any) => {
         model = gltf.scene;
 
         const box = new THREE.Box3().setFromObject(model as THREE.Object3D);
@@ -66,7 +66,7 @@ export default function ThreeCanvas() {
         scene.add(model!);
       },
       undefined,
-      (error) => {
+      (error: any) => {
         console.error('Error loading model:', error);
       }
     );

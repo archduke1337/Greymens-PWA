@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
+import { Avatar, Button, Card, CardContent, Chip } from "@/components/compat";
 import {
-import { Card, CardContent, Button, Chip, Avatar } from "@/components/compat";
   ArrowLeftIcon,
   ClockIcon,
   EyeIcon,

@@ -6,8 +6,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Badge, Button, Card, CardContent, CardHeader } from "@/components/compat";
 import {
-import { Card, CardContent, CardHeader, Button, Badge } from "@/components/compat";
   DatabaseIcon,
   ServerIcon,
   PlugIcon,

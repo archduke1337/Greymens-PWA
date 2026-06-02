@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import NextLink from "next/link";
-import { Card, CardContent, CardHeader, Button } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader } from "@/components/compat";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();

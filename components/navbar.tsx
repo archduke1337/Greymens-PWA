@@ -6,7 +6,7 @@ import {
   DropdownItem,
   Button,
   Avatar,
-} from "@heroui/react";
+} from "@/components/compat";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, forwardRef, type ReactNode, type ChangeEvent, type KeyboardEvent, type MouseEvent } from "react";
+import React, { useState, useCallback, forwardRef, type ReactNode, type ChangeEvent, type KeyboardEvent, type MouseEvent } from "react"
 
 // ============================================================
 // HOOKS
@@ -20,7 +20,7 @@ export function useDisclosure(defaultIsOpen = false) {
 // ============================================================
 
 type ColorVariant = "default" | "primary" | "secondary" | "success" | "warning" | "danger";
-type ButtonVariant = "solid" | "bordered" | "light" | "flat" | "faded" | "shadow" | "ghost";
+type ButtonVariant = "solid" | "bordered" | "light" | "flat" | "faded" | "shadow" | "ghost" | "primary" | "outline" | "dot";
 type ComponentSize = "sm" | "md" | "lg";
 
 interface BaseProps {
@@ -67,6 +67,9 @@ const variantMap: Record<ButtonVariant, string> = {
   faded: "bg-default-50 hover:bg-default-100",
   shadow: "shadow-md",
   ghost: "bg-transparent hover:bg-default-100",
+  primary: "",
+  outline: "border border-current bg-transparent",
+  dot: "",
 };
 
 const sizeMap: Record<ComponentSize, string> = {

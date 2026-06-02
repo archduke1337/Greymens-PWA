@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { useDisclosure } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useDisclosure } from "@/components/compat";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);

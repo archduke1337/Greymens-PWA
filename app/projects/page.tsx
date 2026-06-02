@@ -3,8 +3,8 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
+import { Avatar, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@/components/compat";
 import {
-import { Card, CardContent, CardFooter, Button, Badge, Chip, Avatar, ProgressBar } from "@/components/compat";
   CodeIcon,
   UsersIcon,
   StarIcon,

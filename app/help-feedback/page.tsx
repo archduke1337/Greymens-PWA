@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Chip } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, TextArea } from "@/components/compat";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 

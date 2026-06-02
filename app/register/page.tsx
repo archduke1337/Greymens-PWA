@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@/components/compat";
+import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@/components/compat";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");

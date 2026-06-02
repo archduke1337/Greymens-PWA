@@ -2,7 +2,7 @@
 
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, Input, TextArea, Button, Link } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Link, TextArea } from "@/components/compat";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({

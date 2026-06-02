@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { title, subtitle } from "@/components/primitives";
 import { sponsorService, Sponsor, sponsorTiers } from "@/lib/sponsors";
 import { ExternalLinkIcon, MailIcon, TrendingUpIcon, UsersIcon, AwardIcon, SparklesIcon, ArrowRightIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardFooter, Button, Chip, Separator } from "@/components/compat";
+import { Button, Card, CardContent, CardFooter, CardHeader, Chip, Separator } from "@/components/compat";
 
 export default function SponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);

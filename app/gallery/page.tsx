@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Card, CardContent, CardFooter, Chip, Button, Modal, ModalDialog, ModalBody } from "@/components/compat";
+import { Button, Card, CardContent, CardFooter, Chip, Modal, ModalBody, ModalDialog } from "@/components/compat";
 
 export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<any>(null);

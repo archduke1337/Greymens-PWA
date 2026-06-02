@@ -1,5 +1,5 @@
 import { title, subtitle } from "@/components/primitives";
-import { AvatarGroup } from "@/components/compat";
+import { Avatar, AvatarGroup, Card, CardContent, Chip } from "@/components/compat";
 
 export default function AboutPage() {
   const stats = [
