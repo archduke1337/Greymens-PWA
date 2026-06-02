@@ -3,17 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Input, Textarea, Select, SelectItem } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -137,7 +133,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="light"
+          variant="ghost"
           startContent={<ArrowLeftIcon className="w-4 h-4" />}
           onPress={() => router.back()}
           className="mb-4"
@@ -155,7 +151,7 @@ export default function WriteBlogPage() {
         <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
           <h2 className="text-xl font-bold">Blog Details</h2>
         </CardHeader>
-        <CardBody className="p-8">
+        <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
             <Input
@@ -171,7 +167,7 @@ export default function WriteBlogPage() {
             />
 
             {/* Excerpt */}
-            <Textarea
+            <TextArea
               label="Excerpt (Optional)"
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
@@ -231,7 +227,7 @@ export default function WriteBlogPage() {
                   <Button
                     as="label"
                     htmlFor="cover-image-upload"
-                    variant="flat"
+                    variant="primary"
                     color="primary"
                     startContent={<ImageIcon className="w-5 h-5" />}
                     isLoading={uploadingImage}
@@ -272,7 +268,7 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <Textarea
+            <TextArea
               label="Blog Content"
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
@@ -294,7 +290,7 @@ export default function WriteBlogPage() {
             {/* Submit Button */}
             <div className="flex gap-4 pt-4">
               <Button
-                variant="flat"
+                variant="primary"
                 onPress={() => router.back()}
                 className="flex-1"
               >
@@ -319,7 +315,7 @@ export default function WriteBlogPage() {
               </p>
             </div>
           </form>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

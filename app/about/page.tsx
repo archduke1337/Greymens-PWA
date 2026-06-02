@@ -1,7 +1,6 @@
-import { Card, CardBody } from "@heroui/card";
-import { Avatar, AvatarGroup } from "@heroui/avatar";
-import { Chip } from "@heroui/chip";
 import { title, subtitle } from "@/components/primitives";
+import { Card, CardBody, Avatar, Chip } from "@heroui/react";
+import { AvatarGroup } from "@/components/compat";
 
 export default function AboutPage() {
   const stats = [
@@ -64,8 +63,8 @@ export default function AboutPage() {
 
 
       {/* Story Section */}
-      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30" shadow="lg">
-        <CardBody className="p-8 md:p-12">
+      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+        <CardContent className="p-8 md:p-12">
           <h2 className={title({ size: "sm" })}>Our Story</h2>
           <p className="text-default-600 mt-4 text-lg leading-relaxed">
             Mind Mesh was founded with a simple yet powerful vision: to create a space where 
@@ -78,7 +77,7 @@ export default function AboutPage() {
             together students from various backgrounds, each contributing their unique perspective 
             to create something greater than the sum of its parts.
           </p>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Values Grid */}
@@ -91,9 +90,9 @@ export default function AboutPage() {
             <Card
               key={index}
               className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl"
-              shadow="sm"
+             
             >
-              <CardBody className="p-6">
+              <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">{value.icon}</div>
                   <div>
@@ -101,15 +100,15 @@ export default function AboutPage() {
                     <p className="text-default-600">{value.description}</p>
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
       {/* Team Section */}
-      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30" shadow="lg">
-        <CardBody className="p-8 text-center">
+      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30">
+        <CardContent className="p-8 text-center">
           <h2 className={title({ size: "sm", class: "mb-4" })}>Meet Our Team</h2>
           <p className="text-default-600 mb-6">
             Passionate leaders driving innovation and growth
@@ -122,12 +121,12 @@ export default function AboutPage() {
             </AvatarGroup>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
-            <Chip color="primary" variant="flat">Leadership</Chip>
-            <Chip color="secondary" variant="flat">Innovation</Chip>
-            <Chip color="success" variant="flat">Creativity</Chip>
-            <Chip color="warning" variant="flat">Excellence</Chip>
+            <Chip color="primary" variant="primary">Leadership</Chip>
+            <Chip color="secondary" variant="primary">Innovation</Chip>
+            <Chip color="success" variant="primary">Creativity</Chip>
+            <Chip color="warning" variant="primary">Excellence</Chip>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
      

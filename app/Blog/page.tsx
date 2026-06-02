@@ -3,16 +3,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { 
+import { Card, CardBody, CardFooter, Button, Input, Select, SelectItem, Chip, Avatar } from "@heroui/react";
   SearchIcon, 
   PenIcon, 
   ClockIcon, 
@@ -136,7 +131,7 @@ export default function BlogPage() {
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <Input
                 placeholder="Search blogs..."
@@ -160,7 +155,7 @@ export default function BlogPage() {
                 <SelectItem key="technology">Technology</SelectItem>
               </Select>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -191,11 +186,11 @@ export default function BlogPage() {
               <Card
                 key={blog.$id}
                 className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                shadow="lg"
+               
                 isPressable
                 onPress={() => router.push(`/blog/${blog.slug}`)}
               >
-                <CardBody className="p-0">
+                <CardContent className="p-0">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -214,7 +209,7 @@ export default function BlogPage() {
                     )}
                     <Chip
                       size="sm"
-                      variant="flat"
+                      variant="primary"
                       className="absolute top-4 right-4 bg-black/50 text-white"
                     >
                       {blog.category.replace("-", " ")}
@@ -234,13 +229,13 @@ export default function BlogPage() {
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2">
                       {blog.tags.slice(0, 3).map((tag, index) => (
-                        <Chip key={index} size="sm" variant="flat">
+                        <Chip key={index} size="sm" variant="primary">
                           #{tag}
                         </Chip>
                       ))}
                     </div>
                   </div>
-                </CardBody>
+                </CardContent>
 
                 <CardFooter className="px-6 pb-6 pt-0 justify-between">
                   {/* Author */}

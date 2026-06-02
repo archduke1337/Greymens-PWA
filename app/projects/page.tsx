@@ -1,15 +1,10 @@
 "use client";
 
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Badge } from "@heroui/badge";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
-import { Progress } from "@heroui/progress";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
 import {
+import { Card, CardBody, CardFooter, Button, Badge, Chip, Avatar, Progress } from "@heroui/react";
   CodeIcon,
   UsersIcon,
   StarIcon,
@@ -145,10 +140,10 @@ export default function ProjectsPage() {
                 <Card
                   key={project.$id}
                   className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                  shadow="lg"
+                 
                   isPressable
                 >
-                  <CardBody className="p-0 overflow-hidden">
+                  <CardContent className="p-0 overflow-hidden">
                     {/* Project Image */}
                     <div className="relative">
                       <img
@@ -174,7 +169,7 @@ export default function ProjectsPage() {
                       {/* Save Button */}
                       <Button
                         isIconOnly
-                        variant="flat"
+                        variant="primary"
                         className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                         size="sm"
                         onPress={() => toggleSaveProject(project.$id!)}
@@ -219,7 +214,7 @@ export default function ProjectsPage() {
                           <span className="text-default-600">Progress</span>
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
-                        <Progress 
+                        <ProgressBar 
                           value={project.progress} 
                           color="secondary"
                           size="sm"
@@ -257,7 +252,7 @@ export default function ProjectsPage() {
                           <Chip
                             key={index}
                             size="sm"
-                            variant="flat"
+                            variant="primary"
                             className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 text-xs"
                           >
                             {tech}
@@ -266,7 +261,7 @@ export default function ProjectsPage() {
                         {project.technologies.length > 3 && (
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="primary"
                             className="text-xs"
                           >
                             +{project.technologies.length - 3}
@@ -303,7 +298,7 @@ export default function ProjectsPage() {
                       <div className="flex gap-2 w-full">
                         <Button
                           isIconOnly
-                          variant="light"
+                          variant="ghost"
                           size="sm"
                         >
                           <ShareIcon className="w-4 h-4" />
@@ -312,7 +307,7 @@ export default function ProjectsPage() {
                         {project.demoUrl && (
                           <Button
                             isIconOnly
-                            variant="light"
+                            variant="ghost"
                             size="sm"
                             as="a"
                             href={project.demoUrl}
@@ -334,7 +329,7 @@ export default function ProjectsPage() {
                         </Button>
                       </div>
                     </CardFooter>
-                  </CardBody>
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -342,7 +337,7 @@ export default function ProjectsPage() {
             {/* Empty State */}
             {filteredProjects.length === 0 && (
               <Card className="border-none bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-                <CardBody className="text-center py-16">
+                <CardContent className="text-center py-16">
                   <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center">
                     <CodeIcon className="w-12 h-12 text-purple-500" />
                   </div>
@@ -350,7 +345,7 @@ export default function ProjectsPage() {
                   <p className="text-default-600 max-w-md mx-auto">
                     No projects match your selected category. Try choosing a different category or check back later for new projects.
                   </p>
-                </CardBody>
+                </CardContent>
               </Card>
             )}
           </div>

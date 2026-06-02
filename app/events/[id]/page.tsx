@@ -1,13 +1,6 @@
 // app/events/[id]/page.tsx
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Badge } from "@heroui/badge";
-import { Avatar } from "@heroui/avatar";
-import { Chip } from "@heroui/chip";
-import { Progress } from "@heroui/progress";
-import { Divider } from "@heroui/divider";
 import { title } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -34,6 +27,7 @@ import {
   Mail
 } from "lucide-react";
 import { toast } from "sonner";
+import { Card, CardBody, CardHeader, Button, Badge, Avatar, Chip, Progress, Divider } from "@heroui/react";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -257,7 +251,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="light"
+          variant="ghost"
           startContent={<ArrowLeft className="w-4 h-4" />}
           onPress={() => router.back()}
         >
@@ -278,7 +272,7 @@ export default function EventDetailPage() {
         <div className="absolute top-6 right-6 flex gap-2">
           <Button
             isIconOnly
-            variant="flat"
+            variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={toggleSave}
           >
@@ -290,7 +284,7 @@ export default function EventDetailPage() {
           </Button>
           <Button
             isIconOnly
-            variant="flat"
+            variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={handleShare}
           >
@@ -351,11 +345,11 @@ export default function EventDetailPage() {
               <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">About This Event</h2>
               </CardHeader>
-              <CardBody className="pt-4">
+              <CardContent className="pt-4">
                 <p className="text-default-600 leading-relaxed text-lg">
                   {event.description}
                 </p>
-              </CardBody>
+              </CardContent>
             </Card>
 
             {/* Event Details Grid */}
@@ -363,7 +357,7 @@ export default function EventDetailPage() {
               <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">Event Details</h2>
               </CardHeader>
-              <CardBody className="pt-4">
+              <CardContent className="pt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
@@ -405,7 +399,7 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
 
             {/* Tags */}
@@ -417,13 +411,13 @@ export default function EventDetailPage() {
                     <h2 className="text-2xl font-bold">Topics</h2>
                   </div>
                 </CardHeader>
-                <CardBody className="pt-4">
+                <CardContent className="pt-4">
                   <div className="flex flex-wrap gap-2">
                     {event.tags.map((tag, index) => (
                       <Chip 
                         key={index} 
                         size="lg" 
-                        variant="flat" 
+                        variant="primary" 
                         color="secondary"
                         className="font-medium"
                       >
@@ -431,7 +425,7 @@ export default function EventDetailPage() {
                       </Chip>
                     ))}
                   </div>
-                </CardBody>
+                </CardContent>
               </Card>
             )}
 
@@ -440,7 +434,7 @@ export default function EventDetailPage() {
               <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">Organized By</h2>
               </CardHeader>
-              <CardBody className="pt-4">
+              <CardContent className="pt-4">
                 <div className="flex items-center gap-4">
                   <Avatar
                     src={event.organizerAvatar}
@@ -453,14 +447,14 @@ export default function EventDetailPage() {
                     <p className="text-default-500">Event Organizer</p>
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
 
           {/* Right Column - Registration Card */}
           <div className="lg:col-span-1">
             <Card className="border-none shadow-2xl sticky top-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-              <CardBody className="p-6 space-y-6">
+              <CardContent className="p-6 space-y-6">
                 {/* Price */}
                 <div>
                   <div className="flex items-baseline gap-3 mb-2">
@@ -480,13 +474,13 @@ export default function EventDetailPage() {
                     )}
                   </div>
                   {event.discountPrice && event.discountPrice < event.price && (
-                    <Badge color="success" variant="flat" size="lg">
+                    <Badge color="success" variant="primary" size="lg">
                       Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
                     </Badge>
                   )}
                 </div>
 
-                <Divider />
+                <Separator />
 
                 {/* Registration Stats */}
                 <div className="space-y-4">
@@ -502,7 +496,7 @@ export default function EventDetailPage() {
 
                   {event.capacity && (
                     <>
-                      <Progress 
+                      <ProgressBar 
                         value={getRegistrationPercentage()} 
                         size="md" 
                         color={
@@ -526,7 +520,7 @@ export default function EventDetailPage() {
                   )}
                 </div>
 
-                <Divider />
+                <Separator />
 
                 {/* Registration Button */}
                 <div className="space-y-3">
@@ -587,7 +581,7 @@ export default function EventDetailPage() {
                   )}
                 </div>
 
-                <Divider />
+                <Separator />
 
                 {/* Features */}
                 <div className="space-y-3">
@@ -610,7 +604,7 @@ export default function EventDetailPage() {
                     </div>
                   )}
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
         </div>

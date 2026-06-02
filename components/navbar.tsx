@@ -5,15 +5,13 @@ import {
   NavbarContent,
   NavbarBrand,
   NavbarItem,
-} from "@heroui/navbar";
+} from "@heroui/react";
 import {
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-} from "@heroui/dropdown";
-import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
+} from "@heroui/react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -22,6 +20,7 @@ import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
+import { Button, Avatar } from "@heroui/react";
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
@@ -73,7 +72,7 @@ export const Navbar = () => {
           <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <DropdownTrigger>
               <Button 
-                variant="light"
+                variant="ghost"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
@@ -113,7 +112,7 @@ export const Navbar = () => {
                       src={getAvatarUrl(user.name)}
                     />
                   </DropdownTrigger>
-                  <DropdownMenu aria-label="Profile Actions" variant="flat">
+                  <DropdownMenu aria-label="Profile Actions" variant="primary">
                     <DropdownItem key="profile" className="h-14 gap-2">
                       <p className="font-semibold">Signed in as</p>
                       <p className="font-semibold">{user.email}</p>
@@ -138,7 +137,7 @@ export const Navbar = () => {
               </NavbarItem>
             ) : (
               <NavbarItem>
-                <Button as={NextLink} color="primary" href="/login" variant="flat">
+                <Button as={NextLink} color="primary" href="/login" variant="primary">
                   Login
                 </Button>
               </NavbarItem>

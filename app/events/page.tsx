@@ -1,14 +1,6 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Badge } from "@heroui/badge";
-import { Avatar } from "@heroui/avatar";
-import { Chip } from "@heroui/chip";
-import { Progress } from "@heroui/progress";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -28,6 +20,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Card, CardBody, CardHeader, CardFooter, Button, Badge, Avatar, Chip, Progress, Input, Select, SelectItem } from "@heroui/react";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -255,7 +248,7 @@ export default function EventsPage() {
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
@@ -294,7 +287,7 @@ export default function EventsPage() {
                 </Select>
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -305,11 +298,11 @@ export default function EventsPage() {
             <Card
               key={event.$id}
               className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-              shadow="lg"
+             
               isPressable
               onPress={() => handleEventClick(event.$id!)}
             >
-              <CardBody className="p-0 overflow-hidden">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
                   <img
                     src={event.image}
@@ -334,7 +327,7 @@ export default function EventsPage() {
 
                   <Button
                     isIconOnly
-                    variant="flat"
+                    variant="primary"
                     className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                     size="sm"
                     onPress={(e) => toggleSaveEvent(e as any, event.$id!)}
@@ -391,7 +384,7 @@ export default function EventsPage() {
                   </div>
 
                   {event.capacity && (
-                    <Progress 
+                    <ProgressBar 
                       value={(event.registered / event.capacity) * 100} 
                       size="sm" 
                       color="primary" 
@@ -401,18 +394,18 @@ export default function EventsPage() {
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     {event.tags.slice(0, 3).map((tag, index) => (
-                      <Chip key={index} size="sm" variant="flat" color="primary">
+                      <Chip key={index} size="sm" variant="primary" color="primary">
                         {tag}
                       </Chip>
                     ))}
                     {event.tags.length > 3 && (
-                      <Chip size="sm" variant="flat">
+                      <Chip size="sm" variant="primary">
                         +{event.tags.length - 3}
                       </Chip>
                     )}
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
 
               <CardFooter className="px-6 pb-6 pt-0">
                 <div className="flex items-center justify-between w-full">

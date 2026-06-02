@@ -3,10 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardBody } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { Chip } from '@heroui/chip';
 import Link from 'next/link';
+import { Card, CardBody, Button, Chip } from "@heroui/react";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -50,22 +48,22 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
+          <CardContent className="text-center py-8">
             <p className="text-3xl font-bold text-primary">{user.emailVerification ? '✓' : '—'}</p>
             <p className="text-sm text-default-500 mt-2">Email Verified</p>
-          </CardBody>
+          </CardContent>
         </Card>
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
-            <Chip color="primary" variant="flat">{user.email}</Chip>
+          <CardContent className="text-center py-8">
+            <Chip color="primary" variant="primary">{user.email}</Chip>
             <p className="text-sm text-default-500 mt-2">Account Email</p>
-          </CardBody>
+          </CardContent>
         </Card>
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
+          <CardContent className="text-center py-8">
             <p className="text-3xl font-bold text-success">Active</p>
             <p className="text-sm text-default-500 mt-2">Account Status</p>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -74,12 +72,12 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card isHoverable className="cursor-pointer border border-default-200 h-full">
-                <CardBody className="flex items-center justify-center py-6">
-                  <Button color={link.color} variant="light" className="text-sm font-medium">
+              <Card className="cursor-pointer border border-default-200 h-full">
+                <CardContent className="flex items-center justify-center py-6">
+                  <Button color={link.color} variant="ghost" className="text-sm font-medium">
                     {link.label}
                   </Button>
-                </CardBody>
+                </CardContent>
               </Card>
             </Link>
           ))}

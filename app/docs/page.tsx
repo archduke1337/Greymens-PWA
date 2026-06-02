@@ -1,8 +1,5 @@
+import { Card, CardBody, CardHeader, Accordion, AccordionItem, Chip, Divider } from "@heroui/react";
 "use client";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
 
 export default function TermsPage() {
   const lastUpdated = "November 1, 2025";
@@ -17,23 +14,23 @@ export default function TermsPage() {
         <p className="text-lg text-default-600 max-w-3xl">
           Please review our terms, policies, and guidelines carefully
         </p>
-        <Chip size="sm" variant="flat" color="default">
+        <Chip size="sm" variant="primary" color="default">
           Last Updated: {lastUpdated}
         </Chip>
       </div>
 
-      <Divider className="my-8" />
+      <Separator className="my-8" />
 
       {/* Member Terms */}
-      <Card shadow="sm" className="border-none">
+      <Card className="border-none">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Member Terms</h2>
           <p className="text-sm text-default-600 mt-1">
             Guidelines for all Mind Mesh members
           </p>
         </CardHeader>
-        <CardBody className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+        <CardContent className="px-6 pb-6">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="eligibility"
               aria-label="Eligibility"
@@ -107,19 +104,19 @@ export default function TermsPage() {
               </ul>
             </AccordionItem>
           </Accordion>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Sponsor Terms */}
-      <Card shadow="sm" className="border-none">
+      <Card className="border-none">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Sponsor Terms</h2>
           <p className="text-sm text-default-600 mt-1">
             Partnership and sponsorship guidelines
           </p>
         </CardHeader>
-        <CardBody className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+        <CardContent className="px-6 pb-6">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="tiers"
               aria-label="Sponsorship Tiers"
@@ -188,19 +185,19 @@ export default function TermsPage() {
               </ul>
             </AccordionItem>
           </Accordion>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Privacy Policy */}
-      <Card shadow="sm" className="border-none">
+      <Card className="border-none">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Privacy Policy</h2>
           <p className="text-sm text-default-600 mt-1">
             How we collect and protect your data
           </p>
         </CardHeader>
-        <CardBody className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+        <CardContent className="px-6 pb-6">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="collection"
               aria-label="Data Collection"
@@ -259,55 +256,55 @@ export default function TermsPage() {
               </ul>
             </AccordionItem>
           </Accordion>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Additional Policies Grid */}
       <div className="grid md:grid-cols-2 gap-4">
-        <Card shadow="sm" className="border-none">
-          <CardBody className="p-6">
+        <Card className="border-none">
+          <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Refund Policy</h3>
             <p className="text-sm text-default-600">
               Event fees non-refundable within 7 days of event. Membership fees
               refundable within 30 days with valid reason.
             </p>
-          </CardBody>
+          </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
-          <CardBody className="p-6">
+        <Card className="border-none">
+          <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Media Policy</h3>
             <p className="text-sm text-default-600">
               Photos and videos may be taken at events. Members can opt-out by
               notifying organizers in advance.
             </p>
-          </CardBody>
+          </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
-          <CardBody className="p-6">
+        <Card className="border-none">
+          <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Liability</h3>
             <p className="text-sm text-default-600">
               Members participate at their own risk. Club not liable for
               injuries except in cases of gross negligence.
             </p>
-          </CardBody>
+          </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
-          <CardBody className="p-6">
+        <Card className="border-none">
+          <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Contact</h3>
             <p className="text-sm text-default-600">
               Questions? Email legal@mindmesh.club or visit our office during
               business hours.
             </p>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
       {/* Footer */}
-      <Card shadow="sm" className="border-none bg-default-50">
-        <CardBody className="p-6 text-center">
+      <Card className="border-none bg-default-50">
+        <CardContent className="p-6 text-center">
           <p className="text-sm text-default-600">
             These terms are subject to change. Members will be notified of
             updates. By continuing membership, you agree to these terms.
@@ -315,7 +312,7 @@ export default function TermsPage() {
           <p className="text-xs text-default-500 mt-2">
             © 2025 Mind Mesh. All rights reserved.
           </p>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

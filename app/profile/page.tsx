@@ -1,17 +1,13 @@
 // app/profile/page.tsx
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Card, CardHeader, CardBody } from "@heroui/card";
-import { Avatar } from "@heroui/avatar";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Chip } from "@heroui/chip";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
+import { Card, CardHeader, CardBody, Avatar, Button, Input, Chip } from "@heroui/react";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
@@ -228,13 +224,13 @@ export default function ProfilePage() {
             {user.phone && (
               <p className="text-default-500 text-sm">{user.phone}</p>
             )}
-            <Chip color="success" variant="flat" size="sm" className="mt-2">
+            <Chip color="success" variant="primary" size="sm" className="mt-2">
               Active Account
             </Chip>
           </div>
         </CardHeader>
 
-        <CardBody className="gap-6 px-4 md:px-8 pb-8">
+        <CardContent className="gap-6 px-4 md:px-8 pb-8">
           {/* Show upload status */}
           {updateError && (
             <div className={`p-3 rounded-lg text-sm ${
@@ -261,7 +257,7 @@ export default function ProfilePage() {
                   <p className="text-sm p-2 break-all">{user.email}</p>
                   <Chip 
                     color={user.emailVerification ? "success" : "warning"} 
-                    variant="flat" 
+                    variant="primary" 
                     size="sm"
                   >
                     {user.emailVerification ? "Verified" : "Not Verified"}
@@ -275,7 +271,7 @@ export default function ProfilePage() {
                   <p className="text-sm p-2">{user.phone || "Not added"}</p>
                   <Chip 
                     color={user.phoneVerification ? "success" : "warning"} 
-                    variant="flat" 
+                    variant="primary" 
                     size="sm"
                   >
                     {user.phoneVerification ? "Verified" : "Not Verified"}
@@ -303,7 +299,7 @@ export default function ProfilePage() {
                 <Button
                   size="sm"
                   color="primary"
-                  variant="flat"
+                  variant="primary"
                   onPress={() => setIsEditing(true)}
                 >
                   Edit Profile
@@ -331,7 +327,7 @@ export default function ProfilePage() {
                     Save Changes
                   </Button>
                   <Button
-                    variant="flat"
+                    variant="primary"
                     onPress={() => {
                       setIsEditing(false);
                       setName(user.name);
@@ -353,7 +349,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

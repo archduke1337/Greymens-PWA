@@ -1,19 +1,12 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Chip } from "@heroui/chip";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Switch } from "@heroui/switch";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Select, SelectItem, Switch } from "@heroui/react";
+import { useDisclosure } from "@/components/compat";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -269,7 +262,7 @@ export default function AdminProjectsPage() {
 
         {/* Admin Tips Section */}
         <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
@@ -288,14 +281,14 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Projects Table */}
           <div className="lg:col-span-3">
-            <Card className="border-none shadow-xl" shadow="lg">
+            <Card className="border-none shadow-xl">
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
@@ -312,7 +305,7 @@ export default function AdminProjectsPage() {
                   New Project
                 </Button>
               </CardHeader>
-              <CardBody className="p-6">
+              <CardContent className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
@@ -385,7 +378,7 @@ export default function AdminProjectsPage() {
                             <TableCell>
                               <Chip 
                                 size="sm" 
-                                variant="flat" 
+                                variant="primary" 
                                 color={getCategoryColor(project.category) as any}
                                 classNames={{
                                   base: "capitalize font-medium"
@@ -422,7 +415,7 @@ export default function AdminProjectsPage() {
                                 <Chip 
                                   size="sm" 
                                   color="warning" 
-                                  variant="flat" 
+                                  variant="primary" 
                                   startContent={<StarIcon className="w-3 h-3" />}
                                   classNames={{
                                     base: "font-medium"
@@ -439,7 +432,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="light"
+                                  variant="ghost"
                                   onPress={() => handleEdit(project)}
                                   className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
                                 >
@@ -448,7 +441,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="light"
+                                  variant="ghost"
                                   color="danger"
                                   onPress={() => handleDelete(project.$id!)}
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
@@ -463,18 +456,18 @@ export default function AdminProjectsPage() {
                     </Table>
                   </div>
                 )}
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
 
           {/* Stats Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <Card className="border-none shadow-xl" shadow="lg">
+            <Card className="border-none shadow-xl">
               <CardHeader className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
               </CardHeader>
-              <CardBody className="p-6 space-y-4">
+              <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
@@ -515,7 +508,7 @@ export default function AdminProjectsPage() {
                   </div>
                   <StarIcon className="w-8 h-8 text-yellow-500" />
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -530,7 +523,7 @@ export default function AdminProjectsPage() {
             backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
           }}
         >
-          <ModalContent>
+          <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -559,7 +552,7 @@ export default function AdminProjectsPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     isRequired
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
@@ -570,20 +563,20 @@ export default function AdminProjectsPage() {
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     isRequired
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
                   />
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Description"
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   isRequired
-                  variant="bordered"
+                  variant="outline"
                   minRows={3}
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
@@ -596,7 +589,7 @@ export default function AdminProjectsPage() {
                   value={formData.image}
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                   isRequired
-                  variant="bordered"
+                  variant="outline"
                   description="Use high-quality images from Unsplash or similar platforms"
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
@@ -609,7 +602,7 @@ export default function AdminProjectsPage() {
                     label="Category"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
@@ -625,7 +618,7 @@ export default function AdminProjectsPage() {
                     label="Status"
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
@@ -659,7 +652,7 @@ export default function AdminProjectsPage() {
                       max="100"
                       value={formData.progress.toString()}
                       onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       className="w-20"
                       classNames={{
                         input: "text-center",
@@ -674,7 +667,7 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300",
@@ -686,7 +679,7 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300",
@@ -698,7 +691,7 @@ export default function AdminProjectsPage() {
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300",
@@ -707,12 +700,12 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Technologies"
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
                   onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   description="Separate technologies with commas"
                   minRows={2}
                   classNames={{
@@ -727,7 +720,7 @@ export default function AdminProjectsPage() {
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
                     onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
@@ -738,19 +731,19 @@ export default function AdminProjectsPage() {
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
                     onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
                     }}
                   />
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Team Members"
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
                   onChange={(e) => setFormData({ ...formData, teamMembers: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   description="Separate names with commas"
                   minRows={2}
                   classNames={{
@@ -760,8 +753,8 @@ export default function AdminProjectsPage() {
                 />
 
                 <Switch
-                  isSelected={formData.isFeatured}
-                  onValueChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                  checked={formData.isFeatured}
+                  onChange={(value) => setFormData({ ...formData, isFeatured: value })}
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
                     label: "text-gray-700 dark:text-gray-300 text-sm",
@@ -772,7 +765,7 @@ export default function AdminProjectsPage() {
               </div>
             </ModalBody>
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="light" onPress={onClose} isDisabled={saving}>
+              <Button variant="ghost" onPress={onClose} isDisabled={saving}>
                 Cancel
               </Button>
               <Button
@@ -785,7 +778,7 @@ export default function AdminProjectsPage() {
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
             </ModalFooter>
-          </ModalContent>
+          </ModalDialog>
         </Modal>
       </div>
 

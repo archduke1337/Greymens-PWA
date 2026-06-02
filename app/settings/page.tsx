@@ -1,17 +1,13 @@
 // app/settings/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardBody } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Switch } from "@heroui/switch";
-import { Divider } from "@heroui/divider";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
+import { Card, CardHeader, CardBody, Button, Input, Switch, Divider, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { useDisclosure } from "@/components/compat";
 
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
@@ -210,7 +206,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold">Security</h2>
         </CardHeader>
-        <CardBody className="gap-6">
+        <CardContent className="gap-6">
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -263,7 +259,7 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          <Divider />
+          <Separator />
 
           {/* Email Verification */}
           <div>
@@ -284,7 +280,7 @@ export default function SettingsPage() {
               {!user.emailVerification && (
                 <Button
                   color="primary"
-                  variant="flat"
+                  variant="primary"
                   size="sm"
                   onPress={handleSendVerification}
                   isLoading={verificationLoading}
@@ -305,7 +301,7 @@ export default function SettingsPage() {
             )}
           </div>
 
-          <Divider />
+          <Separator />
 
           {/* Phone Number */}
           <div>
@@ -329,7 +325,7 @@ export default function SettingsPage() {
                 {user.phone && !user.phoneVerification && (
                   <Button
                     color="primary"
-                    variant="flat"
+                    variant="primary"
                     size="sm"
                     onPress={onVerifyModalOpen}
                   >
@@ -338,7 +334,7 @@ export default function SettingsPage() {
                 )}
                 <Button
                   color="primary"
-                  variant="flat"
+                  variant="primary"
                   size="sm"
                   onPress={onPhoneModalOpen}
                 >
@@ -353,7 +349,7 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Notification Settings */}
@@ -361,7 +357,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold">Notifications</h2>
         </CardHeader>
-        <CardBody className="gap-4">
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Email Notifications</p>
@@ -370,12 +366,12 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={emailNotifications}
-              onValueChange={setEmailNotifications}
+              checked={emailNotifications}
+              onChange={setEmailNotifications}
             />
           </div>
 
-          <Divider />
+          <Separator />
 
           <div className="flex justify-between items-center">
             <div>
@@ -385,11 +381,11 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={pushNotifications}
-              onValueChange={setPushNotifications}
+              checked={pushNotifications}
+              onChange={setPushNotifications}
             />
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Danger Zone */}
@@ -397,7 +393,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
         </CardHeader>
-        <CardBody className="gap-4">
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Delete Account</p>
@@ -407,18 +403,18 @@ export default function SettingsPage() {
             </div>
             <Button
               color="danger"
-              variant="flat"
+              variant="primary"
               onPress={handleDeleteAccount}
             >
               Delete Account
             </Button>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Add/Update Phone Modal */}
       <Modal isOpen={isPhoneModalOpen} onClose={onPhoneModalClose}>
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleAddPhone}>
             <ModalHeader>
               {user.phone ? "Update" : "Add"} Phone Number
@@ -448,7 +444,7 @@ export default function SettingsPage() {
               )}
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={onPhoneModalClose}>
+              <Button variant="primary" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
               <Button color="primary" type="submit" isLoading={phoneLoading}>
@@ -456,12 +452,12 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
 
       {/* Verify Phone Modal */}
       <Modal isOpen={isVerifyModalOpen} onClose={onVerifyModalClose}>
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleVerifyPhone}>
             <ModalHeader>
               Verify Phone Number
@@ -488,7 +484,7 @@ export default function SettingsPage() {
                 </div>
               )}
               <Button
-                variant="flat"
+                variant="primary"
                 size="sm"
                 onPress={handleSendPhoneVerification}
                 isLoading={phoneVerifyLoading}
@@ -498,7 +494,7 @@ export default function SettingsPage() {
               </Button>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={onVerifyModalClose}>
+              <Button variant="primary" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
               <Button color="primary" type="submit" isLoading={phoneVerifyLoading}>
@@ -506,7 +502,7 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );

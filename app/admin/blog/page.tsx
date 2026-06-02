@@ -2,16 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
-import { Tabs, Tab } from "@heroui/tabs";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {
+import { Card, CardBody, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
   CheckIcon,
   XIcon,
   EyeIcon,
@@ -211,16 +205,16 @@ export default function AdminBlogsPage() {
       <div className="space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardBody className="text-center py-12">
+            <CardContent className="text-center py-12">
               <p className="text-lg text-default-600">
                 No blogs in this category
               </p>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : (
           filteredBlogs.map((blog) => (
             <Card key={blog.$id} className="border-2">
-              <CardBody className="p-6">
+              <CardContent className="p-6">
                 <div className="grid md:grid-cols-12 gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
@@ -244,7 +238,7 @@ export default function AdminBlogsPage() {
                             ? "danger"
                             : "warning"
                         }
-                        variant="flat"
+                        variant="primary"
                       >
                         {blog.status}
                       </Chip>
@@ -282,7 +276,7 @@ export default function AdminBlogsPage() {
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2">
                       {blog.tags.map((tag, i) => (
-                        <Chip key={i} size="sm" variant="flat">
+                        <Chip key={i} size="sm" variant="primary">
                           #{tag}
                         </Chip>
                       ))}
@@ -314,7 +308,7 @@ export default function AdminBlogsPage() {
                       href={`/blog/${blog.slug}`}
                       target="_blank"
                       size="sm"
-                      variant="flat"
+                      variant="primary"
                       startContent={<EyeIcon className="w-4 h-4" />}
                       className="flex-1 md:flex-none"
                     >
@@ -326,7 +320,7 @@ export default function AdminBlogsPage() {
                         <Button
                           size="sm"
                           color="success"
-                          variant="flat"
+                          variant="primary"
                           startContent={<CheckIcon className="w-4 h-4" />}
                           onPress={() => handleApprove(blog.$id!)}
                           isLoading={processingBlog === blog.$id}
@@ -337,7 +331,7 @@ export default function AdminBlogsPage() {
                         <Button
                           size="sm"
                           color="danger"
-                          variant="flat"
+                          variant="primary"
                           startContent={<XIcon className="w-4 h-4" />}
                           onPress={() => openRejectModal(blog)}
                           className="flex-1 md:flex-none"
@@ -351,7 +345,7 @@ export default function AdminBlogsPage() {
                       <Button
                         size="sm"
                         color="warning"
-                        variant="flat"
+                        variant="primary"
                         startContent={<StarIcon className="w-4 h-4" />}
                         onPress={() => toggleFeatured(blog)}
                         className="flex-1 md:flex-none"
@@ -363,7 +357,7 @@ export default function AdminBlogsPage() {
                     <Button
                       size="sm"
                       color="danger"
-                      variant="flat"
+                      variant="primary"
                       startContent={<TrashIcon className="w-4 h-4" />}
                       onPress={() => handleDelete(blog.$id!)}
                       className="flex-1 md:flex-none"
@@ -372,7 +366,7 @@ export default function AdminBlogsPage() {
                     </Button>
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           ))
         )}
@@ -380,13 +374,13 @@ export default function AdminBlogsPage() {
 
       {/* Rejection Modal */}
       <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
-        <ModalContent>
+        <ModalDialog>
           <ModalHeader>Reject Blog</ModalHeader>
           <ModalBody>
             <p className="mb-4">
               Please provide a reason for rejecting this blog:
             </p>
-            <Textarea
+            <TextArea
               placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
@@ -394,7 +388,7 @@ export default function AdminBlogsPage() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={() => setRejectModalOpen(false)}>
+            <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -405,7 +399,7 @@ export default function AdminBlogsPage() {
               Reject Blog
             </Button>
           </ModalFooter>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );

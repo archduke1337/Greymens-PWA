@@ -1,21 +1,14 @@
 // app/admin/events/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Switch } from "@heroui/switch";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Chip } from "@heroui/chip";
-import { Tabs, Tab } from "@heroui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Input, Textarea, Select, SelectItem, Switch, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
+import { useDisclosure } from "@/components/compat";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -207,7 +200,7 @@ export default function AdminEventsPage() {
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button 
             color="danger" 
-            variant="flat" 
+            variant="primary" 
             onPress={handleDeletePastEvents}
             className="w-full sm:w-auto"
             size="sm"
@@ -231,7 +224,7 @@ export default function AdminEventsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Events</p>
@@ -241,11 +234,11 @@ export default function AdminEventsPage() {
                 <CalendarIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
@@ -257,11 +250,11 @@ export default function AdminEventsPage() {
                 <TrendingUpIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Registered</p>
@@ -273,11 +266,11 @@ export default function AdminEventsPage() {
                 <UsersIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Featured</p>
@@ -289,13 +282,13 @@ export default function AdminEventsPage() {
                 <StarIcon className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
       {/* Events Table */}
       <Card className="border-none shadow-lg">
-        <CardBody className="p-0">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table aria-label="Events table" className="min-w-full">
               <TableHeader>
@@ -348,7 +341,7 @@ export default function AdminEventsPage() {
                     <TableCell>
                       <Chip
                         color={event.status === "upcoming" ? "success" : "default"}
-                        variant="flat"
+                        variant="primary"
                         size="sm"
                         className="text-xs"
                       >
@@ -359,7 +352,7 @@ export default function AdminEventsPage() {
                       <div className="flex gap-1 md:gap-2">
                         <Button
                           size="sm"
-                          variant="light"
+                          variant="ghost"
                           isIconOnly
                           onPress={() => handleEdit(event)}
                         >
@@ -368,7 +361,7 @@ export default function AdminEventsPage() {
                         <Button
                           size="sm"
                           color="danger"
-                          variant="light"
+                          variant="ghost"
                           isIconOnly
                           onPress={() => handleDelete(event.$id!)}
                           isLoading={deletingId === event.$id}
@@ -382,7 +375,7 @@ export default function AdminEventsPage() {
               </TableBody>
             </Table>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Add/Edit Modal */}
@@ -396,7 +389,7 @@ export default function AdminEventsPage() {
           wrapper: "items-center"
         }}
       >
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1 border-b pb-4">
               <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -408,7 +401,7 @@ export default function AdminEventsPage() {
             </ModalHeader>
             
             <ModalBody className="py-6">
-              <Tabs aria-label="Event form sections" color="primary" variant="underlined">
+              <Tabs aria-label="Event form sections" color="primary">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4" />
@@ -468,7 +461,7 @@ export default function AdminEventsPage() {
                       }}
                     />
 
-                    <Textarea
+                    <TextArea
                       label="Description"
                       placeholder="Describe your event in detail"
                       value={formData.description}
@@ -500,8 +493,8 @@ export default function AdminEventsPage() {
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch
-                        isSelected={formData.isFeatured}
-                        onValueChange={(checked) => handleInputChange("isFeatured", checked)}
+                        checked={formData.isFeatured}
+                        onChange={(checked) => handleInputChange("isFeatured", checked)}
                         color="warning"
                       >
                         <div className="flex items-center gap-2">
@@ -510,8 +503,8 @@ export default function AdminEventsPage() {
                         </div>
                       </Switch>
                       <Switch
-                        isSelected={formData.isPremium}
-                        onValueChange={(checked) => handleInputChange("isPremium", checked)}
+                        checked={formData.isPremium}
+                        onChange={(checked) => handleInputChange("isPremium", checked)}
                         color="secondary"
                       >
                         <div className="flex items-center gap-2">
@@ -734,7 +727,7 @@ export default function AdminEventsPage() {
                           type="button" 
                           onPress={handleAddTag}
                           color="primary"
-                          variant="flat"
+                          variant="primary"
                         >
                           Add
                         </Button>
@@ -745,7 +738,7 @@ export default function AdminEventsPage() {
                             <Chip 
                               key={index} 
                               onClose={() => handleRemoveTag(tag)} 
-                              variant="flat"
+                              variant="primary"
                               color="secondary"
                               className="font-medium"
                             >
@@ -774,7 +767,7 @@ export default function AdminEventsPage() {
 
             <ModalFooter className="border-t pt-4">
               <Button 
-                variant="flat" 
+                variant="primary" 
                 onPress={handleCloseModal}
                 className="w-full sm:w-auto"
               >
@@ -790,7 +783,7 @@ export default function AdminEventsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );

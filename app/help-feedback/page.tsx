@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { Input, Textarea } from '@heroui/input';
-import { Select, SelectItem } from '@heroui/select';
-import { Chip } from '@heroui/chip';
+import { Card, CardBody, CardHeader, Button, Input, Textarea, Select, SelectItem, Chip } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -47,7 +43,7 @@ export default function HelpFeedbackPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16">
         <Card className="border border-default-200">
-          <CardBody className="text-center py-16 space-y-4">
+          <CardContent className="text-center py-16 space-y-4">
             <div className="w-16 h-16 mx-auto rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
               <svg className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -59,7 +55,7 @@ export default function HelpFeedbackPage() {
             </p>
             <Button
               color="primary"
-              variant="flat"
+              variant="primary"
               onPress={() => {
                 setSubmitted(false);
                 setFormData({ name: '', email: '', type: 'general', subject: '', message: '' });
@@ -67,7 +63,7 @@ export default function HelpFeedbackPage() {
             >
               Submit Another
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
     );
@@ -89,14 +85,14 @@ export default function HelpFeedbackPage() {
             <p className="text-sm text-default-500">Fill out the form below and we&apos;ll respond within 24 hours.</p>
           </div>
         </CardHeader>
-        <CardBody className="px-6 pb-6">
+        <CardContent className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Name"
                 placeholder="Your name"
                 value={formData.name}
-                onValueChange={(value) => setFormData({ ...formData, name: value })}
+                onChange={(value) => setFormData({ ...formData, name: value })}
                 isRequired
               />
               <Input
@@ -104,7 +100,7 @@ export default function HelpFeedbackPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={formData.email}
-                onValueChange={(value) => setFormData({ ...formData, email: value })}
+                onChange={(value) => setFormData({ ...formData, email: value })}
                 isRequired
               />
             </div>
@@ -129,15 +125,15 @@ export default function HelpFeedbackPage() {
               label="Subject"
               placeholder="Brief description of your feedback"
               value={formData.subject}
-              onValueChange={(value) => setFormData({ ...formData, subject: value })}
+              onChange={(value) => setFormData({ ...formData, subject: value })}
               isRequired
             />
 
-            <Textarea
+            <TextArea
               label="Message"
               placeholder="Tell us more about your feedback..."
               value={formData.message}
-              onValueChange={(value) => setFormData({ ...formData, message: value })}
+              onChange={(value) => setFormData({ ...formData, message: value })}
               minRows={4}
               isRequired
             />
@@ -153,13 +149,13 @@ export default function HelpFeedbackPage() {
               </Button>
             </div>
           </form>
-        </CardBody>
+        </CardContent>
       </Card>
 
       <div className="text-center space-y-2">
         <p className="text-sm text-default-500">
           You can also reach us at{' '}
-          <Chip size="sm" variant="flat" color="primary">
+          <Chip size="sm" variant="primary" color="primary">
             support@mindmesh.club
           </Chip>
         </p>

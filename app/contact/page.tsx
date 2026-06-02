@@ -1,11 +1,8 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
+import { Card, CardBody, CardHeader, Input, Textarea, Button, Link } from "@heroui/react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -185,12 +182,12 @@ export default function ContactPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Contact Form */}
         <div className="lg:col-span-2">
-          <Card className="border-none shadow-xl" shadow="lg">
+          <Card className="border-none shadow-xl">
             <CardHeader className="flex flex-col items-start px-8 pt-8 pb-0">
               <h2 className="text-2xl font-bold">Send us a Message</h2>
               <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
             </CardHeader>
-            <CardBody className="p-8">
+            <CardContent className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {submitStatus.type && (
                   <div
@@ -210,7 +207,7 @@ export default function ContactPage() {
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     size="lg"
                     isDisabled={isSubmitting}
                   />
@@ -221,7 +218,7 @@ export default function ContactPage() {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     size="lg"
                     isDisabled={isSubmitting}
                   />
@@ -232,17 +229,17 @@ export default function ContactPage() {
                   placeholder="What is this about?"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   size="lg"
                   isDisabled={isSubmitting}
                 />
-                <Textarea
+                <TextArea
                   isRequired
                   label="Message"
                   placeholder="Tell us more..."
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   minRows={6}
                   size="lg"
                   isDisabled={isSubmitting}
@@ -256,18 +253,18 @@ export default function ContactPage() {
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
-            </CardBody>
+            </CardContent>
           </Card>
         </div>
 
         {/* Contact Methods & Quick Links */}
         <div className="space-y-6">
           {/* Contact Methods */}
-          <Card className="border-none shadow-xl" shadow="lg">
+          <Card className="border-none shadow-xl">
             <CardHeader className="px-6 pt-6 pb-0">
               <h3 className="text-xl font-bold">Connect With Us</h3>
             </CardHeader>
-            <CardBody className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4">
               {contactMethods.map((method, index) => (
                 <Link
                   key={index}
@@ -286,7 +283,7 @@ export default function ContactPage() {
                   </div>
                 </Link>
               ))}
-            </CardBody>
+            </CardContent>
           </Card>
 
          

@@ -2,13 +2,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
+import { Card, CardHeader, CardBody, CardFooter, Input, Button, Link } from "@heroui/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -48,7 +45,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold">Welcome Back</h1>
           <p className="text-small text-default-500">Login to your Mind Mesh account</p>
         </CardHeader>
-        <CardBody>
+        <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Email"
@@ -88,7 +85,7 @@ export default function LoginPage() {
           </div>
 
           <Button
-            variant="bordered"
+            variant="outline"
             className="w-full"
             startContent={
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -114,7 +111,7 @@ export default function LoginPage() {
           >
             Continue with Google
           </Button>
-        </CardBody>
+        </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
             Don't have an account?{" "}

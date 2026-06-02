@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
-import { Divider } from "@heroui/divider";
+import { Card, CardBody, CardFooter, Chip, Button, Avatar, Divider } from "@heroui/react";
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -156,7 +152,7 @@ export default function TeamPage() {
           <div className="text-center space-y-4">
             <Chip 
               color="secondary" 
-              variant="flat" 
+              variant="primary" 
               size="md"
             >
               Our Leadership
@@ -210,9 +206,9 @@ export default function TeamPage() {
                     >
                       <Card 
                         className="h-full border-none overflow-hidden"
-                        shadow="lg"
+                       
                       >
-                        <CardBody className="p-6 md:p-8 relative overflow-hidden">
+                        <CardContent className="p-6 md:p-8 relative overflow-hidden">
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
                             <div className="flex justify-center">
@@ -231,7 +227,7 @@ export default function TeamPage() {
                               </h2>
                               <Chip 
                                 color={member.color} 
-                                variant="flat"
+                                variant="primary"
                                 size="sm"
                                 className="font-medium"
                               >
@@ -244,7 +240,7 @@ export default function TeamPage() {
                               {member.bio}
                             </p>
 
-                            <Divider />
+                            <Separator />
 
                             {/* Achievements */}
                             <div className="flex flex-wrap gap-2 justify-center">
@@ -252,7 +248,7 @@ export default function TeamPage() {
                                 <Chip
                                   key={achievement}
                                   size="sm"
-                                  variant="bordered"
+                                  variant="outline"
                                   color={member.color}
                                   className="text-xs"
                                 >
@@ -261,7 +257,7 @@ export default function TeamPage() {
                               ))}
                             </div>
                           </div>
-                        </CardBody>
+                        </CardContent>
 
                         <CardFooter className="flex flex-col gap-3 p-6 md:p-8 pt-0">
                           {/* Social Links */}
@@ -272,7 +268,7 @@ export default function TeamPage() {
                               href={member.linkedin}
                               target="_blank"
                               rel="noopener noreferrer"
-                              variant="flat"
+                              variant="primary"
                               color={member.color}
                               className="hover:scale-110 transition-transform"
                               size="md"
@@ -288,7 +284,7 @@ export default function TeamPage() {
                               href={member.github}
                               target="_blank"
                               rel="noopener noreferrer"
-                              variant="flat"
+                              variant="primary"
                               color={member.color}
                               className="hover:scale-110 transition-transform"
                               size="md"
@@ -337,7 +333,7 @@ export default function TeamPage() {
               <Button
                 isIconOnly
                 color="secondary"
-                variant="flat"
+                variant="primary"
                 onPress={handlePrev}
                 isDisabled={currentIndex === 0}
                 size="sm"
@@ -375,7 +371,7 @@ export default function TeamPage() {
               <Button
                 isIconOnly
                 color="secondary"
-                variant="flat"
+                variant="primary"
                 onPress={handleNext}
                 isDisabled={currentIndex === coreTeam.length - 1}
                 size="sm"
@@ -405,13 +401,13 @@ export default function TeamPage() {
               { label: "Events Organized", value: "150+" },
               { label: "Community Size", value: "8K+" },
             ].map((stat) => (
-              <Card key={stat.label} className="border-none" shadow="sm">
-                <CardBody className="text-center p-4">
+              <Card key={stat.label} className="border-none">
+                <CardContent className="text-center p-4">
                   <p className="text-2xl md:text-3xl font-bold text-secondary">
                     {stat.value}
                   </p>
                   <p className="text-xs md:text-sm text-default-600 mt-1">{stat.label}</p>
-                </CardBody>
+                </CardContent>
               </Card>
             ))}
           </div>

@@ -1,10 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalBody } from "@heroui/modal";
+import { Card, CardBody, CardFooter, Chip, Button, Modal, ModalContent, ModalBody } from "@heroui/react";
 
 export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<any>(null);
@@ -164,8 +161,8 @@ export default function GalleryPage() {
 
 
       {/* Category Filter */}
-      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30" shadow="lg">
-        <CardBody className="p-6">
+      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
+        <CardContent className="p-6">
           <h3 className="text-xl font-semibold mb-4 text-center">Filter by Category</h3>
           <div className="flex flex-wrap justify-center gap-3">
             {categories.map((category) => (
@@ -181,7 +178,7 @@ export default function GalleryPage() {
               </Button>
             ))}
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Gallery Grid */}
@@ -192,9 +189,9 @@ export default function GalleryPage() {
             isPressable
             onPress={() => setSelectedImage(image)}
             className="border-none group hover:scale-105 transition-all duration-300"
-            shadow="md"
+           
           >
-            <CardBody className="p-0 overflow-hidden">
+            <CardContent className="p-0 overflow-hidden">
               <div className="relative aspect-video overflow-hidden">
                 <img
                   src={image.src}
@@ -206,7 +203,7 @@ export default function GalleryPage() {
                   <p className="text-white text-sm font-medium">{image.description}</p>
                 </div>
               </div>
-            </CardBody>
+            </CardContent>
             <CardFooter className="flex-col items-start gap-2 p-4">
               <div className="flex justify-between items-center w-full gap-2">
                 <div className="flex-1 min-w-0">
@@ -215,7 +212,7 @@ export default function GalleryPage() {
                 </div>
                 <Chip 
                   size="sm" 
-                  variant="flat" 
+                  variant="primary" 
                   color="secondary"
                   className="flex-shrink-0"
                   startContent={<span className="text-xs">👥</span>}
@@ -223,7 +220,7 @@ export default function GalleryPage() {
                   <span className="text-xs">{image.attendees}</span>
                 </Chip>
               </div>
-              <Chip size="sm" variant="bordered" color="default" className="text-xs">
+              <Chip size="sm" variant="outline" color="default" className="text-xs">
                 {categories.find(c => c.id === image.category)?.icon}{" "}
                 {categories.find(c => c.id === image.category)?.label}
               </Chip>
@@ -234,12 +231,12 @@ export default function GalleryPage() {
 
       {/* Empty State */}
       {filteredImages.length === 0 && (
-        <Card className="border-none" shadow="sm">
-          <CardBody className="p-12 text-center">
+        <Card className="border-none">
+          <CardContent className="p-12 text-center">
             <p className="text-4xl mb-4">🔍</p>
             <h3 className="text-xl font-semibold mb-2">No images found</h3>
             <p className="text-default-500">Try selecting a different category</p>
-          </CardBody>
+          </CardContent>
         </Card>
       )}
 
@@ -250,18 +247,18 @@ export default function GalleryPage() {
         size="3xl"
         className="bg-transparent shadow-none"
       >
-        <ModalContent>
+        <ModalDialog>
           {(onClose) => (
             <ModalBody className="p-0">
               {selectedImage && (
                 <Card className="border-none">
-                  <CardBody className="p-0 overflow-hidden">
+                  <CardContent className="p-0 overflow-hidden">
                     <img
                       src={selectedImage.src}
                       alt={selectedImage.title}
                       className="w-full h-auto max-h-[70vh] object-contain"
                     />
-                  </CardBody>
+                  </CardContent>
                   <CardFooter className="flex-col items-start gap-3 p-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
                     <div className="flex justify-between items-start w-full">
                       <div>
@@ -270,7 +267,7 @@ export default function GalleryPage() {
                       </div>
                       <Chip 
                         size="lg" 
-                        variant="flat" 
+                        variant="primary" 
                         color="secondary"
                         startContent={<span>👥</span>}
                       >
@@ -281,7 +278,7 @@ export default function GalleryPage() {
                     <div className="flex gap-2 mt-2">
                       <Chip 
                         size="md" 
-                        variant="bordered" 
+                        variant="outline" 
                         color="default"
                         startContent={
                           <span>{categories.find(c => c.id === selectedImage.category)?.icon}</span>
@@ -295,12 +292,12 @@ export default function GalleryPage() {
               )}
             </ModalBody>
           )}
-        </ModalContent>
+        </ModalDialog>
       </Modal>
 
       {/* Call to Action */}
-      <Card className="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white" shadow="lg">
-        <CardBody className="p-8 md:p-12 text-center">
+      <Card className="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+        <CardContent className="p-8 md:p-12 text-center">
           <h2 className="text-3xl font-bold mb-3">Want to be part of our story?</h2>
           <p className="text-white/90 mb-6 max-w-2xl mx-auto">
             Join Mind Mesh and create unforgettable memories while building amazing projects
@@ -311,19 +308,19 @@ export default function GalleryPage() {
           >
             Join Our Community
           </Button>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Footer Note */}
       <Card className="border-none bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30">
-        <CardBody className="p-6 text-center">
+        <CardContent className="p-6 text-center">
           <p className="text-default-600">
             📸 All photos are from our community events. If you'd like your photo removed, please contact us.
           </p>
           <p className="text-sm text-default-500 mt-3">
             © 2025 Mind Mesh. All rights reserved.
           </p>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

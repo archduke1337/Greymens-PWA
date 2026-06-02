@@ -2,13 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
 import { title, subtitle } from "@/components/primitives";
 import { sponsorService, Sponsor, sponsorTiers } from "@/lib/sponsors";
 import { ExternalLinkIcon, MailIcon, TrendingUpIcon, UsersIcon, AwardIcon, SparklesIcon, ArrowRightIcon } from "lucide-react";
+import { Card, CardBody, CardHeader, CardFooter, Button, Chip, Divider } from "@heroui/react";
 
 export default function SponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -65,8 +62,8 @@ export default function SponsorsPage() {
 
         {/* Sponsors Grid */}
         {sponsors.length === 0 ? (
-          <Card className="max-w-2xl mx-auto" shadow="sm">
-            <CardBody className="text-center py-16 space-y-4">
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mx-auto">
                 <UsersIcon className="w-8 h-8 text-default-400" />
               </div>
@@ -81,7 +78,7 @@ export default function SponsorsPage() {
               >
                 Become a Sponsor
               </Button>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -92,13 +89,13 @@ export default function SponsorsPage() {
                 <Card
                   key={sponsor.$id}
                   isPressable
-                  isHoverable
+                 
                   as="a"
                   href={sponsor.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group"
-                  shadow="sm"
+                 
                   style={{
                     animationDelay: `${index * 30}ms`,
                     animation: 'fadeIn 0.5s ease-out forwards',
@@ -108,7 +105,7 @@ export default function SponsorsPage() {
                   <CardHeader className="absolute z-10 top-1 right-1">
                     <Chip 
                       size="sm" 
-                      variant="flat"
+                      variant="primary"
                       classNames={{
                         base: `bg-gradient-to-r ${tierInfo.color} opacity-0 group-hover:opacity-100 transition-opacity`,
                         content: "text-white text-[10px] font-semibold px-1"
@@ -118,13 +115,13 @@ export default function SponsorsPage() {
                     </Chip>
                   </CardHeader>
                   
-                  <CardBody className="p-6 flex items-center justify-center h-40">
+                  <CardContent className="p-6 flex items-center justify-center h-40">
                     <img
                       src={sponsor.logo}
                       alt={sponsor.name}
                       className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300 group-hover:scale-110"
                     />
-                  </CardBody>
+                  </CardContent>
                   
                   <CardFooter className="absolute bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-full space-y-1">
@@ -144,11 +141,11 @@ export default function SponsorsPage() {
           </div>
         )}
 
-        <Divider className="my-12" />
+        <Separator className="my-12" />
 
         {/* CTA */}
-        <Card className="max-w-4xl mx-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10" shadow="lg">
-          <CardBody className="p-8 md:p-12 text-center space-y-6">
+        <Card className="max-w-4xl mx-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+          <CardContent className="p-8 md:p-12 text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
               <AwardIcon className="w-10 h-10 text-white" />
             </div>
@@ -161,28 +158,28 @@ export default function SponsorsPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 pt-4">
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
-                <CardBody className="p-4 text-center space-y-2">
+              <Card className="bg-white/50 dark:bg-default-100/50">
+                <CardContent className="p-4 text-center space-y-2">
                   <TrendingUpIcon className="w-6 h-6 text-purple-500 mx-auto" />
                   <p className="text-sm font-semibold">Brand Visibility</p>
                   <p className="text-xs text-default-500">Reach 500+ students</p>
-                </CardBody>
+                </CardContent>
               </Card>
 
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
-                <CardBody className="p-4 text-center space-y-2">
+              <Card className="bg-white/50 dark:bg-default-100/50">
+                <CardContent className="p-4 text-center space-y-2">
                   <UsersIcon className="w-6 h-6 text-pink-500 mx-auto" />
                   <p className="text-sm font-semibold">Talent Pipeline</p>
                   <p className="text-xs text-default-500">Connect with top talent</p>
-                </CardBody>
+                </CardContent>
               </Card>
 
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
-                <CardBody className="p-4 text-center space-y-2">
+              <Card className="bg-white/50 dark:bg-default-100/50">
+                <CardContent className="p-4 text-center space-y-2">
                   <AwardIcon className="w-6 h-6 text-blue-500 mx-auto" />
                   <p className="text-sm font-semibold">Community Impact</p>
                   <p className="text-xs text-default-500">Support education</p>
-                </CardBody>
+                </CardContent>
               </Card>
             </div>
 
@@ -197,7 +194,7 @@ export default function SponsorsPage() {
             >
               Become a Sponsor
             </Button>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 

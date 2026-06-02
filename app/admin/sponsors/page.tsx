@@ -2,13 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Switch } from "@heroui/switch";
-import { Chip } from "@heroui/chip";
 import { toast } from "sonner";
 import { 
   PlusIcon, 
@@ -20,6 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
+import { Card, CardBody, CardHeader, Button, Input, Textarea, Select, SelectItem, Switch, Chip } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -186,7 +180,7 @@ export default function AdminSponsorsPage() {
               {editingSponsor ? "Edit Sponsor" : "Add New Sponsor"}
             </h2>
           </CardHeader>
-          <CardBody>
+          <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
@@ -270,7 +264,7 @@ export default function AdminSponsorsPage() {
                 />
               </div>
 
-              <Textarea
+              <TextArea
                 label="Description (Optional)"
                 placeholder="Brief description of the sponsor..."
                 value={formData.description}
@@ -280,15 +274,15 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-8">
                 <Switch
-                  isSelected={formData.isActive}
-                  onValueChange={(value) => setFormData({ ...formData, isActive: value })}
+                  checked={formData.isActive}
+                  onChange={(value) => setFormData({ ...formData, isActive: value })}
                 >
                   Active
                 </Switch>
 
                 <Switch
-                  isSelected={formData.featured}
-                  onValueChange={(value) => setFormData({ ...formData, featured: value })}
+                  checked={formData.featured}
+                  onChange={(value) => setFormData({ ...formData, featured: value })}
                 >
                   Featured (Show in footer & homepage)
                 </Switch>
@@ -312,7 +306,7 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-4 justify-end">
                 <Button
-                  variant="flat"
+                  variant="primary"
                   onPress={resetForm}
                 >
                   Cancel
@@ -326,7 +320,7 @@ export default function AdminSponsorsPage() {
                 </Button>
               </div>
             </form>
-          </CardBody>
+          </CardContent>
         </Card>
       )}
 
@@ -338,7 +332,7 @@ export default function AdminSponsorsPage() {
 
         {sponsors.length === 0 ? (
           <Card>
-            <CardBody className="text-center py-12">
+            <CardContent className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
               <Button
                 color="primary"
@@ -347,7 +341,7 @@ export default function AdminSponsorsPage() {
               >
                 Add Your First Sponsor
               </Button>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -356,7 +350,7 @@ export default function AdminSponsorsPage() {
               
               return (
                 <Card key={sponsor.$id} className="relative">
-                  <CardBody className="space-y-4">
+                  <CardContent className="space-y-4">
                     {/* Status Badges */}
                     <div className="flex gap-2 flex-wrap">
                       <Chip
@@ -408,7 +402,7 @@ export default function AdminSponsorsPage() {
                         href={sponsor.website}
                         target="_blank"
                         size="sm"
-                        variant="flat"
+                        variant="primary"
                         className="flex-1"
                         startContent={<ExternalLinkIcon className="w-4 h-4" />}
                       >
@@ -417,7 +411,7 @@ export default function AdminSponsorsPage() {
                       <Button
                         size="sm"
                         color="primary"
-                        variant="flat"
+                        variant="primary"
                         isIconOnly
                         onPress={() => handleEdit(sponsor)}
                       >
@@ -426,7 +420,7 @@ export default function AdminSponsorsPage() {
                       <Button
                         size="sm"
                         color="danger"
-                        variant="flat"
+                        variant="primary"
                         isIconOnly
                         onPress={() => handleDelete(sponsor.$id!)}
                       >
@@ -438,7 +432,7 @@ export default function AdminSponsorsPage() {
                     <div className="text-xs text-default-400">
                       Display Order: {sponsor.displayOrder}
                     </div>
-                  </CardBody>
+                  </CardContent>
                 </Card>
               );
             })}
