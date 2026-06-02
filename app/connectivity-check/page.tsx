@@ -124,7 +124,6 @@ export default function ConnectivityCheckPage() {
             ) : (
               <Button size="lg"
                 className="w-full"
-                onPress={checkConnectivity}
               >
                 Run Connectivity Test
               </Button>

@@ -252,7 +252,6 @@ export default function EventDetailPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
           variant="ghost"
-          onPress={() => router.back()}
         >
           Back to Events
         </Button>
@@ -273,7 +272,6 @@ export default function EventDetailPage() {
             isIconOnly
             variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-            onPress={toggleSave}
           >
             <Heart 
               className={`w-5 h-5 ${
@@ -285,7 +283,6 @@ export default function EventDetailPage() {
             isIconOnly
             variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-            onPress={handleShare}
           >
             <Share className="w-5 h-5" />
           </Button>
@@ -528,7 +525,6 @@ export default function EventDetailPage() {
                     size="lg"
                     className="w-full font-bold text-lg"
                     isPending={registering}
-                    onPress={handleRegister}
                   >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
                   </Button>

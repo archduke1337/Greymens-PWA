@@ -84,7 +84,6 @@ export default function LoginPage() {
           <Button
             variant="secondary"
             className="w-full"
-            onPress={handleGoogleLogin}
           >
             Continue with Google
           </Button>

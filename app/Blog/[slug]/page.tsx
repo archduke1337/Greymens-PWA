@@ -109,7 +109,6 @@ export default function BlogPostPage() {
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
           variant="ghost"
-          onPress={() => router.push("/blog")}
         >
           Back to Blogs
         </Button>
@@ -173,7 +172,6 @@ export default function BlogPostPage() {
                   size="sm"
                   variant="primary"
                   isIconOnly
-                  onPress={handleShare}
                 >
                   <ShareIcon className="w-4 h-4" />
                 </Button>

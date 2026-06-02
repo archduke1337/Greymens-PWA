@@ -134,7 +134,6 @@ export default function WriteBlogPage() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onPress={() => router.back()}
           className="mb-4"
         >
           Back
@@ -277,7 +276,6 @@ export default function WriteBlogPage() {
             <div className="flex gap-4 pt-4">
               <Button
                 variant="primary"
-                onPress={() => router.back()}
                 className="flex-1"
               >
                 Cancel

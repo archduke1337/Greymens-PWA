@@ -326,7 +326,6 @@ export default function EventsPage() {
                     variant="primary"
                     className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                     size="sm"
-                    onPress={(e: any) => toggleSaveEvent(e as any, event.$id!)}
                   >
                     <HeartIcon 
                       className={`w-4 h-4 ${
@@ -426,7 +425,6 @@ export default function EventsPage() {
                     variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
                     size="md"
                     isPending={registering === event.$id}
-                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
                   >
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
                   </Button>

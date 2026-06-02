@@ -113,7 +113,6 @@ export default function RegisterPage() {
           <Button
             variant="secondary"
             className="w-full"
-            onPress={handleGoogleSignup}
           >
             Continue with Google
           </Button>

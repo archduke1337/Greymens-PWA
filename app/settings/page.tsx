@@ -275,7 +275,6 @@ export default function SettingsPage() {
               {!user.emailVerification && (
                 <Button variant="primary"
                   size="sm"
-                  onPress={handleSendVerification}
                   isPending={verificationLoading}
                 >
                   Send Verification Email
@@ -318,14 +317,12 @@ export default function SettingsPage() {
                 {user.phone && !user.phoneVerification && (
                   <Button variant="primary"
                     size="sm"
-                    onPress={onVerifyModalOpen}
                   >
                     Verify Phone
                   </Button>
                 )}
                 <Button variant="primary"
                   size="sm"
-                  onPress={onPhoneModalOpen}
                 >
                   {user.phone ? "Update" : "Add"} Phone
                 </Button>
@@ -391,7 +388,6 @@ export default function SettingsPage() {
               </p>
             </div>
             <Button variant="primary"
-              onPress={handleDeleteAccount}
             >
               Delete Account
             </Button>
@@ -468,7 +464,6 @@ export default function SettingsPage() {
               <Button
                 variant="primary"
                 size="sm"
-                onPress={handleSendPhoneVerification}
                 isPending={phoneVerifyLoading}
                 className="mt-2"
               >

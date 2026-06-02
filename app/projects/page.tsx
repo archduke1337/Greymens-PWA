@@ -171,7 +171,6 @@ export default function ProjectsPage() {
                         variant="primary"
                         className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                         size="sm"
-                        onPress={() => toggleSaveProject(project.$id!)}
                       >
                         <HeartIcon 
                           className={`w-5 h-5 ${

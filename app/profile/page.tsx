@@ -196,7 +196,6 @@ export default function ProfilePage() {
               isIconOnly
               size="sm"
               className="absolute bottom-0 right-0 shadow-lg"
-              onPress={handleFileSelect}
               isPending={uploadingPhoto}
             >
               {!uploadingPhoto && (
@@ -297,7 +296,6 @@ export default function ProfilePage() {
                 <Button
                   size="sm"
                   variant="primary"
-                  onPress={() => setIsEditing(true)}
                 >
                   Edit Profile
                 </Button>
@@ -322,13 +320,7 @@ export default function ProfilePage() {
                     Save Changes
                   </Button>
                   <Button
-                    variant="primary"
-                    onPress={() => {
-                      setIsEditing(false);
-                      setName(user.name);
-                      setUpdateError("");
-                      setUpdateSuccess(false);
-                    }}
+                    variant="primary"}
                     disabled={updateLoading}
                   >
                     Cancel

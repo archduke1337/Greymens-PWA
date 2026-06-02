@@ -117,7 +117,6 @@ export default function BlogPage() {
         {/* Write Blog Button */}
         {user && (
           <Button size="lg"
-            onPress={() => router.push("/blog/write")}
             className="mt-4"
           >
             Write a Blog

@@ -53,10 +53,7 @@ export default function HelpFeedbackPage() {
             <p className="text-default-500">
               Your feedback has been submitted successfully. We&apos;ll get back to you as soon as possible.
             </p>
-            <Button variant="primary"
-              onPress={() => {
-                setSubmitted(false);
-                setFormData({ name: '', email: '', type: 'general', subject: '', message: '' });
+            <Button variant="primary");
               }}
             >
               Submit Another

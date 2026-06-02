@@ -319,7 +319,6 @@ export default function AdminBlogsPage() {
                         <Button
                           size="sm"
                           variant="primary"
-                          onPress={() => handleApprove(blog.$id!)}
                           isPending={processingBlog === blog.$id}
                           className="flex-1 md:flex-none"
                         >
@@ -328,7 +327,6 @@ export default function AdminBlogsPage() {
                         <Button
                           size="sm"
                           variant="primary"
-                          onPress={() => openRejectModal(blog)}
                           className="flex-1 md:flex-none"
                         >
                           Reject
@@ -340,7 +338,6 @@ export default function AdminBlogsPage() {
                       <Button
                         size="sm"
                         variant="primary"
-                        onPress={() => toggleFeatured(blog)}
                         className="flex-1 md:flex-none"
                       >
                         {blog.featured ? "Unfeature" : "Feature"}
@@ -350,7 +347,6 @@ export default function AdminBlogsPage() {
                     <Button
                       size="sm"
                       variant="primary"
-                      onPress={() => handleDelete(blog.$id!)}
                       className="flex-1 md:flex-none"
                     >
                       Delete
