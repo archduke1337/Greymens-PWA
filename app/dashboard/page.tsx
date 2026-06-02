@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { Card, CardContent, Button, Chip } from "@heroui/react";
+import { Card, CardContent, Button, Chip } from "@/components/compat";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();

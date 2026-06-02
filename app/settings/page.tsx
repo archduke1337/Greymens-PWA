@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { useDisclosure } from "@/components/compat";
 
 export default function SettingsPage() {

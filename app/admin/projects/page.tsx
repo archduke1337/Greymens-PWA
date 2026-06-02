@@ -5,7 +5,6 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Select, SelectItem, Switch } from "@heroui/react";
 import { useDisclosure } from "@/components/compat";
 
 export default function AdminProjectsPage() {

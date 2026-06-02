@@ -4,8 +4,8 @@
 import { useState, useEffect } from "react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea } from "@heroui/react";
 import {
+import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea } from "@/components/compat";
   CheckIcon,
   XIcon,
   EyeIcon,

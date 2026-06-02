@@ -1,5 +1,4 @@
 import { title, subtitle } from "@/components/primitives";
-import { Card, CardContent, Avatar, Chip } from "@heroui/react";
 import { AvatarGroup } from "@/components/compat";
 
 export default function AboutPage() {

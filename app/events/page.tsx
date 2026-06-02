@@ -20,7 +20,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select, SelectItem } from "@heroui/react";
+import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select, SelectItem } from "@/components/compat";
 
 export default function EventsPage() {
   const { user } = useAuth();
