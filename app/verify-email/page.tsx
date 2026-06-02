@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import NextLink from "next/link";
-import { Button, Card, CardContent, CardHeader } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader } from "@/components/compat";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -55,7 +55,7 @@ function VerifyEmailContent() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <Card.Header className="flex flex-col gap-1 items-center">
+        <CardHeader className="flex flex-col gap-1 items-center">
           {status === "loading" && (
             <>
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
@@ -74,9 +74,9 @@ function VerifyEmailContent() {
               <h2 className="text-xl font-bold mt-4 text-danger">Verification Failed</h2>
             </>
           )}
-        </Card.Header>
+        </CardHeader>
         
-        <Card.Content className="text-center gap-4">
+        <CardContent className="text-center gap-4">
           {status === "loading" && (
             <p className="text-default-500">
               Please wait while we verify your email address...
@@ -124,7 +124,7 @@ function VerifyEmailContent() {
               </div>
             </>
           )}
-        </Card.Content>
+        </CardContent>
       </Card>
     </div>
   );
@@ -134,10 +134,10 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <Card.Content className="py-12 text-center">
+        <CardContent className="py-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-default-500">Verifying your email...</p>
-        </Card.Content>
+        </CardContent>
       </Card>
     </div>
   );

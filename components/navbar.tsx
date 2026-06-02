@@ -1,5 +1,5 @@
 "use client";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Avatar } from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Avatar } from "@/components/compat";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";

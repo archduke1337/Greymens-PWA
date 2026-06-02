@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@/components/compat";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -218,7 +218,7 @@ export default function AdminEventsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card className="border-none shadow-md">
-          <Card.Content className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Events</p>
@@ -228,11 +228,11 @@ export default function AdminEventsPage() {
                 <CalendarIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <Card.Content className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
@@ -244,11 +244,11 @@ export default function AdminEventsPage() {
                 <TrendingUpIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <Card.Content className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Registered</p>
@@ -260,11 +260,11 @@ export default function AdminEventsPage() {
                 <UsersIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <Card.Content className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Featured</p>
@@ -276,13 +276,13 @@ export default function AdminEventsPage() {
                 <StarIcon className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
       </div>
 
       {/* Events Table */}
       <Card className="border-none shadow-lg">
-        <Card.Content className="p-0">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table aria-label="Events table" className="min-w-full">
               <TableHeader>
@@ -366,7 +366,7 @@ export default function AdminEventsPage() {
               </TableBody>
             </Table>
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       {/* Add/Edit Modal */}
@@ -374,18 +374,18 @@ export default function AdminEventsPage() {
         isOpen={isOpen} 
         size="3xl"
       >
-        <Modal.Dialog>
+        <ModalDialog>
           <form onSubmit={handleSubmit}>
-            <Modal.Header className="flex flex-col gap-1 border-b pb-4">
+            <ModalHeader className="flex flex-col gap-1 border-b pb-4">
               <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {editingEvent ? "Edit Event" : "Create New Event"}
               </h2>
               <p className="text-sm text-default-500 font-normal">
                 Fill in the details below to {editingEvent ? "update" : "create"} an event
               </p>
-            </Modal.Header>
+            </ModalHeader>
             
-            <Modal.Body className="py-6">
+            <ModalBody className="py-6">
               <Tabs aria-label="Event form sections">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-2">
@@ -684,9 +684,9 @@ export default function AdminEventsPage() {
                   </div>
                 </Tab>
               </Tabs>
-            </Modal.Body>
+            </ModalBody>
 
-            <Modal.Footer className="border-t pt-4">
+            <ModalFooter className="border-t pt-4">
               <Button 
                 variant="primary" 
                 className="w-full sm:w-auto"
@@ -699,9 +699,9 @@ export default function AdminEventsPage() {
               >
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>
-            </Modal.Footer>
+            </ModalFooter>
           </form>
-        </Modal.Dialog>
+        </ModalDialog>
       </Modal>
     </div>
   );

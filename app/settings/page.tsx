@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@/components/compat";
 
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
@@ -202,10 +202,10 @@ export default function SettingsPage() {
 
       {/* Security Settings */}
       <Card className="mb-6">
-        <Card.Header>
+        <CardHeader>
           <h2 className="text-xl font-semibold">Security</h2>
-        </Card.Header>
-        <Card.Content className="gap-6">
+        </CardHeader>
+        <CardContent className="gap-6">
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -335,15 +335,15 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       {/* Notification Settings */}
       <Card className="mb-6">
-        <Card.Header>
+        <CardHeader>
           <h2 className="text-xl font-semibold">Notifications</h2>
-        </Card.Header>
-        <Card.Content className="gap-4">
+        </CardHeader>
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Email Notifications</p>
@@ -371,15 +371,15 @@ export default function SettingsPage() {
               onChange={setPushNotifications}
             />
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       {/* Danger Zone */}
       <Card className="border-danger">
-        <Card.Header>
+        <CardHeader>
           <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
-        </Card.Header>
-        <Card.Content className="gap-4">
+        </CardHeader>
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Delete Account</p>
@@ -392,17 +392,17 @@ export default function SettingsPage() {
               Delete Account
             </Button>
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       {/* Add/Update Phone Modal */}
       <Modal isOpen={isPhoneModalOpen}>
-        <Modal.Dialog>
+        <ModalDialog>
           <form onSubmit={handleAddPhone}>
-            <Modal.Header>
+            <ModalHeader>
               {user.phone ? "Update" : "Add"} Phone Number
-            </Modal.Header>
-            <Modal.Body>
+            </ModalHeader>
+            <ModalBody>
               <Input
                 placeholder="+911234567890"
                 value={phoneNumber}
@@ -421,27 +421,27 @@ export default function SettingsPage() {
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
               )}
-            </Modal.Body>
-            <Modal.Footer>
+            </ModalBody>
+            <ModalFooter>
               <Button variant="primary" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
               <Button type="submit" isPending={phoneLoading}>
                 {user.phone ? "Update" : "Add"} Phone
               </Button>
-            </Modal.Footer>
+            </ModalFooter>
           </form>
-        </Modal.Dialog>
+        </ModalDialog>
       </Modal>
 
       {/* Verify Phone Modal */}
       <Modal isOpen={isVerifyModalOpen}>
-        <Modal.Dialog>
+        <ModalDialog>
           <form onSubmit={handleVerifyPhone}>
-            <Modal.Header>
+            <ModalHeader>
               Verify Phone Number
-            </Modal.Header>
-            <Modal.Body>
+            </ModalHeader>
+            <ModalBody>
               <p className="text-sm text-default-500 mb-4">
                 Enter the verification code sent to your phone number
               </p>
@@ -469,17 +469,17 @@ export default function SettingsPage() {
               >
                 Resend Code
               </Button>
-            </Modal.Body>
-            <Modal.Footer>
+            </ModalBody>
+            <ModalFooter>
               <Button variant="primary" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
               <Button type="submit" isPending={phoneVerifyLoading}>
                 Verify Phone
               </Button>
-            </Modal.Footer>
+            </ModalFooter>
           </form>
-        </Modal.Dialog>
+        </ModalDialog>
       </Modal>
     </div>
   );

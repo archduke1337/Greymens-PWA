@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@/components/compat";
 import {
   SearchIcon, 
   PenIcon, 
@@ -127,7 +127,7 @@ export default function BlogPage() {
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <Card.Content className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <Input
                 placeholder="Search blogs..."
@@ -149,7 +149,7 @@ export default function BlogPage() {
                 <ListBoxItem id="technology">Technology</ListBoxItem>
               </Select>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
       </div>
 
@@ -178,7 +178,7 @@ export default function BlogPage() {
                 key={blog.$id}
                 className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
               >
-                <Card.Content className="p-0">
+                <CardContent className="p-0">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -223,9 +223,9 @@ export default function BlogPage() {
                       ))}
                     </div>
                   </div>
-                </Card.Content>
+                </CardContent>
 
-                <Card.Footer className="px-6 pb-6 pt-0 justify-between">
+                <CardFooter className="px-6 pb-6 pt-0 justify-between">
                   {/* Author */}
                   <div className="flex items-center gap-2">
                     <Avatar
@@ -254,7 +254,7 @@ export default function BlogPage() {
                       <span>{blog.views}</span>
                     </div>
                   </div>
-                </Card.Footer>
+                </CardFooter>
               </Card>
             ))}
           </div>

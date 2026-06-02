@@ -3,7 +3,7 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
+import { Avatar, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@/components/compat";
 import {
   CodeIcon,
   UsersIcon,
@@ -143,7 +143,7 @@ export default function ProjectsPage() {
                  
                  
                 >
-                  <Card.Content className="p-0 overflow-hidden">
+                  <CardContent className="p-0 overflow-hidden">
                     {/* Project Image */}
                     <div className="relative">
                       <img
@@ -291,7 +291,7 @@ export default function ProjectsPage() {
                     </div>
 
                     {/* Footer with Actions */}
-                    <Card.Footer className="px-6 pb-6 pt-0">
+                    <CardFooter className="px-6 pb-6 pt-0">
                       <div className="flex gap-2 w-full">
                         <Button
                           isIconOnly
@@ -322,8 +322,8 @@ export default function ProjectsPage() {
                           View Code
                         </Button>
                       </div>
-                    </Card.Footer>
-                  </Card.Content>
+                    </CardFooter>
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -331,7 +331,7 @@ export default function ProjectsPage() {
             {/* Empty State */}
             {filteredProjects.length === 0 && (
               <Card className="border-none bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-                <Card.Content className="text-center py-16">
+                <CardContent className="text-center py-16">
                   <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center">
                     <CodeIcon className="w-12 h-12 text-purple-500" />
                   </div>
@@ -339,7 +339,7 @@ export default function ProjectsPage() {
                   <p className="text-default-600 max-w-md mx-auto">
                     No projects match your selected category. Try choosing a different category or check back later for new projects.
                   </p>
-                </Card.Content>
+                </CardContent>
               </Card>
             )}
           </div>

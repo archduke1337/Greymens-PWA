@@ -20,7 +20,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, ListBoxItem} from "@heroui/react";
+import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, ListBoxItem} from "@/components/compat";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -248,7 +248,7 @@ export default function EventsPage() {
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <Card.Content className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
@@ -283,7 +283,7 @@ export default function EventsPage() {
                 </Select>
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
       </div>
 
@@ -298,7 +298,7 @@ export default function EventsPage() {
              
              
             >
-              <Card.Content className="p-0 overflow-hidden">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
                   <img
                     src={event.image}
@@ -399,9 +399,9 @@ export default function EventsPage() {
                     )}
                   </div>
                 </div>
-              </Card.Content>
+              </CardContent>
 
-              <Card.Footer className="px-6 pb-6 pt-0">
+              <CardFooter className="px-6 pb-6 pt-0">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
                     {event.discountPrice && event.discountPrice < event.price ? (
@@ -429,7 +429,7 @@ export default function EventsPage() {
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
                   </Button>
                 </div>
-              </Card.Footer>
+              </CardFooter>
             </Card>
           ))}
         </div>

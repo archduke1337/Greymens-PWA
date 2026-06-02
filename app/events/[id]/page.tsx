@@ -27,7 +27,7 @@ import {
   Mail
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
+import { Avatar, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@/components/compat";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -338,22 +338,22 @@ export default function EventDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Description */}
             <Card className="border-none shadow-lg">
-              <Card.Header className="pb-0">
+              <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">About This Event</h2>
-              </Card.Header>
-              <Card.Content className="pt-4">
+              </CardHeader>
+              <CardContent className="pt-4">
                 <p className="text-default-600 leading-relaxed text-lg">
                   {event.description}
                 </p>
-              </Card.Content>
+              </CardContent>
             </Card>
 
             {/* Event Details Grid */}
             <Card className="border-none shadow-lg">
-              <Card.Header className="pb-0">
+              <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">Event Details</h2>
-              </Card.Header>
-              <Card.Content className="pt-4">
+              </CardHeader>
+              <CardContent className="pt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
@@ -395,19 +395,19 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                 </div>
-              </Card.Content>
+              </CardContent>
             </Card>
 
             {/* Tags */}
             {event.tags.length > 0 && (
               <Card className="border-none shadow-lg">
-                <Card.Header className="pb-0">
+                <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
                     <Tag className="w-5 h-5 text-purple-600" />
                     <h2 className="text-2xl font-bold">Topics</h2>
                   </div>
-                </Card.Header>
-                <Card.Content className="pt-4">
+                </CardHeader>
+                <CardContent className="pt-4">
                   <div className="flex flex-wrap gap-2">
                     {event.tags.map((tag, index) => (
                       <Chip 
@@ -420,16 +420,16 @@ export default function EventDetailPage() {
                       </Chip>
                     ))}
                   </div>
-                </Card.Content>
+                </CardContent>
               </Card>
             )}
 
             {/* Organizer */}
             <Card className="border-none shadow-lg">
-              <Card.Header className="pb-0">
+              <CardHeader className="pb-0">
                 <h2 className="text-2xl font-bold">Organized By</h2>
-              </Card.Header>
-              <Card.Content className="pt-4">
+              </CardHeader>
+              <CardContent className="pt-4">
                 <div className="flex items-center gap-4">
                   <Avatar
                     src={event.organizerAvatar}
@@ -442,14 +442,14 @@ export default function EventDetailPage() {
                     <p className="text-default-500">Event Organizer</p>
                   </div>
                 </div>
-              </Card.Content>
+              </CardContent>
             </Card>
           </div>
 
           {/* Right Column - Registration Card */}
           <div className="lg:col-span-1">
             <Card className="border-none shadow-2xl sticky top-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-              <Card.Content className="p-6 space-y-6">
+              <CardContent className="p-6 space-y-6">
                 {/* Price */}
                 <div>
                   <div className="flex items-baseline gap-3 mb-2">
@@ -593,7 +593,7 @@ export default function EventDetailPage() {
                     </div>
                   )}
                 </div>
-              </Card.Content>
+              </CardContent>
             </Card>
           </div>
         </div>

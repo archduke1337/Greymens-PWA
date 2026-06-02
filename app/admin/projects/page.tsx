@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@/components/compat";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -261,7 +261,7 @@ export default function AdminProjectsPage() {
 
         {/* Admin Tips Section */}
         <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-          <Card.Content className="p-6">
+          <CardContent className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
@@ -280,7 +280,7 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         {/* Main Content */}
@@ -288,7 +288,7 @@ export default function AdminProjectsPage() {
           {/* Projects Table */}
           <div className="lg:col-span-3">
             <Card className="border-none shadow-xl">
-              <Card.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
+              <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
@@ -301,8 +301,8 @@ export default function AdminProjectsPage() {
                 >
                   New Project
                 </Button>
-              </Card.Header>
-              <Card.Content className="p-6">
+              </CardHeader>
+              <CardContent className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
@@ -432,7 +432,7 @@ export default function AdminProjectsPage() {
                     </Table>
                   </div>
                 )}
-              </Card.Content>
+              </CardContent>
             </Card>
           </div>
 
@@ -440,10 +440,10 @@ export default function AdminProjectsPage() {
           <div className="space-y-6">
             {/* Quick Stats */}
             <Card className="border-none shadow-xl">
-              <Card.Header className="px-6 pt-6 pb-0">
+              <CardHeader className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
-              </Card.Header>
-              <Card.Content className="p-6 space-y-4">
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
@@ -484,7 +484,7 @@ export default function AdminProjectsPage() {
                   </div>
                   <StarIcon className="w-8 h-8 text-yellow-500" />
                 </div>
-              </Card.Content>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -493,8 +493,8 @@ export default function AdminProjectsPage() {
           isOpen={isOpen}
           size="2xl"
         >
-          <Modal.Dialog>
-            <Modal.Header className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
+          <ModalDialog>
+            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                   {isEditing ? (
@@ -512,8 +512,8 @@ export default function AdminProjectsPage() {
                   </p>
                 </div>
               </div>
-            </Modal.Header>
-            <Modal.Body className="p-6 gap-6">
+            </ModalHeader>
+            <ModalBody className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
@@ -665,8 +665,8 @@ export default function AdminProjectsPage() {
                   Feature this project on the homepage
                 </Switch>
               </div>
-            </Modal.Body>
-            <Modal.Footer className="p-6 border-t border-gray-200 dark:border-gray-700">
+            </ModalBody>
+            <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
               <Button variant="ghost" onPress={close} disabled={saving}>
                 Cancel
               </Button>
@@ -676,8 +676,8 @@ export default function AdminProjectsPage() {
               >
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
+            </ModalFooter>
+          </ModalDialog>
         </Modal>
       </div>
 

@@ -218,6 +218,9 @@ export const Item = ({ children, value, key: k, ...props }: any) => (
   <option key={k} value={value || k || ""} {...props}>{children}</option>
 );
 
+// Alias for v3 compatibility
+export const ListBoxItem = Item;
+
 // ============================================================
 // MODAL (overlay pattern)
 // ============================================================

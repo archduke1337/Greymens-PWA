@@ -1,7 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { Avatar, Card, Chip } from "@heroui/react";
+import { Avatar, Card, Chip } from "@/components/compat";
 
 export default function AboutPage() {
   const stats = [
@@ -64,7 +64,7 @@ export default function AboutPage() {
 
       {/* Story Section */}
       <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-        <Card.Content className="p-8 md:p-12">
+        <CardContent className="p-8 md:p-12">
           <h2 className={title({ size: "sm" })}>Our Story</h2>
           <p className="text-default-600 mt-4 text-lg leading-relaxed">
             Mind Mesh was founded with a simple yet powerful vision: to create a space where 
@@ -77,7 +77,7 @@ export default function AboutPage() {
             together students from various backgrounds, each contributing their unique perspective 
             to create something greater than the sum of its parts.
           </p>
-        </Card.Content>
+        </CardContent>
       </Card>
 
       {/* Values Grid */}
@@ -92,7 +92,7 @@ export default function AboutPage() {
               className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl"
              
             >
-              <Card.Content className="p-6">
+              <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">{value.icon}</div>
                   <div>
@@ -100,7 +100,7 @@ export default function AboutPage() {
                     <p className="text-default-600">{value.description}</p>
                   </div>
                 </div>
-              </Card.Content>
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -108,7 +108,7 @@ export default function AboutPage() {
 
       {/* Team Section */}
       <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30">
-        <Card.Content className="p-8 text-center">
+        <CardContent className="p-8 text-center">
           <h2 className={title({ size: "sm", class: "mb-4" })}>Meet Our Team</h2>
           <p className="text-default-600 mb-6">
             Passionate leaders driving innovation and growth
@@ -126,7 +126,7 @@ export default function AboutPage() {
             <Chip  variant="primary">Creativity</Chip>
             <Chip  variant="primary">Excellence</Chip>
           </div>
-        </Card.Content>
+        </CardContent>
       </Card>
 
      

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, Chip } from "@heroui/react";
+import { Avatar, Button, Card, CardContent, Chip } from "@/components/compat";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -141,7 +141,7 @@ export default function BlogPostPage() {
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Meta Info */}
         <Card className="mb-8">
-          <Card.Content className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* Author */}
               <div className="flex items-center gap-3">
@@ -177,22 +177,22 @@ export default function BlogPostPage() {
                 </Button>
               </div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         {/* Blog Content */}
         <Card className="mb-8">
-          <Card.Content className="p-8 md:p-12">
+          <CardContent className="p-8 md:p-12">
             <div className="prose prose-lg dark:prose-invert max-w-none">
               {/* Simple content rendering - for Markdown, use a library like react-markdown */}
               <div className="whitespace-pre-wrap">{blog.content}</div>
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         {/* Tags */}
         <Card className="mb-8">
-          <Card.Content className="p-6">
+          <CardContent className="p-6">
             <h3 className="font-semibold mb-4">Tags</h3>
             <div className="flex flex-wrap gap-2">
               {blog.tags.map((tag, index) => (
@@ -201,7 +201,7 @@ export default function BlogPostPage() {
                 </Chip>
               ))}
             </div>
-          </Card.Content>
+          </CardContent>
         </Card>
 
         {/* Related Blogs */}

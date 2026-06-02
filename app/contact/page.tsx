@@ -2,7 +2,7 @@
 
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
-import { Button, Card, CardContent, CardHeader, Input, Link, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Link, TextArea } from "@/components/compat";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -183,11 +183,11 @@ export default function ContactPage() {
         {/* Contact Form */}
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl">
-            <Card.Header className="flex flex-col items-start px-8 pt-8 pb-0">
+            <CardHeader className="flex flex-col items-start px-8 pt-8 pb-0">
               <h2 className="text-2xl font-bold">Send us a Message</h2>
               <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
-            </Card.Header>
-            <Card.Content className="p-8">
+            </CardHeader>
+            <CardContent className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {submitStatus.type && (
                   <div
@@ -249,7 +249,7 @@ export default function ContactPage() {
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
-            </Card.Content>
+            </CardContent>
           </Card>
         </div>
 
@@ -257,10 +257,10 @@ export default function ContactPage() {
         <div className="space-y-6">
           {/* Contact Methods */}
           <Card className="border-none shadow-xl">
-            <Card.Header className="px-6 pt-6 pb-0">
+            <CardHeader className="px-6 pt-6 pb-0">
               <h3 className="text-xl font-bold">Connect With Us</h3>
-            </Card.Header>
-            <Card.Content className="p-6 space-y-4">
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
               {contactMethods.map((method, index) => (
                 <Link
                   key={index}
@@ -279,7 +279,7 @@ export default function ContactPage() {
                   </div>
                 </Link>
               ))}
-            </Card.Content>
+            </CardContent>
           </Card>
 
          

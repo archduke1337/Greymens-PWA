@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@/components/compat";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -146,10 +146,10 @@ export default function WriteBlogPage() {
 
       {/* Form */}
       <Card className="border-none shadow-xl">
-        <Card.Header className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+        <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
           <h2 className="text-xl font-bold">Blog Details</h2>
-        </Card.Header>
-        <Card.Content className="p-8">
+        </CardHeader>
+        <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
             <Input
@@ -297,7 +297,7 @@ export default function WriteBlogPage() {
               </p>
             </div>
           </form>
-        </Card.Content>
+        </CardContent>
       </Card>
     </div>
   );
