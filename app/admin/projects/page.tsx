@@ -357,7 +357,7 @@ export default function AdminProjectsPage() {
                                     src={project.image}
                                     alt={project.title}
                                     className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                                    onError={(e) => {
+                                    onError={(e: any) => {
                                       const target = e.target as HTMLImageElement;
                                       target.src = "https://via.placeholder.com/150?text=No+Image";
                                     }}
@@ -549,7 +549,7 @@ export default function AdminProjectsPage() {
                     label="Project Title"
                     placeholder="Enter project title"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
                     isRequired
                     variant="outline"
                     classNames={{
@@ -560,7 +560,7 @@ export default function AdminProjectsPage() {
                     label="Duration"
                     placeholder="3 months"
                     value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, duration: e.target.value })}
                     isRequired
                     variant="outline"
                     classNames={{
@@ -573,7 +573,7 @@ export default function AdminProjectsPage() {
                   label="Description"
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
                   isRequired
                   variant="outline"
                   minRows={3}
@@ -586,7 +586,7 @@ export default function AdminProjectsPage() {
                   label="Image URL"
                   placeholder="https://images.unsplash.com/photo-..."
                   value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
                   isRequired
                   variant="outline"
                   description="Use high-quality images from Unsplash or similar platforms"
@@ -600,7 +600,7 @@ export default function AdminProjectsPage() {
                   <Select
                     label="Category"
                     selectedKeys={[formData.category]}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                     variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
@@ -616,7 +616,7 @@ export default function AdminProjectsPage() {
                   <Select
                     label="Status"
                     selectedKeys={[formData.status]}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
                     variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
@@ -641,7 +641,7 @@ export default function AdminProjectsPage() {
                         min="0"
                         max="100"
                         value={formData.progress}
-                        onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                        onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
                     </div>
@@ -650,7 +650,7 @@ export default function AdminProjectsPage() {
                       min="0"
                       max="100"
                       value={formData.progress.toString()}
-                      onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                      onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
                       variant="outline"
                       className="w-20"
                       classNames={{
@@ -665,7 +665,7 @@ export default function AdminProjectsPage() {
                       type="number"
                       min="0"
                       value={formData.stars.toString()}
-                      onChange={(e) => setFormData({ ...formData, stars: Number(e.target.value) })}
+                      onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
                       variant="outline"
                       startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
@@ -677,7 +677,7 @@ export default function AdminProjectsPage() {
                       type="number"
                       min="0"
                       value={formData.forks.toString()}
-                      onChange={(e) => setFormData({ ...formData, forks: Number(e.target.value) })}
+                      onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
                       variant="outline"
                       startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
@@ -689,7 +689,7 @@ export default function AdminProjectsPage() {
                       type="number"
                       min="1"
                       value={formData.contributors.toString()}
-                      onChange={(e) => setFormData({ ...formData, contributors: Number(e.target.value) })}
+                      onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
                       variant="outline"
                       startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
@@ -703,7 +703,7 @@ export default function AdminProjectsPage() {
                   label="Technologies"
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
-                  onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, technologies: e.target.value })}
                   variant="outline"
                   description="Separate technologies with commas"
                   minRows={2}
@@ -718,7 +718,7 @@ export default function AdminProjectsPage() {
                     label="Demo URL"
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
-                    onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, demoUrl: e.target.value })}
                     variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
@@ -729,7 +729,7 @@ export default function AdminProjectsPage() {
                     label="Repository URL"
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
-                    onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, repoUrl: e.target.value })}
                     variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300",
@@ -741,7 +741,7 @@ export default function AdminProjectsPage() {
                   label="Team Members"
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
-                  onChange={(e) => setFormData({ ...formData, teamMembers: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, teamMembers: e.target.value })}
                   variant="outline"
                   description="Separate names with commas"
                   minRows={2}
@@ -753,7 +753,7 @@ export default function AdminProjectsPage() {
 
                 <Switch
                   checked={formData.isFeatured}
-                  onChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
                     label: "text-gray-700 dark:text-gray-300 text-sm",

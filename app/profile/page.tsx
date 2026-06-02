@@ -312,7 +312,7 @@ export default function ProfilePage() {
                 <Input
                   label="Name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e: any) => setName(e.target.value)}
                   placeholder="Enter your name"
                   required
                   isDisabled={updateLoading}

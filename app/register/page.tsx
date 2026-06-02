@@ -65,7 +65,7 @@ export default function RegisterPage() {
               placeholder="Enter your name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e: any) => setName(e.target.value)}
               required
               isDisabled={loading}
             />
@@ -74,7 +74,7 @@ export default function RegisterPage() {
               placeholder="Enter your email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: any) => setEmail(e.target.value)}
               required
               isDisabled={loading}
             />
@@ -83,7 +83,7 @@ export default function RegisterPage() {
               placeholder="Create a password (min 8 characters)"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: any) => setPassword(e.target.value)}
               required
               isDisabled={loading}
             />
@@ -92,7 +92,7 @@ export default function RegisterPage() {
               placeholder="Confirm your password"
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e: any) => setConfirmPassword(e.target.value)}
               required
               isDisabled={loading}
             />

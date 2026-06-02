@@ -214,7 +214,7 @@ export default function SettingsPage() {
                 label="Current Password"
                 type="password"
                 value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
+                onChange={(e: any) => setOldPassword(e.target.value)}
                 placeholder="Enter current password"
                 required
                 isDisabled={passwordLoading}
@@ -223,7 +223,7 @@ export default function SettingsPage() {
                 label="New Password"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e: any) => setNewPassword(e.target.value)}
                 placeholder="Enter new password (min 8 characters)"
                 required
                 isDisabled={passwordLoading}
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                 label="Confirm New Password"
                 type="password"
                 value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                onChange={(e: any) => setConfirmNewPassword(e.target.value)}
                 placeholder="Confirm new password"
                 required
                 isDisabled={passwordLoading}
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                 label="Phone Number"
                 placeholder="+911234567890"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e: any) => setPhoneNumber(e.target.value)}
                 description="Include country code (e.g., +91 for India)"
                 required
                 isDisabled={phoneLoading}
@@ -433,7 +433,7 @@ export default function SettingsPage() {
                 type="password"
                 placeholder="Enter your password"
                 value={phonePassword}
-                onChange={(e) => setPhonePassword(e.target.value)}
+                onChange={(e: any) => setPhonePassword(e.target.value)}
                 description="Confirm with your account password"
                 required
                 isDisabled={phoneLoading}
@@ -469,7 +469,7 @@ export default function SettingsPage() {
                 label="Verification Code"
                 placeholder="Enter 6-digit code"
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
+                onChange={(e: any) => setVerificationCode(e.target.value)}
                 required
                 maxLength={6}
                 isDisabled={phoneVerifyLoading}

@@ -164,7 +164,7 @@ export default function AdminBlogsPage() {
       {/* Tabs */}
       <Tabs
         selectedKey={selectedTab}
-        onSelectionChange={(key) => setSelectedTab(key as string)}
+        onSelectionChange={(key: any) => setSelectedTab(key as string)}
         size="lg"
         className="mb-8"
       >
@@ -383,7 +383,7 @@ export default function AdminBlogsPage() {
             <TextArea
               placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={(e: any) => setRejectionReason(e.target.value)}
               rows={4}
             />
           </ModalBody>

@@ -248,7 +248,6 @@ export default function GalleryPage() {
         className="bg-transparent shadow-none"
       >
         <ModalDialog>
-          {(onClose) => (
             <ModalBody className="p-0">
               {selectedImage && (
                 <Card className="border-none">
@@ -291,7 +290,6 @@ export default function GalleryPage() {
                 </Card>
               )}
             </ModalBody>
-          )}
         </ModalDialog>
       </Modal>
 

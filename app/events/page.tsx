@@ -254,7 +254,7 @@ export default function EventsPage() {
                 <Input
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   startContent={<SearchIcon className="w-5 h-5 text-default-400" />}
                   classNames={{ input: "text-lg" }}
                   size="lg"
@@ -265,7 +265,7 @@ export default function EventsPage() {
                 <Select
                   label="Sort by"
                   selectedKeys={[sortBy]}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e: any) => setSortBy(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
@@ -277,7 +277,7 @@ export default function EventsPage() {
                 <Select
                   label="Category"
                   selectedKeys={[selectedCategory]}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e: any) => setSelectedCategory(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
@@ -330,7 +330,7 @@ export default function EventsPage() {
                     variant="primary"
                     className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                     size="sm"
-                    onPress={(e) => toggleSaveEvent(e as any, event.$id!)}
+                    onPress={(e: any) => toggleSaveEvent(e as any, event.$id!)}
                   >
                     <HeartIcon 
                       className={`w-4 h-4 ${
@@ -431,7 +431,7 @@ export default function EventsPage() {
                     variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
                     size="md"
                     isLoading={registering === event.$id}
-                    onPress={(e) => toggleRegisterEvent(e as any, event.$id!)}
+                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
                     endContent={
                       !registeredEvents.includes(event.$id!) && <TicketIcon className="w-4 h-4" />
                     }

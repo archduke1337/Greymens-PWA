@@ -206,7 +206,7 @@ export default function ContactPage() {
                     label="Name"
                     placeholder="Enter your name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                     variant="outline"
                     size="lg"
                     isDisabled={isSubmitting}
@@ -217,7 +217,7 @@ export default function ContactPage() {
                     label="Email"
                     placeholder="Enter your email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
                     variant="outline"
                     size="lg"
                     isDisabled={isSubmitting}
@@ -228,7 +228,7 @@ export default function ContactPage() {
                   label="Subject"
                   placeholder="What is this about?"
                   value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
                   variant="outline"
                   size="lg"
                   isDisabled={isSubmitting}
@@ -238,7 +238,7 @@ export default function ContactPage() {
                   label="Message"
                   placeholder="Tell us more..."
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
                   variant="outline"
                   minRows={6}
                   size="lg"

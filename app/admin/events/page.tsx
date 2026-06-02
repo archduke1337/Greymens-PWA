@@ -418,7 +418,7 @@ export default function AdminEventsPage() {
                       <Input
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
-                        onChange={(e) => handleInputChange("image", e.target.value)}
+                        onChange={(e: any) => handleInputChange("image", e.target.value)}
                         required
                         startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
                         description="Enter a direct link to the event image"
@@ -432,7 +432,7 @@ export default function AdminEventsPage() {
                             src={formData.image} 
                             alt="Preview" 
                             className="w-full h-48 object-cover rounded-xl border-2 border-purple-200 dark:border-purple-800"
-                            onError={(e) => {
+                            onError={(e: any) => {
                               e.currentTarget.src = "https://via.placeholder.com/400x300?text=Invalid+Image+URL";
                             }}
                           />
@@ -452,7 +452,7 @@ export default function AdminEventsPage() {
                       label="Event Title"
                       placeholder="Enter event title"
                       value={formData.title}
-                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      onChange={(e: any) => handleInputChange("title", e.target.value)}
                       required
                       classNames={{
                         label: "font-semibold",
@@ -464,7 +464,7 @@ export default function AdminEventsPage() {
                       label="Description"
                       placeholder="Describe your event in detail"
                       value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      onChange={(e: any) => handleInputChange("description", e.target.value)}
                       required
                       minRows={4}
                       classNames={{
@@ -476,7 +476,7 @@ export default function AdminEventsPage() {
                       label="Category"
                       placeholder="Select event category"
                       selectedKeys={[formData.category!]}
-                      onChange={(e) => handleInputChange("category", e.target.value)}
+                      onChange={(e: any) => handleInputChange("category", e.target.value)}
                       required
                       classNames={{
                         label: "font-semibold"
@@ -493,7 +493,7 @@ export default function AdminEventsPage() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch
                         checked={formData.isFeatured}
-                        onChange={(checked) => handleInputChange("isFeatured", checked)}
+                        onChange={(checked: any) => handleInputChange("isFeatured", checked)}
                         color="warning"
                       >
                         <div className="flex items-center gap-2">
@@ -503,7 +503,7 @@ export default function AdminEventsPage() {
                       </Switch>
                       <Switch
                         checked={formData.isPremium}
-                        onChange={(checked) => handleInputChange("isPremium", checked)}
+                        onChange={(checked: any) => handleInputChange("isPremium", checked)}
                         color="secondary"
                       >
                         <div className="flex items-center gap-2">
@@ -528,7 +528,7 @@ export default function AdminEventsPage() {
                         label="Date"
                         type="date"
                         value={formData.date}
-                        onChange={(e) => handleInputChange("date", e.target.value)}
+                        onChange={(e: any) => handleInputChange("date", e.target.value)}
                         required
                         classNames={{
                           label: "font-semibold"
@@ -539,7 +539,7 @@ export default function AdminEventsPage() {
                         type="text"
                         placeholder="e.g., 09:00 AM - 06:00 PM"
                         value={formData.time}
-                        onChange={(e) => handleInputChange("time", e.target.value)}
+                        onChange={(e: any) => handleInputChange("time", e.target.value)}
                         required
                         classNames={{
                           label: "font-semibold"
@@ -552,7 +552,7 @@ export default function AdminEventsPage() {
                         label="Venue"
                         placeholder="e.g., Grand Convention Center"
                         value={formData.venue}
-                        onChange={(e) => handleInputChange("venue", e.target.value)}
+                        onChange={(e: any) => handleInputChange("venue", e.target.value)}
                         required
                         classNames={{
                           label: "font-semibold"
@@ -562,7 +562,7 @@ export default function AdminEventsPage() {
                         label="Location"
                         placeholder="e.g., New York, NY"
                         value={formData.location}
-                        onChange={(e) => handleInputChange("location", e.target.value)}
+                        onChange={(e: any) => handleInputChange("location", e.target.value)}
                         required
                         classNames={{
                           label: "font-semibold"
@@ -597,7 +597,7 @@ export default function AdminEventsPage() {
                         type="number"
                         placeholder="0"
                         value={formData.price?.toString()}
-                        onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
+                        onChange={(e: any) => handleInputChange("price", parseFloat(e.target.value) || 0)}
                         required
                         startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
                         classNames={{
@@ -609,7 +609,7 @@ export default function AdminEventsPage() {
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
-                        onChange={(e) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
+                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
                         startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
                         classNames={{
                           label: "font-semibold"
@@ -620,7 +620,7 @@ export default function AdminEventsPage() {
                         type="number"
                         placeholder="50"
                         value={formData.capacity?.toString()}
-                        onChange={(e) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
+                        onChange={(e: any) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
                         required
                         startContent={<UsersIcon className="w-4 h-4 text-default-400" />}
                         classNames={{
@@ -666,7 +666,7 @@ export default function AdminEventsPage() {
                       label="Organizer Name"
                       placeholder="e.g., John Doe"
                       value={formData.organizerName}
-                      onChange={(e) => handleInputChange("organizerName", e.target.value)}
+                      onChange={(e: any) => handleInputChange("organizerName", e.target.value)}
                       required
                       classNames={{
                         label: "font-semibold"
@@ -681,7 +681,7 @@ export default function AdminEventsPage() {
                       <Input
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
-                        onChange={(e) => handleInputChange("organizerAvatar", e.target.value)}
+                        onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
                         required
                         startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
                         description="Enter a direct link to the organizer's avatar"
@@ -695,7 +695,7 @@ export default function AdminEventsPage() {
                             src={formData.organizerAvatar} 
                             alt="Avatar preview" 
                             className="w-12 h-12 rounded-full object-cover border-2 border-purple-200 dark:border-purple-800"
-                            onError={(e) => {
+                            onError={(e: any) => {
                               e.currentTarget.src = "https://via.placeholder.com/100?text=Invalid";
                             }}
                           />
@@ -714,8 +714,8 @@ export default function AdminEventsPage() {
                         <Input
                           placeholder="Add a tag (e.g., AI, Networking)"
                           value={tagInput}
-                          onChange={(e) => setTagInput(e.target.value)}
-                          onKeyPress={(e) => {
+                          onChange={(e: any) => setTagInput(e.target.value)}
+                          onKeyPress={(e: any) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
                               handleAddTag();

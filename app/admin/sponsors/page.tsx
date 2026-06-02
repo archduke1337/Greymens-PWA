@@ -188,7 +188,7 @@ export default function AdminSponsorsPage() {
                   label="Company Name"
                   placeholder="e.g., Google"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                   required
                   isRequired
                 />
@@ -197,7 +197,7 @@ export default function AdminSponsorsPage() {
                   label="Logo URL"
                   placeholder="https://example.com/logo.png"
                   value={formData.logo}
-                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, logo: e.target.value })}
                   required
                   isRequired
                   description="Direct link to logo image (PNG, JPG, SVG)"
@@ -207,7 +207,7 @@ export default function AdminSponsorsPage() {
                   label="Website URL"
                   placeholder="https://example.com"
                   value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, website: e.target.value })}
                   required
                   isRequired
                 />
@@ -215,7 +215,7 @@ export default function AdminSponsorsPage() {
                 <Select
                   label="Tier"
                   selectedKeys={[formData.tier]}
-                  onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
+                  onChange={(e: any) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   isRequired
                 >
                   <SelectItem key="platinum">Platinum Partner</SelectItem>
@@ -228,7 +228,7 @@ export default function AdminSponsorsPage() {
                 <Select
                   label="Category"
                   selectedKeys={formData.category ? [formData.category] : []}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                 >
                   <SelectItem key="tech">Technology</SelectItem>
                   <SelectItem key="education">Education</SelectItem>
@@ -242,7 +242,7 @@ export default function AdminSponsorsPage() {
                   label="Display Order"
                   placeholder="0"
                   value={formData.displayOrder.toString()}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
                   description="Lower numbers appear first"
                 />
 
@@ -250,7 +250,7 @@ export default function AdminSponsorsPage() {
                   type="date"
                   label="Start Date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, startDate: e.target.value })}
                   required
                   isRequired
                 />
@@ -259,7 +259,7 @@ export default function AdminSponsorsPage() {
                   type="date"
                   label="End Date (Optional)"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
                   description="Leave empty for ongoing sponsorship"
                 />
               </div>
@@ -268,21 +268,21 @@ export default function AdminSponsorsPage() {
                 label="Description (Optional)"
                 placeholder="Brief description of the sponsor..."
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
               />
 
               <div className="flex gap-8">
                 <Switch
                   checked={formData.isActive}
-                  onChange={(value) => setFormData({ ...formData, isActive: value })}
+                  onChange={(value: any) => setFormData({ ...formData, isActive: value })}
                 >
                   Active
                 </Switch>
 
                 <Switch
                   checked={formData.featured}
-                  onChange={(value) => setFormData({ ...formData, featured: value })}
+                  onChange={(value: any) => setFormData({ ...formData, featured: value })}
                 >
                   Featured (Show in footer & homepage)
                 </Switch>
@@ -296,7 +296,7 @@ export default function AdminSponsorsPage() {
                     src={formData.logo} 
                     alt="Logo preview" 
                     className="max-h-32 object-contain"
-                    onError={(e) => {
+                    onError={(e: any) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                       toast.error("Invalid image URL. Please check the logo URL.");
                     }}

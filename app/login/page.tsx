@@ -52,7 +52,7 @@ export default function LoginPage() {
               placeholder="Enter your email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: any) => setEmail(e.target.value)}
               required
               isDisabled={loading}
             />
@@ -61,7 +61,7 @@ export default function LoginPage() {
               placeholder="Enter your password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: any) => setPassword(e.target.value)}
               required
               isDisabled={loading}
             />

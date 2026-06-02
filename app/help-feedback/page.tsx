@@ -92,7 +92,7 @@ export default function HelpFeedbackPage() {
                 label="Name"
                 placeholder="Your name"
                 value={formData.name}
-                onChange={(value) => setFormData({ ...formData, name: value })}
+                onChange={(value: any) => setFormData({ ...formData, name: value })}
                 isRequired
               />
               <Input
@@ -100,7 +100,7 @@ export default function HelpFeedbackPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={formData.email}
-                onChange={(value) => setFormData({ ...formData, email: value })}
+                onChange={(value: any) => setFormData({ ...formData, email: value })}
                 isRequired
               />
             </div>
@@ -109,7 +109,7 @@ export default function HelpFeedbackPage() {
               label="Feedback Type"
               placeholder="Select type"
               selectedKeys={[formData.type]}
-              onSelectionChange={(keys) => {
+              onSelectionChange={(keys: any) => {
                 const selected = Array.from(keys)[0] as FeedbackType;
                 setFormData({ ...formData, type: selected });
               }}
@@ -125,7 +125,7 @@ export default function HelpFeedbackPage() {
               label="Subject"
               placeholder="Brief description of your feedback"
               value={formData.subject}
-              onChange={(value) => setFormData({ ...formData, subject: value })}
+              onChange={(value: any) => setFormData({ ...formData, subject: value })}
               isRequired
             />
 
@@ -133,7 +133,7 @@ export default function HelpFeedbackPage() {
               label="Message"
               placeholder="Tell us more about your feedback..."
               value={formData.message}
-              onChange={(value) => setFormData({ ...formData, message: value })}
+              onChange={(value: any) => setFormData({ ...formData, message: value })}
               minRows={4}
               isRequired
             />

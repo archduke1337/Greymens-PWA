@@ -136,7 +136,7 @@ export default function BlogPage() {
               <Input
                 placeholder="Search blogs..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 startContent={<SearchIcon className="w-5 h-5" />}
                 className="flex-1"
                 size="lg"
@@ -144,7 +144,7 @@ export default function BlogPage() {
               <Select
                 label="Category"
                 selectedKeys={[selectedCategory]}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e: any) => setSelectedCategory(e.target.value)}
                 className="min-w-[200px]"
               >
                 <SelectItem key="all">All Categories</SelectItem>

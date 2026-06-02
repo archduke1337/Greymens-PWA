@@ -158,7 +158,7 @@ export default function WriteBlogPage() {
               label="Blog Title"
               placeholder="Enter an engaging title..."
               value={formData.title}
-              onChange={(e) =>
+              onChange={(e: any) =>
                 setFormData({ ...formData, title: e.target.value })
               }
               required
@@ -171,7 +171,7 @@ export default function WriteBlogPage() {
               label="Excerpt (Optional)"
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
-              onChange={(e) =>
+              onChange={(e: any) =>
                 setFormData({ ...formData, excerpt: e.target.value })
               }
               rows={3}
@@ -183,7 +183,7 @@ export default function WriteBlogPage() {
               label="Category"
               placeholder="Select a category"
               selectedKeys={formData.category ? [formData.category] : []}
-              onChange={(e) =>
+              onChange={(e: any) =>
                 setFormData({ ...formData, category: e.target.value })
               }
               required
@@ -199,7 +199,7 @@ export default function WriteBlogPage() {
               label="Tags"
               placeholder="react, javascript, tutorial (comma separated)"
               value={formData.tags}
-              onChange={(e) =>
+              onChange={(e: any) =>
                 setFormData({ ...formData, tags: e.target.value })
               }
               description="Add relevant tags separated by commas"
@@ -244,7 +244,7 @@ export default function WriteBlogPage() {
                 <Input
                   placeholder="Or paste image URL"
                   value={formData.coverImage}
-                  onChange={(e) =>
+                  onChange={(e: any) =>
                     setFormData({ ...formData, coverImage: e.target.value })
                   }
                 />
@@ -272,7 +272,7 @@ export default function WriteBlogPage() {
               label="Blog Content"
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
-              onChange={(e) =>
+              onChange={(e: any) =>
                 setFormData({ ...formData, content: e.target.value })
               }
               required
