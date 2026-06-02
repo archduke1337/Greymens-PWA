@@ -281,12 +281,51 @@ export const Switch = ({ checked, onChange, onValueChange, children, className =
 // TABS / TAB
 // ============================================================
 
-export const Tabs = ({ children, selectedKey, onSelectionChange, className = "", ...props }: any) => (
-  <div className={className}>{children}</div>
-);
+export const Tabs = ({ children, selectedKey, onSelectionChange, className = "", ...props }: any) => {
+  const tabs = React.Children.toArray(children).filter(React.isValidElement);
+  const activeKey = selectedKey || tabs[0]?.props?.key || "";
+
+  return (
+    <div className={className}>
+      {/* Tab headers */}
+      <div className="flex gap-1 border-b border-default-200 mb-4" role="tablist">
+        {tabs.map((tab: any) => {
+          const key = tab.props?.key || "";
+          const isActive = key === activeKey;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onSelectionChange?.(key)}
+              className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-b-2 ${
+                isActive
+                  ? "border-primary text-primary"
+                  : "border-transparent text-default-500 hover:text-default-700"
+              }`}
+            >
+              {tab.props?.title || key}
+            </button>
+          );
+        })}
+      </div>
+      {/* Active tab content */}
+      {tabs.map((tab: any) => {
+        const key = tab.props?.key || "";
+        if (key !== activeKey) return null;
+        return (
+          <div key={key} role="tabpanel">
+            {tab.props?.children}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export const Tab = ({ title, children, className = "", ...props }: any) => (
-  <div className={className}>{title}{children}</div>
+  <div className={className} {...props}>{children}</div>
 );
 
 // ============================================================
@@ -302,10 +341,29 @@ const chipColorMap: Record<string, string> = {
   danger: "bg-danger-100 text-danger-700",
 };
 
-export const Chip = ({ children, size = "md", color = "default", onClose, className = "", ...props }: any) => {
+const chipVariantMap: Record<string, string> = {
+  solid: "",
+  bordered: "border border-current",
+  light: "bg-transparent",
+  flat: "bg-default-100",
+  faded: "bg-default-50",
+  shadow: "shadow-md",
+  ghost: "bg-transparent",
+  primary: "",
+  outline: "border border-current",
+  dot: "",
+};
+
+export const Chip = ({ children, size = "md", color = "default", variant = "solid", onClose, className = "", ...props }: any) => {
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : size === "lg" ? "px-4 py-1.5 text-base" : "px-3 py-1 text-sm";
+  const baseColor = chipColorMap[color] || chipColorMap.default;
+  const variantStyle = chipVariantMap[variant] || "";
+  // For outline/bordered variants, use border styling instead of filled background
+  const colorStyle = (variant === "outline" || variant === "bordered")
+    ? `bg-transparent border ${color === "default" ? "border-default-300 text-default-700" : `border-${color} text-${color}`}`
+    : baseColor;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${chipColorMap[color] || chipColorMap.default} ${sizeClass} ${className}`} {...props}>
+    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${variantStyle} ${color === "default" && variant === "solid" ? baseColor : colorStyle} ${sizeClass} ${className}`} {...props}>
       {children}
       {onClose && (
         <button onClick={onClose} className="ml-0.5 hover:opacity-70 cursor-pointer" type="button">×</button>
