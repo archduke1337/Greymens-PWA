@@ -1,7 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { Avatar, Card, Chip } from "@/components/compat";
+import { Avatar, Card, CardContent, Chip } from "@/components/compat";
 
 export default function AboutPage() {
   const stats = [
@@ -116,7 +116,7 @@ export default function AboutPage() {
           <div className="flex justify-center">
             <div className="flex -space-x-4">
               {teamMembers.slice(0, 5).map((avatar, index) => (
-                <Avatar key={index} size="lg" className="border-2 border-white"><Avatar.Image src={avatar} alt={`Team member ${index}`} /></Avatar>
+                <Avatar key={index} src={avatar} size="lg" className="border-2 border-white" name={`Team member ${index}`} />
               ))}
             </div>
           </div>

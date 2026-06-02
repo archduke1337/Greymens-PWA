@@ -31,7 +31,7 @@ export default function TermsPage() {
         </CardHeader>
         <CardContent className="px-6 pb-6">
           <Accordion variant="default" >
-            <Accordion.Item title="Eligibility"
+            <AccordionItem title="Eligibility"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -39,9 +39,9 @@ export default function TermsPage() {
                 <li>Minimum age requirement: 16 years</li>
                 <li>Expected participation: 50% of club activities per semester</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Member Benefits"
+            <AccordionItem title="Member Benefits"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -51,9 +51,9 @@ export default function TermsPage() {
                 <li>Mentorship opportunities</li>
                 <li>Certificate of membership</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Member Responsibilities"
+            <AccordionItem title="Member Responsibilities"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -62,9 +62,9 @@ export default function TermsPage() {
                 <li>Maintain professional behavior</li>
                 <li>Pay membership dues on time (if applicable)</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Code of Conduct"
+            <AccordionItem title="Code of Conduct"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -73,9 +73,9 @@ export default function TermsPage() {
                 <li>Maintain integrity in all interactions</li>
                 <li>Zero tolerance for harassment or discrimination</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Termination"
+            <AccordionItem title="Termination"
               className="text-sm"
             >
               <p className="text-default-600 mb-2">
@@ -87,7 +87,7 @@ export default function TermsPage() {
                 <li>Non-payment of dues (90+ days)</li>
                 <li>Voluntary resignation (30-day notice)</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
           </Accordion>
         </CardContent>
       </Card>
@@ -102,7 +102,7 @@ export default function TermsPage() {
         </CardHeader>
         <CardContent className="px-6 pb-6">
           <Accordion variant="default" >
-            <Accordion.Item title="Sponsorship Tiers"
+            <AccordionItem title="Sponsorship Tiers"
               className="text-sm"
             >
               <div className="text-default-600 space-y-3">
@@ -125,9 +125,9 @@ export default function TermsPage() {
                   </p>
                 </div>
               </div>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Sponsor Obligations"
+            <AccordionItem title="Sponsor Obligations"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -136,9 +136,9 @@ export default function TermsPage() {
                 <li>Maintain professional conduct</li>
                 <li>30-day notice for any changes</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Intellectual Property"
+            <AccordionItem title="Intellectual Property"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -146,9 +146,9 @@ export default function TermsPage() {
                 <li>Club receives limited license for promotion</li>
                 <li>Original club content remains club property</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Contract Duration"
+            <AccordionItem title="Contract Duration"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -156,7 +156,7 @@ export default function TermsPage() {
                 <li>60-day notice for termination</li>
                 <li>Renewal discussions begin 60 days before expiration</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
           </Accordion>
         </CardContent>
       </Card>
@@ -171,7 +171,7 @@ export default function TermsPage() {
         </CardHeader>
         <CardContent className="px-6 pb-6">
           <Accordion variant="default" >
-            <Accordion.Item title="Data We Collect"
+            <AccordionItem title="Data We Collect"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -180,9 +180,9 @@ export default function TermsPage() {
                 <li>Event attendance records</li>
                 <li>Photos and videos (with consent)</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="How We Use Data"
+            <AccordionItem title="How We Use Data"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -191,9 +191,9 @@ export default function TermsPage() {
                 <li>Improve club services</li>
                 <li>Provide anonymized analytics to sponsors</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Data Protection"
+            <AccordionItem title="Data Protection"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -203,9 +203,9 @@ export default function TermsPage() {
                 <li>No selling of personal data</li>
                 <li>GDPR compliant</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
 
-            <Accordion.Item title="Your Rights"
+            <AccordionItem title="Your Rights"
               className="text-sm"
             >
               <ul className="text-default-600 space-y-2 list-disc pl-5">
@@ -215,7 +215,7 @@ export default function TermsPage() {
                 <li>Opt-out of communications</li>
                 <li>Contact: privacy@mindmesh.club</li>
               </ul>
-            </Accordion.Item>
+            </AccordionItem>
           </Accordion>
         </CardContent>
       </Card>
