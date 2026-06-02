@@ -1,5 +1,5 @@
 // lib/emailService.ts
-// FINAL VERSION - Matches your EmailJS template exactly
+// Email service for registration confirmations with e-ticket
 
 // Generate a unique ticket ID
 const generateTicketId = (): string => {
@@ -26,7 +26,7 @@ const formatEventDate = (dateString: string): string => {
   });
 };
 
-// Send email using EmailJS - Matches your template exactly
+// Send email using EmailJS
 const sendEmailWithEmailJS = async (
   toEmail: string,
   toName: string,
@@ -40,23 +40,27 @@ const sendEmailWithEmailJS = async (
   organizerName: string,
   eventPrice: number
 ): Promise<boolean> => {
+  const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+  const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+  const userId = process.env.NEXT_PUBLIC_EMAILJS_USER_ID;
+
+  if (!serviceId || !templateId || !userId) {
+    console.error('EmailJS configuration missing. Set NEXT_PUBLIC_EMAILJS_SERVICE_ID, NEXT_PUBLIC_EMAILJS_TEMPLATE_ID, and NEXT_PUBLIC_EMAILJS_USER_ID.');
+    return false;
+  }
+
   try {
     const formattedDate = formatEventDate(eventDate);
-    
-    console.log('📧 Sending email with EmailJS...');
-    console.log('To:', toEmail);
-    console.log('Event:', eventTitle);
-    console.log('Ticket ID:', ticketId);
-    
+
     const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        service_id: "service_uv7h9yv",
-        template_id: "template_6zxg3vk",
-        user_id: "XDzUiPBDF_TLck0Ds",
+        service_id: serviceId,
+        template_id: templateId,
+        user_id: userId,
         template_params: {
           to_email: toEmail,
           to_name: toName,
@@ -73,17 +77,8 @@ const sendEmailWithEmailJS = async (
       }),
     });
 
-    if (response.ok) {
-      console.log('✅ Email sent successfully!');
-      console.log('Response:', await response.text());
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.error('❌ EmailJS Error Response:', errorText);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ EmailJS Network Error:', error);
+    return response.ok;
+  } catch {
     return false;
   }
 };
@@ -105,18 +100,10 @@ export const sendRegistrationEmail = async (
   }
 ): Promise<{ success: boolean; ticketId: string }> => {
   try {
-    // Generate unique ticket ID and QR code
     const ticketId = generateTicketId();
     const qrCodeUrl = generateQRCode(ticketId);
     const actualPrice = eventData.discountPrice || eventData.price;
 
-    console.log('📧 Starting email registration process...');
-    console.log('User:', userName, '(', userEmail, ')');
-    console.log('Event:', eventData.title);
-    console.log('Generated Ticket ID:', ticketId);
-    console.log('QR Code URL:', qrCodeUrl);
-
-    // Send the email
     const sent = await sendEmailWithEmailJS(
       userEmail,
       userName,
@@ -131,26 +118,10 @@ export const sendRegistrationEmail = async (
       actualPrice
     );
 
-    if (sent) {
-      console.log('✅ Registration email sent successfully!');
-      console.log('Ticket ID:', ticketId);
-    } else {
-      console.warn('⚠️ Email failed to send, but ticket was generated');
-      console.log('Ticket ID:', ticketId);
-    }
-
-    return {
-      success: sent,
-      ticketId: ticketId,
-    };
-  } catch (error) {
-    console.error('❌ Unexpected error in sendRegistrationEmail:', error);
-    // Still generate and return a ticket ID even if email fails
+    return { success: sent, ticketId };
+  } catch {
     const fallbackTicketId = generateTicketId();
-    return {
-      success: false,
-      ticketId: fallbackTicketId,
-    };
+    return { success: false, ticketId: fallbackTicketId };
   }
 };
 

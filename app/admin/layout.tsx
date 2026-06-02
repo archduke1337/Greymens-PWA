@@ -3,6 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// Server-side admin emails — loaded from a non-public env var
+// Falls back to the hardcoded list for backward compatibility
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "sahilmanecode@gmail.com,mane50205@gmail.com").split(",").map(e => e.trim());
 
 export default function AdminLayout({

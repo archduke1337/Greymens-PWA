@@ -1,143 +1,22 @@
 "use client";
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import FeaturedSection from '@/components/FeaturedSection';
 import GuitarStringDivider from '@/components/GuitarStringDivider';
 
+// Dynamic import Three.js components to reduce initial bundle size
+const ThreeCanvas = lazy(() => import('@/components/ThreeCanvas'));
+
 export default function Home() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const router = useRouter();
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Simple CSS animation instead of GSAP
   useEffect(() => {
-    // Add a small delay to ensure DOM is ready, then trigger animation
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: true,
-    });
-
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
-    renderer.setClearColor(0x000000, 0);
-    camera.position.z = 5;
-
-    const resize = () => {
-      const width = canvas.clientWidth || 500;
-      const height = canvas.clientHeight || 500;
-      renderer.setSize(width, height, false);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    };
-
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Clean, professional lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    keyLight.position.set(5, 5, 7);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(0xa855f7, 0.3);
-    fillLight.position.set(-3, 0, -5);
-    scene.add(fillLight);
-
-    let model: THREE.Object3D | null = null;
-
-    const loadModel = () => {
-      const loader = new GLTFLoader();
-
-      loader.load(
-        '/model.glb',
-        (gltf) => {
-          model = gltf.scene;
-
-          const box = new THREE.Box3().setFromObject(model as THREE.Object3D);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const scale = maxDim > 0 ? 3 / maxDim : 1;
-
-          model!.scale.setScalar(scale);
-          model!.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
-
-          scene.add(model!);
-        },
-        undefined,
-        (error) => {
-          console.error('Error loading model:', error);
-        }
-      );
-    };
-
-    loadModel();
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enableZoom = false;
-    controls.enablePan = false;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1;
-
-    let reqId = 0;
-    const animate = () => {
-      reqId = requestAnimationFrame(animate);
-
-      const time = Date.now() * 0.001;
-
-      if (model) {
-        model.position.y = Math.sin(time * 0.8) * 0.1;
-      }
-
-      controls.update();
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(reqId);
-      controls.dispose();
-
-      scene.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          const mesh = obj as THREE.Mesh;
-          if (mesh.geometry) mesh.geometry.dispose();
-          const mat = mesh.material;
-          if (Array.isArray(mat)) {
-            mat.forEach((m) => {
-              if (typeof m.dispose === 'function') m.dispose();
-            });
-          } else if (mat && typeof mat.dispose === 'function') {
-            mat.dispose();
-          }
-        }
-      });
-
-      renderer.dispose();
-    };
   }, []);
 
   return (
@@ -150,7 +29,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10 px-4">
-          {/* Hero Content - Simple fade in with CSS */}
+          {/* Hero Content */}
           <div className={`space-y-6 text-center lg:text-left transition-all duration-700 ease-out ${
             isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
           }`}>
@@ -186,15 +65,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 3D Model Canvas - Fade in separately */}
+          {/* 3D Model Canvas - Dynamically imported */}
           <div className={`flex justify-center lg:justify-end transition-all duration-700 ease-out delay-300 ${
             isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
           }`}>
             <div className="relative">
-              <canvas
-                ref={canvasRef}
-                className="w-full max-w-[500px] h-[500px]"
-              />
+              <Suspense fallback={
+                <div className="w-full max-w-[500px] h-[500px] flex items-center justify-center">
+                  <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              }>
+                <ThreeCanvas />
+              </Suspense>
             </div>
           </div>
         </div>

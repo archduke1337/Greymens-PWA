@@ -10,7 +10,6 @@ export const REGISTRATIONS_COLLECTION_ID = "registrations";
 export const PROJECTS_COLLECTION_ID = "projects";
 export const EVENT_IMAGES_BUCKET_ID = "REDACTED_BUCKET_ID";
 
-// Event Interface - status is optional
 export interface Event {
   $id?: string;
   title: string;
@@ -30,12 +29,11 @@ export interface Event {
   tags: string[];
   isFeatured: boolean;
   isPremium: boolean;
-  status?: string; // Made optional
+  status?: string;
   $createdAt?: string;
   $updatedAt?: string;
 }
 
-// Registration Interface - status is optional
 export interface Registration {
   $id?: string;
   eventId: string;
@@ -44,12 +42,11 @@ export interface Registration {
   userEmail: string;
   userPhone?: string;
   registeredAt: string;
-  status?: string; // Made optional
+  status?: string;
   $createdAt?: string;
   $updatedAt?: string;
 }
 
-// Project Interface
 export interface Project {
   $id?: string;
   title: string;
@@ -72,9 +69,7 @@ export interface Project {
   $updatedAt?: string;
 }
 
-// Event Service - COMPLETE with all missing methods
 export const eventService = {
-  // Get all events
   async getAllEvents(queries: string[] = []) {
     try {
       const response = await databases.listDocuments(
@@ -89,7 +84,6 @@ export const eventService = {
     }
   },
 
-  // Get upcoming events (filter by date instead of status)
   async getUpcomingEvents() {
     try {
       const response = await databases.listDocuments(
@@ -100,8 +94,6 @@ export const eventService = {
           Query.limit(100)
         ]
       );
-      
-      console.log('📋 Loaded events from database:', response.documents.length);
       return response.documents as unknown as Event[];
     } catch (error) {
       console.error("Error fetching upcoming events:", error);
@@ -109,7 +101,6 @@ export const eventService = {
     }
   },
 
-  // Get event by ID
   async getEventById(eventId: string) {
     try {
       const response = await databases.getDocument(
@@ -124,18 +115,14 @@ export const eventService = {
     }
   },
 
-  // Create event - Remove status if it doesn't exist in collection
   async createEvent(eventData: Omit<Event, '$id' | '$createdAt' | '$updatedAt'>) {
     try {
-      // Create a copy without status if your collection doesn't have it
-      const { status, ...dataWithoutStatus } = eventData;
-      
+      const { status: _status, ...dataWithoutStatus } = eventData;
       const response = await databases.createDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         ID.unique(),
-        dataWithoutStatus // Use this if status field doesn't exist
-        // eventData // Use this if status field exists
+        dataWithoutStatus
       );
       return response as unknown as Event;
     } catch (error) {
@@ -144,18 +131,14 @@ export const eventService = {
     }
   },
 
-  // Update event
   async updateEvent(eventId: string, eventData: Partial<Event>) {
     try {
-      // Remove status from update if it doesn't exist in collection
-      const { status, ...dataWithoutStatus } = eventData;
-      
+      const { status: _status, ...dataWithoutStatus } = eventData;
       const response = await databases.updateDocument(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         eventId,
-        dataWithoutStatus // Use this if status field doesn't exist
-        // eventData // Use this if status field exists
+        dataWithoutStatus
       );
       return response as unknown as Event;
     } catch (error) {
@@ -164,7 +147,6 @@ export const eventService = {
     }
   },
 
-  // Delete event
   async deleteEvent(eventId: string) {
     try {
       await databases.deleteDocument(
@@ -179,7 +161,6 @@ export const eventService = {
     }
   },
 
-  // Delete past events
   async deletePastEvents() {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -201,7 +182,6 @@ export const eventService = {
     }
   },
 
-  // Upload event image
   async uploadEventImage(file: File) {
     try {
       const response = await storage.createFile(
@@ -209,27 +189,16 @@ export const eventService = {
         ID.unique(),
         file
       );
-
-      console.log("Image uploaded:", response.$id);
-
-      // FIXED: Get file URL properly - getFileView returns URL object
       const fileUrl = storage.getFileView(EVENT_IMAGES_BUCKET_ID, response.$id);
-      
-      // Convert URL object to string
-      const urlString = fileUrl.toString();
-      console.log("Image URL:", urlString);
-      
-      return urlString;
+      return fileUrl.toString();
     } catch (error) {
       console.error("Error uploading image:", error);
       throw error;
     }
   },
 
-  // Register for event - WITHOUT status field
   async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
     try {
-      // Check if already registered
       const existingRegistrations = await databases.listDocuments(
         DATABASE_ID,
         REGISTRATIONS_COLLECTION_ID,
@@ -244,13 +213,11 @@ export const eventService = {
         throw new Error("Already registered for this event");
       }
 
-      // Get event to check capacity
       const event = await this.getEventById(eventId);
       if (event.capacity && event.registered >= event.capacity) {
         throw new Error("Event is full");
       }
 
-      // Create registration WITHOUT status field
       const registration = await databases.createDocument(
         DATABASE_ID,
         REGISTRATIONS_COLLECTION_ID,
@@ -261,11 +228,9 @@ export const eventService = {
           userName,
           userEmail,
           registeredAt: new Date().toISOString()
-          // Removed 'status' field - add it back if you create the attribute in Appwrite
         }
       );
 
-      // Update event registered count
       await this.updateEvent(eventId, {
         registered: event.registered + 1
       });
@@ -277,7 +242,6 @@ export const eventService = {
     }
   },
 
-  // Get user registrations
   async getUserRegistrations(userId: string) {
     try {
       const response = await databases.listDocuments(
@@ -295,7 +259,6 @@ export const eventService = {
     }
   },
 
-  // Check if user is registered for an event
   async isUserRegistered(eventId: string, userId: string): Promise<boolean> {
     try {
       const response = await databases.listDocuments(
@@ -315,9 +278,7 @@ export const eventService = {
   }
 };
 
-// Project Service
 export const projectService = {
-  // Get all projects
   async getAllProjects(queries: string[] = []) {
     try {
       const response = await databases.listDocuments(
@@ -332,7 +293,6 @@ export const projectService = {
     }
   },
 
-  // Get project by ID
   async getProjectById(projectId: string) {
     try {
       const response = await databases.getDocument(
@@ -347,7 +307,6 @@ export const projectService = {
     }
   },
 
-  // Get projects by category
   async getProjectsByCategory(category: string) {
     try {
       const response = await databases.listDocuments(
@@ -357,70 +316,4 @@ export const projectService = {
       );
       return response.documents as unknown as Project[];
     } catch (error) {
-      console.error("Error fetching projects by category:", error);
-      throw error;
-    }
-  },
-
-  // Get featured projects
-  async getFeaturedProjects() {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        PROJECTS_COLLECTION_ID,
-        [Query.equal("isFeatured", true)]
-      );
-      return response.documents as unknown as Project[];
-    } catch (error) {
-      console.error("Error fetching featured projects:", error);
-      throw error;
-    }
-  },
-
-  // Create project (Admin only)
-  async createProject(projectData: Omit<Project, '$id' | '$createdAt' | '$updatedAt'>) {
-    try {
-      const response = await databases.createDocument(
-        DATABASE_ID,
-        PROJECTS_COLLECTION_ID,
-        ID.unique(),
-        projectData
-      );
-      return response as unknown as Project;
-    } catch (error) {
-      console.error("Error creating project:", error);
-      throw error;
-    }
-  },
-
-  // Update project (Admin only)
-  async updateProject(projectId: string, projectData: Partial<Project>) {
-    try {
-      const response = await databases.updateDocument(
-        DATABASE_ID,
-        PROJECTS_COLLECTION_ID,
-        projectId,
-        projectData
-      );
-      return response as unknown as Project;
-    } catch (error) {
-      console.error("Error updating project:", error);
-      throw error;
-    }
-  },
-
-  // Delete project (Admin only)
-  async deleteProject(projectId: string) {
-    try {
-      await databases.deleteDocument(
-        DATABASE_ID,
-        PROJECTS_COLLECTION_ID,
-        projectId
-      );
-      return true;
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      throw error;
-    }
-  },
-};
+      console.error("Error fetching 
