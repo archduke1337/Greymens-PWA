@@ -1,14 +1,19 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Input, TextArea, Button, Link } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Input, Textarea } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
+
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     subject: "",
-    message: "" });
+    message: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error" | null;
@@ -25,7 +30,8 @@ export default function ContactPage() {
       const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json" },
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           service_id: "service_uv7h9yv", // Replace with your EmailJS service ID
           template_id: "template_5jqtexq", // Replace with your EmailJS template ID
@@ -35,12 +41,16 @@ export default function ContactPage() {
             from_email: formData.email,
             subject: formData.subject,
             message: formData.message,
-            to_email: "hello@mindmesh.club" } }) });
+            to_email: "hello@mindmesh.club",
+          },
+        }),
+      });
 
       if (response.ok) {
         setSubmitStatus({
           type: "success",
-          message: "Message sent successfully! We'll get back to you soon." });
+          message: "Message sent successfully! We'll get back to you soon.",
+        });
         setFormData({ name: "", email: "", subject: "", message: "" });
       } else {
         throw new Error("Failed to send message");
@@ -48,7 +58,8 @@ export default function ContactPage() {
     } catch (error) {
       setSubmitStatus({
         type: "error",
-        message: "Failed to send message. Please try again or email us directly." });
+        message: "Failed to send message. Please try again or email us directly.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -76,18 +87,21 @@ export default function ContactPage() {
           subject: formData.subject,
           message: formData.message,
           createdAt: new Date().toISOString(),
-          status: "unread" }
+          status: "unread",
+        }
       );
 
       setSubmitStatus({
         type: "success",
-        message: "Message sent successfully! We'll get back to you soon." });
+        message: "Message sent successfully! We'll get back to you soon.",
+      });
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
       console.error("Error:", error);
       setSubmitStatus({
         type: "error",
-        message: "Failed to send message. Please try again or email us directly." });
+        message: "Failed to send message. Please try again or email us directly.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +119,8 @@ export default function ContactPage() {
       title: "Instagram",
       value: "mindmesh_adypu",
       link: "https://www.instagram.com/mindmesh_adypu",
-      color: "from-pink-500 via-red-500 to-yellow-500" },
+      color: "from-pink-500 via-red-500 to-yellow-500",
+    },
     {
       icon: (
         <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -115,7 +130,8 @@ export default function ContactPage() {
       title: "LinkedIn",
       value: "Mind Mesh Club",
       link: "https://www.linkedin.com/company/mind-mesh-adypu/",
-      color: "from-blue-600 to-blue-800" },
+      color: "from-blue-600 to-blue-800",
+    },
     {
       icon: (
         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -125,7 +141,8 @@ export default function ContactPage() {
       title: "X (Twitter)",
       value: "Mind Mesh Club",
       link: "https://twitter.com/mindmeshclub",
-      color: "from-neutral-900 to-gray-800" },
+      color: "from-neutral-900 to-gray-800",
+    },
     {
       icon: (
         <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 16 16">
@@ -135,7 +152,8 @@ export default function ContactPage() {
       title: "Discord",
       value: "Mind Mesh",
       link: "https://discord.gg/6v89E3SaZT",
-      color: "from-indigo-500 to-purple-600" },
+      color: "from-indigo-500 to-purple-600",
+    },
 
   ];
 
@@ -167,12 +185,12 @@ export default function ContactPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Contact Form */}
         <div className="lg:col-span-2">
-          <Card className="border-none shadow-xl shadow-lg">
+          <Card className="border-none shadow-xl" shadow="lg">
             <CardHeader className="flex flex-col items-start px-8 pt-8 pb-0">
               <h2 className="text-2xl font-bold">Send us a Message</h2>
               <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
             </CardHeader>
-            <CardContent className="p-8">
+            <CardBody className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {submitStatus.type && (
                   <div
@@ -192,7 +210,39 @@ export default function ContactPage() {
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    variant="outline"
+                    variant="bordered"
+                    size="lg"
+                    isDisabled={isSubmitting}
+                  />
+                  <Input
+                    isRequired
+                    type="email"
+                    label="Email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    variant="bordered"
+                    size="lg"
+                    isDisabled={isSubmitting}
+                  />
+                </div>
+                <Input
+                  isRequired
+                  label="Subject"
+                  placeholder="What is this about?"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  variant="bordered"
+                  size="lg"
+                  isDisabled={isSubmitting}
+                />
+                <Textarea
+                  isRequired
+                  label="Message"
+                  placeholder="Tell us more..."
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  variant="bordered"
                   minRows={6}
                   size="lg"
                   isDisabled={isSubmitting}
@@ -206,18 +256,18 @@ export default function ContactPage() {
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
-            </CardContent>
+            </CardBody>
           </Card>
         </div>
 
         {/* Contact Methods & Quick Links */}
         <div className="space-y-6">
           {/* Contact Methods */}
-          <Card className="border-none shadow-xl shadow-lg">
+          <Card className="border-none shadow-xl" shadow="lg">
             <CardHeader className="px-6 pt-6 pb-0">
               <h3 className="text-xl font-bold">Connect With Us</h3>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardBody className="p-6 space-y-4">
               {contactMethods.map((method, index) => (
                 <Link
                   key={index}
@@ -236,7 +286,7 @@ export default function ContactPage() {
                   </div>
                 </Link>
               ))}
-            </CardContent>
+            </CardBody>
           </Card>
 
          

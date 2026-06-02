@@ -1,13 +1,18 @@
 // app/settings/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { useEffect, useState } from "react";
+import { Card, CardHeader, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Switch } from "@heroui/switch";
+import { Divider } from "@heroui/divider";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { useDisclosure } from "@/components/compat";
+
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
@@ -205,7 +210,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold">Security</h2>
         </CardHeader>
-        <CardContent className="gap-6">
+        <CardBody className="gap-6">
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -250,15 +255,258 @@ export default function SettingsPage() {
 
               <Button
                 type="submit"
-                variant="primary" onPress={onVerifyModalClose}>
+                color="primary"
+                isLoading={passwordLoading}
+              >
+                Update Password
+              </Button>
+            </form>
+          </div>
+
+          <Divider />
+
+          {/* Email Verification */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">Email Verification</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-default-500">
+                  Status: {user.emailVerification ? (
+                    <span className="text-success">Verified ✓</span>
+                  ) : (
+                    <span className="text-warning">Not Verified</span>
+                  )}
+                </p>
+                <p className="text-sm text-default-500 mt-1">
+                  {user.email}
+                </p>
+              </div>
+              {!user.emailVerification && (
+                <Button
+                  color="primary"
+                  variant="flat"
+                  size="sm"
+                  onPress={handleSendVerification}
+                  isLoading={verificationLoading}
+                >
+                  Send Verification Email
+                </Button>
+              )}
+            </div>
+
+            {verificationError && (
+              <div className="text-danger text-sm mt-2">{verificationError}</div>
+            )}
+
+            {verificationSuccess && (
+              <div className="text-success text-sm mt-2">
+                Verification email sent! Check your inbox.
+              </div>
+            )}
+          </div>
+
+          <Divider />
+
+          {/* Phone Number */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">Phone Number</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-default-500">
+                  Status: {user.phoneVerification ? (
+                    <span className="text-success">Verified ✓</span>
+                  ) : user.phone ? (
+                    <span className="text-warning">Not Verified</span>
+                  ) : (
+                    <span className="text-default-400">Not Added</span>
+                  )}
+                </p>
+                <p className="text-sm text-default-500 mt-1">
+                  {user.phone || "No phone number added"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {user.phone && !user.phoneVerification && (
+                  <Button
+                    color="primary"
+                    variant="flat"
+                    size="sm"
+                    onPress={onVerifyModalOpen}
+                  >
+                    Verify Phone
+                  </Button>
+                )}
+                <Button
+                  color="primary"
+                  variant="flat"
+                  size="sm"
+                  onPress={onPhoneModalOpen}
+                >
+                  {user.phone ? "Update" : "Add"} Phone
+                </Button>
+              </div>
+            </div>
+
+            {phoneSuccess && (
+              <div className="text-success text-sm mt-2">
+                Phone number updated successfully!
+              </div>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Notification Settings */}
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-xl font-semibold">Notifications</h2>
+        </CardHeader>
+        <CardBody className="gap-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">Email Notifications</p>
+              <p className="text-sm text-default-500">
+                Receive email updates about your account
+              </p>
+            </div>
+            <Switch
+              isSelected={emailNotifications}
+              onValueChange={setEmailNotifications}
+            />
+          </div>
+
+          <Divider />
+
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">Push Notifications</p>
+              <p className="text-sm text-default-500">
+                Receive push notifications in your browser
+              </p>
+            </div>
+            <Switch
+              isSelected={pushNotifications}
+              onValueChange={setPushNotifications}
+            />
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-danger">
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
+        </CardHeader>
+        <CardBody className="gap-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">Delete Account</p>
+              <p className="text-sm text-default-500">
+                Permanently delete your account and all data
+              </p>
+            </div>
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={handleDeleteAccount}
+            >
+              Delete Account
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Add/Update Phone Modal */}
+      <Modal isOpen={isPhoneModalOpen} onClose={onPhoneModalClose}>
+        <ModalContent>
+          <form onSubmit={handleAddPhone}>
+            <ModalHeader>
+              {user.phone ? "Update" : "Add"} Phone Number
+            </ModalHeader>
+            <ModalBody>
+              <Input
+                label="Phone Number"
+                placeholder="+911234567890"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                description="Include country code (e.g., +91 for India)"
+                required
+                isDisabled={phoneLoading}
+              />
+              <Input
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                value={phonePassword}
+                onChange={(e) => setPhonePassword(e.target.value)}
+                description="Confirm with your account password"
+                required
+                isDisabled={phoneLoading}
+              />
+              {phoneError && (
+                <div className="text-danger text-sm">{phoneError}</div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
-              <Button  type="submit" isLoading={phoneVerifyLoading}>
+              <Button color="primary" type="submit" isLoading={phoneLoading}>
+                {user.phone ? "Update" : "Add"} Phone
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* Verify Phone Modal */}
+      <Modal isOpen={isVerifyModalOpen} onClose={onVerifyModalClose}>
+        <ModalContent>
+          <form onSubmit={handleVerifyPhone}>
+            <ModalHeader>
+              Verify Phone Number
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-sm text-default-500 mb-4">
+                Enter the verification code sent to your phone number
+              </p>
+              <Input
+                label="Verification Code"
+                placeholder="Enter 6-digit code"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                required
+                maxLength={6}
+                isDisabled={phoneVerifyLoading}
+              />
+              {phoneVerifyError && (
+                <div className="text-danger text-sm">{phoneVerifyError}</div>
+              )}
+              {phoneVerifySuccess && (
+                <div className="text-success text-sm">
+                  Phone verified successfully!
+                </div>
+              )}
+              <Button
+                variant="flat"
+                size="sm"
+                onPress={handleSendPhoneVerification}
+                isLoading={phoneVerifyLoading}
+                className="mt-2"
+              >
+                Resend Code
+              </Button>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={onVerifyModalClose}>
+                Cancel
+              </Button>
+              <Button color="primary" type="submit" isLoading={phoneVerifyLoading}>
                 Verify Phone
               </Button>
             </ModalFooter>
           </form>
-        </ModalDialog>
+        </ModalContent>
       </Modal>
     </div>
   );

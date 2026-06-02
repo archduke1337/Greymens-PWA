@@ -1,5 +1,6 @@
 export default function GalleryLayout({
-  children }: {
+  children,
+}: {
   children: React.ReactNode;
 }) {
   return (

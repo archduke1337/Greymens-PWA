@@ -1,5 +1,6 @@
 export default function TeamLayout({
-  children }: {
+  children,
+}: {
   children: React.ReactNode;
 }) {
   return (

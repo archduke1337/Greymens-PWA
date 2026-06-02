@@ -1,7 +1,7 @@
 // components/footer.tsx
 "use client";
 
-import { Link } from "@heroui/react";
+import { Link } from "@heroui/link";
 import { FooterSponsors } from "./footer-sponsors";
 
 export const Footer = () => {

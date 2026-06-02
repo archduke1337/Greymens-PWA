@@ -1,7 +1,14 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input } from "@heroui/react";
+import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Badge } from "@heroui/badge";
+import { Avatar } from "@heroui/avatar";
+import { Chip } from "@heroui/chip";
+import { Progress } from "@heroui/progress";
+import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +16,8 @@ import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
-import {   CalendarIcon,
+import {
+  CalendarIcon,
   MapPinIcon,
   UsersIcon,
   SearchIcon,
@@ -17,7 +25,8 @@ import {   CalendarIcon,
   TicketIcon,
   SparklesIcon,
   StarIcon,
-  CrownIcon } from "lucide-react";
+  CrownIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function EventsPage() {
@@ -39,10 +48,10 @@ export default function EventsPage() {
 
   const loadEvents = async () => {
     try {
-      
+      console.log('🔄 Loading events from database...');
       const allEvents = await eventService.getUpcomingEvents();
-      
-      
+      console.log('✅ Events loaded:', allEvents.length);
+      console.log('📋 Events data:', allEvents);
       setEvents(allEvents);
     } catch (error) {
       console.error("❌ Error loading events:", error);
@@ -142,7 +151,8 @@ export default function EventsPage() {
           image: event.image,
           organizerName: event.organizerName,
           price: event.price,
-          discountPrice: event.discountPrice }
+          discountPrice: event.discountPrice,
+        }
       );
 
       // Store ticket data locally
@@ -156,7 +166,8 @@ export default function EventsPage() {
         time: event.time,
         venue: event.venue,
         location: event.location,
-        registeredAt: new Date().toISOString() };
+        registeredAt: new Date().toISOString(),
+      };
       
       localStorage.setItem(`ticket_${eventId}`, JSON.stringify(ticketData));
       
@@ -244,7 +255,7 @@ export default function EventsPage() {
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardContent className="p-6">
+          <CardBody className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
@@ -258,32 +269,32 @@ export default function EventsPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <select
-              label="Sort by"
+                <Select
+                  label="Sort by"
                   selectedKeys={[sortBy]}
                   onChange={(e) => setSortBy(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
-                  <option value="date">Date</option>
-                  <option value="price">Price</option>
-                  <option value="popularity">Popularity</option>
-                </select>
+                  <SelectItem key="date">Date</SelectItem>
+                  <SelectItem key="price">Price</SelectItem>
+                  <SelectItem key="popularity">Popularity</SelectItem>
+                </Select>
 
-                <select
-              label="Category"
+                <Select
+                  label="Category"
                   selectedKeys={[selectedCategory]}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <option value={category.key}>{category.label}</option>
+                    <SelectItem key={category.key}>{category.label}</SelectItem>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
-          </CardContent>
+          </CardBody>
         </Card>
       </div>
 
@@ -294,11 +305,11 @@ export default function EventsPage() {
             <Card
               key={event.$id}
               className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-              
+              shadow="lg"
               isPressable
               onPress={() => handleEventClick(event.$id!)}
             >
-              <CardContent className="p-0 overflow-hidden">
+              <CardBody className="p-0 overflow-hidden">
                 <div className="relative">
                   <img
                     src={event.image}
@@ -308,7 +319,13 @@ export default function EventsPage() {
 
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {event.isFeatured && (
-                      <Badge color="warning" className="font-bold">
+                      <Badge color="warning" variant="solid" className="font-bold">
+                        <StarIcon className="w-3 h-3 mr-1" />
+                        Featured
+                      </Badge>
+                    )}
+                    {event.isPremium && (
+                      <Badge color="secondary" variant="solid" className="font-bold">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
                       </Badge>
@@ -317,13 +334,85 @@ export default function EventsPage() {
 
                   <Button
                     isIconOnly
-                    variant="primary">
+                    variant="flat"
+                    className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+                    size="sm"
+                    onPress={(e) => toggleSaveEvent(e as any, event.$id!)}
+                  >
+                    <HeartIcon 
+                      className={`w-4 h-4 ${
+                        savedEvents.includes(event.$id!) 
+                          ? "fill-red-500 text-red-500" 
+                          : "text-gray-600"
+                      }`} 
+                    />
+                  </Button>
+
+                  {event.discountPrice && event.discountPrice < event.price && (
+                    <div className="absolute bottom-4 left-4">
+                      <Badge color="danger" variant="solid">
+                        {calculateDiscount(event.price, event.discountPrice)}% OFF
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-bold text-xl line-clamp-2 group-hover:text-primary transition-colors">
+                      {event.title}
+                    </h3>
+                  </div>
+
+                  <p className="text-default-600 line-clamp-2">
+                    {event.description}
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-default-500">
+                      <CalendarIcon className="w-4 h-4" />
+                      <span>{formatDate(event.date)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-default-500">
+                      <MapPinIcon className="w-4 h-4" />
+                      <span>{event.location}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-default-500">
+                      <UsersIcon className="w-4 h-4" />
+                      <span>{event.registered} registered</span>
+                      {event.capacity && (
+                        <span className="text-xs text-default-400">
+                          • {event.capacity - event.registered} spots left
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {event.capacity && (
+                    <Progress 
+                      value={(event.registered / event.capacity) * 100} 
+                      size="sm" 
+                      color="primary" 
+                      className="mt-2"
+                    />
+                  )}
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {event.tags.slice(0, 3).map((tag, index) => (
+                      <Chip key={index} size="sm" variant="flat" color="primary">
+                        {tag}
+                      </Chip>
+                    ))}
+                    {event.tags.length > 3 && (
+                      <Chip size="sm" variant="flat">
                         +{event.tags.length - 3}
                       </Chip>
                     )}
                   </div>
                 </div>
-              </CardContent>
+              </CardBody>
 
               <CardFooter className="px-6 pb-6 pt-0">
                 <div className="flex items-center justify-between w-full">

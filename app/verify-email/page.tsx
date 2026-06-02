@@ -1,12 +1,14 @@
 // app/verify-email/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button } from "@heroui/react";
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
 import NextLink from "next/link";
+
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,7 +77,7 @@ function VerifyEmailContent() {
           )}
         </CardHeader>
         
-        <CardContent className="text-center gap-4">
+        <CardBody className="text-center gap-4">
           {status === "loading" && (
             <p className="text-default-500">
               Please wait while we verify your email address...
@@ -90,14 +92,42 @@ function VerifyEmailContent() {
               <Button
                 as={NextLink}
                 href="/profile"
-                variant="primary"
+                color="primary"
+                className="mt-4"
+              >
+                Go to Profile
+              </Button>
+            </>
+          )}
+          
+          {status === "error" && (
+            <>
+              <p className="text-danger text-sm">
+                {errorMessage}
+              </p>
+              <p className="text-default-500 text-sm mt-2">
+                Please try requesting a new verification email from your settings page.
+              </p>
+              <div className="flex gap-2 justify-center mt-4">
+                <Button
+                  as={NextLink}
+                  href="/settings"
+                  color="primary"
+                  variant="flat"
+                >
+                  Go to Settings
+                </Button>
+                <Button
+                  as={NextLink}
+                  href="/"
+                  variant="light"
                 >
                   Go Home
                 </Button>
               </div>
             </>
           )}
-        </CardContent>
+        </CardBody>
       </Card>
     </div>
   );
@@ -107,10 +137,10 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <CardContent className="py-12 text-center">
+        <CardBody className="py-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-default-500">Verifying your email...</p>
-        </CardContent>
+        </CardBody>
       </Card>
     </div>
   );

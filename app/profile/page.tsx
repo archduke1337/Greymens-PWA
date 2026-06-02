@@ -1,13 +1,18 @@
 // app/profile/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, Avatar, Button, Input, Chip } from "@heroui/react";
 import { useEffect, useState, useRef } from "react";
+import { Card, CardHeader, CardBody } from "@heroui/card";
+import { Avatar } from "@heroui/avatar";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Chip } from "@heroui/chip";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
+
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
 
@@ -116,7 +121,9 @@ export default function ProfilePage() {
       await account.updatePrefs({
         prefs: {
           ...user?.prefs,
-          profilePictureId: response.$id } });
+          profilePictureId: response.$id,
+        },
+      });
 
       // FIXED: Get preview URL properly
       const fileUrl = storage.getFilePreview(
@@ -185,7 +192,7 @@ export default function ProfilePage() {
             <Avatar
               src={profilePicture}
               className="w-32 h-32"
-              className="border-2 border-default-300"
+              isBordered
               color="primary"
               showFallback
               name={user.name}
@@ -193,13 +200,138 @@ export default function ProfilePage() {
             <Button
               isIconOnly
               size="sm"
-              variant="primary"
+              color="primary"
+              className="absolute bottom-0 right-0 shadow-lg"
+              onPress={handleFileSelect}
+              isLoading={uploadingPhoto}
+            >
+              {!uploadingPhoto && (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                </svg>
+              )}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              title="Upload profile picture"
+              placeholder="Select an image"
+            />
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <h1 className="text-2xl font-bold">{user.name}</h1>
+            <p className="text-default-500">{user.email}</p>
+            {user.phone && (
+              <p className="text-default-500 text-sm">{user.phone}</p>
+            )}
+            <Chip color="success" variant="flat" size="sm" className="mt-2">
+              Active Account
+            </Chip>
+          </div>
+        </CardHeader>
+
+        <CardBody className="gap-6 px-4 md:px-8 pb-8">
+          {/* Show upload status */}
+          {updateError && (
+            <div className={`p-3 rounded-lg text-sm ${
+              updateSuccess ? "bg-success-50 text-success-700 dark:bg-success-900/20" : "bg-danger-50 text-danger-700 dark:bg-danger-900/20"
+            }`}>
+              {updateError}
+            </div>
+          )}
+
+          <div className="border-t border-divider pt-6">
+            <h2 className="text-lg font-semibold mb-4">Account Information</h2>
+            
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-default-500">User ID</label>
+                <p className="text-xs md:text-sm font-mono bg-default-100 p-2 rounded-lg break-all">
+                  {user.$id}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-default-500">Email</label>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm p-2 break-all">{user.email}</p>
+                  <Chip 
+                    color={user.emailVerification ? "success" : "warning"} 
+                    variant="flat" 
+                    size="sm"
+                  >
+                    {user.emailVerification ? "Verified" : "Not Verified"}
+                  </Chip>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-default-500">Phone Number</label>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm p-2">{user.phone || "Not added"}</p>
+                  <Chip 
+                    color={user.phoneVerification ? "success" : "warning"} 
+                    variant="flat" 
+                    size="sm"
+                  >
+                    {user.phoneVerification ? "Verified" : "Not Verified"}
+                  </Chip>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm text-default-500">Account Created</label>
+                <p className="text-sm p-2">
+                  {new Date(user.$createdAt).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-divider pt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Profile Details</h2>
+              {!isEditing && (
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                  onPress={() => setIsEditing(true)}
+                >
+                  Edit Profile
+                </Button>
+              )}
+            </div>
+
+            {isEditing ? (
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <Input
+                  label="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  required
+                  isDisabled={updateLoading}
+                />
+
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    color="primary"
                     isLoading={updateLoading}
                   >
                     Save Changes
                   </Button>
                   <Button
-                    
+                    variant="flat"
                     onPress={() => {
                       setIsEditing(false);
                       setName(user.name);
@@ -221,7 +353,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </CardContent>
+        </CardBody>
       </Card>
     </div>
   );

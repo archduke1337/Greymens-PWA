@@ -5,15 +5,18 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Badge } from "@heroui/react";
 import { useState, useEffect } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Badge } from "@heroui/badge";
 import {
   DatabaseIcon,
   ServerIcon,
   PlugIcon,
   AlertTriangleIcon,
   CheckCircle2Icon,
-  XCircleIcon } from "lucide-react";
+  XCircleIcon,
+} from "lucide-react";
 
 interface ServiceStatus {
   name: string;
@@ -49,11 +52,14 @@ export default function DiagnosticsPage() {
           hasEnvVars:
             !!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT &&
             !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-          requiredVarsPresent: true },
+          requiredVarsPresent: true,
+        },
         services: [],
         buildInfo: {
           nextVersion: "14.x",
-          typescript: true } };
+          typescript: true,
+        },
+      };
 
       // Check Appwrite connectivity
       const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -68,7 +74,9 @@ export default function DiagnosticsPage() {
           details: {
             endpoint: endpoint ? "✓ Set" : "✗ Missing",
             projectId: projectId ? "✓ Set" : "✗ Missing",
-            databaseId: databaseId ? "✓ Set" : "✗ Missing" } });
+            databaseId: databaseId ? "✓ Set" : "✗ Missing",
+          },
+        });
       } else {
         data.services.push({
           name: "Appwrite Configuration",
@@ -77,24 +85,29 @@ export default function DiagnosticsPage() {
           details: {
             endpoint: endpoint.substring(0, 50) + "...",
             projectId: projectId.substring(0, 12) + "...",
-            databaseId: databaseId ? databaseId.substring(0, 12) + "..." : "Not set" } });
+            databaseId: databaseId ? databaseId.substring(0, 12) + "..." : "Not set",
+          },
+        });
 
         // Try to test Appwrite connectivity
         try {
           const response = await fetch(endpoint, {
             method: "GET",
-            headers: { Accept: "application/json" } });
+            headers: { Accept: "application/json" },
+          });
           data.services.push({
             name: "Appwrite Endpoint",
             status: response.ok ? "connected" : "disconnected",
             message: response.ok
               ? "Endpoint is reachable"
-              : `Endpoint returned status ${response.status}` });
+              : `Endpoint returned status ${response.status}`,
+          });
         } catch (error) {
           data.services.push({
             name: "Appwrite Endpoint",
             status: "disconnected",
-            message: `Cannot reach endpoint: ${String(error).substring(0, 100)}` });
+            message: `Cannot reach endpoint: ${String(error).substring(0, 100)}`,
+          });
         }
       }
 
@@ -105,7 +118,8 @@ export default function DiagnosticsPage() {
         status: emailJsServiceId ? "connected" : "unknown",
         message: emailJsServiceId
           ? "EmailJS is configured"
-          : "EmailJS not configured (optional)" });
+          : "EmailJS not configured (optional)",
+      });
 
       setDiagnostics(data);
       setLoading(false);
@@ -153,9 +167,9 @@ export default function DiagnosticsPage() {
 
         {loading ? (
           <Card className="bg-slate-800 border-0">
-            <CardContent className="py-12 text-center">
+            <CardBody className="py-12 text-center">
               <div className="text-slate-400">Loading diagnostics...</div>
-            </CardContent>
+            </CardBody>
           </Card>
         ) : diagnostics ? (
           <>
@@ -165,7 +179,7 @@ export default function DiagnosticsPage() {
                 <ServerIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Environment</h2>
               </CardHeader>
-              <CardContent className="py-6 grid grid-cols-2 gap-4">
+              <CardBody className="py-6 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-slate-400 text-sm">Node Environment</p>
                   <p className="text-white font-mono">
@@ -186,7 +200,7 @@ export default function DiagnosticsPage() {
                     {new Date(diagnostics.timestamp).toLocaleString()}
                   </p>
                 </div>
-              </CardContent>
+              </CardBody>
             </Card>
 
             {/* Services Status */}
@@ -195,7 +209,7 @@ export default function DiagnosticsPage() {
                 <PlugIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Services</h2>
               </CardHeader>
-              <CardContent className="py-6 space-y-4">
+              <CardBody className="py-6 space-y-4">
                 {diagnostics.services.map((service, idx) => (
                   <div
                     key={idx}
@@ -233,7 +247,7 @@ export default function DiagnosticsPage() {
                     </div>
                   </div>
                 ))}
-              </CardContent>
+              </CardBody>
             </Card>
 
             {/* Quick Links */}
@@ -242,24 +256,33 @@ export default function DiagnosticsPage() {
                 <DatabaseIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </CardHeader>
-              <CardContent className="py-6">
+              <CardBody className="py-6">
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     as="a"
                     href="/connectivity-check"
-                    variant="primary"
+                    color="primary"
+                    variant="flat"
+                  >
+                    Connection Test
+                  </Button>
+                  <Button
+                    as="a"
+                    href="/events"
+                    color="default"
+                    variant="flat"
                   >
                     Test Events Page
                   </Button>
                 </div>
-              </CardContent>
+              </CardBody>
             </Card>
           </>
         ) : (
           <Card className="bg-slate-800 border-0">
-            <CardContent className="py-12 text-center text-red-400">
+            <CardBody className="py-12 text-center text-red-400">
               Failed to load diagnostics
-            </CardContent>
+            </CardBody>
           </Card>
         )}
       </div>

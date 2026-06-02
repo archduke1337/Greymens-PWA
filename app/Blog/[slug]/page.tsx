@@ -1,9 +1,12 @@
 // app/blog/[slug]/page.tsx
 "use client";
 
-import { Card, CardContent, Button, Chip, Avatar } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
+import { Avatar } from "@heroui/avatar";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {
@@ -11,7 +14,8 @@ import {
   ClockIcon,
   EyeIcon,
   CalendarIcon,
-  ShareIcon } from "lucide-react";
+  ShareIcon,
+} from "lucide-react";
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -61,7 +65,8 @@ export default function BlogPostPage() {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
-      year: "numeric" });
+      year: "numeric",
+    });
   };
 
   const handleShare = () => {
@@ -69,7 +74,8 @@ export default function BlogPostPage() {
       navigator.share({
         title: blog?.title,
         text: blog?.excerpt,
-        url: window.location.href });
+        url: window.location.href,
+      });
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Link copied to clipboard!");
@@ -92,12 +98,116 @@ export default function BlogPostPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-xl font-semibold mb-4">Blog not found</p>
-          <Button variant="primary" color="primary">
+          <Button color="primary" onPress={() => router.push("/blog")}>
+            Back to Blogs
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pb-20">
+      {/* Back Button */}
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Button
+          variant="light"
+          startContent={<ArrowLeftIcon className="w-4 h-4" />}
+          onPress={() => router.push("/blog")}
+        >
+          Back to Blogs
+        </Button>
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative h-[400px] mb-12">
+        <img
+          src={blog.coverImage}
+          alt={blog.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+
+        {/* Title Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-8">
+          <div className="container mx-auto max-w-4xl">
+            <Chip color="primary" variant="solid" className="mb-4">
+              {blog.category}
+            </Chip>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              {blog.title}
+            </h1>
+            <p className="text-xl text-white/90">{blog.excerpt}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Container */}
+      <div className="container mx-auto px-4 max-w-4xl">
+        {/* Meta Info */}
+        <Card className="mb-8">
+          <CardBody className="p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Author */}
+              <div className="flex items-center gap-3">
+                <Avatar
+                  src={blog.authorAvatar}
+                  name={blog.authorName}
+                  size="lg"
+                />
+                <div>
+                  <p className="font-semibold">{blog.authorName}</p>
+                  <p className="text-sm text-default-500">
+                    {blog.publishedAt && formatDate(blog.publishedAt)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex items-center gap-6 text-sm text-default-600">
+                <div className="flex items-center gap-2">
+                  <ClockIcon className="w-4 h-4" />
+                  <span>{blog.readTime} min read</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <EyeIcon className="w-4 h-4" />
+                  <span>{blog.views} views</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isIconOnly
+                  onPress={handleShare}
+                >
+                  <ShareIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Blog Content */}
+        <Card className="mb-8">
+          <CardBody className="p-8 md:p-12">
+            <div className="prose prose-lg dark:prose-invert max-w-none">
+              {/* Simple content rendering - for Markdown, use a library like react-markdown */}
+              <div className="whitespace-pre-wrap">{blog.content}</div>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Tags */}
+        <Card className="mb-8">
+          <CardBody className="p-6">
+            <h3 className="font-semibold mb-4">Tags</h3>
+            <div className="flex flex-wrap gap-2">
+              {blog.tags.map((tag, index) => (
+                <Chip key={index} variant="flat" color="primary">
                   #{tag}
                 </Chip>
               ))}
             </div>
-          </CardContent>
+          </CardBody>
         </Card>
 
         {/* Related Blogs */}
@@ -112,7 +222,7 @@ export default function BlogPostPage() {
                   onPress={() => router.push(`/blog/${relatedBlog.slug}`)}
                   className="hover:shadow-xl transition-all"
                 >
-                  <CardContent className="p-0">
+                  <CardBody className="p-0">
                     <img
                       src={relatedBlog.coverImage}
                       alt={relatedBlog.title}
@@ -126,7 +236,7 @@ export default function BlogPostPage() {
                         {relatedBlog.excerpt}
                       </p>
                     </div>
-                  </CardContent>
+                  </CardBody>
                 </Card>
               ))}
             </div>

@@ -13,7 +13,8 @@ export function Toaster() {
       closeButton
       theme={theme as "light" | "dark" | undefined}
       toastOptions={{
-        duration: 4000 }}
+        duration: 4000,
+      }}
     />
   );
 }

@@ -1,9 +1,13 @@
 // app/blog/write/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
@@ -24,7 +28,8 @@ export default function WriteBlogPage() {
     content: "",
     coverImage: "",
     category: "",
-    tags: "" });
+    tags: "",
+  });
 
   useEffect(() => {
     if (!user) {
@@ -107,7 +112,8 @@ export default function WriteBlogPage() {
         views: 0,
         likes: 0,
         featured: false,
-        readTime });
+        readTime,
+      });
 
       toast.success(
         "Blog submitted successfully! It will be reviewed by our team before publishing."
@@ -131,7 +137,172 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="ghost"
+          variant="light"
+          startContent={<ArrowLeftIcon className="w-4 h-4" />}
+          onPress={() => router.back()}
+          className="mb-4"
+        >
+          Back
+        </Button>
+        <h1 className="text-4xl font-bold mb-2">Write a Blog</h1>
+        <p className="text-default-600">
+          Share your knowledge and insights with the community
+        </p>
+      </div>
+
+      {/* Form */}
+      <Card className="border-none shadow-xl">
+        <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+          <h2 className="text-xl font-bold">Blog Details</h2>
+        </CardHeader>
+        <CardBody className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <Input
+              label="Blog Title"
+              placeholder="Enter an engaging title..."
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              required
+              isRequired
+              size="lg"
+            />
+
+            {/* Excerpt */}
+            <Textarea
+              label="Excerpt (Optional)"
+              placeholder="Brief summary of your blog..."
+              value={formData.excerpt}
+              onChange={(e) =>
+                setFormData({ ...formData, excerpt: e.target.value })
+              }
+              rows={3}
+              description="If not provided, first 150 characters will be used"
+            />
+
+            {/* Category */}
+            <Select
+              label="Category"
+              placeholder="Select a category"
+              selectedKeys={formData.category ? [formData.category] : []}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              required
+              isRequired
+            >
+              {blogCategories.map((cat) => (
+                <SelectItem key={cat.value}>{cat.label}</SelectItem>
+              ))}
+            </Select>
+
+            {/* Tags */}
+            <Input
+              label="Tags"
+              placeholder="react, javascript, tutorial (comma separated)"
+              value={formData.tags}
+              onChange={(e) =>
+                setFormData({ ...formData, tags: e.target.value })
+              }
+              description="Add relevant tags separated by commas"
+            />
+
+            {/* Cover Image */}
+            <div className="space-y-4">
+              <label className="text-sm font-medium">
+                Cover Image <span className="text-danger">*</span>
+              </label>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Upload Button */}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="sr-only"
+                    id="cover-image-upload"
+                    title="Upload cover image"
+                    aria-label="Upload cover image"
+                    placeholder="Upload cover image"
+                  />
+                  <Button
+                    as="label"
+                    htmlFor="cover-image-upload"
+                    variant="flat"
+                    color="primary"
+                    startContent={<ImageIcon className="w-5 h-5" />}
+                    isLoading={uploadingImage}
+                    className="w-full"
+                  >
+                    {uploadingImage ? "Uploading..." : "Upload Image"}
+                  </Button>
+                  <p className="text-xs text-default-500 mt-2">
+                    Max 5MB (JPG, PNG, WebP)
+                  </p>
+                </div>
+
+                {/* Or URL Input */}
+                <Input
+                  placeholder="Or paste image URL"
+                  value={formData.coverImage}
+                  onChange={(e) =>
+                    setFormData({ ...formData, coverImage: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Image Preview */}
+              {formData.coverImage && (
+                <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
+                  <p className="text-sm font-medium mb-2">Preview:</p>
+                  <img
+                    src={formData.coverImage}
+                    alt="Cover preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                    onError={() => {
+                      toast.error("Invalid image URL");
+                      setFormData({ ...formData, coverImage: "" });
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Content */}
+            <Textarea
+              label="Blog Content"
+              placeholder="Write your blog content here... (Markdown supported)"
+              value={formData.content}
+              onChange={(e) =>
+                setFormData({ ...formData, content: e.target.value })
+              }
+              required
+              isRequired
+              rows={15}
+              description="Write in plain text or Markdown format"
+            />
+
+            {/* Word Count */}
+            <div className="text-sm text-default-500">
+              {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
+              {blogService.calculateReadTime(formData.content)} min read
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                variant="flat"
+                onPress={() => router.back()}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                color="primary"
                 isLoading={submitting}
                 endContent={<SendIcon className="w-5 h-5" />}
                 className="flex-1"
@@ -148,7 +319,7 @@ export default function WriteBlogPage() {
               </p>
             </div>
           </form>
-        </CardContent>
+        </CardBody>
       </Card>
     </div>
   );

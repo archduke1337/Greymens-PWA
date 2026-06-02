@@ -1,12 +1,20 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Switch } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import { Chip } from "@heroui/chip";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { Switch } from "@heroui/switch";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { useDisclosure } from "@/components/compat";
+
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +38,8 @@ export default function AdminProjectsPage() {
     isFeatured: false,
     demoUrl: "",
     repoUrl: "",
-    teamMembers: "" });
+    teamMembers: "",
+  });
 
   const categories = [
     { key: "ai-ml", label: "🤖 AI & ML" },
@@ -43,7 +52,7 @@ export default function AdminProjectsPage() {
 
   const statuses = [
     { key: "planning", label: "📋 Planning" },
-    { key: "in-progress", label: "🚧 In ProgressBar" },
+    { key: "in-progress", label: "🚧 In Progress" },
     { key: "completed", label: "✅ Completed" },
   ];
 
@@ -92,7 +101,8 @@ export default function AdminProjectsPage() {
       isFeatured: false,
       demoUrl: "",
       repoUrl: "",
-      teamMembers: "" });
+      teamMembers: "",
+    });
   };
 
   // Open modal for adding new project
@@ -122,7 +132,8 @@ export default function AdminProjectsPage() {
       isFeatured: project.isFeatured,
       demoUrl: project.demoUrl || "",
       repoUrl: project.repoUrl || "",
-      teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "" });
+      teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "",
+    });
     onOpen();
   };
 
@@ -145,7 +156,7 @@ export default function AdminProjectsPage() {
       return false;
     }
     if (formData.progress < 0 || formData.progress > 100) {
-      toast.error("ProgressBar must be between 0 and 100");
+      toast.error("Progress must be between 0 and 100");
       return false;
     }
     return true;
@@ -180,7 +191,8 @@ export default function AdminProjectsPage() {
           .split(",")
           .map(t => t.trim())
           .filter(t => t),
-        createdAt: isEditing ? selectedProject?.createdAt || new Date().toISOString() : new Date().toISOString() };
+        createdAt: isEditing ? selectedProject?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      };
 
       if (isEditing && selectedProject?.$id) {
         await projectService.updateProject(selectedProject.$id, projectData);
@@ -257,7 +269,7 @@ export default function AdminProjectsPage() {
 
         {/* Admin Tips Section */}
         <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-          <CardContent className="p-6">
+          <CardBody className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
@@ -276,14 +288,14 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
+          </CardBody>
         </Card>
 
         {/* Main Content */}
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Projects Table */}
           <div className="lg:col-span-3">
-            <Card className="border-none shadow-xl shadow-lg">
+            <Card className="border-none shadow-xl" shadow="lg">
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
@@ -300,7 +312,7 @@ export default function AdminProjectsPage() {
                   New Project
                 </Button>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardBody className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
@@ -332,7 +344,8 @@ export default function AdminProjectsPage() {
                       classNames={{
                         wrapper: "shadow-none border-none",
                         th: "bg-transparent text-gray-700 dark:text-gray-300 font-semibold border-b border-gray-200 dark:border-gray-700",
-                        td: "border-b border-gray-100 dark:border-gray-800" }}
+                        td: "border-b border-gray-100 dark:border-gray-800",
+                      }}
                     >
                       <TableHeader>
                         <TableColumn className="text-sm">PROJECT</TableColumn>
@@ -372,7 +385,398 @@ export default function AdminProjectsPage() {
                             <TableCell>
                               <Chip 
                                 size="sm" 
-                                variant="primary"
+                                variant="flat" 
+                                color={getCategoryColor(project.category) as any}
+                                classNames={{
+                                  base: "capitalize font-medium"
+                                }}
+                              >
+                                {project.category.replace('-', ' ')}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="sm"
+                                color={getStatusColor(project.status) as any}
+                                variant="dot"
+                                classNames={{
+                                  base: "capitalize font-medium"
+                                }}
+                              >
+                                {project.status.replace('-', ' ')}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 flex-1">
+                                  <div
+                                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${project.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-8">{project.progress}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {project.isFeatured ? (
+                                <Chip 
+                                  size="sm" 
+                                  color="warning" 
+                                  variant="flat" 
+                                  startContent={<StarIcon className="w-3 h-3" />}
+                                  classNames={{
+                                    base: "font-medium"
+                                  }}
+                                >
+                                  Featured
+                                </Chip>
+                              ) : (
+                                <span className="text-gray-400 text-sm">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() => handleEdit(project)}
+                                  className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
+                                >
+                                  <Edit2Icon className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                  color="danger"
+                                  onPress={() => handleDelete(project.$id!)}
+                                  className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+
+          {/* Stats Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <Card className="border-none shadow-xl" shadow="lg">
+              <CardHeader className="px-6 pt-6 pb-0">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
+              </CardHeader>
+              <CardBody className="p-6 space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{projects.length}</p>
+                  </div>
+                  <FolderIcon className="w-8 h-8 text-purple-500" />
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {projects.filter(p => p.status === 'in-progress').length}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <Loader2Icon className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {projects.filter(p => p.status === 'completed').length}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Featured</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {projects.filter(p => p.isFeatured).length}
+                    </p>
+                  </div>
+                  <StarIcon className="w-8 h-8 text-yellow-500" />
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        </div>
+        {/* Add/Edit Modal */}
+        <Modal
+          isOpen={isOpen}
+          onClose={onClose}
+          size="2xl"
+          scrollBehavior="inside"
+          classNames={{
+            base: "border-none",
+            backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  {isEditing ? (
+                    <Edit2Icon className="w-5 h-5 text-white" />
+                  ) : (
+                    <PlusIcon className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {isEditing ? "Edit Project" : "Create New Project"}
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isEditing ? "Update project details and progress" : "Add a new project to showcase your work"}
+                  </p>
+                </div>
+              </div>
+            </ModalHeader>
+            <ModalBody className="p-6 gap-6">
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Input
+                    label="Project Title"
+                    placeholder="Enter project title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    isRequired
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  />
+                  <Input
+                    label="Duration"
+                    placeholder="3 months"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    isRequired
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  />
+                </div>
+
+                <Textarea
+                  label="Description"
+                  placeholder="Describe your project goals, features, and impact..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  isRequired
+                  variant="bordered"
+                  minRows={3}
+                  classNames={{
+                    label: "text-gray-700 dark:text-gray-300",
+                  }}
+                />
+
+                <Input
+                  label="Image URL"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  isRequired
+                  variant="bordered"
+                  description="Use high-quality images from Unsplash or similar platforms"
+                  classNames={{
+                    label: "text-gray-700 dark:text-gray-300",
+                    description: "text-gray-500 dark:text-gray-400",
+                  }}
+                />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Select
+                    label="Category"
+                    selectedKeys={[formData.category]}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  >
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.key} textValue={cat.label}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <Select
+                    label="Status"
+                    selectedKeys={[formData.status]}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  >
+                    {statuses.map((status) => (
+                      <SelectItem key={status.key} textValue={status.label}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
+                        Progress: {formData.progress}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={formData.progress}
+                        onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.progress.toString()}
+                      onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                      variant="bordered"
+                      className="w-20"
+                      classNames={{
+                        input: "text-center",
+                      }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input
+                      label="Stars"
+                      type="number"
+                      min="0"
+                      value={formData.stars.toString()}
+                      onChange={(e) => setFormData({ ...formData, stars: Number(e.target.value) })}
+                      variant="bordered"
+                      startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
+                      classNames={{
+                        label: "text-gray-700 dark:text-gray-300",
+                      }}
+                    />
+                    <Input
+                      label="Forks"
+                      type="number"
+                      min="0"
+                      value={formData.forks.toString()}
+                      onChange={(e) => setFormData({ ...formData, forks: Number(e.target.value) })}
+                      variant="bordered"
+                      startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
+                      classNames={{
+                        label: "text-gray-700 dark:text-gray-300",
+                      }}
+                    />
+                    <Input
+                      label="Contributors"
+                      type="number"
+                      min="1"
+                      value={formData.contributors.toString()}
+                      onChange={(e) => setFormData({ ...formData, contributors: Number(e.target.value) })}
+                      variant="bordered"
+                      startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
+                      classNames={{
+                        label: "text-gray-700 dark:text-gray-300",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <Textarea
+                  label="Technologies"
+                  placeholder="React, Node.js, MongoDB, TypeScript..."
+                  value={formData.technologies}
+                  onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
+                  variant="bordered"
+                  description="Separate technologies with commas"
+                  minRows={2}
+                  classNames={{
+                    label: "text-gray-700 dark:text-gray-300",
+                    description: "text-gray-500 dark:text-gray-400",
+                  }}
+                />
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Input
+                    label="Demo URL"
+                    placeholder="https://demo.example.com"
+                    value={formData.demoUrl}
+                    onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  />
+
+                  <Input
+                    label="Repository URL"
+                    placeholder="https://github.com/username/repo"
+                    value={formData.repoUrl}
+                    onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
+                    variant="bordered"
+                    classNames={{
+                      label: "text-gray-700 dark:text-gray-300",
+                    }}
+                  />
+                </div>
+
+                <Textarea
+                  label="Team Members"
+                  placeholder="John Doe, Jane Smith, Alex Johnson..."
+                  value={formData.teamMembers}
+                  onChange={(e) => setFormData({ ...formData, teamMembers: e.target.value })}
+                  variant="bordered"
+                  description="Separate names with commas"
+                  minRows={2}
+                  classNames={{
+                    label: "text-gray-700 dark:text-gray-300",
+                    description: "text-gray-500 dark:text-gray-400",
+                  }}
+                />
+
+                <Switch
+                  isSelected={formData.isFeatured}
+                  onValueChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                  classNames={{
+                    wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
+                    label: "text-gray-700 dark:text-gray-300 text-sm",
+                  }}
+                >
+                  Feature this project on the homepage
+                </Switch>
+              </div>
+            </ModalBody>
+            <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <Button variant="light" onPress={onClose} isDisabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
                 onPress={handleSave}
                 isLoading={saving}
                 startContent={!saving && <SaveIcon className="w-4 h-4" />}
@@ -381,7 +785,7 @@ export default function AdminProjectsPage() {
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
             </ModalFooter>
-          </ModalDialog>
+          </ModalContent>
         </Modal>
       </div>
 

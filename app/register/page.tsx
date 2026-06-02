@@ -1,10 +1,15 @@
 // app/register/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 import NextLink from "next/link";
+
 import { useAuth } from "@/context/AuthContext";
+
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,7 +61,7 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold">Create Account</h1>
           <p className="text-small text-default-500">Sign up for Mind Mesh</p>
         </CardHeader>
-        <CardContent>
+        <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Name"
@@ -99,7 +104,22 @@ export default function RegisterPage() {
             )}
             <Button
               type="submit"
-              variant="primary"
+              color="primary"
+              isLoading={loading}
+              className="w-full"
+            >
+              Create Account
+            </Button>
+          </form>
+
+          <div className="relative flex py-5 items-center">
+            <div className="flex-grow border-t border-divider"></div>
+            <span className="flex-shrink mx-4 text-default-400 text-small">OR</span>
+            <div className="flex-grow border-t border-divider"></div>
+          </div>
+
+          <Button
+            variant="bordered"
             className="w-full"
             startContent={
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -125,7 +145,7 @@ export default function RegisterPage() {
           >
             Continue with Google
           </Button>
-        </CardContent>
+        </CardBody>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
             Already have an account?{" "}

@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardFooter, Button, Badge, Chip, Avatar, ProgressBar } from "@heroui/react";
+import { Card, CardBody, CardFooter } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Badge } from "@heroui/badge";
+import { Chip } from "@heroui/chip";
+import { Avatar } from "@heroui/avatar";
+import { Progress } from "@heroui/progress";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
@@ -140,10 +145,10 @@ export default function ProjectsPage() {
                 <Card
                   key={project.$id}
                   className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                  
+                  shadow="lg"
                   isPressable
-                 className="shadow-lg">
-                  <CardContent className="p-0 overflow-hidden">
+                >
+                  <CardBody className="p-0 overflow-hidden">
                     {/* Project Image */}
                     <div className="relative">
                       <img
@@ -157,7 +162,7 @@ export default function ProjectsPage() {
                         {project.isFeatured && (
                           <Badge 
                             color="warning" 
-                           
+                            variant="solid"
                             className="font-bold"
                           >
                             <StarIcon className="w-3 h-3 mr-1" />
@@ -169,7 +174,156 @@ export default function ProjectsPage() {
                       {/* Save Button */}
                       <Button
                         isIconOnly
-                        variant="primary"
+                        variant="flat"
+                        className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+                        size="sm"
+                        onPress={() => toggleSaveProject(project.$id!)}
+                      >
+                        <HeartIcon 
+                          className={`w-5 h-5 ${
+                            savedProjects.includes(project.$id!) 
+                              ? "text-red-500 fill-red-500" 
+                              : "text-default-600"
+                          }`} 
+                        />
+                      </Button>
+
+                      {/* Status Badge */}
+                      <div className="absolute bottom-4 right-4">
+                        <Chip
+                          color={getStatusColor(project.status) as any}
+                          variant="solid"
+                          size="sm"
+                        >
+                          {project.status.replace("-", " ")}
+                        </Chip>
+                      </div>
+                    </div>
+
+                    {/* Project Content */}
+                    <div className="p-6 space-y-4">
+                      {/* Header */}
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold line-clamp-2 group-hover:text-purple-600 transition-colors">
+                          {project.title}
+                        </h3>
+                        
+                        <p className="text-default-600 text-sm line-clamp-2">
+                          {project.description}
+                        </p>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-default-600">Progress</span>
+                          <span className="font-semibold">{project.progress}%</span>
+                        </div>
+                        <Progress 
+                          value={project.progress} 
+                          color="secondary"
+                          size="sm"
+                        />
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-center gap-1">
+                            <StarIcon className="w-4 h-4 text-yellow-500" />
+                            <span className="font-bold text-sm">{project.stars}</span>
+                          </div>
+                          <p className="text-xs text-default-500">Stars</p>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-center gap-1">
+                            <GitBranchIcon className="w-4 h-4 text-blue-500" />
+                            <span className="font-bold text-sm">{project.forks}</span>
+                          </div>
+                          <p className="text-xs text-default-500">Forks</p>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-center gap-1">
+                            <UsersIcon className="w-4 h-4 text-green-500" />
+                            <span className="font-bold text-sm">{project.contributors}</span>
+                          </div>
+                          <p className="text-xs text-default-500">Team</p>
+                        </div>
+                      </div>
+
+                      {/* Technologies */}
+                      <div className="flex flex-wrap gap-1">
+                        {project.technologies.slice(0, 3).map((tech, index) => (
+                          <Chip
+                            key={index}
+                            size="sm"
+                            variant="flat"
+                            className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 text-xs"
+                          >
+                            {tech}
+                          </Chip>
+                        ))}
+                        {project.technologies.length > 3 && (
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                            className="text-xs"
+                          >
+                            +{project.technologies.length - 3}
+                          </Chip>
+                        )}
+                      </div>
+
+                      {/* Team and Duration */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          {project.teamMembers?.slice(0, 3).map((member, index) => (
+                            <Avatar
+                              key={index}
+                              src={getAvatarUrl(member, index)}
+                              size="sm"
+                              className="border-2 border-white dark:border-gray-900"
+                            />
+                          ))}
+                          {project.teamMembers && project.teamMembers.length > 3 && (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-900">
+                              +{project.teamMembers.length - 3}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-default-500">
+                          <CalendarIcon className="w-4 h-4" />
+                          <span>{project.duration}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer with Actions */}
+                    <CardFooter className="px-6 pb-6 pt-0">
+                      <div className="flex gap-2 w-full">
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          size="sm"
+                        >
+                          <ShareIcon className="w-4 h-4" />
+                        </Button>
+                        
+                        {project.demoUrl && (
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                            as="a"
+                            href={project.demoUrl}
+                            target="_blank"
+                          >
+                            <EyeIcon className="w-4 h-4" />
+                          </Button>
+                        )}
+
+                        <Button
+                          color="primary"
                           className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
                           startContent={<CodeIcon className="w-4 h-4" />}
                           as="a"
@@ -180,7 +334,7 @@ export default function ProjectsPage() {
                         </Button>
                       </div>
                     </CardFooter>
-                  </CardContent>
+                  </CardBody>
                 </Card>
               ))}
             </div>
@@ -188,7 +342,7 @@ export default function ProjectsPage() {
             {/* Empty State */}
             {filteredProjects.length === 0 && (
               <Card className="border-none bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-                <CardContent className="text-center py-16">
+                <CardBody className="text-center py-16">
                   <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center">
                     <CodeIcon className="w-12 h-12 text-purple-500" />
                   </div>
@@ -196,7 +350,7 @@ export default function ProjectsPage() {
                   <p className="text-default-600 max-w-md mx-auto">
                     No projects match your selected category. Try choosing a different category or check back later for new projects.
                   </p>
-                </CardContent>
+                </CardBody>
               </Card>
             )}
           </div>

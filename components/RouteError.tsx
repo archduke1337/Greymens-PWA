@@ -1,5 +1,7 @@
-import { Button, Card, CardContent } from "@heroui/react";
 import { useEffect } from "react";
+import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
+
 interface RouteErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
@@ -11,15 +13,16 @@ export default function RouteError({
   error,
   reset,
   title = "Something went wrong",
-  description = "We couldn't load this page. Please try again." }: RouteErrorProps) {
+  description = "We couldn't load this page. Please try again.",
+}: RouteErrorProps) {
   useEffect(() => {
     console.error(`${title} error:`, error);
   }, [error, title]);
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
-      <Card className="w-full max-w-lg border-none shadow-xl shadow-lg">
-        <CardContent className="text-center py-16 space-y-6">
+      <Card className="w-full max-w-lg border-none shadow-xl" shadow="lg">
+        <CardBody className="text-center py-16 space-y-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-danger-100 dark:bg-danger-900/30 flex items-center justify-center">
             <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 17.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -30,14 +33,14 @@ export default function RouteError({
             <p className="text-default-500 max-w-sm mx-auto">{description}</p>
           </div>
           <div className="flex gap-3 justify-center">
-            <Button variant="primary" onPress={() => reset()}>
+            <Button color="primary" variant="solid" onPress={() => reset()}>
               Try Again
             </Button>
-            <Button  onPress={() => window.location.href = "/"}>
+            <Button variant="flat" onPress={() => window.location.href = "/"}>
               Go Home
             </Button>
           </div>
-        </CardContent>
+        </CardBody>
       </Card>
     </div>
   );

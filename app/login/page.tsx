@@ -1,10 +1,15 @@
 // app/login/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Link } from "@heroui/link";
 import NextLink from "next/link";
+
 import { useAuth } from "@/context/AuthContext";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +48,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold">Welcome Back</h1>
           <p className="text-small text-default-500">Login to your Mind Mesh account</p>
         </CardHeader>
-        <CardContent>
+        <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Email"
@@ -68,7 +73,22 @@ export default function LoginPage() {
             )}
             <Button
               type="submit"
-              variant="primary"
+              color="primary"
+              isLoading={loading}
+              className="w-full"
+            >
+              Login
+            </Button>
+          </form>
+
+          <div className="relative flex py-5 items-center">
+            <div className="flex-grow border-t border-divider"></div>
+            <span className="flex-shrink mx-4 text-default-400 text-small">OR</span>
+            <div className="flex-grow border-t border-divider"></div>
+          </div>
+
+          <Button
+            variant="bordered"
             className="w-full"
             startContent={
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -94,7 +114,7 @@ export default function LoginPage() {
           >
             Continue with Google
           </Button>
-        </CardContent>
+        </CardBody>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
             Don't have an account?{" "}

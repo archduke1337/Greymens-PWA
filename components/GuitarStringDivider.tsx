@@ -22,11 +22,13 @@ export default function GuitarStringDivider() {
       tl.to(path, {
         attr: { d: "M 50 100 Q 500 95 950 100" },
         duration: 0.5,
-        ease: "sine.inOut" })
+        ease: "sine.inOut",
+      })
         .to(path, {
           attr: { d: "M 50 100 Q 500 105 950 100" },
           duration: 0.5,
-          ease: "sine.inOut" });
+          ease: "sine.inOut",
+        });
       vibrationTimeline.current = tl;
     };
 
@@ -50,7 +52,8 @@ export default function GuitarStringDivider() {
       gsap.to(path, {
         attr: { d: newPath },
         duration: 0.3,
-        ease: "power3.out" });
+        ease: "power3.out",
+      });
     };
 
     const handleMouseLeave = () => {

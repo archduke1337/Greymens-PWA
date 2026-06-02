@@ -1,8 +1,14 @@
 // app/admin/blogs/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea } from "@heroui/react";
 import { useState, useEffect } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
+import { Avatar } from "@heroui/avatar";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { Textarea } from "@heroui/input";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {
@@ -11,7 +17,8 @@ import {
   EyeIcon,
   TrashIcon,
   ClockIcon,
-  StarIcon } from "lucide-react";
+  StarIcon,
+} from "lucide-react";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -135,7 +142,8 @@ export default function AdminBlogsPage() {
       day: "numeric",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit" });
+      minute: "2-digit",
+    });
   };
 
   if (loading) {
@@ -203,16 +211,16 @@ export default function AdminBlogsPage() {
       <div className="space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
+            <CardBody className="text-center py-12">
               <p className="text-lg text-default-600">
                 No blogs in this category
               </p>
-            </CardContent>
+            </CardBody>
           </Card>
         ) : (
           filteredBlogs.map((blog) => (
             <Card key={blog.$id} className="border-2">
-              <CardContent className="p-6">
+              <CardBody className="p-6">
                 <div className="grid md:grid-cols-12 gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
@@ -236,14 +244,168 @@ export default function AdminBlogsPage() {
                             ? "danger"
                             : "warning"
                         }
-                        variant="primary"
+                        variant="flat"
+                      >
+                        {blog.status}
+                      </Chip>
+                    </div>
+
+                    {/* Excerpt */}
+                    <p className="text-sm text-default-600 line-clamp-2">
+                      {blog.excerpt}
+                    </p>
+
+                    {/* Meta */}
+                    <div className="flex items-center gap-4 text-sm text-default-500">
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={blog.authorAvatar}
+                          name={blog.authorName}
+                          size="sm"
+                        />
+                        <span>{blog.authorName}</span>
+                      </div>
+                      <div>•</div>
+                      <div>{blog.category}</div>
+                      <div>•</div>
+                      <div>{blog.readTime} min read</div>
+                      {blog.featured && (
+                        <>
+                          <div>•</div>
+                          <Chip size="sm" color="warning">
+                            <StarIcon className="w-3 h-3" /> Featured
+                          </Chip>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2">
+                      {blog.tags.map((tag, i) => (
+                        <Chip key={i} size="sm" variant="flat">
+                          #{tag}
+                        </Chip>
+                      ))}
+                    </div>
+
+                    {/* Rejection Reason */}
+                    {blog.status === "rejected" && blog.rejectionReason && (
+                      <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-danger">
+                          Rejection Reason:
+                        </p>
+                        <p className="text-sm text-default-600">
+                          {blog.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Dates */}
+                    <div className="text-xs text-default-400">
+                      Submitted: {blog.$createdAt && formatDate(blog.$createdAt)}
+                      {blog.publishedAt && ` • Published: ${formatDate(blog.publishedAt)}`}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="md:col-span-3 flex md:flex-col gap-2">
+                    <Button
+                      as="a"
+                      href={`/blog/${blog.slug}`}
+                      target="_blank"
+                      size="sm"
+                      variant="flat"
+                      startContent={<EyeIcon className="w-4 h-4" />}
+                      className="flex-1 md:flex-none"
+                    >
+                      View
+                    </Button>
+
+                    {blog.status === "pending" && (
+                      <>
+                        <Button
+                          size="sm"
+                          color="success"
+                          variant="flat"
+                          startContent={<CheckIcon className="w-4 h-4" />}
+                          onPress={() => handleApprove(blog.$id!)}
+                          isLoading={processingBlog === blog.$id}
+                          className="flex-1 md:flex-none"
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          startContent={<XIcon className="w-4 h-4" />}
+                          onPress={() => openRejectModal(blog)}
+                          className="flex-1 md:flex-none"
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
+
+                    {blog.status === "approved" && (
+                      <Button
+                        size="sm"
+                        color="warning"
+                        variant="flat"
+                        startContent={<StarIcon className="w-4 h-4" />}
+                        onPress={() => toggleFeatured(blog)}
+                        className="flex-1 md:flex-none"
+                      >
+                        {blog.featured ? "Unfeature" : "Feature"}
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      color="danger"
+                      variant="flat"
+                      startContent={<TrashIcon className="w-4 h-4" />}
+                      onPress={() => handleDelete(blog.$id!)}
+                      className="flex-1 md:flex-none"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Rejection Modal */}
+      <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
+        <ModalContent>
+          <ModalHeader>Reject Blog</ModalHeader>
+          <ModalBody>
+            <p className="mb-4">
+              Please provide a reason for rejecting this blog:
+            </p>
+            <Textarea
+              placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={4}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setRejectModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
               onPress={handleReject}
               isLoading={!!processingBlog}
             >
               Reject Blog
             </Button>
           </ModalFooter>
-        </ModalDialog>
+        </ModalContent>
       </Modal>
     </div>
   );
