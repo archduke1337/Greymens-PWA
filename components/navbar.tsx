@@ -24,7 +24,7 @@ import { Logo } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
 
 export const Navbar = () => {
-  const { user, loading, logout } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -39,15 +39,6 @@ export const Navbar = () => {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
 
   // Generate avatar from user's name
   const getAvatarUrl = (name: string) => {

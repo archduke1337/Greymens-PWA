@@ -78,7 +78,8 @@ const sendEmailWithEmailJS = async (
     });
 
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error("Email send failed:", error);
     return false;
   }
 };
@@ -119,7 +120,8 @@ export const sendRegistrationEmail = async (
     );
 
     return { success: sent, ticketId };
-  } catch {
+  } catch (error) {
+    console.error("Registration email failed:", error);
     const fallbackTicketId = generateTicketId();
     return { success: false, ticketId: fallbackTicketId };
   }

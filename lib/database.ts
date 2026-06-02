@@ -115,7 +115,7 @@ export const eventService = {
     }
   },
 
-  async createEvent(eventData: Omit<Event, '$id' | '$createdAt' | '$updatedAt'>) {
+  async createEvent(eventData: Omit<Event, "$id" | "$createdAt" | "$updatedAt">) {
     try {
       const { status: _status, ...dataWithoutStatus } = eventData;
       const response = await databases.createDocument(
@@ -163,14 +163,14 @@ export const eventService = {
 
   async deletePastEvents() {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const response = await databases.listDocuments(
         DATABASE_ID,
         EVENTS_COLLECTION_ID,
         [Query.lessThan("date", today)]
       );
 
-      const deletePromises = response.documents.map(doc => 
+      const deletePromises = response.documents.map((doc) =>
         databases.deleteDocument(DATABASE_ID, EVENTS_COLLECTION_ID, doc.$id)
       );
 
@@ -197,7 +197,12 @@ export const eventService = {
     }
   },
 
-  async registerForEvent(eventId: string, userId: string, userName: string, userEmail: string) {
+  async registerForEvent(
+    eventId: string,
+    userId: string,
+    userName: string,
+    userEmail: string
+  ) {
     try {
       const existingRegistrations = await databases.listDocuments(
         DATABASE_ID,
@@ -316,4 +321,68 @@ export const projectService = {
       );
       return response.documents as unknown as Project[];
     } catch (error) {
-      console.error("Error fetching 
+      console.error("Error fetching projects by category:", error);
+      throw error;
+    }
+  },
+
+  async getFeaturedProjects() {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        [Query.equal("isFeatured", true)]
+      );
+      return response.documents as unknown as Project[];
+    } catch (error) {
+      console.error("Error fetching featured projects:", error);
+      throw error;
+    }
+  },
+
+  async createProject(
+    projectData: Omit<Project, "$id" | "$createdAt" | "$updatedAt">
+  ) {
+    try {
+      const response = await databases.createDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        ID.unique(),
+        projectData
+      );
+      return response as unknown as Project;
+    } catch (error) {
+      console.error("Error creating project:", error);
+      throw error;
+    }
+  },
+
+  async updateProject(projectId: string, projectData: Partial<Project>) {
+    try {
+      const response = await databases.updateDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectId,
+        projectData
+      );
+      return response as unknown as Project;
+    } catch (error) {
+      console.error("Error updating project:", error);
+      throw error;
+    }
+  },
+
+  async deleteProject(projectId: string) {
+    try {
+      await databases.deleteDocument(
+        DATABASE_ID,
+        PROJECTS_COLLECTION_ID,
+        projectId
+      );
+      return true;
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      throw error;
+    }
+  }
+};

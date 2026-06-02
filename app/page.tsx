@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import FeaturedSection from '@/components/FeaturedSection';
 import GuitarStringDivider from '@/components/GuitarStringDivider';

@@ -1,23 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardBody, CardHeader } from '@heroui/card';
+import { Card, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
 import Link from 'next/link';
 
-interface DashboardStats {
-  projects: number;
-  events: number;
-  blogs: number;
-}
-
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState<DashboardStats>({ projects: 0, events: 0, blogs: 0 });
 
   useEffect(() => {
     if (!loading && !user) {

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -106,10 +106,10 @@ export default function ThreeCanvas() {
           if (mesh.geometry) mesh.geometry.dispose();
           const mat = mesh.material;
           if (Array.isArray(mat)) {
-            mat.forEach((m) => {
-              if (typeof m.dispose === 'function') m.dispose();
+            mat.forEach((material) => {
+              if (typeof material.dispose === 'function') material.dispose();
             });
-          } else if (mat && typeof m.dispose === 'function') {
+          } else if (mat && typeof mat.dispose === 'function') {
             mat.dispose();
           }
         }
