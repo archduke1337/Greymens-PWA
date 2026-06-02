@@ -11,7 +11,7 @@ export default function AdminProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const { isOpen, onOpen, onClose } =  ();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -595,9 +595,9 @@ export default function AdminProjectsPage() {
                       label: "text-gray-700 dark:text-gray-300" }}
                   >
                     {categories.map((cat) => (
-                      <  key={cat.key} textValue={cat.label}>
+                      <option value={cat.key}>
                         {cat.label}
-                      </ >
+                      </option>
                     ))}
                   </select>
 
@@ -610,9 +610,9 @@ export default function AdminProjectsPage() {
                       label: "text-gray-700 dark:text-gray-300" }}
                   >
                     {statuses.map((status) => (
-                      <  key={status.key} textValue={status.label}>
+                      <option value={status.key}>
                         {status.label}
-                      </ >
+                      </option>
                     ))}
                   </select>
                 </div>

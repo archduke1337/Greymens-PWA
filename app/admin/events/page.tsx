@@ -11,7 +11,7 @@ import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon,
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { isOpen, onOpen, onClose } =  ();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);

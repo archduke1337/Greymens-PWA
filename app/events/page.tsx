@@ -39,10 +39,10 @@ export default function EventsPage() {
 
   const loadEvents = async () => {
     try {
-      console.log('🔄 Loading events from database...');
+      
       const allEvents = await eventService.getUpcomingEvents();
-      console.log('✅ Events loaded:', allEvents.length);
-      console.log('📋 Events data:', allEvents);
+      
+      
       setEvents(allEvents);
     } catch (error) {
       console.error("❌ Error loading events:", error);
@@ -278,7 +278,7 @@ export default function EventsPage() {
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <  key={category.key}>{category.label}</ >
+                    <option value={category.key}>{category.label}</option>
                   ))}
                 </select>
               </div>
