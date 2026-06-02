@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, Item, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -86,13 +86,13 @@ export default function HelpFeedbackPage() {
         <Card.Content className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
+              <Input
                 placeholder="Your name"
                 value={formData.name}
                 onChange={(value: any) => setFormData({ ...formData, name: value })}
                 required
               />
-              <Input
+              <Input
                 type="email"
                 placeholder="you@example.com"
                 value={formData.email}
@@ -101,7 +101,7 @@ export default function HelpFeedbackPage() {
               />
             </div>
 
-            <Select
+            <Select
               placeholder="Select type"
               value={formData.type}
               onSelectionChange={(keys: any) => {
@@ -112,18 +112,18 @@ export default function HelpFeedbackPage() {
               {feedbackTypes.map((type) => (
                 <Item key={type.value}>
                   {type.label}
-                </Item>
+                </ListBoxItem>
               ))}
             </Select>
 
-            <Input
+            <Input
               placeholder="Brief description of your feedback"
               value={formData.subject}
               onChange={(value: any) => setFormData({ ...formData, subject: value })}
               required
             />
 
-            <TextArea
+            <TextArea
               placeholder="Tell us more about your feedback..."
               value={formData.message}
               onChange={(value: any) => setFormData({ ...formData, message: value })}

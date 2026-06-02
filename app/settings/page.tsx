@@ -210,7 +210,7 @@ export default function SettingsPage() {
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <Input
+              <Input
                 type="password"
                 value={oldPassword}
                 onChange={(e: any) => setOldPassword(e.target.value)}
@@ -218,7 +218,7 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
               />
-              <Input
+              <Input
                 type="password"
                 value={newPassword}
                 onChange={(e: any) => setNewPassword(e.target.value)}
@@ -226,7 +226,7 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
               />
-              <Input
+              <Input
                 type="password"
                 value={confirmNewPassword}
                 onChange={(e: any) => setConfirmNewPassword(e.target.value)}
@@ -407,18 +407,18 @@ export default function SettingsPage() {
               {user.phone ? "Update" : "Add"} Phone Number
             </Modal.Header>
             <Modal.Body>
-              <Input
+              <Input
                 placeholder="+911234567890"
                 value={phoneNumber}
-                onChange={(e: any) => setPhoneNumber(e.target.value)}
+                onChange={(e: any) => setPhoneNumber(e.target.value)}
                 required
                 isDisabled={phoneLoading}
               />
-              <Input
+              <Input
                 type="password"
                 placeholder="Enter your password"
                 value={phonePassword}
-                onChange={(e: any) => setPhonePassword(e.target.value)}
+                onChange={(e: any) => setPhonePassword(e.target.value)}
                 required
                 isDisabled={phoneLoading}
               />
@@ -449,7 +449,7 @@ export default function SettingsPage() {
               <p className="text-sm text-default-500 mb-4">
                 Enter the verification code sent to your phone number
               </p>
-              <Input
+              <Input
                 placeholder="Enter 6-digit code"
                 value={verificationCode}
                 onChange={(e: any) => setVerificationCode(e.target.value)}

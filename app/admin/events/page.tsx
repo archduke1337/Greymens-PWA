@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, Item, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -375,7 +375,7 @@ export default function AdminEventsPage() {
       {/* Add/Edit Modal */}
       <Modal 
         isOpen={isOpen} 
-        size="3xl"
+        size="3xl"
       >
         <Modal.Dialog>
           <form onSubmit={handleSubmit}>
@@ -408,7 +408,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
                         onChange={(e: any) => handleInputChange("image", e.target.value)}
-                        required
+                        required
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -432,33 +432,33 @@ export default function AdminEventsPage() {
                       </div>
                     </div>
 
-                    <Input
+                    <Input
                       placeholder="Enter event title"
                       value={formData.title}
                       onChange={(e: any) => handleInputChange("title", e.target.value)}
-                      required
+                      required
                     />
 
-                    <TextArea
+                    <TextArea
                       placeholder="Describe your event in detail"
                       value={formData.description}
                       onChange={(e: any) => handleInputChange("description", e.target.value)}
                       required
-                      minRows={4}
+                      minRows={4}
                     />
 
-                    <Select
+                    <Select
                       placeholder="Select event category"
                       value={formData.category!}
                       onChange={(e: any) => handleInputChange("category", e.target.value)}
-                      required
+                      required
                     >
-                      <Item key="conference">Conference</Item>
-                      <Item key="workshop">Workshop</Item>
-                      <Item key="masterclass">Masterclass</Item>
-                      <Item key="competition">Competition</Item>
-                      <Item key="bootcamp">Bootcamp</Item>
-                      <Item key="forum">Forum</Item>
+                      <ListBoxItem id="conference">Conference</ListBoxItem>
+                      <ListBoxItem id="workshop">Workshop</ListBoxItem>
+                      <ListBoxItem id="masterclass">Masterclass</ListBoxItem>
+                      <ListBoxItem id="competition">Competition</ListBoxItem>
+                      <ListBoxItem id="bootcamp">Bootcamp</ListBoxItem>
+                      <ListBoxItem id="forum">Forum</ListBoxItem>
                     </Select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
@@ -493,33 +493,33 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
+                      <Input
                         type="date"
                         value={formData.date}
                         onChange={(e: any) => handleInputChange("date", e.target.value)}
-                        required
+                        required
                       />
-                      <Input
+                      <Input
                         type="text"
                         placeholder="e.g., 09:00 AM - 06:00 PM"
                         value={formData.time}
                         onChange={(e: any) => handleInputChange("time", e.target.value)}
-                        required
+                        required
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
+                      <Input
                         placeholder="e.g., Grand Convention Center"
                         value={formData.venue}
                         onChange={(e: any) => handleInputChange("venue", e.target.value)}
-                        required
+                        required
                       />
-                      <Input
+                      <Input
                         placeholder="e.g., New York, NY"
                         value={formData.location}
                         onChange={(e: any) => handleInputChange("location", e.target.value)}
-                        required
+                        required
                       />
                     </div>
 
@@ -545,25 +545,25 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
+                      <Input
                         type="number"
                         placeholder="0"
                         value={formData.price?.toString()}
                         onChange={(e: any) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                        required
+                        required
                       />
-                      <Input
+                      <Input
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
-                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
+                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
                       />
-                      <Input
+                      <Input
                         type="number"
                         placeholder="50"
                         value={formData.capacity?.toString()}
                         onChange={(e: any) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
-                        required
+                        required
                       />
                     </div>
 
@@ -600,11 +600,11 @@ export default function AdminEventsPage() {
                   </div>
                 }>
                   <div className="space-y-6 pt-4">
-                    <Input
+                    <Input
                       placeholder="e.g., John Doe"
                       value={formData.organizerName}
                       onChange={(e: any) => handleInputChange("organizerName", e.target.value)}
-                      required
+                      required
                     />
                     
                     <div className="space-y-3">
@@ -616,7 +616,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
                         onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
-                        required
+                        required
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">

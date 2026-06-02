@@ -188,7 +188,7 @@ export default function ProfilePage() {
             <Avatar
               src={profilePicture}
               className="w-32 h-32"
-              isBordered
+              
               showFallback
               name={user.name}
             />
@@ -306,7 +306,7 @@ export default function ProfilePage() {
 
             {isEditing ? (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <Input
+                <Input
                   value={name}
                   onChange={(e: any) => setName(e.target.value)}
                   placeholder="Enter your name"

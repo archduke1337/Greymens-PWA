@@ -315,7 +315,7 @@ export default function ProjectsPage() {
                           </Button>
                         )}
 
-                        <Button className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
+                        <Button className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
                           as="a"
                           href={project.repoUrl}
                           target="_blank"

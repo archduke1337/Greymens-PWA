@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, Item, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -133,7 +133,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="ghost"
+          variant="ghost"
           onPress={() => router.back()}
           className="mb-4"
         >
@@ -153,49 +153,47 @@ export default function WriteBlogPage() {
         <Card.Content className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
-            <Input
+            <Input
               placeholder="Enter an engaging title..."
               value={formData.title}
               onChange={(e: any) =>
                 setFormData({ ...formData, title: e.target.value })
               }
               required
-              required
               size="lg"
             />
 
             {/* Excerpt */}
-            <TextArea
+            <TextArea
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
               onChange={(e: any) =>
                 setFormData({ ...formData, excerpt: e.target.value })
               }
-              rows={3}
+              rows={3}
             />
 
             {/* Category */}
-            <Select
+            <Select
               placeholder="Select a category"
               selectedKeys={formData.category ? [formData.category] : []}
               onChange={(e: any) =>
                 setFormData({ ...formData, category: e.target.value })
               }
               required
-              required
             >
               {blogCategories.map((cat) => (
-                <Item key={cat.value}>{cat.label}</Item>
+                <Item key={cat.value}>{cat.label}</ListBoxItem>
               ))}
             </Select>
 
             {/* Tags */}
-            <Input
+            <Input
               placeholder="react, javascript, tutorial (comma separated)"
               value={formData.tags}
               onChange={(e: any) =>
                 setFormData({ ...formData, tags: e.target.value })
-              }
+              }
             />
 
             {/* Cover Image */}
@@ -220,7 +218,7 @@ export default function WriteBlogPage() {
                   <Button
                     as="label"
                     htmlFor="cover-image-upload"
-                    variant="primary"
+                    variant="primary"
                     isPending={uploadingImage}
                     className="w-full"
                   >
@@ -259,15 +257,14 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <TextArea
+            <TextArea
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
               onChange={(e: any) =>
                 setFormData({ ...formData, content: e.target.value })
               }
               required
-              required
-              rows={15}
+              rows={15}
             />
 
             {/* Word Count */}
@@ -287,7 +284,7 @@ export default function WriteBlogPage() {
               </Button>
               <Button
                 type="submit"
-                isPending={submitting}
+                isPending={submitting}
                 className="flex-1"
               >
                 Submit for Review

@@ -251,7 +251,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="ghost"
+          variant="ghost"
           onPress={() => router.back()}
         >
           Back to Events
@@ -528,7 +528,7 @@ export default function EventDetailPage() {
                     size="lg"
                     className="w-full font-bold text-lg"
                     isPending={registering}
-                    onPress={handleRegister}
+                    onPress={handleRegister}
                   >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
                   </Button>

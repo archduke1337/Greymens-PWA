@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, Item, Switch, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -162,7 +162,7 @@ export default function AdminSponsorsPage() {
             Manage your club sponsors and partners
           </p>
         </div>
-        <Button size="lg"
+        <Button size="lg"
           onPress={() => setShowForm(!showForm)}
         >
           {showForm ? "Cancel" : "Add Sponsor"}
@@ -181,76 +181,72 @@ export default function AdminSponsorsPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
-                <Input
+                <Input
                   placeholder="e.g., Google"
                   value={formData.name}
                   onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  required
                 />
 
-                <Input
+                <Input
                   placeholder="https://example.com/logo.png"
                   value={formData.logo}
                   onChange={(e: any) => setFormData({ ...formData, logo: e.target.value })}
                   required
-                  required
                 />
 
-                <Input
+                <Input
                   placeholder="https://example.com"
                   value={formData.website}
                   onChange={(e: any) => setFormData({ ...formData, website: e.target.value })}
                   required
-                  required
                 />
 
-                <Select
+                <Select
                   value={formData.tier}
                   onChange={(e: any) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   required
                 >
-                  <Item key="platinum">Platinum Partner</Item>
-                  <Item key="gold">Gold Sponsor</Item>
-                  <Item key="silver">Silver Sponsor</Item>
-                  <Item key="bronze">Bronze Sponsor</Item>
-                  <Item key="partner">Community Partner</Item>
+                  <ListBoxItem id="platinum">Platinum Partner</ListBoxItem>
+                  <ListBoxItem id="gold">Gold Sponsor</ListBoxItem>
+                  <ListBoxItem id="silver">Silver Sponsor</ListBoxItem>
+                  <ListBoxItem id="bronze">Bronze Sponsor</ListBoxItem>
+                  <ListBoxItem id="partner">Community Partner</ListBoxItem>
                 </Select>
 
-                <Select
+                <Select
                   selectedKeys={formData.category ? [formData.category] : []}
                   onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <Item key="tech">Technology</Item>
-                  <Item key="education">Education</Item>
-                  <Item key="finance">Finance</Item>
-                  <Item key="healthcare">Healthcare</Item>
-                  <Item key="other">Other</Item>
+                  <ListBoxItem id="tech">Technology</ListBoxItem>
+                  <ListBoxItem id="education">Education</ListBoxItem>
+                  <ListBoxItem id="finance">Finance</ListBoxItem>
+                  <ListBoxItem id="healthcare">Healthcare</ListBoxItem>
+                  <ListBoxItem id="other">Other</ListBoxItem>
                 </Select>
 
                 <Input
-                  type="number"
+                  type="number"
                   placeholder="0"
                   value={formData.displayOrder.toString()}
-                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
                 />
 
                 <Input
-                  type="date"
+                  type="date"
                   value={formData.startDate}
                   onChange={(e: any) => setFormData({ ...formData, startDate: e.target.value })}
                   required
-                  required
                 />
 
                 <Input
-                  type="date"
+                  type="date"
                   value={formData.endDate}
-                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
                 />
               </div>
 
-              <TextArea
+              <TextArea
                 placeholder="Brief description of the sponsor..."
                 value={formData.description}
                 onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
@@ -386,7 +382,7 @@ export default function AdminSponsorsPage() {
                         target="_blank"
                         size="sm"
                         variant="primary"
-                        className="flex-1"
+                        className="flex-1"
                       >
                         Visit
                       </Button>

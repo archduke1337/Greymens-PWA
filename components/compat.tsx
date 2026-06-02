@@ -398,9 +398,9 @@ export const Badge = ({ children, color = "default", variant = "solid", size = "
 // AVATAR
 // ============================================================
 
-export const Avatar = ({ src, name, size = "md", className = "", isBordered, ...props }: any) => {
+export const Avatar = ({ src, name, size = "md", className = "", , ...props }: any) => {
   const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-16 h-16 text-lg" : "w-10 h-10 text-sm";
-  const borderClass = isBordered ? "ring-2 ring-primary" : "";
+  const borderClass =  ? "ring-2 ring-primary" : "";
   const initials = name ? name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   if (src) {

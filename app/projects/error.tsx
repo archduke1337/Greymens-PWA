@@ -10,10 +10,7 @@ export default function ProjectsError({
   reset: () => void;
 }) {
   return (
-    <RouteError
-      error={error}
-      reset={reset}
-      title="Projects Unavailable"
+    <RouteError error={error} reset={reset} title="Projects Unavailable" description=""
     />
   );
 }

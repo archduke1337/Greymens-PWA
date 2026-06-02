@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, Item, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -297,7 +297,7 @@ export default function AdminProjectsPage() {
                 </div>
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                  className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
                   onPress={handleAdd}
                 >
                   New Project
@@ -320,7 +320,7 @@ export default function AdminProjectsPage() {
                     </p>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
+                      className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
                       onPress={handleAdd}
                     >
                       Create First Project
@@ -330,7 +330,7 @@ export default function AdminProjectsPage() {
                   <div className="overflow-x-auto">
                     <Table 
                       aria-label="Projects table" 
-                      className="min-w-full"
+                      className="min-w-full"
                     >
                       <TableHeader>
                         <TableColumn className="text-sm">PROJECT</TableColumn>
@@ -371,7 +371,7 @@ export default function AdminProjectsPage() {
                               <Chip 
                                 size="sm" 
                                 variant="primary" 
-                                color={getCategoryColor(project.category) as any}
+                                color={getCategoryColor(project.category) as any}
                               >
                                 {project.category.replace('-', ' ')}
                               </Chip>
@@ -380,7 +380,7 @@ export default function AdminProjectsPage() {
                               <Chip
                                 size="sm"
                                 color={getStatusColor(project.status) as any}
-                                variant="dot"
+                                variant="dot"
                               >
                                 {project.status.replace('-', ' ')}
                               </Chip>
@@ -400,7 +400,7 @@ export default function AdminProjectsPage() {
                               {project.isFeatured ? (
                                 <Chip 
                                   size="sm" 
-                                  variant="primary" 
+                                  variant="primary" 
                                 >
                                   Featured
                                 </Chip>
@@ -495,7 +495,7 @@ export default function AdminProjectsPage() {
         {/* Add/Edit Modal */}
         <Modal
           isOpen={isOpen}
-          size="2xl"
+          size="2xl"
         >
           <Modal.Dialog>
             <Modal.Header className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
@@ -520,61 +520,61 @@ export default function AdminProjectsPage() {
             <Modal.Body className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
+                  <Input
                     placeholder="Enter project title"
                     value={formData.title}
                     onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
                     required
-                    variant="outline"
+                    variant="outline"
                   />
-                  <Input
+                  <Input
                     placeholder="3 months"
                     value={formData.duration}
                     onChange={(e: any) => setFormData({ ...formData, duration: e.target.value })}
                     required
-                    variant="outline"
+                    variant="outline"
                   />
                 </div>
 
-                <TextArea
+                <TextArea
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
                   onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
                   required
                   variant="outline"
-                  minRows={3}
+                  minRows={3}
                 />
 
-                <Input
+                <Input
                   placeholder="https://images.unsplash.com/photo-..."
                   value={formData.image}
                   onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
                   required
-                  variant="outline"
+                  variant="outline"
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select
+                  <Select
                     value={formData.category}
                     onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
-                    variant="outline"
+                    variant="outline"
                   >
                     {categories.map((cat) => (
                       <Item key={cat.key} textValue={cat.label}>
                         {cat.label}
-                      </Item>
+                      </ListBoxItem>
                     ))}
                   </Select>
 
-                  <Select
+                  <Select
                     value={formData.status}
                     onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
-                    variant="outline"
+                    variant="outline"
                   >
                     {statuses.map((status) => (
                       <Item key={status.key} textValue={status.label}>
                         {status.label}
-                      </Item>
+                      </ListBoxItem>
                     ))}
                   </Select>
                 </div>
@@ -601,70 +601,70 @@ export default function AdminProjectsPage() {
                       value={formData.progress.toString()}
                       onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
                       variant="outline"
-                      className="w-20"
+                      className="w-20"
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
-                    <Input
+                    <Input
                       type="number"
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
-                    <Input
+                    <Input
                       type="number"
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
-                    <Input
+                    <Input
                       type="number"
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
                   </div>
                 </div>
 
-                <TextArea
+                <TextArea
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
                   onChange={(e: any) => setFormData({ ...formData, technologies: e.target.value })}
-                  variant="outline"
-                  minRows={2}
+                  variant="outline"
+                  minRows={2}
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
+                  <Input
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
                     onChange={(e: any) => setFormData({ ...formData, demoUrl: e.target.value })}
-                    variant="outline"
+                    variant="outline"
                   />
 
-                  <Input
+                  <Input
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
                     onChange={(e: any) => setFormData({ ...formData, repoUrl: e.target.value })}
-                    variant="outline"
+                    variant="outline"
                   />
                 </div>
 
-                <TextArea
+                <TextArea
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
                   onChange={(e: any) => setFormData({ ...formData, teamMembers: e.target.value })}
-                  variant="outline"
-                  minRows={2}
+                  variant="outline"
+                  minRows={2}
                 />
 
                 <Switch
                   isSelected={formData.isFeatured}
-                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
+                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
                 >
                   Feature this project on the homepage
                 </Switch>
@@ -675,7 +675,7 @@ export default function AdminProjectsPage() {
                 Cancel
               </Button>
               <Button onPress={handleSave}
-                isPending={saving}
+                isPending={saving}
                 className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
               >
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}

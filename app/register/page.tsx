@@ -60,7 +60,7 @@ export default function RegisterPage() {
         </Card.Header>
         <Card.Content>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
+            <Input
               placeholder="Enter your name"
               type="text"
               value={name}
@@ -68,7 +68,7 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
             />
-            <Input
+            <Input
               placeholder="Enter your email"
               type="email"
               value={email}
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
             />
-            <Input
+            <Input
               placeholder="Create a password (min 8 characters)"
               type="password"
               value={password}
@@ -84,7 +84,7 @@ export default function RegisterPage() {
               required
               isDisabled={loading}
             />
-            <Input
+            <Input
               placeholder="Confirm your password"
               type="password"
               value={confirmPassword}
@@ -112,7 +112,7 @@ export default function RegisterPage() {
 
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full"
             onPress={handleGoogleSignup}
           >
             Continue with Google

@@ -73,7 +73,7 @@ export default function SponsorsPage() {
                 as="a"
                 href="mailto:sponsors@mindmesh.club"
                 
-                variant="shadow"
+                variant="primary"
               >
                 Become a Sponsor
               </Button>
@@ -104,7 +104,7 @@ export default function SponsorsPage() {
                   <Card.Header className="absolute z-10 top-1 right-1">
                     <Chip 
                       size="sm" 
-                      variant="primary"
+                      variant="primary"
                     >
                       {sponsor.tier.toUpperCase()}
                     </Chip>
@@ -183,7 +183,7 @@ export default function SponsorsPage() {
               href="mailto:sponsors@mindmesh.club"
               
               size="lg"
-              variant="shadow"
+              variant="primary"
               className="font-semibold"
             >
               Become a Sponsor

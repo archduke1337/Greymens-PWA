@@ -202,7 +202,7 @@ export default function ContactPage() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
-                    required
+                    required
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
@@ -212,7 +212,7 @@ export default function ContactPage() {
                   />
                   <Input
                     required
-                    type="email"
+                    type="email"
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
@@ -222,7 +222,7 @@ export default function ContactPage() {
                   />
                 </div>
                 <Input
-                  required
+                  required
                   placeholder="What is this about?"
                   value={formData.subject}
                   onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
@@ -231,7 +231,7 @@ export default function ContactPage() {
                   isDisabled={isSubmitting}
                 />
                 <TextArea
-                  required
+                  required
                   placeholder="Tell us more..."
                   value={formData.message}
                   onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}

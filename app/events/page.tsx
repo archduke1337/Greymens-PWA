@@ -20,7 +20,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, Item } from "@heroui/react";
+import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, ListBoxItem} from "@heroui/react";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -254,31 +254,31 @@ export default function EventsPage() {
                 <Input
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e: any) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   size="lg"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <Select
+                <Select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
-                  <Item key="date">Date</Item>
-                  <Item key="price">Price</Item>
-                  <Item key="popularity">Popularity</Item>
+                  <ListBoxItem id="date">Date</ListBoxItem>
+                  <ListBoxItem id="price">Price</ListBoxItem>
+                  <ListBoxItem id="popularity">Popularity</ListBoxItem>
                 </Select>
 
-                <Select
+                <Select
                   value={selectedCategory}
                   onChange={(e: any) => setSelectedCategory(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <Item key={category.key}>{category.label}</Item>
+                    <Item key={category.key}>{category.label}</ListBoxItem>
                   ))}
                 </Select>
               </div>
@@ -426,7 +426,7 @@ export default function EventsPage() {
                     variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
                     size="md"
                     isPending={registering === event.$id}
-                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
+                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
                   >
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
                   </Button>

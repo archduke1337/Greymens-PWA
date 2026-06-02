@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, Item } from "@heroui/react";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -116,7 +116,7 @@ export default function BlogPage() {
 
         {/* Write Blog Button */}
         {user && (
-          <Button size="lg"
+          <Button size="lg"
             onPress={() => router.push("/blog/write")}
             className="mt-4"
           >
@@ -133,21 +133,21 @@ export default function BlogPage() {
               <Input
                 placeholder="Search blogs..."
                 value={searchQuery}
-                onChange={(e: any) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
                 size="lg"
               />
-              <Select
+              <Select
                 value={selectedCategory}
                 onChange={(e: any) => setSelectedCategory(e.target.value)}
                 className="min-w-[200px]"
               >
-                <Item key="all">All Categories</Item>
-                <Item key="tutorial">Tutorial</Item>
-                <Item key="news">News</Item>
-                <Item key="event">Event</Item>
-                <Item key="project">Project</Item>
-                <Item key="technology">Technology</Item>
+                <ListBoxItem id="all">All Categories</ListBoxItem>
+                <ListBoxItem id="tutorial">Tutorial</ListBoxItem>
+                <ListBoxItem id="news">News</ListBoxItem>
+                <ListBoxItem id="event">Event</ListBoxItem>
+                <ListBoxItem id="project">Project</ListBoxItem>
+                <ListBoxItem id="technology">Technology</ListBoxItem>
               </Select>
             </div>
           </Card.Content>

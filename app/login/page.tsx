@@ -47,7 +47,7 @@ export default function LoginPage() {
         </Card.Header>
         <Card.Content>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
+            <Input
               placeholder="Enter your email"
               type="email"
               value={email}
@@ -55,7 +55,7 @@ export default function LoginPage() {
               required
               isDisabled={loading}
             />
-            <Input
+            <Input
               placeholder="Enter your password"
               type="password"
               value={password}
@@ -83,7 +83,7 @@ export default function LoginPage() {
 
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full"
             onPress={handleGoogleLogin}
           >
             Continue with Google

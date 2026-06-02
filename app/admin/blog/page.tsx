@@ -308,7 +308,7 @@ export default function AdminBlogsPage() {
                       href={`/blog/${blog.slug}`}
                       target="_blank"
                       size="sm"
-                      variant="primary"
+                      variant="primary"
                       className="flex-1 md:flex-none"
                     >
                       View
@@ -318,7 +318,7 @@ export default function AdminBlogsPage() {
                       <>
                         <Button
                           size="sm"
-                          variant="primary"
+                          variant="primary"
                           onPress={() => handleApprove(blog.$id!)}
                           isPending={processingBlog === blog.$id}
                           className="flex-1 md:flex-none"
@@ -327,7 +327,7 @@ export default function AdminBlogsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="primary"
+                          variant="primary"
                           onPress={() => openRejectModal(blog)}
                           className="flex-1 md:flex-none"
                         >
@@ -339,7 +339,7 @@ export default function AdminBlogsPage() {
                     {blog.status === "approved" && (
                       <Button
                         size="sm"
-                        variant="primary"
+                        variant="primary"
                         onPress={() => toggleFeatured(blog)}
                         className="flex-1 md:flex-none"
                       >
@@ -349,7 +349,7 @@ export default function AdminBlogsPage() {
 
                     <Button
                       size="sm"
-                      variant="primary"
+                      variant="primary"
                       onPress={() => handleDelete(blog.$id!)}
                       className="flex-1 md:flex-none"
                     >
