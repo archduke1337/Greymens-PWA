@@ -21,7 +21,7 @@ export default function TermsPage() {
       <Separator className="my-8" />
 
       {/* Member Terms */}
-      <Card shadow="sm" className="border-none">
+      <Card  className="border-none" className="shadow-sm">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Member Terms</h2>
           <p className="text-sm text-default-600 mt-1">
@@ -107,7 +107,7 @@ export default function TermsPage() {
       </Card>
 
       {/* Sponsor Terms */}
-      <Card shadow="sm" className="border-none">
+      <Card  className="border-none" className="shadow-sm">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Sponsor Terms</h2>
           <p className="text-sm text-default-600 mt-1">
@@ -188,7 +188,7 @@ export default function TermsPage() {
       </Card>
 
       {/* Privacy Policy */}
-      <Card shadow="sm" className="border-none">
+      <Card  className="border-none" className="shadow-sm">
         <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Privacy Policy</h2>
           <p className="text-sm text-default-600 mt-1">
@@ -260,7 +260,7 @@ export default function TermsPage() {
 
       {/* Additional Policies Grid */}
       <div className="grid md:grid-cols-2 gap-4">
-        <Card shadow="sm" className="border-none">
+        <Card  className="border-none" className="shadow-sm">
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Refund Policy</h3>
             <p className="text-sm text-default-600">
@@ -270,7 +270,7 @@ export default function TermsPage() {
           </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
+        <Card  className="border-none" className="shadow-sm">
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Media Policy</h3>
             <p className="text-sm text-default-600">
@@ -280,7 +280,7 @@ export default function TermsPage() {
           </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
+        <Card  className="border-none" className="shadow-sm">
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Liability</h3>
             <p className="text-sm text-default-600">
@@ -290,7 +290,7 @@ export default function TermsPage() {
           </CardContent>
         </Card>
 
-        <Card shadow="sm" className="border-none">
+        <Card  className="border-none" className="shadow-sm">
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Contact</h3>
             <p className="text-sm text-default-600">
@@ -302,7 +302,7 @@ export default function TermsPage() {
       </div>
 
       {/* Footer */}
-      <Card shadow="sm" className="border-none bg-default-50">
+      <Card  className="border-none bg-default-50" className="shadow-sm">
         <CardContent className="p-6 text-center">
           <p className="text-sm text-default-600">
             These terms are subject to change. Members will be notified of

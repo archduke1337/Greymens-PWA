@@ -298,9 +298,9 @@ export default function EventsPage() {
             <Card
               key={event.$id}
               className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-              shadow="lg"
+              
               isPressable
-              onPress={() => handleEventClick(event.$id!)}
+              onPress={() = className="shadow-lg"> handleEventClick(event.$id!)}
             >
               <CardContent className="p-0 overflow-hidden">
                 <div className="relative">

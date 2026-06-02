@@ -1,7 +1,7 @@
 // app/admin/blogs/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, TextArea } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
@@ -374,7 +374,7 @@ export default function AdminBlogsPage() {
 
       {/* Rejection Modal */}
       <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
-        <ModalContent>
+        <ModalDialog>
           <ModalHeader>Reject Blog</ModalHeader>
           <ModalBody>
             <p className="mb-4">
@@ -399,7 +399,7 @@ export default function AdminBlogsPage() {
               Reject Blog
             </Button>
           </ModalFooter>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );

@@ -71,7 +71,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card isHoverable className="cursor-pointer border border-default-200 h-full">
+              <Card className="hover:shadow-lg transition-shadow" className="cursor-pointer border border-default-200 h-full">
                 <CardContent className="flex items-center justify-center py-6">
                   <Button color={link.color} variant="light" className="text-sm font-medium">
                     {link.label}

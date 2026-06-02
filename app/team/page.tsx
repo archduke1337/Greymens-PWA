@@ -205,8 +205,8 @@ export default function TeamPage() {
                     >
                       <Card 
                         className="h-full border-none overflow-hidden"
-                        shadow="lg"
-                      >
+                        
+                       className="shadow-lg">
                         <CardContent className="p-6 md:p-8 relative overflow-hidden">
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
@@ -400,7 +400,7 @@ export default function TeamPage() {
               { label: "Events Organized", value: "150+" },
               { label: "Community Size", value: "8K+" },
             ].map((stat) => (
-              <Card key={stat.label} className="border-none" shadow="sm">
+              <Card key={stat.label} className="border-none"  className="shadow-sm">
                 <CardContent className="text-center p-4">
                   <p className="text-2xl md:text-3xl font-bold text-secondary">
                     {stat.value}

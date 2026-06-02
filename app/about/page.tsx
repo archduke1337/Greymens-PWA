@@ -61,7 +61,7 @@ export default function AboutPage() {
 
 
       {/* Story Section */}
-      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30" shadow="lg">
+      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30"  className="shadow-lg">
         <CardContent className="p-8 md:p-12">
           <h2 className={title({ size: "sm" })}>Our Story</h2>
           <p className="text-default-600 mt-4 text-lg leading-relaxed">
@@ -88,8 +88,8 @@ export default function AboutPage() {
             <Card
               key={index}
               className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl"
-              shadow="sm"
-            >
+              
+             className="shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">{value.icon}</div>
@@ -105,7 +105,7 @@ export default function AboutPage() {
       </div>
 
       {/* Team Section */}
-      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30" shadow="lg">
+      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30"  className="shadow-lg">
         <CardContent className="p-8 text-center">
           <h2 className={title({ size: "sm", class: "mb-4" })}>Meet Our Team</h2>
           <p className="text-default-600 mb-6">

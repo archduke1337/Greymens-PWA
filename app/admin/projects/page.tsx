@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, TextArea, Select, SelectItem, Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, useDisclosure, TextArea, Select, SelectItem, Switch } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
@@ -286,7 +286,7 @@ export default function AdminProjectsPage() {
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Projects Table */}
           <div className="lg:col-span-3">
-            <Card className="border-none shadow-xl" shadow="lg">
+            <Card className="border-none shadow-xl"  className="shadow-lg">
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
@@ -461,7 +461,7 @@ export default function AdminProjectsPage() {
           {/* Stats Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <Card className="border-none shadow-xl" shadow="lg">
+            <Card className="border-none shadow-xl"  className="shadow-lg">
               <CardHeader className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
               </CardHeader>
@@ -521,7 +521,7 @@ export default function AdminProjectsPage() {
             backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
           }}
         >
-          <ModalContent>
+          <ModalDialog>
             <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -776,7 +776,7 @@ export default function AdminProjectsPage() {
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
             </ModalFooter>
-          </ModalContent>
+          </ModalDialog>
         </Modal>
       </div>
 

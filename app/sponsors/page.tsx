@@ -61,7 +61,7 @@ export default function SponsorsPage() {
 
         {/* Sponsors Grid */}
         {sponsors.length === 0 ? (
-          <Card className="max-w-2xl mx-auto" shadow="sm">
+          <Card className="max-w-2xl mx-auto"  className="shadow-sm">
             <CardContent className="text-center py-16 space-y-4">
               <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mx-auto">
                 <UsersIcon className="w-8 h-8 text-default-400" />
@@ -88,19 +88,18 @@ export default function SponsorsPage() {
                 <Card
                   key={sponsor.$id}
                   isPressable
-                  isHoverable
-                  as="a"
+                  className="hover:shadow-lg transition-shadow" as="a"
                   href={sponsor.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group"
-                  shadow="sm"
+                  
                   style={{
                     animationDelay: `${index * 30}ms`,
                     animation: 'fadeIn 0.5s ease-out forwards',
                     opacity: 0
                   }}
-                >
+                 className="shadow-sm">
                   <CardHeader className="absolute z-10 top-1 right-1">
                     <Chip 
                       size="sm" 
@@ -143,7 +142,7 @@ export default function SponsorsPage() {
         <Separator className="my-12" />
 
         {/* CTA */}
-        <Card className="max-w-4xl mx-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10" shadow="lg">
+        <Card className="max-w-4xl mx-auto bg-gradient-to-br from-purple-500/10 to-pink-500/10"  className="shadow-lg">
           <CardContent className="p-8 md:p-12 text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
               <AwardIcon className="w-10 h-10 text-white" />
@@ -157,7 +156,7 @@ export default function SponsorsPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 pt-4">
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
+              <Card  className="bg-white/50 dark:bg-default-100/50" className="shadow-none">
                 <CardContent className="p-4 text-center space-y-2">
                   <TrendingUpIcon className="w-6 h-6 text-purple-500 mx-auto" />
                   <p className="text-sm font-semibold">Brand Visibility</p>
@@ -165,7 +164,7 @@ export default function SponsorsPage() {
                 </CardContent>
               </Card>
 
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
+              <Card  className="bg-white/50 dark:bg-default-100/50" className="shadow-none">
                 <CardContent className="p-4 text-center space-y-2">
                   <UsersIcon className="w-6 h-6 text-pink-500 mx-auto" />
                   <p className="text-sm font-semibold">Talent Pipeline</p>
@@ -173,7 +172,7 @@ export default function SponsorsPage() {
                 </CardContent>
               </Card>
 
-              <Card shadow="none" className="bg-white/50 dark:bg-default-100/50">
+              <Card  className="bg-white/50 dark:bg-default-100/50" className="shadow-none">
                 <CardContent className="p-4 text-center space-y-2">
                   <AwardIcon className="w-6 h-6 text-blue-500 mx-auto" />
                   <p className="text-sm font-semibold">Community Impact</p>

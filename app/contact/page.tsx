@@ -181,7 +181,7 @@ export default function ContactPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Contact Form */}
         <div className="lg:col-span-2">
-          <Card className="border-none shadow-xl" shadow="lg">
+          <Card className="border-none shadow-xl"  className="shadow-lg">
             <CardHeader className="flex flex-col items-start px-8 pt-8 pb-0">
               <h2 className="text-2xl font-bold">Send us a Message</h2>
               <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
@@ -259,7 +259,7 @@ export default function ContactPage() {
         {/* Contact Methods & Quick Links */}
         <div className="space-y-6">
           {/* Contact Methods */}
-          <Card className="border-none shadow-xl" shadow="lg">
+          <Card className="border-none shadow-xl"  className="shadow-lg">
             <CardHeader className="px-6 pt-6 pb-0">
               <h3 className="text-xl font-bold">Connect With Us</h3>
             </CardHeader>

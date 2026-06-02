@@ -1,6 +1,6 @@
 // app/settings/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -412,7 +412,7 @@ export default function SettingsPage() {
 
       {/* Add/Update Phone Modal */}
       <Modal isOpen={isPhoneModalOpen} onClose={onPhoneModalClose}>
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleAddPhone}>
             <ModalHeader>
               {user.phone ? "Update" : "Add"} Phone Number
@@ -450,12 +450,12 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
 
       {/* Verify Phone Modal */}
       <Modal isOpen={isVerifyModalOpen} onClose={onVerifyModalClose}>
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleVerifyPhone}>
             <ModalHeader>
               Verify Phone Number
@@ -500,7 +500,7 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );

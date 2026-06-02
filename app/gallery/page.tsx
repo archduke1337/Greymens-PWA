@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardFooter, Chip, Button, Modal, ModalContent, ModalBody } from "@heroui/react";
+import { Card, CardContent, CardFooter, Chip, Button, Modal, ModalDialog, ModalBody } from "@heroui/react";
 import { useState } from "react";
 export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<any>(null);
@@ -160,7 +160,7 @@ export default function GalleryPage() {
 
 
       {/* Category Filter */}
-      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30" shadow="lg">
+      <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30"  className="shadow-lg">
         <CardContent className="p-6">
           <h3 className="text-xl font-semibold mb-4 text-center">Filter by Category</h3>
           <div className="flex flex-wrap justify-center gap-3">
@@ -230,7 +230,7 @@ export default function GalleryPage() {
 
       {/* Empty State */}
       {filteredImages.length === 0 && (
-        <Card className="border-none" shadow="sm">
+        <Card className="border-none"  className="shadow-sm">
           <CardContent className="p-12 text-center">
             <p className="text-4xl mb-4">🔍</p>
             <h3 className="text-xl font-semibold mb-2">No images found</h3>
@@ -246,7 +246,7 @@ export default function GalleryPage() {
         size="3xl"
         className="bg-transparent shadow-none"
       >
-        <ModalContent>
+        <ModalDialog>
           {(onClose) => (
             <ModalBody className="p-0">
               {selectedImage && (
@@ -291,11 +291,11 @@ export default function GalleryPage() {
               )}
             </ModalBody>
           )}
-        </ModalContent>
+        </ModalDialog>
       </Modal>
 
       {/* Call to Action */}
-      <Card className="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white" shadow="lg">
+      <Card className="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white"  className="shadow-lg">
         <CardContent className="p-8 md:p-12 text-center">
           <h2 className="text-3xl font-bold mb-3">Want to be part of our story?</h2>
           <p className="text-white/90 mb-6 max-w-2xl mx-auto">

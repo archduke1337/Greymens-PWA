@@ -1,6 +1,6 @@
 // app/admin/events/page.tsx
 "use client";
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, useDisclosure, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -387,7 +387,7 @@ export default function AdminEventsPage() {
           wrapper: "items-center"
         }}
       >
-        <ModalContent>
+        <ModalDialog>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1 border-b pb-4">
               <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -781,7 +781,7 @@ export default function AdminEventsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalContent>
+        </ModalDialog>
       </Modal>
     </div>
   );
