@@ -3,7 +3,6 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
-import {
 import { Card, CardBody, CardFooter, Button, Badge, Chip, Avatar, Progress } from "@heroui/react";
   CodeIcon,
   UsersIcon,
