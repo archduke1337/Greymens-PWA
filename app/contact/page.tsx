@@ -193,38 +193,6 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     variant="outline"
-                    size="lg"
-                    isDisabled={isSubmitting}
-                  />
-                  <Input
-                    isRequired
-                    type="email"
-                    label="Email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    variant="outline"
-                    size="lg"
-                    isDisabled={isSubmitting}
-                  />
-                </div>
-                <Input
-                  isRequired
-                  label="Subject"
-                  placeholder="What is this about?"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  variant="outline"
-                  size="lg"
-                  isDisabled={isSubmitting}
-                />
-                <TextArea
-                  isRequired
-                  label="Message"
-                  placeholder="Tell us more..."
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  variant="outline"
                   minRows={6}
                   size="lg"
                   isDisabled={isSubmitting}

@@ -309,12 +309,6 @@ export default function EventsPage() {
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {event.isFeatured && (
                       <Badge color="warning" className="font-bold">
-                        <StarIcon className="w-3 h-3 mr-1" />
-                        Featured
-                      </Badge>
-                    )}
-                    {event.isPremium && (
-                      <Badge color="secondary" className="font-bold">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
                       </Badge>
@@ -323,79 +317,7 @@ export default function EventsPage() {
 
                   <Button
                     isIconOnly
-                    variant="primary"
-                    className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-                    size="sm"
-                    onPress={(e) => toggleSaveEvent(e as any, event.$id!)}
-                  >
-                    <HeartIcon 
-                      className={`w-4 h-4 ${
-                        savedEvents.includes(event.$id!) 
-                          ? "fill-red-500 text-red-500" 
-                          : "text-gray-600"
-                      }`} 
-                    />
-                  </Button>
-
-                  {event.discountPrice && event.discountPrice < event.price && (
-                    <div className="absolute bottom-4 left-4">
-                      <Badge color="danger">
-                        {calculateDiscount(event.price, event.discountPrice)}% OFF
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-xl line-clamp-2 group-hover:text-primary transition-colors">
-                      {event.title}
-                    </h3>
-                  </div>
-
-                  <p className="text-default-600 line-clamp-2">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <CalendarIcon className="w-4 h-4" />
-                      <span>{formatDate(event.date)}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <MapPinIcon className="w-4 h-4" />
-                      <span>{event.location}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <UsersIcon className="w-4 h-4" />
-                      <span>{event.registered} registered</span>
-                      {event.capacity && (
-                        <span className="text-xs text-default-400">
-                          • {event.capacity - event.registered} spots left
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {event.capacity && (
-                    <ProgressBar 
-                      value={(event.registered / event.capacity) * 100} 
-                      size="sm" 
-                      color="primary" 
-                      className="mt-2"
-                    />
-                  )}
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {event.tags.slice(0, 3).map((tag, index) => (
-                      <Chip key={index} size="sm" variant="primary" color="primary">
-                        {tag}
-                      </Chip>
-                    ))}
-                    {event.tags.length > 3 && (
-                      <Chip size="sm" variant="primary">
+                    variant="primary">
                         +{event.tags.length - 3}
                       </Chip>
                     )}

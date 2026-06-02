@@ -53,67 +53,7 @@ export const Navbar = () => {
         <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownTrigger>
             <Button
-              variant="ghost"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              Menu
-            </Button>
-          </DropdownTrigger>
-          <DropdownMenu
-            aria-label="Navigation menu"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            {siteConfig.navItems.map((item) => (
-              <DropdownItem key={item.href} href={item.href}>
-                {item.label}
-              </DropdownItem>
-            ))}
-          </DropdownMenu>
-        </Dropdown>
-
-        <ThemeSwitch />
-
-        {!loading && (
-          <>
-            {user ? (
-              <Dropdown placement="bottom-end">
-                <DropdownTrigger>
-                  <Avatar
-                    className="border-2 border-default-300"
-                    as="button"
-                    className="transition-transform"
-                    color="primary"
-                    name={user.name}
-                    size="sm"
-                    src={getAvatarUrl(user.name)}
-                  />
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Profile Actions" variant="primary">
-                  <DropdownItem key="profile" className="h-14 gap-2">
-                    <p className="font-semibold">Signed in as</p>
-                    <p className="font-semibold">{user.email}</p>
-                  </DropdownItem>
-                  <DropdownItem key="dashboard" href="/dashboard">
-                    Dashboard
-                  </DropdownItem>
-                  <DropdownItem key="my-profile" href="/profile">
-                    My Profile
-                  </DropdownItem>
-                  <DropdownItem key="settings" href="/settings">
-                    Settings
-                  </DropdownItem>
-                  <DropdownItem key="help-feedback" href="/help-feedback">
-                    Help & Feedback
-                  </DropdownItem>
-                  <DropdownItem key="logout" color="danger" href="/logout">
-                    Log Out
-                  </DropdownItem>
-                </DropdownMenu>
-              </Dropdown>
-            ) : (
-              <Button as={NextLink} variant="primary" href="/login" variant="primary">
+              variant="ghost">
                 Login
               </Button>
             )}

@@ -91,34 +91,6 @@ function VerifyEmailContent() {
                 as={NextLink}
                 href="/profile"
                 variant="primary"
-                className="mt-4"
-              >
-                Go to Profile
-              </Button>
-            </>
-          )}
-          
-          {status === "error" && (
-            <>
-              <p className="text-danger text-sm">
-                {errorMessage}
-              </p>
-              <p className="text-default-500 text-sm mt-2">
-                Please try requesting a new verification email from your settings page.
-              </p>
-              <div className="flex gap-2 justify-center mt-4">
-                <Button
-                  as={NextLink}
-                  href="/settings"
-                  variant="primary"
-                  
-                >
-                  Go to Settings
-                </Button>
-                <Button
-                  as={NextLink}
-                  href="/"
-                  variant="ghost"
                 >
                   Go Home
                 </Button>

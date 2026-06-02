@@ -248,15 +248,6 @@ export default function DiagnosticsPage() {
                     as="a"
                     href="/connectivity-check"
                     variant="primary"
-                    
-                  >
-                    Connection Test
-                  </Button>
-                  <Button
-                    as="a"
-                    href="/events"
-                    color="default"
-                    variant="primary"
                   >
                     Test Events Page
                   </Button>

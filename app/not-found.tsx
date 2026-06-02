@@ -21,13 +21,6 @@ export default function NotFound() {
           <div className="flex gap-3 justify-center">
             <Button
               variant="primary"
-             
-              onPress={() => router.push("/")}
-            >
-              Go Home
-            </Button>
-            <Button
-              variant="primary"
               onPress={() => router.back()}
             >
               Go Back

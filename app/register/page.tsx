@@ -100,21 +100,6 @@ export default function RegisterPage() {
             <Button
               type="submit"
               variant="primary"
-              isLoading={loading}
-              className="w-full"
-            >
-              Create Account
-            </Button>
-          </form>
-
-          <div className="relative flex py-5 items-center">
-            <div className="flex-grow border-t border-divider"></div>
-            <span className="flex-shrink mx-4 text-default-400 text-small">OR</span>
-            <div className="flex-grow border-t border-divider"></div>
-          </div>
-
-          <Button
-            variant="outline"
             className="w-full"
             startContent={
               <svg className="w-5 h-5" viewBox="0 0 24 24">

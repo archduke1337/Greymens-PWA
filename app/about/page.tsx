@@ -113,10 +113,7 @@ export default function AboutPage() {
             </AvatarGroup>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
-            <Chip color="primary" variant="primary">Leadership</Chip>
-            <Chip color="secondary" variant="primary">Innovation</Chip>
-            <Chip color="success" variant="primary">Creativity</Chip>
-            <Chip color="warning" variant="primary">Excellence</Chip>
+            <Chip color="primary" variant="primary">Excellence</Chip>
           </div>
         </CardContent>
       </Card>
