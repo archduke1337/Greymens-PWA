@@ -1,12 +1,7 @@
 "use client";
 
+import { Card, CardContent, CardFooter, Chip, Button, Avatar, Separator } from "@heroui/react";
 import { useState, useEffect, useRef } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Avatar } from "@heroui/react";
-import { Divider } from "@heroui/react";
-
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
@@ -212,7 +207,7 @@ export default function TeamPage() {
                         className="h-full border-none overflow-hidden"
                         shadow="lg"
                       >
-                        <CardBody className="p-6 md:p-8 relative overflow-hidden">
+                        <CardContent className="p-6 md:p-8 relative overflow-hidden">
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
                             <div className="flex justify-center">
@@ -244,7 +239,7 @@ export default function TeamPage() {
                               {member.bio}
                             </p>
 
-                            <Divider />
+                            <Separator />
 
                             {/* Achievements */}
                             <div className="flex flex-wrap gap-2 justify-center">
@@ -261,7 +256,7 @@ export default function TeamPage() {
                               ))}
                             </div>
                           </div>
-                        </CardBody>
+                        </CardContent>
 
                         <CardFooter className="flex flex-col gap-3 p-6 md:p-8 pt-0">
                           {/* Social Links */}
@@ -348,7 +343,7 @@ export default function TeamPage() {
                 </svg>
               </Button>
 
-              {/* Progress Dots */}
+              {/* ProgressBar Dots */}
               <div className="flex items-center gap-2">
                 {coreTeam.map((_, index) => (
                   <button
@@ -406,12 +401,12 @@ export default function TeamPage() {
               { label: "Community Size", value: "8K+" },
             ].map((stat) => (
               <Card key={stat.label} className="border-none" shadow="sm">
-                <CardBody className="text-center p-4">
+                <CardContent className="text-center p-4">
                   <p className="text-2xl md:text-3xl font-bold text-secondary">
                     {stat.value}
                   </p>
                   <p className="text-xs md:text-sm text-default-600 mt-1">{stat.label}</p>
-                </CardBody>
+                </CardContent>
               </Card>
             ))}
           </div>

@@ -1,13 +1,10 @@
 'use client';
 
+import { Card, CardContent, Button, Chip } from "@heroui/react";
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardBody } from '@heroui/react';
-import { Button } from '@heroui/react';
-import { Chip } from '@heroui/react';
 import Link from 'next/link';
-
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -50,22 +47,22 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
+          <CardContent className="text-center py-8">
             <p className="text-3xl font-bold text-primary">{user.emailVerification ? '✓' : '—'}</p>
             <p className="text-sm text-default-500 mt-2">Email Verified</p>
-          </CardBody>
+          </CardContent>
         </Card>
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
+          <CardContent className="text-center py-8">
             <Chip color="primary" variant="flat">{user.email}</Chip>
             <p className="text-sm text-default-500 mt-2">Account Email</p>
-          </CardBody>
+          </CardContent>
         </Card>
         <Card className="border border-default-200">
-          <CardBody className="text-center py-8">
+          <CardContent className="text-center py-8">
             <p className="text-3xl font-bold text-success">Active</p>
             <p className="text-sm text-default-500 mt-2">Account Status</p>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -75,11 +72,11 @@ export default function DashboardPage() {
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               <Card isHoverable className="cursor-pointer border border-default-200 h-full">
-                <CardBody className="flex items-center justify-center py-6">
+                <CardContent className="flex items-center justify-center py-6">
                   <Button color={link.color} variant="light" className="text-sm font-medium">
                     {link.label}
                   </Button>
-                </CardBody>
+                </CardContent>
               </Card>
             </Link>
           ))}

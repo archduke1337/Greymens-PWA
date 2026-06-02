@@ -1,14 +1,7 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Badge } from "@heroui/react";
-import { Avatar } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Progress } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
+import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select, SelectItem } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -255,7 +248,7 @@ export default function EventsPage() {
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
@@ -294,7 +287,7 @@ export default function EventsPage() {
                 </Select>
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -309,7 +302,7 @@ export default function EventsPage() {
               isPressable
               onPress={() => handleEventClick(event.$id!)}
             >
-              <CardBody className="p-0 overflow-hidden">
+              <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
                   <img
                     src={event.image}
@@ -391,7 +384,7 @@ export default function EventsPage() {
                   </div>
 
                   {event.capacity && (
-                    <Progress 
+                    <ProgressBar 
                       value={(event.registered / event.capacity) * 100} 
                       size="sm" 
                       color="primary" 
@@ -412,7 +405,7 @@ export default function EventsPage() {
                     )}
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
 
               <CardFooter className="px-6 pb-6 pt-0">
                 <div className="flex items-center justify-between w-full">

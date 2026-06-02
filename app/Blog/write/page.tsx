@@ -1,20 +1,15 @@
 // app/blog/write/page.tsx
 "use client";
 
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Textarea } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-
 export default function WriteBlogPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
@@ -155,7 +150,7 @@ export default function WriteBlogPage() {
         <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
           <h2 className="text-xl font-bold">Blog Details</h2>
         </CardHeader>
-        <CardBody className="p-8">
+        <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
             <Input
@@ -171,7 +166,7 @@ export default function WriteBlogPage() {
             />
 
             {/* Excerpt */}
-            <Textarea
+            <TextArea
               label="Excerpt (Optional)"
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
@@ -272,7 +267,7 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <Textarea
+            <TextArea
               label="Blog Content"
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
@@ -319,7 +314,7 @@ export default function WriteBlogPage() {
               </p>
             </div>
           </form>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

@@ -1,11 +1,9 @@
 // components/sponsors-section.tsx
 "use client";
 
+import { Card, Chip } from "@heroui/react";
 import React from "react";
-import { Card } from "@heroui/react";
-import { Chip } from "@heroui/react";
 import { Sponsor, sponsorTiers } from "@/lib/sponsors";
-
 interface SponsorsSectionProps {
   sponsors: Sponsor[];
   title?: string;

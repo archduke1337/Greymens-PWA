@@ -1,15 +1,10 @@
 // app/register/page.tsx
 "use client";
+import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Link } from "@heroui/react";
 import NextLink from "next/link";
-
 import { useAuth } from "@/context/AuthContext";
-
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,7 +56,7 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold">Create Account</h1>
           <p className="text-small text-default-500">Sign up for Mind Mesh</p>
         </CardHeader>
-        <CardBody>
+        <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Name"
@@ -145,7 +140,7 @@ export default function RegisterPage() {
           >
             Continue with Google
           </Button>
-        </CardBody>
+        </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
             Already have an account?{" "}

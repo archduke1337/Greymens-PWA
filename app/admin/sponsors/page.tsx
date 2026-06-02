@@ -1,14 +1,8 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Chip } from "@heroui/react";
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Textarea } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Switch } from "@heroui/react";
-import { Chip } from "@heroui/react";
 import { toast } from "sonner";
 import { 
   PlusIcon, 
@@ -186,7 +180,7 @@ export default function AdminSponsorsPage() {
               {editingSponsor ? "Edit Sponsor" : "Add New Sponsor"}
             </h2>
           </CardHeader>
-          <CardBody>
+          <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
@@ -270,7 +264,7 @@ export default function AdminSponsorsPage() {
                 />
               </div>
 
-              <Textarea
+              <TextArea
                 label="Description (Optional)"
                 placeholder="Brief description of the sponsor..."
                 value={formData.description}
@@ -326,7 +320,7 @@ export default function AdminSponsorsPage() {
                 </Button>
               </div>
             </form>
-          </CardBody>
+          </CardContent>
         </Card>
       )}
 
@@ -338,7 +332,7 @@ export default function AdminSponsorsPage() {
 
         {sponsors.length === 0 ? (
           <Card>
-            <CardBody className="text-center py-12">
+            <CardContent className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
               <Button
                 color="primary"
@@ -347,7 +341,7 @@ export default function AdminSponsorsPage() {
               >
                 Add Your First Sponsor
               </Button>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -356,7 +350,7 @@ export default function AdminSponsorsPage() {
               
               return (
                 <Card key={sponsor.$id} className="relative">
-                  <CardBody className="space-y-4">
+                  <CardContent className="space-y-4">
                     {/* Status Badges */}
                     <div className="flex gap-2 flex-wrap">
                       <Chip
@@ -438,7 +432,7 @@ export default function AdminSponsorsPage() {
                     <div className="text-xs text-default-400">
                       Display Order: {sponsor.displayOrder}
                     </div>
-                  </CardBody>
+                  </CardContent>
                 </Card>
               );
             })}

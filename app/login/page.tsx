@@ -1,15 +1,10 @@
 // app/login/page.tsx
 "use client";
+import { Card, CardHeader, CardContent, CardFooter, Input, Button, Link } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Link } from "@heroui/react";
 import NextLink from "next/link";
-
 import { useAuth } from "@/context/AuthContext";
-
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +43,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold">Welcome Back</h1>
           <p className="text-small text-default-500">Login to your Mind Mesh account</p>
         </CardHeader>
-        <CardBody>
+        <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Email"
@@ -114,7 +109,7 @@ export default function LoginPage() {
           >
             Continue with Google
           </Button>
-        </CardBody>
+        </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
             Don't have an account?{" "}

@@ -1,11 +1,6 @@
 "use client";
 
-import { Card, CardBody, CardFooter } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Badge } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Avatar } from "@heroui/react";
-import { Progress } from "@heroui/react";
+import { Card, CardContent, CardFooter, Button, Badge, Chip, Avatar, ProgressBar } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
@@ -148,7 +143,7 @@ export default function ProjectsPage() {
                   shadow="lg"
                   isPressable
                 >
-                  <CardBody className="p-0 overflow-hidden">
+                  <CardContent className="p-0 overflow-hidden">
                     {/* Project Image */}
                     <div className="relative">
                       <img
@@ -213,13 +208,13 @@ export default function ProjectsPage() {
                         </p>
                       </div>
 
-                      {/* Progress Bar */}
+                      {/* ProgressBar Bar */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-default-600">Progress</span>
+                          <span className="text-default-600">ProgressBar</span>
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
-                        <Progress 
+                        <ProgressBar 
                           value={project.progress} 
                           color="secondary"
                           size="sm"
@@ -334,7 +329,7 @@ export default function ProjectsPage() {
                         </Button>
                       </div>
                     </CardFooter>
-                  </CardBody>
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -342,7 +337,7 @@ export default function ProjectsPage() {
             {/* Empty State */}
             {filteredProjects.length === 0 && (
               <Card className="border-none bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-                <CardBody className="text-center py-16">
+                <CardContent className="text-center py-16">
                   <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center">
                     <CodeIcon className="w-12 h-12 text-purple-500" />
                   </div>
@@ -350,7 +345,7 @@ export default function ProjectsPage() {
                   <p className="text-default-600 max-w-md mx-auto">
                     No projects match your selected category. Try choosing a different category or check back later for new projects.
                   </p>
-                </CardBody>
+                </CardContent>
               </Card>
             )}
           </div>

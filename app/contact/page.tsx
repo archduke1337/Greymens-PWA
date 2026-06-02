@@ -1,12 +1,8 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Input, Textarea } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Link } from "@heroui/react";
+import { Card, CardContent, CardHeader, Input, TextArea, Button, Link } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
-
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
@@ -190,7 +186,7 @@ export default function ContactPage() {
               <h2 className="text-2xl font-bold">Send us a Message</h2>
               <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
             </CardHeader>
-            <CardBody className="p-8">
+            <CardContent className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {submitStatus.type && (
                   <div
@@ -236,7 +232,7 @@ export default function ContactPage() {
                   size="lg"
                   isDisabled={isSubmitting}
                 />
-                <Textarea
+                <TextArea
                   isRequired
                   label="Message"
                   placeholder="Tell us more..."
@@ -256,7 +252,7 @@ export default function ContactPage() {
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
-            </CardBody>
+            </CardContent>
           </Card>
         </div>
 
@@ -267,7 +263,7 @@ export default function ContactPage() {
             <CardHeader className="px-6 pt-6 pb-0">
               <h3 className="text-xl font-bold">Connect With Us</h3>
             </CardHeader>
-            <CardBody className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4">
               {contactMethods.map((method, index) => (
                 <Link
                   key={index}
@@ -286,7 +282,7 @@ export default function ContactPage() {
                   </div>
                 </Link>
               ))}
-            </CardBody>
+            </CardContent>
           </Card>
 
          

@@ -1,18 +1,13 @@
 // app/profile/page.tsx
 "use client";
+import { Card, CardHeader, CardContent, Avatar, Button, Input, Chip } from "@heroui/react";
 import { useEffect, useState, useRef } from "react";
-import { Card, CardHeader, CardBody } from "@heroui/react";
-import { Avatar } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Chip } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
-
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
 
@@ -234,7 +229,7 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
 
-        <CardBody className="gap-6 px-4 md:px-8 pb-8">
+        <CardContent className="gap-6 px-4 md:px-8 pb-8">
           {/* Show upload status */}
           {updateError && (
             <div className={`p-3 rounded-lg text-sm ${
@@ -353,7 +348,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

@@ -5,10 +5,8 @@
 
 "use client";
 
+import { Card, CardContent, CardHeader, Button, Badge } from "@heroui/react";
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Badge } from "@heroui/react";
 import {
   DatabaseIcon,
   ServerIcon,
@@ -167,9 +165,9 @@ export default function DiagnosticsPage() {
 
         {loading ? (
           <Card className="bg-slate-800 border-0">
-            <CardBody className="py-12 text-center">
+            <CardContent className="py-12 text-center">
               <div className="text-slate-400">Loading diagnostics...</div>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : diagnostics ? (
           <>
@@ -179,7 +177,7 @@ export default function DiagnosticsPage() {
                 <ServerIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Environment</h2>
               </CardHeader>
-              <CardBody className="py-6 grid grid-cols-2 gap-4">
+              <CardContent className="py-6 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-slate-400 text-sm">Node Environment</p>
                   <p className="text-white font-mono">
@@ -200,7 +198,7 @@ export default function DiagnosticsPage() {
                     {new Date(diagnostics.timestamp).toLocaleString()}
                   </p>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
 
             {/* Services Status */}
@@ -209,7 +207,7 @@ export default function DiagnosticsPage() {
                 <PlugIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Services</h2>
               </CardHeader>
-              <CardBody className="py-6 space-y-4">
+              <CardContent className="py-6 space-y-4">
                 {diagnostics.services.map((service, idx) => (
                   <div
                     key={idx}
@@ -247,7 +245,7 @@ export default function DiagnosticsPage() {
                     </div>
                   </div>
                 ))}
-              </CardBody>
+              </CardContent>
             </Card>
 
             {/* Quick Links */}
@@ -256,7 +254,7 @@ export default function DiagnosticsPage() {
                 <DatabaseIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </CardHeader>
-              <CardBody className="py-6">
+              <CardContent className="py-6">
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     as="a"
@@ -275,14 +273,14 @@ export default function DiagnosticsPage() {
                     Test Events Page
                   </Button>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           </>
         ) : (
           <Card className="bg-slate-800 border-0">
-            <CardBody className="py-12 text-center text-red-400">
+            <CardContent className="py-12 text-center text-red-400">
               Failed to load diagnostics
-            </CardBody>
+            </CardContent>
           </Card>
         )}
       </div>

@@ -1,16 +1,14 @@
 "use client";
 
-import { Button } from "@heroui/react";
-import { Card, CardBody } from "@heroui/react";
+import { Button, Card, CardContent } from "@heroui/react";
 import { useRouter } from "next/navigation";
-
 export default function NotFound() {
   const router = useRouter();
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
       <Card className="w-full max-w-lg border-none shadow-xl" shadow="lg">
-        <CardBody className="text-center py-16 space-y-6">
+        <CardContent className="text-center py-16 space-y-6">
           <div className="text-8xl font-black bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
             404
           </div>
@@ -35,7 +33,7 @@ export default function NotFound() {
               Go Back
             </Button>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

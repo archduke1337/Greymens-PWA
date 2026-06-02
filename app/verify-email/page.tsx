@@ -1,14 +1,12 @@
 // app/verify-email/page.tsx
 "use client";
 
+import { Card, CardContent, CardHeader, Button } from "@heroui/react";
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
 import NextLink from "next/link";
-
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -77,7 +75,7 @@ function VerifyEmailContent() {
           )}
         </CardHeader>
         
-        <CardBody className="text-center gap-4">
+        <CardContent className="text-center gap-4">
           {status === "loading" && (
             <p className="text-default-500">
               Please wait while we verify your email address...
@@ -127,7 +125,7 @@ function VerifyEmailContent() {
               </div>
             </>
           )}
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );
@@ -137,10 +135,10 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <CardBody className="py-12 text-center">
+        <CardContent className="py-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-default-500">Verifying your email...</p>
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

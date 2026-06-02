@@ -1,22 +1,13 @@
 // app/admin/events/page.tsx
 "use client";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input, Textarea } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Switch } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Tabs, Tab } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -231,7 +222,7 @@ export default function AdminEventsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Events</p>
@@ -241,11 +232,11 @@ export default function AdminEventsPage() {
                 <CalendarIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
@@ -257,11 +248,11 @@ export default function AdminEventsPage() {
                 <TrendingUpIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Registered</p>
@@ -273,11 +264,11 @@ export default function AdminEventsPage() {
                 <UsersIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardBody className="p-4">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Featured</p>
@@ -289,13 +280,13 @@ export default function AdminEventsPage() {
                 <StarIcon className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
       {/* Events Table */}
       <Card className="border-none shadow-lg">
-        <CardBody className="p-0">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table aria-label="Events table" className="min-w-full">
               <TableHeader>
@@ -382,7 +373,7 @@ export default function AdminEventsPage() {
               </TableBody>
             </Table>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Add/Edit Modal */}
@@ -468,7 +459,7 @@ export default function AdminEventsPage() {
                       }}
                     />
 
-                    <Textarea
+                    <TextArea
                       label="Description"
                       placeholder="Describe your event in detail"
                       value={formData.description}

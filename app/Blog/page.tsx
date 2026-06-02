@@ -1,14 +1,9 @@
 // app/blog/page.tsx
 "use client";
 
+import { Card, CardContent, CardFooter, Button, Input, Select, SelectItem, Chip, Avatar } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardFooter } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Avatar } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
@@ -136,7 +131,7 @@ export default function BlogPage() {
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <Input
                 placeholder="Search blogs..."
@@ -160,7 +155,7 @@ export default function BlogPage() {
                 <SelectItem key="technology">Technology</SelectItem>
               </Select>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
       </div>
 
@@ -195,7 +190,7 @@ export default function BlogPage() {
                 isPressable
                 onPress={() => router.push(`/blog/${blog.slug}`)}
               >
-                <CardBody className="p-0">
+                <CardContent className="p-0">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -240,7 +235,7 @@ export default function BlogPage() {
                       ))}
                     </div>
                   </div>
-                </CardBody>
+                </CardContent>
 
                 <CardFooter className="px-6 pb-6 pt-0 justify-between">
                   {/* Author */}

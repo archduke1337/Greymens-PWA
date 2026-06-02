@@ -1,18 +1,12 @@
 // app/settings/page.tsx
 "use client";
+import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardBody } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Switch } from "@heroui/react";
-import { Divider } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
@@ -210,7 +204,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold">Security</h2>
         </CardHeader>
-        <CardBody className="gap-6">
+        <CardContent className="gap-6">
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -263,7 +257,7 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          <Divider />
+          <Separator />
 
           {/* Email Verification */}
           <div>
@@ -305,7 +299,7 @@ export default function SettingsPage() {
             )}
           </div>
 
-          <Divider />
+          <Separator />
 
           {/* Phone Number */}
           <div>
@@ -353,7 +347,7 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Notification Settings */}
@@ -361,7 +355,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold">Notifications</h2>
         </CardHeader>
-        <CardBody className="gap-4">
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Email Notifications</p>
@@ -375,7 +369,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Divider />
+          <Separator />
 
           <div className="flex justify-between items-center">
             <div>
@@ -389,7 +383,7 @@ export default function SettingsPage() {
               onValueChange={setPushNotifications}
             />
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Danger Zone */}
@@ -397,7 +391,7 @@ export default function SettingsPage() {
         <CardHeader>
           <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
         </CardHeader>
-        <CardBody className="gap-4">
+        <CardContent className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Delete Account</p>
@@ -413,7 +407,7 @@ export default function SettingsPage() {
               Delete Account
             </Button>
           </div>
-        </CardBody>
+        </CardContent>
       </Card>
 
       {/* Add/Update Phone Modal */}

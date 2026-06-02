@@ -1,20 +1,11 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Input } from "@heroui/react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
-import { Textarea } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
-import { Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, TextArea, Select, SelectItem, Switch } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +43,7 @@ export default function AdminProjectsPage() {
 
   const statuses = [
     { key: "planning", label: "📋 Planning" },
-    { key: "in-progress", label: "🚧 In Progress" },
+    { key: "in-progress", label: "🚧 In ProgressBar" },
     { key: "completed", label: "✅ Completed" },
   ];
 
@@ -156,7 +147,7 @@ export default function AdminProjectsPage() {
       return false;
     }
     if (formData.progress < 0 || formData.progress > 100) {
-      toast.error("Progress must be between 0 and 100");
+      toast.error("ProgressBar must be between 0 and 100");
       return false;
     }
     return true;
@@ -269,7 +260,7 @@ export default function AdminProjectsPage() {
 
         {/* Admin Tips Section */}
         <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-          <CardBody className="p-6">
+          <CardContent className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
@@ -288,7 +279,7 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             </div>
-          </CardBody>
+          </CardContent>
         </Card>
 
         {/* Main Content */}
@@ -312,7 +303,7 @@ export default function AdminProjectsPage() {
                   New Project
                 </Button>
               </CardHeader>
-              <CardBody className="p-6">
+              <CardContent className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
@@ -463,7 +454,7 @@ export default function AdminProjectsPage() {
                     </Table>
                   </div>
                 )}
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
 
@@ -474,7 +465,7 @@ export default function AdminProjectsPage() {
               <CardHeader className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
               </CardHeader>
-              <CardBody className="p-6 space-y-4">
+              <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
@@ -484,7 +475,7 @@ export default function AdminProjectsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">In ProgressBar</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {projects.filter(p => p.status === 'in-progress').length}
                     </p>
@@ -515,7 +506,7 @@ export default function AdminProjectsPage() {
                   </div>
                   <StarIcon className="w-8 h-8 text-yellow-500" />
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -577,7 +568,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Description"
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
@@ -642,7 +633,7 @@ export default function AdminProjectsPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
-                        Progress: {formData.progress}%
+                        ProgressBar: {formData.progress}%
                       </label>
                       <input
                         type="range"
@@ -707,7 +698,7 @@ export default function AdminProjectsPage() {
                   </div>
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Technologies"
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
@@ -745,7 +736,7 @@ export default function AdminProjectsPage() {
                   />
                 </div>
 
-                <Textarea
+                <TextArea
                   label="Team Members"
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}

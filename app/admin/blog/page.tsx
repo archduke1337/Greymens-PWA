@@ -1,14 +1,8 @@
 // app/admin/blogs/page.tsx
 "use client";
 
+import { Card, CardContent, CardHeader, Button, Chip, Avatar, Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, TextArea } from "@heroui/react";
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Button } from "@heroui/react";
-import { Chip } from "@heroui/react";
-import { Avatar } from "@heroui/react";
-import { Tabs, Tab } from "@heroui/react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { Textarea } from "@heroui/react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {
@@ -211,16 +205,16 @@ export default function AdminBlogsPage() {
       <div className="space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardBody className="text-center py-12">
+            <CardContent className="text-center py-12">
               <p className="text-lg text-default-600">
                 No blogs in this category
               </p>
-            </CardBody>
+            </CardContent>
           </Card>
         ) : (
           filteredBlogs.map((blog) => (
             <Card key={blog.$id} className="border-2">
-              <CardBody className="p-6">
+              <CardContent className="p-6">
                 <div className="grid md:grid-cols-12 gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
@@ -372,7 +366,7 @@ export default function AdminBlogsPage() {
                     </Button>
                   </div>
                 </div>
-              </CardBody>
+              </CardContent>
             </Card>
           ))
         )}
@@ -386,7 +380,7 @@ export default function AdminBlogsPage() {
             <p className="mb-4">
               Please provide a reason for rejecting this blog:
             </p>
-            <Textarea
+            <TextArea
               placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
