@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Chip } from "@heroui/react";
 import { useState } from 'react';
-import {} from "@/components/compat";
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
 interface FormData {
@@ -104,20 +103,15 @@ export default function HelpFeedbackPage() {
               />
             </div>
 
-            <Select
-              label="Feedback Type"
-              placeholder="Select type"
-              selectedKeys={[formData.type]}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as FeedbackType;
-                setFormData({ ...formData, type: selected });
-              }}
+            <select
+              className="w-full border border-default-300 rounded-md px-3 py-2 bg-transparent"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as FeedbackType })}
             >
-              {feedbackTypes.map((type) => (
-                <  key={type.value}>
-                  {type.label}
-                </ >
-              ))}
+              <option value="bug">Bug Report</option>
+              <option value="feature">Feature Request</option>
+              <option value="support">Support</option>
+              <option value="general">General Feedback</option>
             </select>
 
             <Input

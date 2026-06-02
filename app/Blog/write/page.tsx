@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import {} from "@/components/compat";
+
 export default function WriteBlogPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
@@ -177,18 +177,14 @@ export default function WriteBlogPage() {
             />
 
             {/* Category */}
-            <Select
-              label="Category"
-              placeholder="Select a category"
-              selectedKeys={formData.category ? [formData.category] : []}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
+            <select
+              className="w-full border border-default-300 rounded-md px-3 py-2 bg-transparent"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
-              isRequired
             >
               {blogCategories.map((cat) => (
-                <  key={cat.value}>{cat.label}</ >
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
               ))}
             </select>
 

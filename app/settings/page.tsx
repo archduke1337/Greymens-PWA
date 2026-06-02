@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { , useDisclosure } from "@/components/compat";
+import { useDisclosure } from "@/components/compat";
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;

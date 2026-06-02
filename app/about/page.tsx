@@ -1,6 +1,6 @@
 import { Card, CardContent, Avatar, Chip } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
-import {} from "@/components/compat";
+import { AvatarGroup } from "@/components/compat";
 export default function AboutPage() {
   const stats = [
     { label: "Active Members", value: "500+", color: "primary" },
@@ -111,7 +111,7 @@ export default function AboutPage() {
               {teamMembers.map((avatar, index) => (
                 <Avatar key={index} src={avatar} />
               ))}
-            </ >
+            </AvatarGroup>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <Chip color="primary" variant="flat">Leadership</Chip>
