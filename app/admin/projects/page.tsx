@@ -1,17 +1,18 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, useDisclosure, TextArea, Select, SelectItem, Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter,  , TextArea, Select,  , Switch } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
+import {  ,   } from "@/components/compat";
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, onOpen, onClose } =  ();
   const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -606,9 +607,9 @@ export default function AdminProjectsPage() {
                     }}
                   >
                     {categories.map((cat) => (
-                      <SelectItem key={cat.key} textValue={cat.label}>
+                      <  key={cat.key} textValue={cat.label}>
                         {cat.label}
-                      </SelectItem>
+                      </ >
                     ))}
                   </Select>
 
@@ -622,9 +623,9 @@ export default function AdminProjectsPage() {
                     }}
                   >
                     {statuses.map((status) => (
-                      <SelectItem key={status.key} textValue={status.label}>
+                      <  key={status.key} textValue={status.label}>
                         {status.label}
-                      </SelectItem>
+                      </ >
                     ))}
                   </Select>
                 </div>

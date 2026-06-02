@@ -1,7 +1,8 @@
 'use client';
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Chip } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,  , Chip } from "@heroui/react";
 import { useState } from 'react';
+import {   } from "@/components/compat";
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
 interface FormData {
@@ -114,9 +115,9 @@ export default function HelpFeedbackPage() {
               }}
             >
               {feedbackTypes.map((type) => (
-                <SelectItem key={type.value}>
+                <  key={type.value}>
                   {type.label}
-                </SelectItem>
+                </ >
               ))}
             </Select>
 

@@ -1,7 +1,7 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem, Switch, Chip } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,  , Switch, Chip } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
+import {   } from "@/components/compat";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -218,11 +219,11 @@ export default function AdminSponsorsPage() {
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   isRequired
                 >
-                  <SelectItem key="platinum">Platinum Partner</SelectItem>
-                  <SelectItem key="gold">Gold Sponsor</SelectItem>
-                  <SelectItem key="silver">Silver Sponsor</SelectItem>
-                  <SelectItem key="bronze">Bronze Sponsor</SelectItem>
-                  <SelectItem key="partner">Community Partner</SelectItem>
+                  <  key="platinum">Platinum Partner</ >
+                  <  key="gold">Gold Sponsor</ >
+                  <  key="silver">Silver Sponsor</ >
+                  <  key="bronze">Bronze Sponsor</ >
+                  <  key="partner">Community Partner</ >
                 </Select>
 
                 <Select
@@ -230,11 +231,11 @@ export default function AdminSponsorsPage() {
                   selectedKeys={formData.category ? [formData.category] : []}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <SelectItem key="tech">Technology</SelectItem>
-                  <SelectItem key="education">Education</SelectItem>
-                  <SelectItem key="finance">Finance</SelectItem>
-                  <SelectItem key="healthcare">Healthcare</SelectItem>
-                  <SelectItem key="other">Other</SelectItem>
+                  <  key="tech">Technology</ >
+                  <  key="education">Education</ >
+                  <  key="finance">Finance</ >
+                  <  key="healthcare">Healthcare</ >
+                  <  key="other">Other</ >
                 </Select>
 
                 <Input

@@ -1,18 +1,19 @@
 // app/settings/page.tsx
 "use client";
-import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import { Card, CardHeader, CardContent, Button, Input, Switch, Separator, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter,   } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
+import {   } from "@/components/compat";
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
-  const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onClose: onPhoneModalClose } = useDisclosure();
-  const { isOpen: isVerifyModalOpen, onOpen: onVerifyModalOpen, onClose: onVerifyModalClose } = useDisclosure();
+  const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onClose: onPhoneModalClose } =  ();
+  const { isOpen: isVerifyModalOpen, onOpen: onVerifyModalOpen, onClose: onVerifyModalClose } =  ();
   
   // Password change state
   const [oldPassword, setOldPassword] = useState("");

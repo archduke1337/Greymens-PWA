@@ -1,7 +1,7 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select, SelectItem } from "@heroui/react";
+import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select,   } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import {   } from "@/components/compat";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -269,9 +270,9 @@ export default function EventsPage() {
                   size="sm"
                   className="min-w-[150px]"
                 >
-                  <SelectItem key="date">Date</SelectItem>
-                  <SelectItem key="price">Price</SelectItem>
-                  <SelectItem key="popularity">Popularity</SelectItem>
+                  <  key="date">Date</ >
+                  <  key="price">Price</ >
+                  <  key="popularity">Popularity</ >
                 </Select>
 
                 <Select
@@ -282,7 +283,7 @@ export default function EventsPage() {
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <SelectItem key={category.key}>{category.label}</SelectItem>
+                    <  key={category.key}>{category.label}</ >
                   ))}
                 </Select>
               </div>

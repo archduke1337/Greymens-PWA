@@ -1,5 +1,6 @@
-import { Card, CardContent, Avatar, AvatarGroup, Chip } from "@heroui/react";
+import { Card, CardContent, Avatar,  , Chip } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
+import {   } from "@/components/compat";
 export default function AboutPage() {
   const stats = [
     { label: "Active Members", value: "500+", color: "primary" },
@@ -112,11 +113,11 @@ export default function AboutPage() {
             Passionate leaders driving innovation and growth
           </p>
           <div className="flex justify-center">
-            <AvatarGroup isBordered max={5} size="lg">
+            <  isBordered max={5} size="lg">
               {teamMembers.map((avatar, index) => (
                 <Avatar key={index} src={avatar} />
               ))}
-            </AvatarGroup>
+            </ >
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <Chip color="primary" variant="flat">Leadership</Chip>

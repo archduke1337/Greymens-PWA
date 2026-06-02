@@ -1,13 +1,14 @@
 // app/blog/page.tsx
 "use client";
 
-import { Card, CardContent, CardFooter, Button, Input, Select, SelectItem, Chip, Avatar } from "@heroui/react";
+import { Card, CardContent, CardFooter, Button, Input, Select,  , Chip, Avatar } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { 
+import {   } from "@/components/compat";
   SearchIcon, 
   PenIcon, 
   ClockIcon, 
@@ -147,12 +148,12 @@ export default function BlogPage() {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="min-w-[200px]"
               >
-                <SelectItem key="all">All Categories</SelectItem>
-                <SelectItem key="tutorial">Tutorial</SelectItem>
-                <SelectItem key="news">News</SelectItem>
-                <SelectItem key="event">Event</SelectItem>
-                <SelectItem key="project">Project</SelectItem>
-                <SelectItem key="technology">Technology</SelectItem>
+                <  key="all">All Categories</ >
+                <  key="tutorial">Tutorial</ >
+                <  key="news">News</ >
+                <  key="event">Event</ >
+                <  key="project">Project</ >
+                <  key="technology">Technology</ >
               </Select>
             </div>
           </CardContent>

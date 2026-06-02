@@ -1,7 +1,7 @@
 // app/blog/write/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, SelectItem } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Select,   } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { blogService, blogCategories } from "@/lib/blog";
@@ -10,6 +10,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
+import {   } from "@/components/compat";
 export default function WriteBlogPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
@@ -189,7 +190,7 @@ export default function WriteBlogPage() {
               isRequired
             >
               {blogCategories.map((cat) => (
-                <SelectItem key={cat.value}>{cat.label}</SelectItem>
+                <  key={cat.value}>{cat.label}</ >
               ))}
             </Select>
 
