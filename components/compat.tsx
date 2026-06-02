@@ -305,7 +305,7 @@ export const Tabs = ({ children, selectedKey, onSelectionChange, className = "",
                   : "border-transparent text-default-500 hover:text-default-700"
               }`}
             >
-              {tab.props?.title || key}
+              {(tab.props as any)?.title || key}
             </button>
           );
         })}
@@ -316,7 +316,7 @@ export const Tabs = ({ children, selectedKey, onSelectionChange, className = "",
         if (key !== activeKey) return null;
         return (
           <div key={key} role="tabpanel">
-            {tab.props?.children}
+            {(tab.props as any)?.children}
           </div>
         );
       })}
