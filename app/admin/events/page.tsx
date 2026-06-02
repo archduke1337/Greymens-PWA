@@ -1,6 +1,6 @@
 // app/admin/events/page.tsx
 "use client";
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Switch, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Switch, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Tabs, Tab } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import {} from "@/components/compat";
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -472,9 +471,9 @@ export default function AdminEventsPage() {
                       }}
                     />
 
-                    <Select
-                      label="Category"
-                      placeholder="Select event category"
+                    <select
+              label="Category"
+                      placeholder=" event category"
                       selectedKeys={[formData.category!]}
                       onChange={(e) => handleInputChange("category", e.target.value)}
                       required
@@ -482,12 +481,12 @@ export default function AdminEventsPage() {
                         label: "font-semibold"
                       }}
                     >
-                      <  key="conference">Conference</ >
-                      <  key="workshop">Workshop</ >
-                      <  key="masterclass">Masterclass</ >
-                      <  key="competition">Competition</ >
-                      <  key="bootcamp">Bootcamp</ >
-                      <  key="forum">Forum</ >
+                      <option value="conference">Conference</option>
+                      <option value="workshop">Workshop</option>
+                      <option value="masterclass">Masterclass</option>
+                      <option value="competition">Competition</option>
+                      <option value="bootcamp">Bootcamp</option>
+                      <option value="forum">Forum</option>
                     </select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">

@@ -1,11 +1,10 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, TextArea, Select, Switch, Chip } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, TextArea, Switch, Chip } from "@heroui/react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { 
-  PlusIcon, 
+import {   PlusIcon, 
   EditIcon, 
   TrashIcon, 
   ExternalLinkIcon,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import {} from "@/components/compat";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -210,29 +208,29 @@ export default function AdminSponsorsPage() {
                   isRequired
                 />
 
-                <Select
-                  label="Tier"
+                <select
+              label="Tier"
                   selectedKeys={[formData.tier]}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   isRequired
                 >
-                  <  key="platinum">Platinum Partner</ >
-                  <  key="gold">Gold Sponsor</ >
-                  <  key="silver">Silver Sponsor</ >
-                  <  key="bronze">Bronze Sponsor</ >
-                  <  key="partner">Community Partner</ >
+                  <option value="platinum">Platinum Partner</option>
+                  <option value="gold">Gold Sponsor</option>
+                  <option value="silver">Silver Sponsor</option>
+                  <option value="bronze">Bronze Sponsor</option>
+                  <option value="partner">Community Partner</option>
                 </select>
 
-                <Select
-                  label="Category"
+                <select
+              label="Category"
                   selectedKeys={formData.category ? [formData.category] : []}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <  key="tech">Technology</ >
-                  <  key="education">Education</ >
-                  <  key="finance">Finance</ >
-                  <  key="healthcare">Healthcare</ >
-                  <  key="other">Other</ >
+                  <option value="tech">Technology</option>
+                  <option value="education">Education</option>
+                  <option value="finance">Finance</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="other">Other</option>
                 </select>
 
                 <Input

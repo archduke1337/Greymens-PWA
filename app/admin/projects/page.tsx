@@ -1,12 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Select, Switch } from "@heroui/react";
+import { Card, CardContent, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalDialog, ModalHeader, ModalBody, ModalFooter, TextArea, Switch } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import {} from "@/components/compat";
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -587,8 +586,8 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select
-                    label="Category"
+                  <select
+              label="Category"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     variant="bordered"
@@ -602,8 +601,8 @@ export default function AdminProjectsPage() {
                     ))}
                   </select>
 
-                  <Select
-                    label="Status"
+                  <select
+              label="Status"
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     variant="bordered"

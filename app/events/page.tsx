@@ -1,7 +1,7 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input, Select } from "@heroui/react";
+import { Card, CardContent, CardHeader, CardFooter, Button, Badge, Avatar, Chip, ProgressBar, Input } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,8 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event as EventType } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { sendRegistrationEmail } from "@/lib/emailService";
-import {
-  CalendarIcon,
+import {   CalendarIcon,
   MapPinIcon,
   UsersIcon,
   SearchIcon,
@@ -20,7 +19,6 @@ import {
   StarIcon,
   CrownIcon } from "lucide-react";
 import { toast } from "sonner";
-import {} from "@/components/compat";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -260,20 +258,20 @@ export default function EventsPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <Select
-                  label="Sort by"
+                <select
+              label="Sort by"
                   selectedKeys={[sortBy]}
                   onChange={(e) => setSortBy(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
-                  <  key="date">Date</ >
-                  <  key="price">Price</ >
-                  <  key="popularity">Popularity</ >
+                  <option value="date">Date</option>
+                  <option value="price">Price</option>
+                  <option value="popularity">Popularity</option>
                 </select>
 
-                <Select
-                  label="Category"
+                <select
+              label="Category"
                   selectedKeys={[selectedCategory]}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   size="sm"
