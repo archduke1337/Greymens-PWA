@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, SelectItem } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, SelectItem } from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -131,7 +131,7 @@ export default function BlogPage() {
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-6">
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <Input
                 placeholder="Search blogs..."
@@ -155,7 +155,7 @@ export default function BlogPage() {
                 <SelectItem key="technology">Technology</SelectItem>
               </Select>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
@@ -190,7 +190,7 @@ export default function BlogPage() {
                 isPressable
                 onPress={() => router.push(`/blog/${blog.slug}`)}
               >
-                <CardContent className="p-0">
+                <Card.Content className="p-0">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -235,9 +235,9 @@ export default function BlogPage() {
                       ))}
                     </div>
                   </div>
-                </CardContent>
+                </Card.Content>
 
-                <CardFooter className="px-6 pb-6 pt-0 justify-between">
+                <Card.Footer className="px-6 pb-6 pt-0 justify-between">
                   {/* Author */}
                   <div className="flex items-center gap-2">
                     <Avatar
@@ -266,7 +266,7 @@ export default function BlogPage() {
                       <span>{blog.views}</span>
                     </div>
                   </div>
-                </CardFooter>
+                </Card.Footer>
               </Card>
             ))}
           </div>

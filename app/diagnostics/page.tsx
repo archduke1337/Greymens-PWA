@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Badge, Button, Card, CardContent, CardHeader } from "@/components/compat";
+import { Badge, Button, Card, CardContent, CardHeader } from "@heroui/react";
 import {
   DatabaseIcon,
   ServerIcon,
@@ -165,19 +165,19 @@ export default function DiagnosticsPage() {
 
         {loading ? (
           <Card className="bg-slate-800 border-0">
-            <CardContent className="py-12 text-center">
+            <Card.Content className="py-12 text-center">
               <div className="text-slate-400">Loading diagnostics...</div>
-            </CardContent>
+            </Card.Content>
           </Card>
         ) : diagnostics ? (
           <>
             {/* Environment Info */}
             <Card className="mb-6 bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+              <Card.Header className="bg-slate-700/50 flex gap-2">
                 <ServerIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Environment</h2>
-              </CardHeader>
-              <CardContent className="py-6 grid grid-cols-2 gap-4">
+              </Card.Header>
+              <Card.Content className="py-6 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-slate-400 text-sm">Node Environment</p>
                   <p className="text-white font-mono">
@@ -198,16 +198,16 @@ export default function DiagnosticsPage() {
                     {new Date(diagnostics.timestamp).toLocaleString()}
                   </p>
                 </div>
-              </CardContent>
+              </Card.Content>
             </Card>
 
             {/* Services Status */}
             <Card className="mb-6 bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+              <Card.Header className="bg-slate-700/50 flex gap-2">
                 <PlugIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Services</h2>
-              </CardHeader>
-              <CardContent className="py-6 space-y-4">
+              </Card.Header>
+              <Card.Content className="py-6 space-y-4">
                 {diagnostics.services.map((service, idx) => (
                   <div
                     key={idx}
@@ -245,16 +245,16 @@ export default function DiagnosticsPage() {
                     </div>
                   </div>
                 ))}
-              </CardContent>
+              </Card.Content>
             </Card>
 
             {/* Quick Links */}
             <Card className="bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+              <Card.Header className="bg-slate-700/50 flex gap-2">
                 <DatabaseIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Quick Actions</h2>
-              </CardHeader>
-              <CardContent className="py-6">
+              </Card.Header>
+              <Card.Content className="py-6">
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     as="a"
@@ -273,14 +273,14 @@ export default function DiagnosticsPage() {
                     Test Events Page
                   </Button>
                 </div>
-              </CardContent>
+              </Card.Content>
             </Card>
           </>
         ) : (
           <Card className="bg-slate-800 border-0">
-            <CardContent className="py-12 text-center text-red-400">
+            <Card.Content className="py-12 text-center text-red-400">
               Failed to load diagnostics
-            </CardContent>
+            </Card.Content>
           </Card>
         )}
       </div>

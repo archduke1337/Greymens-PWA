@@ -7,12 +7,12 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useDisclosure } from "@/components/compat";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, open, close } = useOverlayState();
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -120,7 +120,7 @@ export default function AdminEventsPage() {
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
     setFormData(event);
-    onOpen();
+    open();
   };
 
   const handleDelete = async (eventId: string) => {
@@ -173,7 +173,7 @@ export default function AdminEventsPage() {
       status: "upcoming"
     });
     setTagInput("");
-    onClose();
+    close();
   };
 
   if (loading || loadingEvents) {
@@ -210,7 +210,7 @@ export default function AdminEventsPage() {
           </Button>
           <Button 
             color="primary" 
-            onPress={onOpen}
+            onPress={open}
             className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600"
             size="sm"
           >
@@ -223,7 +223,7 @@ export default function AdminEventsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card className="border-none shadow-md">
-          <CardContent className="p-4">
+          <Card.Content className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Events</p>
@@ -233,11 +233,11 @@ export default function AdminEventsPage() {
                 <CalendarIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardContent className="p-4">
+          <Card.Content className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
@@ -249,11 +249,11 @@ export default function AdminEventsPage() {
                 <TrendingUpIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardContent className="p-4">
+          <Card.Content className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Registered</p>
@@ -265,11 +265,11 @@ export default function AdminEventsPage() {
                 <UsersIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none shadow-md">
-          <CardContent className="p-4">
+          <Card.Content className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Featured</p>
@@ -281,13 +281,13 @@ export default function AdminEventsPage() {
                 <StarIcon className="w-6 h-6 text-yellow-600" />
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
       {/* Events Table */}
       <Card className="border-none shadow-lg">
-        <CardContent className="p-0">
+        <Card.Content className="p-0">
           <div className="overflow-x-auto">
             <Table aria-label="Events table" className="min-w-full">
               <TableHeader>
@@ -363,7 +363,7 @@ export default function AdminEventsPage() {
                           variant="ghost"
                           isIconOnly
                           onPress={() => handleDelete(event.$id!)}
-                          isLoading={deletingId === event.$id}
+                          isPending={deletingId === event.$id}
                         >
                           <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
@@ -374,13 +374,13 @@ export default function AdminEventsPage() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Add/Edit Modal */}
       <Modal 
         isOpen={isOpen} 
-        onClose={handleCloseModal} 
+        close={handleCloseModal} 
         size="3xl" 
         scrollBehavior="inside"
         classNames={{
@@ -388,18 +388,18 @@ export default function AdminEventsPage() {
           wrapper: "items-center"
         }}
       >
-        <ModalDialog>
+        <Modal.Dialog>
           <form onSubmit={handleSubmit}>
-            <ModalHeader className="flex flex-col gap-1 border-b pb-4">
+            <Modal.Header className="flex flex-col gap-1 border-b pb-4">
               <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {editingEvent ? "Edit Event" : "Create New Event"}
               </h2>
               <p className="text-sm text-default-500 font-normal">
                 Fill in the details below to {editingEvent ? "update" : "create"} an event
               </p>
-            </ModalHeader>
+            </Modal.Header>
             
-            <ModalBody className="py-6">
+            <Modal.Body className="py-6">
               <Tabs aria-label="Event form sections" color="primary">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-2">
@@ -736,7 +736,7 @@ export default function AdminEventsPage() {
                           {formData.tags.map((tag, index) => (
                             <Chip 
                               key={index} 
-                              onClose={() => handleRemoveTag(tag)} 
+                              close={() => handleRemoveTag(tag)} 
                               variant="primary"
                               color="secondary"
                               className="font-medium"
@@ -762,9 +762,9 @@ export default function AdminEventsPage() {
                   </div>
                 </Tab>
               </Tabs>
-            </ModalBody>
+            </Modal.Body>
 
-            <ModalFooter className="border-t pt-4">
+            <Modal.Footer className="border-t pt-4">
               <Button 
                 variant="primary" 
                 onPress={handleCloseModal}
@@ -775,14 +775,14 @@ export default function AdminEventsPage() {
               <Button 
                 color="primary" 
                 type="submit" 
-                isLoading={submitting}
+                isPending={submitting}
                 className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
               >
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>
-            </ModalFooter>
+            </Modal.Footer>
           </form>
-        </ModalDialog>
+        </Modal.Dialog>
       </Modal>
     </div>
   );

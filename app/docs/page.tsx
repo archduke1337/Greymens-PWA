@@ -1,4 +1,4 @@
-import { Accordion, AccordionItem, Card, CardContent, CardHeader, Chip, Separator } from "@/components/compat";
+import { Accordion, AccordionItem, Card, CardContent, CardHeader, Chip, Separator } from "@heroui/react";
 "use client";
 
 export default function TermsPage() {
@@ -23,15 +23,15 @@ export default function TermsPage() {
 
       {/* Member Terms */}
       <Card className="border-none">
-        <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
+        <Card.Header className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Member Terms</h2>
           <p className="text-sm text-default-600 mt-1">
             Guidelines for all Mind Mesh members
           </p>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+        </Card.Header>
+        <Card.Content className="px-6 pb-6">
           <Accordion variant="outline" selectionMode="multiple">
-            <AccordionItem
+            <Accordion.Item
               key="eligibility"
               aria-label="Eligibility"
               title="Eligibility"
@@ -42,9 +42,9 @@ export default function TermsPage() {
                 <li>Minimum age requirement: 16 years</li>
                 <li>Expected participation: 50% of club activities per semester</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="benefits"
               aria-label="Benefits"
               title="Member Benefits"
@@ -57,9 +57,9 @@ export default function TermsPage() {
                 <li>Mentorship opportunities</li>
                 <li>Certificate of membership</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="responsibilities"
               aria-label="Responsibilities"
               title="Member Responsibilities"
@@ -71,9 +71,9 @@ export default function TermsPage() {
                 <li>Maintain professional behavior</li>
                 <li>Pay membership dues on time (if applicable)</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="conduct"
               aria-label="Code of Conduct"
               title="Code of Conduct"
@@ -85,9 +85,9 @@ export default function TermsPage() {
                 <li>Maintain integrity in all interactions</li>
                 <li>Zero tolerance for harassment or discrimination</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="termination"
               aria-label="Termination"
               title="Termination"
@@ -102,22 +102,22 @@ export default function TermsPage() {
                 <li>Non-payment of dues (90+ days)</li>
                 <li>Voluntary resignation (30-day notice)</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
           </Accordion>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Sponsor Terms */}
       <Card className="border-none">
-        <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
+        <Card.Header className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Sponsor Terms</h2>
           <p className="text-sm text-default-600 mt-1">
             Partnership and sponsorship guidelines
           </p>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+        </Card.Header>
+        <Card.Content className="px-6 pb-6">
           <Accordion variant="outline" selectionMode="multiple">
-            <AccordionItem
+            <Accordion.Item
               key="tiers"
               aria-label="Sponsorship Tiers"
               title="Sponsorship Tiers"
@@ -143,9 +143,9 @@ export default function TermsPage() {
                   </p>
                 </div>
               </div>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="obligations"
               aria-label="Obligations"
               title="Sponsor Obligations"
@@ -157,9 +157,9 @@ export default function TermsPage() {
                 <li>Maintain professional conduct</li>
                 <li>30-day notice for any changes</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="ip"
               aria-label="Intellectual Property"
               title="Intellectual Property"
@@ -170,9 +170,9 @@ export default function TermsPage() {
                 <li>Club receives limited license for promotion</li>
                 <li>Original club content remains club property</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="duration"
               aria-label="Contract Duration"
               title="Contract Duration"
@@ -183,22 +183,22 @@ export default function TermsPage() {
                 <li>60-day notice for termination</li>
                 <li>Renewal discussions begin 60 days before expiration</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
           </Accordion>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Privacy Policy */}
       <Card className="border-none">
-        <CardHeader className="flex flex-col items-start px-6 pt-6 pb-4">
+        <Card.Header className="flex flex-col items-start px-6 pt-6 pb-4">
           <h2 className="text-2xl font-semibold">Privacy Policy</h2>
           <p className="text-sm text-default-600 mt-1">
             How we collect and protect your data
           </p>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+        </Card.Header>
+        <Card.Content className="px-6 pb-6">
           <Accordion variant="outline" selectionMode="multiple">
-            <AccordionItem
+            <Accordion.Item
               key="collection"
               aria-label="Data Collection"
               title="Data We Collect"
@@ -210,9 +210,9 @@ export default function TermsPage() {
                 <li>Event attendance records</li>
                 <li>Photos and videos (with consent)</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="usage"
               aria-label="Data Usage"
               title="How We Use Data"
@@ -224,9 +224,9 @@ export default function TermsPage() {
                 <li>Improve club services</li>
                 <li>Provide anonymized analytics to sponsors</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="protection"
               aria-label="Data Protection"
               title="Data Protection"
@@ -239,9 +239,9 @@ export default function TermsPage() {
                 <li>No selling of personal data</li>
                 <li>GDPR compliant</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
 
-            <AccordionItem
+            <Accordion.Item
               key="rights"
               aria-label="Your Rights"
               title="Your Rights"
@@ -254,57 +254,57 @@ export default function TermsPage() {
                 <li>Opt-out of communications</li>
                 <li>Contact: privacy@mindmesh.club</li>
               </ul>
-            </AccordionItem>
+            </Accordion.Item>
           </Accordion>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Additional Policies Grid */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="border-none">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <h3 className="font-semibold text-lg mb-2">Refund Policy</h3>
             <p className="text-sm text-default-600">
               Event fees non-refundable within 7 days of event. Membership fees
               refundable within 30 days with valid reason.
             </p>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <h3 className="font-semibold text-lg mb-2">Media Policy</h3>
             <p className="text-sm text-default-600">
               Photos and videos may be taken at events. Members can opt-out by
               notifying organizers in advance.
             </p>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <h3 className="font-semibold text-lg mb-2">Liability</h3>
             <p className="text-sm text-default-600">
               Members participate at their own risk. Club not liable for
               injuries except in cases of gross negligence.
             </p>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <Card className="border-none">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <h3 className="font-semibold text-lg mb-2">Contact</h3>
             <p className="text-sm text-default-600">
               Questions? Email legal@mindmesh.club or visit our office during
               business hours.
             </p>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
       {/* Footer */}
       <Card className="border-none bg-default-50">
-        <CardContent className="p-6 text-center">
+        <Card.Content className="p-6 text-center">
           <p className="text-sm text-default-600">
             These terms are subject to change. Members will be notified of
             updates. By continuing membership, you agree to these terms.
@@ -312,7 +312,7 @@ export default function TermsPage() {
           <p className="text-xs text-default-500 mt-2">
             © 2025 Mind Mesh. All rights reserved.
           </p>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

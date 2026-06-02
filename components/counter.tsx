@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/compat";
+import { Button } from "@heroui/react";
 
 export const Counter = () => {
   const [count, setCount] = useState(0);

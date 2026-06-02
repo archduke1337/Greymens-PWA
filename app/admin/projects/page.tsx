@@ -5,14 +5,14 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useDisclosure } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen, open, close } = useOverlayState();
   const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -102,7 +102,7 @@ export default function AdminProjectsPage() {
     setIsEditing(false);
     setSelectedProject(null);
     resetForm();
-    onOpen();
+    open();
   };
 
   // Open modal for editing project
@@ -126,7 +126,7 @@ export default function AdminProjectsPage() {
       repoUrl: project.repoUrl || "",
       teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "",
     });
-    onOpen();
+    open();
   };
 
   // Validate form
@@ -194,7 +194,7 @@ export default function AdminProjectsPage() {
         toast.success("Project created successfully!");
       }
 
-      onClose();
+      close();
       fetchProjects();
       resetForm();
     } catch (error) {
@@ -261,7 +261,7 @@ export default function AdminProjectsPage() {
 
         {/* Admin Tips Section */}
         <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-          <CardContent className="p-6">
+          <Card.Content className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
@@ -280,7 +280,7 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {/* Main Content */}
@@ -288,7 +288,7 @@ export default function AdminProjectsPage() {
           {/* Projects Table */}
           <div className="lg:col-span-3">
             <Card className="border-none shadow-xl">
-              <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
+              <Card.Header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
@@ -303,8 +303,8 @@ export default function AdminProjectsPage() {
                 >
                   New Project
                 </Button>
-              </CardHeader>
-              <CardContent className="p-6">
+              </Card.Header>
+              <Card.Content className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
@@ -455,7 +455,7 @@ export default function AdminProjectsPage() {
                     </Table>
                   </div>
                 )}
-              </CardContent>
+              </Card.Content>
             </Card>
           </div>
 
@@ -463,10 +463,10 @@ export default function AdminProjectsPage() {
           <div className="space-y-6">
             {/* Quick Stats */}
             <Card className="border-none shadow-xl">
-              <CardHeader className="px-6 pt-6 pb-0">
+              <Card.Header className="px-6 pt-6 pb-0">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              </Card.Header>
+              <Card.Content className="p-6 space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
@@ -507,14 +507,14 @@ export default function AdminProjectsPage() {
                   </div>
                   <StarIcon className="w-8 h-8 text-yellow-500" />
                 </div>
-              </CardContent>
+              </Card.Content>
             </Card>
           </div>
         </div>
         {/* Add/Edit Modal */}
         <Modal
           isOpen={isOpen}
-          onClose={onClose}
+          close={close}
           size="2xl"
           scrollBehavior="inside"
           classNames={{
@@ -522,8 +522,8 @@ export default function AdminProjectsPage() {
             backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
           }}
         >
-          <ModalDialog>
-            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
+          <Modal.Dialog>
+            <Modal.Header className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                   {isEditing ? (
@@ -541,8 +541,8 @@ export default function AdminProjectsPage() {
                   </p>
                 </div>
               </div>
-            </ModalHeader>
-            <ModalBody className="p-6 gap-6">
+            </Modal.Header>
+            <Modal.Body className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                   <Input
@@ -762,22 +762,22 @@ export default function AdminProjectsPage() {
                   Feature this project on the homepage
                 </Switch>
               </div>
-            </ModalBody>
-            <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="ghost" onPress={onClose} isDisabled={saving}>
+            </Modal.Body>
+            <Modal.Footer className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <Button variant="ghost" onPress={close} isDisabled={saving}>
                 Cancel
               </Button>
               <Button
                 color="primary"
                 onPress={handleSave}
-                isLoading={saving}
+                isPending={saving}
                 startContent={!saving && <SaveIcon className="w-4 h-4" />}
                 className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
               >
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
-            </ModalFooter>
-          </ModalDialog>
+            </Modal.Footer>
+          </Modal.Dialog>
         </Modal>
       </div>
 

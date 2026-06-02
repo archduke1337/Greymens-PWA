@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -43,7 +43,7 @@ export default function HelpFeedbackPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16">
         <Card className="border border-default-200">
-          <CardContent className="text-center py-16 space-y-4">
+          <Card.Content className="text-center py-16 space-y-4">
             <div className="w-16 h-16 mx-auto rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
               <svg className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -63,7 +63,7 @@ export default function HelpFeedbackPage() {
             >
               Submit Another
             </Button>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -79,13 +79,13 @@ export default function HelpFeedbackPage() {
       </div>
 
       <Card className="border border-default-200">
-        <CardHeader className="px-6 pt-6">
+        <Card.Header className="px-6 pt-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Send us a message</h2>
             <p className="text-sm text-default-500">Fill out the form below and we&apos;ll respond within 24 hours.</p>
           </div>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+        </Card.Header>
+        <Card.Content className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
@@ -142,14 +142,14 @@ export default function HelpFeedbackPage() {
               <Button
                 type="submit"
                 color="primary"
-                isLoading={isSubmitting}
+                isPending={isSubmitting}
                 className="min-w-[120px]"
               >
                 {isSubmitting ? 'Sending...' : 'Send Feedback'}
               </Button>
             </div>
           </form>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       <div className="text-center space-y-2">

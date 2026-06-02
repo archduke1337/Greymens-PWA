@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, SelectItem, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Select, SelectItem, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -148,10 +148,10 @@ export default function WriteBlogPage() {
 
       {/* Form */}
       <Card className="border-none shadow-xl">
-        <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+        <Card.Header className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
           <h2 className="text-xl font-bold">Blog Details</h2>
-        </CardHeader>
-        <CardContent className="p-8">
+        </Card.Header>
+        <Card.Content className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
             <Input
@@ -230,7 +230,7 @@ export default function WriteBlogPage() {
                     variant="primary"
                     color="primary"
                     startContent={<ImageIcon className="w-5 h-5" />}
-                    isLoading={uploadingImage}
+                    isPending={uploadingImage}
                     className="w-full"
                   >
                     {uploadingImage ? "Uploading..." : "Upload Image"}
@@ -299,7 +299,7 @@ export default function WriteBlogPage() {
               <Button
                 type="submit"
                 color="primary"
-                isLoading={submitting}
+                isPending={submitting}
                 endContent={<SendIcon className="w-5 h-5" />}
                 className="flex-1"
               >
@@ -315,7 +315,7 @@ export default function WriteBlogPage() {
               </p>
             </div>
           </form>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

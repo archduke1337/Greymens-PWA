@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
-import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@/components/compat";
+import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@heroui/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -41,11 +41,11 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
       <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1 items-start">
+        <Card.Header className="flex flex-col gap-1 items-start">
           <h1 className="text-2xl font-bold">Welcome Back</h1>
           <p className="text-small text-default-500">Login to your Mind Mesh account</p>
-        </CardHeader>
-        <CardContent>
+        </Card.Header>
+        <Card.Content>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Email"
@@ -71,7 +71,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               color="primary"
-              isLoading={loading}
+              isPending={loading}
               className="w-full"
             >
               Login
@@ -111,15 +111,15 @@ export default function LoginPage() {
           >
             Continue with Google
           </Button>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2">
+        </Card.Content>
+        <Card.Footer className="flex flex-col gap-2">
           <div className="text-small text-center">
             Don't have an account?{" "}
             <Link as={NextLink} href="/register" size="sm">
               Sign up
             </Link>
           </div>
-        </CardFooter>
+        </Card.Footer>
       </Card>
     </div>
   );

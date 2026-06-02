@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, Switch, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -175,12 +175,12 @@ export default function AdminSponsorsPage() {
       {/* Form */}
       {showForm && (
         <Card className="mb-8 border-2 border-primary">
-          <CardHeader className="bg-primary/10">
+          <Card.Header className="bg-primary/10">
             <h2 className="text-xl font-bold">
               {editingSponsor ? "Edit Sponsor" : "Add New Sponsor"}
             </h2>
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
@@ -314,13 +314,13 @@ export default function AdminSponsorsPage() {
                 <Button
                   type="submit"
                   color="primary"
-                  isLoading={saving}
+                  isPending={saving}
                 >
                   {editingSponsor ? "Update Sponsor" : "Create Sponsor"}
                 </Button>
               </div>
             </form>
-          </CardContent>
+          </Card.Content>
         </Card>
       )}
 
@@ -332,7 +332,7 @@ export default function AdminSponsorsPage() {
 
         {sponsors.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
+            <Card.Content className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
               <Button
                 color="primary"
@@ -341,7 +341,7 @@ export default function AdminSponsorsPage() {
               >
                 Add Your First Sponsor
               </Button>
-            </CardContent>
+            </Card.Content>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -350,7 +350,7 @@ export default function AdminSponsorsPage() {
               
               return (
                 <Card key={sponsor.$id} className="relative">
-                  <CardContent className="space-y-4">
+                  <Card.Content className="space-y-4">
                     {/* Status Badges */}
                     <div className="flex gap-2 flex-wrap">
                       <Chip
@@ -432,7 +432,7 @@ export default function AdminSponsorsPage() {
                     <div className="text-xs text-default-400">
                       Display Order: {sponsor.displayOrder}
                     </div>
-                  </CardContent>
+                  </Card.Content>
                 </Card>
               );
             })}

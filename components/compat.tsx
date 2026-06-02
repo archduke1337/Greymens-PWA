@@ -6,13 +6,13 @@ import React, { useState, useCallback, forwardRef } from "react";
 // HOOKS
 // ============================================================
 
-export function useDisclosure(defaultIsOpen = false) {
+export function useOverlayState(defaultIsOpen = false) {
   const [isOpen, setIsOpen] = useState(defaultIsOpen);
-  const onOpen = useCallback(() => setIsOpen(true), []);
-  const onClose = useCallback(() => setIsOpen(false), []);
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
   const onOpenChange = useCallback((open: boolean) => setIsOpen(open), []);
-  const onToggle = useCallback(() => setIsOpen((prev) => !prev), []);
-  return { isOpen, onOpen, onClose, onOpenChange, onToggle };
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+  return { isOpen, open, close, onOpenChange, toggle };
 }
 
 // ============================================================
@@ -222,11 +222,11 @@ export const SelectItem = ({ children, value, key: k, ...props }: any) => (
 // MODAL (overlay pattern)
 // ============================================================
 
-export const Modal = ({ isOpen, onClose, children, classNames, ...props }: any) => {
+export const Modal = ({ isOpen, close, children, classNames, ...props }: any) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={close} />
       <div className={`relative z-10 ${classNames?.base || ""}`}>
         {children}
       </div>
@@ -362,7 +362,7 @@ const chipLightColorMap: Record<string, string> = {
   danger: "bg-transparent text-danger",
 };
 
-export const Chip = ({ children, size = "md", color = "default", variant = "solid", onClose, className = "", ...props }: any) => {
+export const Chip = ({ children, size = "md", color = "default", variant = "solid", close, className = "", ...props }: any) => {
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : size === "lg" ? "px-4 py-1.5 text-base" : "px-3 py-1 text-sm";
   let colorStyle = chipColorMap[color] || chipColorMap.default;
   if (variant === "outline" || variant === "bordered") {
@@ -373,8 +373,8 @@ export const Chip = ({ children, size = "md", color = "default", variant = "soli
   return (
     <span className={`inline-flex items-center gap-1 rounded-full font-medium ${colorStyle} ${sizeClass} ${className}`} {...props}>
       {children}
-      {onClose && (
-        <button onClick={onClose} className="ml-0.5 hover:opacity-70 cursor-pointer" type="button">×</button>
+      {close && (
+        <button onClick={close} className="ml-0.5 hover:opacity-70 cursor-pointer" type="button">×</button>
       )}
     </span>
   );

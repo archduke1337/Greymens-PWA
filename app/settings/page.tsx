@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useDisclosure } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
 
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
-  const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onClose: onPhoneModalClose } = useDisclosure();
-  const { isOpen: isVerifyModalOpen, onOpen: onVerifyModalOpen, onClose: onVerifyModalClose } = useDisclosure();
+  const { isOpen: isPhoneModalOpen, open: onPhoneModalOpen, close: onPhoneModalClose } = useOverlayState();
+  const { isOpen: isVerifyModalOpen, open: onVerifyModalOpen, close: onVerifyModalClose } = useOverlayState();
   
   // Password change state
   const [oldPassword, setOldPassword] = useState("");
@@ -202,10 +202,10 @@ export default function SettingsPage() {
 
       {/* Security Settings */}
       <Card className="mb-6">
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-xl font-semibold">Security</h2>
-        </CardHeader>
-        <CardContent className="gap-6">
+        </Card.Header>
+        <Card.Content className="gap-6">
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -251,7 +251,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 color="primary"
-                isLoading={passwordLoading}
+                isPending={passwordLoading}
               >
                 Update Password
               </Button>
@@ -282,7 +282,7 @@ export default function SettingsPage() {
                   variant="primary"
                   size="sm"
                   onPress={handleSendVerification}
-                  isLoading={verificationLoading}
+                  isPending={verificationLoading}
                 >
                   Send Verification Email
                 </Button>
@@ -348,15 +348,15 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Notification Settings */}
       <Card className="mb-6">
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-xl font-semibold">Notifications</h2>
-        </CardHeader>
-        <CardContent className="gap-4">
+        </Card.Header>
+        <Card.Content className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Email Notifications</p>
@@ -384,15 +384,15 @@ export default function SettingsPage() {
               onChange={setPushNotifications}
             />
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Danger Zone */}
       <Card className="border-danger">
-        <CardHeader>
+        <Card.Header>
           <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
-        </CardHeader>
-        <CardContent className="gap-4">
+        </Card.Header>
+        <Card.Content className="gap-4">
           <div className="flex justify-between items-center">
             <div>
               <p className="font-medium">Delete Account</p>
@@ -408,17 +408,17 @@ export default function SettingsPage() {
               Delete Account
             </Button>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* Add/Update Phone Modal */}
-      <Modal isOpen={isPhoneModalOpen} onClose={onPhoneModalClose}>
-        <ModalDialog>
+      <Modal isOpen={isPhoneModalOpen} close={onPhoneModalClose}>
+        <Modal.Dialog>
           <form onSubmit={handleAddPhone}>
-            <ModalHeader>
+            <Modal.Header>
               {user.phone ? "Update" : "Add"} Phone Number
-            </ModalHeader>
-            <ModalBody>
+            </Modal.Header>
+            <Modal.Body>
               <Input
                 label="Phone Number"
                 placeholder="+911234567890"
@@ -441,27 +441,27 @@ export default function SettingsPage() {
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
               )}
-            </ModalBody>
-            <ModalFooter>
+            </Modal.Body>
+            <Modal.Footer>
               <Button variant="primary" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isLoading={phoneLoading}>
+              <Button color="primary" type="submit" isPending={phoneLoading}>
                 {user.phone ? "Update" : "Add"} Phone
               </Button>
-            </ModalFooter>
+            </Modal.Footer>
           </form>
-        </ModalDialog>
+        </Modal.Dialog>
       </Modal>
 
       {/* Verify Phone Modal */}
-      <Modal isOpen={isVerifyModalOpen} onClose={onVerifyModalClose}>
-        <ModalDialog>
+      <Modal isOpen={isVerifyModalOpen} close={onVerifyModalClose}>
+        <Modal.Dialog>
           <form onSubmit={handleVerifyPhone}>
-            <ModalHeader>
+            <Modal.Header>
               Verify Phone Number
-            </ModalHeader>
-            <ModalBody>
+            </Modal.Header>
+            <Modal.Body>
               <p className="text-sm text-default-500 mb-4">
                 Enter the verification code sent to your phone number
               </p>
@@ -486,22 +486,22 @@ export default function SettingsPage() {
                 variant="primary"
                 size="sm"
                 onPress={handleSendPhoneVerification}
-                isLoading={phoneVerifyLoading}
+                isPending={phoneVerifyLoading}
                 className="mt-2"
               >
                 Resend Code
               </Button>
-            </ModalBody>
-            <ModalFooter>
+            </Modal.Body>
+            <Modal.Footer>
               <Button variant="primary" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isLoading={phoneVerifyLoading}>
+              <Button color="primary" type="submit" isPending={phoneVerifyLoading}>
                 Verify Phone
               </Button>
-            </ModalFooter>
+            </Modal.Footer>
           </form>
-        </ModalDialog>
+        </Modal.Dialog>
       </Modal>
     </div>
   );

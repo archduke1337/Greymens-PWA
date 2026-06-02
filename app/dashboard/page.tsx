@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Button, Card, CardContent, Chip, Link } from "@/components/compat";
+import { Button, Card, CardContent, Chip, Link } from "@heroui/react";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -47,22 +47,22 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border border-default-200">
-          <CardContent className="text-center py-8">
+          <Card.Content className="text-center py-8">
             <p className="text-3xl font-bold text-primary">{user.emailVerification ? '✓' : '—'}</p>
             <p className="text-sm text-default-500 mt-2">Email Verified</p>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card className="border border-default-200">
-          <CardContent className="text-center py-8">
+          <Card.Content className="text-center py-8">
             <Chip color="primary" variant="primary">{user.email}</Chip>
             <p className="text-sm text-default-500 mt-2">Account Email</p>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card className="border border-default-200">
-          <CardContent className="text-center py-8">
+          <Card.Content className="text-center py-8">
             <p className="text-3xl font-bold text-success">Active</p>
             <p className="text-sm text-default-500 mt-2">Account Status</p>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
@@ -72,11 +72,11 @@ export default function DashboardPage() {
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               <Card className="cursor-pointer border border-default-200 h-full">
-                <CardContent className="flex items-center justify-center py-6">
+                <Card.Content className="flex items-center justify-center py-6">
                   <Button color={link.color} variant="ghost" className="text-sm font-medium">
                     {link.label}
                   </Button>
-                </CardContent>
+                </Card.Content>
               </Card>
             </Link>
           ))}

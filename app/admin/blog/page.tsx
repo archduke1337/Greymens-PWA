@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Tab, Tabs, TextArea } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Tab, Tabs, TextArea } from "@heroui/react";
 import {
   CheckIcon,
   XIcon,
@@ -205,16 +205,16 @@ export default function AdminBlogsPage() {
       <div className="space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
+            <Card.Content className="text-center py-12">
               <p className="text-lg text-default-600">
                 No blogs in this category
               </p>
-            </CardContent>
+            </Card.Content>
           </Card>
         ) : (
           filteredBlogs.map((blog) => (
             <Card key={blog.$id} className="border-2">
-              <CardContent className="p-6">
+              <Card.Content className="p-6">
                 <div className="grid md:grid-cols-12 gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
@@ -323,7 +323,7 @@ export default function AdminBlogsPage() {
                           variant="primary"
                           startContent={<CheckIcon className="w-4 h-4" />}
                           onPress={() => handleApprove(blog.$id!)}
-                          isLoading={processingBlog === blog.$id}
+                          isPending={processingBlog === blog.$id}
                           className="flex-1 md:flex-none"
                         >
                           Approve
@@ -366,7 +366,7 @@ export default function AdminBlogsPage() {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
+              </Card.Content>
             </Card>
           ))
         )}
@@ -374,9 +374,9 @@ export default function AdminBlogsPage() {
 
       {/* Rejection Modal */}
       <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)}>
-        <ModalDialog>
-          <ModalHeader>Reject Blog</ModalHeader>
-          <ModalBody>
+        <Modal.Dialog>
+          <Modal.Header>Reject Blog</Modal.Header>
+          <Modal.Body>
             <p className="mb-4">
               Please provide a reason for rejecting this blog:
             </p>
@@ -386,20 +386,20 @@ export default function AdminBlogsPage() {
               onChange={(e: any) => setRejectionReason(e.target.value)}
               rows={4}
             />
-          </ModalBody>
-          <ModalFooter>
+          </Modal.Body>
+          <Modal.Footer>
             <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
               Cancel
             </Button>
             <Button
               color="danger"
               onPress={handleReject}
-              isLoading={!!processingBlog}
+              isPending={!!processingBlog}
             >
               Reject Blog
             </Button>
-          </ModalFooter>
-        </ModalDialog>
+          </Modal.Footer>
+        </Modal.Dialog>
       </Modal>
     </div>
   );

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Spinner } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Spinner } from "@heroui/react";
 
 interface ConnectivityResult {
   status: "checking" | "success" | "error";
@@ -115,7 +115,7 @@ export default function ConnectivityCheckPage() {
         </div>
 
         <Card className="mb-6 border-0 bg-slate-800">
-          <CardContent className="py-8">
+          <Card.Content className="py-8">
             {loading ? (
               <div className="flex items-center justify-center gap-3">
                 <Spinner color="primary" />
@@ -131,13 +131,13 @@ export default function ConnectivityCheckPage() {
                 Run Connectivity Test
               </Button>
             )}
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {result && (
           <>
             <Card className="mb-6 border-0 bg-slate-800">
-              <CardHeader className="flex gap-3 bg-slate-700/50">
+              <Card.Header className="flex gap-3 bg-slate-700/50">
                 <div className="flex items-center gap-2">
                   {result.status === "success" ? (
                     <CheckCircleIcon className="w-6 h-6 text-green-500" />
@@ -150,8 +150,8 @@ export default function ConnectivityCheckPage() {
                     {result.message}
                   </h2>
                 </div>
-              </CardHeader>
-              <CardContent className="py-6 space-y-4">
+              </Card.Header>
+              <Card.Content className="py-6 space-y-4">
                 {result.details.endpoint && (
                   <div>
                     <p className="text-slate-400 text-sm">Endpoint:</p>
@@ -210,17 +210,17 @@ export default function ConnectivityCheckPage() {
                     </p>
                   </div>
                 )}
-              </CardContent>
+              </Card.Content>
             </Card>
 
             {result.errors.length > 0 && (
               <Card className="border-0 bg-red-900/20 border-l-4 border-red-500">
-                <CardHeader className="bg-red-900/30">
+                <Card.Header className="bg-red-900/30">
                   <h3 className="text-lg font-bold text-red-400">
                     Errors ({result.errors.length})
                   </h3>
-                </CardHeader>
-                <CardContent className="py-4">
+                </Card.Header>
+                <Card.Content className="py-4">
                   <ul className="space-y-2">
                     {result.errors.map((error, idx) => (
                       <li
@@ -232,17 +232,17 @@ export default function ConnectivityCheckPage() {
                       </li>
                     ))}
                   </ul>
-                </CardContent>
+                </Card.Content>
               </Card>
             )}
           </>
         )}
 
         <Card className="mt-8 border-0 bg-slate-800/50">
-          <CardHeader className="text-lg font-bold text-white">
+          <Card.Header className="text-lg font-bold text-white">
             Troubleshooting Guide
-          </CardHeader>
-          <CardContent className="text-slate-300 text-sm space-y-3">
+          </Card.Header>
+          <Card.Content className="text-slate-300 text-sm space-y-3">
             <div>
               <p className="font-bold text-white mb-1">1. Missing Environment Variables</p>
               <p>
@@ -271,7 +271,7 @@ export default function ConnectivityCheckPage() {
                 For Appwrite Cloud, check their status page.
               </p>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     </div>

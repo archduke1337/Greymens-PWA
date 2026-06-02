@@ -1,5 +1,7 @@
+"use client";
+
 import { useEffect } from "react";
-import { Button, Card, CardContent } from "@/components/compat";
+import { Button, Card, CardContent } from "@heroui/react";
 
 interface RouteErrorProps {
   error: Error & { digest?: string };
@@ -21,7 +23,7 @@ export default function RouteError({
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
       <Card className="w-full max-w-lg border-none shadow-xl">
-        <CardContent className="text-center py-16 space-y-6">
+        <Card.Content className="text-center py-16 space-y-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-danger-100 dark:bg-danger-900/30 flex items-center justify-center">
             <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 17.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -39,7 +41,7 @@ export default function RouteError({
               Go Home
             </Button>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

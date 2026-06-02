@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Separator } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Separator } from "@heroui/react";
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -208,7 +208,7 @@ export default function TeamPage() {
                         className="h-full border-none overflow-hidden"
                        
                       >
-                        <CardContent className="p-6 md:p-8 relative overflow-hidden">
+                        <Card.Content className="p-6 md:p-8 relative overflow-hidden">
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
                             <div className="flex justify-center">
@@ -257,9 +257,9 @@ export default function TeamPage() {
                               ))}
                             </div>
                           </div>
-                        </CardContent>
+                        </Card.Content>
 
-                        <CardFooter className="flex flex-col gap-3 p-6 md:p-8 pt-0">
+                        <Card.Footer className="flex flex-col gap-3 p-6 md:p-8 pt-0">
                           {/* Social Links */}
                           <div className="flex justify-center gap-2 w-full">
                             <Button
@@ -313,7 +313,7 @@ export default function TeamPage() {
                           >
                             Connect
                           </Button>
-                        </CardFooter>
+                        </Card.Footer>
                       </Card>
                     </div>
                   );
@@ -402,12 +402,12 @@ export default function TeamPage() {
               { label: "Community Size", value: "8K+" },
             ].map((stat) => (
               <Card key={stat.label} className="border-none">
-                <CardContent className="text-center p-4">
+                <Card.Content className="text-center p-4">
                   <p className="text-2xl md:text-3xl font-bold text-secondary">
                     {stat.value}
                   </p>
                   <p className="text-xs md:text-sm text-default-600 mt-1">{stat.label}</p>
-                </CardContent>
+                </Card.Content>
               </Card>
             ))}
           </div>

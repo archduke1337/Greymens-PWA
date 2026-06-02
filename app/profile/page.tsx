@@ -7,7 +7,7 @@ import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardHeader, Chip, Input } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardHeader, Chip, Input } from "@heroui/react";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
@@ -183,7 +183,7 @@ export default function ProfilePage() {
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
       <Card className="w-full max-w-2xl">
-        <CardHeader className="flex flex-col gap-4 items-center pt-8">
+        <Card.Header className="flex flex-col gap-4 items-center pt-8">
           <div className="relative">
             <Avatar
               src={profilePicture}
@@ -199,7 +199,7 @@ export default function ProfilePage() {
               color="primary"
               className="absolute bottom-0 right-0 shadow-lg"
               onPress={handleFileSelect}
-              isLoading={uploadingPhoto}
+              isPending={uploadingPhoto}
             >
               {!uploadingPhoto && (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -228,9 +228,9 @@ export default function ProfilePage() {
               Active Account
             </Chip>
           </div>
-        </CardHeader>
+        </Card.Header>
 
-        <CardContent className="gap-6 px-4 md:px-8 pb-8">
+        <Card.Content className="gap-6 px-4 md:px-8 pb-8">
           {/* Show upload status */}
           {updateError && (
             <div className={`p-3 rounded-lg text-sm ${
@@ -322,7 +322,7 @@ export default function ProfilePage() {
                   <Button
                     type="submit"
                     color="primary"
-                    isLoading={updateLoading}
+                    isPending={updateLoading}
                   >
                     Save Changes
                   </Button>
@@ -349,7 +349,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );
