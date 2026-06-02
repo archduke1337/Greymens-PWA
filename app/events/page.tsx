@@ -20,7 +20,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, SelectItem } from "@heroui/react";
+import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, Item } from "@heroui/react";
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -254,35 +254,31 @@ export default function EventsPage() {
                 <Input
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e: any) => setSearchQuery(e.target.value)}
-                  startContent={<SearchIcon className="w-5 h-5 text-default-400" />}
-                  classNames={{ input: "text-lg" }}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   size="lg"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <Select
-                  label="Sort by"
-                  selectedKeys={[sortBy]}
+                <Select
+                  value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
-                  <SelectItem key="date">Date</SelectItem>
-                  <SelectItem key="price">Price</SelectItem>
-                  <SelectItem key="popularity">Popularity</SelectItem>
+                  <Item key="date">Date</Item>
+                  <Item key="price">Price</Item>
+                  <Item key="popularity">Popularity</Item>
                 </Select>
 
-                <Select
-                  label="Category"
-                  selectedKeys={[selectedCategory]}
+                <Select
+                  value={selectedCategory}
                   onChange={(e: any) => setSelectedCategory(e.target.value)}
                   size="sm"
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <SelectItem key={category.key}>{category.label}</SelectItem>
+                    <Item key={category.key}>{category.label}</Item>
                   ))}
                 </Select>
               </div>
@@ -312,13 +308,13 @@ export default function EventsPage() {
 
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {event.isFeatured && (
-                      <Badge color="warning" variant="solid" className="font-bold">
+                      <Badge variant="primary" className="font-bold">
                         <StarIcon className="w-3 h-3 mr-1" />
                         Featured
                       </Badge>
                     )}
                     {event.isPremium && (
-                      <Badge color="secondary" variant="solid" className="font-bold">
+                      <Badge variant="primary" className="font-bold">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
                       </Badge>
@@ -343,7 +339,7 @@ export default function EventsPage() {
 
                   {event.discountPrice && event.discountPrice < event.price && (
                     <div className="absolute bottom-4 left-4">
-                      <Badge color="danger" variant="solid">
+                      <Badge variant="primary">
                         {calculateDiscount(event.price, event.discountPrice)}% OFF
                       </Badge>
                     </div>
@@ -387,14 +383,13 @@ export default function EventsPage() {
                     <ProgressBar 
                       value={(event.registered / event.capacity) * 100} 
                       size="sm" 
-                      color="primary" 
                       className="mt-2"
                     />
                   )}
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     {event.tags.slice(0, 3).map((tag, index) => (
-                      <Chip key={index} size="sm" variant="primary" color="primary">
+                      <Chip key={index} size="sm" variant="primary">
                         {tag}
                       </Chip>
                     ))}
@@ -431,10 +426,7 @@ export default function EventsPage() {
                     variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
                     size="md"
                     isPending={registering === event.$id}
-                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
-                    endContent={
-                      !registeredEvents.includes(event.$id!) && <TicketIcon className="w-4 h-4" />
-                    }
+                    onPress={(e: any) => toggleRegisterEvent(e as any, event.$id!)}
                   >
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
                   </Button>

@@ -189,14 +189,12 @@ export default function ProfilePage() {
               src={profilePicture}
               className="w-32 h-32"
               isBordered
-              color="primary"
               showFallback
               name={user.name}
             />
             <Button
               isIconOnly
               size="sm"
-              color="primary"
               className="absolute bottom-0 right-0 shadow-lg"
               onPress={handleFileSelect}
               isPending={uploadingPhoto}
@@ -224,7 +222,7 @@ export default function ProfilePage() {
             {user.phone && (
               <p className="text-default-500 text-sm">{user.phone}</p>
             )}
-            <Chip color="success" variant="primary" size="sm" className="mt-2">
+            <Chip variant="primary" size="sm" className="mt-2">
               Active Account
             </Chip>
           </div>
@@ -298,7 +296,6 @@ export default function ProfilePage() {
               {!isEditing && (
                 <Button
                   size="sm"
-                  color="primary"
                   variant="primary"
                   onPress={() => setIsEditing(true)}
                 >
@@ -309,8 +306,7 @@ export default function ProfilePage() {
 
             {isEditing ? (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <Input
-                  label="Name"
+                <Input
                   value={name}
                   onChange={(e: any) => setName(e.target.value)}
                   placeholder="Enter your name"
@@ -321,7 +317,6 @@ export default function ProfilePage() {
                 <div className="flex gap-2">
                   <Button
                     type="submit"
-                    color="primary"
                     isPending={updateLoading}
                   >
                     Save Changes

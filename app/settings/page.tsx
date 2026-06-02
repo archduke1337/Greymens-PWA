@@ -210,8 +210,7 @@ export default function SettingsPage() {
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <Input
-                label="Current Password"
+              <Input
                 type="password"
                 value={oldPassword}
                 onChange={(e: any) => setOldPassword(e.target.value)}
@@ -219,8 +218,7 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
               />
-              <Input
-                label="New Password"
+              <Input
                 type="password"
                 value={newPassword}
                 onChange={(e: any) => setNewPassword(e.target.value)}
@@ -228,8 +226,7 @@ export default function SettingsPage() {
                 required
                 isDisabled={passwordLoading}
               />
-              <Input
-                label="Confirm New Password"
+              <Input
                 type="password"
                 value={confirmNewPassword}
                 onChange={(e: any) => setConfirmNewPassword(e.target.value)}
@@ -250,7 +247,6 @@ export default function SettingsPage() {
 
               <Button
                 type="submit"
-                color="primary"
                 isPending={passwordLoading}
               >
                 Update Password
@@ -277,9 +273,7 @@ export default function SettingsPage() {
                 </p>
               </div>
               {!user.emailVerification && (
-                <Button
-                  color="primary"
-                  variant="primary"
+                <Button variant="primary"
                   size="sm"
                   onPress={handleSendVerification}
                   isPending={verificationLoading}
@@ -322,18 +316,14 @@ export default function SettingsPage() {
               </div>
               <div className="flex gap-2">
                 {user.phone && !user.phoneVerification && (
-                  <Button
-                    color="primary"
-                    variant="primary"
+                  <Button variant="primary"
                     size="sm"
                     onPress={onVerifyModalOpen}
                   >
                     Verify Phone
                   </Button>
                 )}
-                <Button
-                  color="primary"
-                  variant="primary"
+                <Button variant="primary"
                   size="sm"
                   onPress={onPhoneModalOpen}
                 >
@@ -365,7 +355,7 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              checked={emailNotifications}
+              isSelected={emailNotifications}
               onChange={setEmailNotifications}
             />
           </div>
@@ -380,7 +370,7 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              checked={pushNotifications}
+              isSelected={pushNotifications}
               onChange={setPushNotifications}
             />
           </div>
@@ -400,9 +390,7 @@ export default function SettingsPage() {
                 Permanently delete your account and all data
               </p>
             </div>
-            <Button
-              color="danger"
-              variant="primary"
+            <Button variant="primary"
               onPress={handleDeleteAccount}
             >
               Delete Account
@@ -412,29 +400,25 @@ export default function SettingsPage() {
       </Card>
 
       {/* Add/Update Phone Modal */}
-      <Modal isOpen={isPhoneModalOpen} close={onPhoneModalClose}>
+      <Modal isOpen={isPhoneModalOpen}>
         <Modal.Dialog>
           <form onSubmit={handleAddPhone}>
             <Modal.Header>
               {user.phone ? "Update" : "Add"} Phone Number
             </Modal.Header>
             <Modal.Body>
-              <Input
-                label="Phone Number"
+              <Input
                 placeholder="+911234567890"
                 value={phoneNumber}
-                onChange={(e: any) => setPhoneNumber(e.target.value)}
-                description="Include country code (e.g., +91 for India)"
+                onChange={(e: any) => setPhoneNumber(e.target.value)}
                 required
                 isDisabled={phoneLoading}
               />
-              <Input
-                label="Password"
+              <Input
                 type="password"
                 placeholder="Enter your password"
                 value={phonePassword}
-                onChange={(e: any) => setPhonePassword(e.target.value)}
-                description="Confirm with your account password"
+                onChange={(e: any) => setPhonePassword(e.target.value)}
                 required
                 isDisabled={phoneLoading}
               />
@@ -446,7 +430,7 @@ export default function SettingsPage() {
               <Button variant="primary" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isPending={phoneLoading}>
+              <Button type="submit" isPending={phoneLoading}>
                 {user.phone ? "Update" : "Add"} Phone
               </Button>
             </Modal.Footer>
@@ -455,7 +439,7 @@ export default function SettingsPage() {
       </Modal>
 
       {/* Verify Phone Modal */}
-      <Modal isOpen={isVerifyModalOpen} close={onVerifyModalClose}>
+      <Modal isOpen={isVerifyModalOpen}>
         <Modal.Dialog>
           <form onSubmit={handleVerifyPhone}>
             <Modal.Header>
@@ -465,8 +449,7 @@ export default function SettingsPage() {
               <p className="text-sm text-default-500 mb-4">
                 Enter the verification code sent to your phone number
               </p>
-              <Input
-                label="Verification Code"
+              <Input
                 placeholder="Enter 6-digit code"
                 value={verificationCode}
                 onChange={(e: any) => setVerificationCode(e.target.value)}
@@ -496,7 +479,7 @@ export default function SettingsPage() {
               <Button variant="primary" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isPending={phoneVerifyLoading}>
+              <Button type="submit" isPending={phoneVerifyLoading}>
                 Verify Phone
               </Button>
             </Modal.Footer>

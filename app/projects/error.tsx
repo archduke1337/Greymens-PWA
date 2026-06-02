@@ -13,8 +13,7 @@ export default function ProjectsError({
     <RouteError
       error={error}
       reset={reset}
-      title="Projects Unavailable"
-      description="We couldn't load the projects. Please try again."
+      title="Projects Unavailable"
     />
   );
 }

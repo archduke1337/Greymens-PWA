@@ -54,7 +54,7 @@ export default function DashboardPage() {
         </Card>
         <Card className="border border-default-200">
           <Card.Content className="text-center py-8">
-            <Chip color="primary" variant="primary">{user.email}</Chip>
+            <Chip variant="primary">{user.email}</Chip>
             <p className="text-sm text-default-500 mt-2">Account Email</p>
           </Card.Content>
         </Card>

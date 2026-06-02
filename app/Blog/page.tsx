@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, SelectItem } from "@heroui/react";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, Item } from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -116,10 +116,7 @@ export default function BlogPage() {
 
         {/* Write Blog Button */}
         {user && (
-          <Button
-            color="primary"
-            size="lg"
-            startContent={<PenIcon className="w-5 h-5" />}
+          <Button size="lg"
             onPress={() => router.push("/blog/write")}
             className="mt-4"
           >
@@ -136,23 +133,21 @@ export default function BlogPage() {
               <Input
                 placeholder="Search blogs..."
                 value={searchQuery}
-                onChange={(e: any) => setSearchQuery(e.target.value)}
-                startContent={<SearchIcon className="w-5 h-5" />}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
                 size="lg"
               />
-              <Select
-                label="Category"
-                selectedKeys={[selectedCategory]}
+              <Select
+                value={selectedCategory}
                 onChange={(e: any) => setSelectedCategory(e.target.value)}
                 className="min-w-[200px]"
               >
-                <SelectItem key="all">All Categories</SelectItem>
-                <SelectItem key="tutorial">Tutorial</SelectItem>
-                <SelectItem key="news">News</SelectItem>
-                <SelectItem key="event">Event</SelectItem>
-                <SelectItem key="project">Project</SelectItem>
-                <SelectItem key="technology">Technology</SelectItem>
+                <Item key="all">All Categories</Item>
+                <Item key="tutorial">Tutorial</Item>
+                <Item key="news">News</Item>
+                <Item key="event">Event</Item>
+                <Item key="project">Project</Item>
+                <Item key="technology">Technology</Item>
               </Select>
             </div>
           </Card.Content>
@@ -171,9 +166,7 @@ export default function BlogPage() {
                 : "Check back later for new content"}
             </p>
             {user && (
-              <Button
-                color="primary"
-                startContent={<PenIcon className="w-5 h-5" />}
+              <Button startContent={<PenIcon className="w-5 h-5" />}
                 onPress={() => router.push("/blog/write")}
               >
                 Write a Blog
@@ -200,7 +193,7 @@ export default function BlogPage() {
                     />
                     {blog.featured && (
                       <Chip
-                        color="warning"
+                        
                         size="sm"
                         className="absolute top-4 left-4"
                       >

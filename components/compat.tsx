@@ -131,7 +131,7 @@ export const Input = forwardRef<HTMLInputElement, any>(
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(isRequired || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <div className="flex items-center gap-2 rounded-lg border border-default-300 bg-transparent px-3 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
@@ -143,7 +143,7 @@ export const Input = forwardRef<HTMLInputElement, any>(
           value={value}
           onChange={onChange}
           disabled={isDisabled}
-          required={isRequired || required}
+          required={required || required}
           onKeyPress={onKeyPress}
           maxLength={maxLength}
           name={name}
@@ -167,7 +167,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, any>(
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(isRequired || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <textarea
@@ -177,7 +177,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, any>(
         onChange={onChange}
         rows={rows || minRows}
         disabled={isDisabled}
-        required={isRequired || required}
+        required={required || required}
         className={`rounded-lg border border-default-300 bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y ${classNames?.input || ""}`}
         {...props}
       />
@@ -195,14 +195,14 @@ export const Select = forwardRef<HTMLSelectElement, any>(
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(isRequired || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <select
         ref={ref}
         value={selectedKeys?.[0] || ""}
         onChange={onChange}
-        required={isRequired || required}
+        required={required || required}
         className={`rounded-lg border border-default-300 bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer ${classNames?.trigger || ""}`}
         {...props}
       >
@@ -214,7 +214,7 @@ export const Select = forwardRef<HTMLSelectElement, any>(
 );
 Select.displayName = "Select";
 
-export const SelectItem = ({ children, value, key: k, ...props }: any) => (
+export const Item = ({ children, value, key: k, ...props }: any) => (
   <option key={k} value={value || k || ""} {...props}>{children}</option>
 );
 
@@ -266,7 +266,7 @@ export const Switch = ({ checked, onChange, onValueChange, children, className =
       <button
         type="button"
         role="switch"
-        aria-checked={isChecked}
+        aria-isSelected={isChecked}
         onClick={() => handler?.(!isChecked)}
         className={`relative rounded-full transition-colors ${sizeClasses} ${isChecked ? "bg-primary" : "bg-default-300"}`}
       >

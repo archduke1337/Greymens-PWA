@@ -118,13 +118,11 @@ export default function ConnectivityCheckPage() {
           <Card.Content className="py-8">
             {loading ? (
               <div className="flex items-center justify-center gap-3">
-                <Spinner color="primary" />
+                <Spinner color="accent" />
                 <span className="text-slate-300">Testing connection...</span>
               </div>
             ) : (
-              <Button
-                color="primary"
-                size="lg"
+              <Button size="lg"
                 className="w-full"
                 onPress={checkConnectivity}
               >

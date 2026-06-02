@@ -124,8 +124,8 @@ export default function AboutPage() {
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <Chip color="accent" variant="primary">Leadership</Chip>
             <Chip color="accent" variant="secondary">Innovation</Chip>
-            <Chip color="success" variant="primary">Creativity</Chip>
-            <Chip color="warning" variant="primary">Excellence</Chip>
+            <Chip  variant="primary">Creativity</Chip>
+            <Chip  variant="primary">Excellence</Chip>
           </div>
         </Card.Content>
       </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, Item, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -53,9 +53,7 @@ export default function HelpFeedbackPage() {
             <p className="text-default-500">
               Your feedback has been submitted successfully. We&apos;ll get back to you as soon as possible.
             </p>
-            <Button
-              color="primary"
-              variant="primary"
+            <Button variant="primary"
               onPress={() => {
                 setSubmitted(false);
                 setFormData({ name: '', email: '', type: 'general', subject: '', message: '' });
@@ -88,60 +86,54 @@ export default function HelpFeedbackPage() {
         <Card.Content className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Name"
+              <Input
                 placeholder="Your name"
                 value={formData.name}
                 onChange={(value: any) => setFormData({ ...formData, name: value })}
-                isRequired
+                required
               />
-              <Input
-                label="Email"
+              <Input
                 type="email"
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={(value: any) => setFormData({ ...formData, email: value })}
-                isRequired
+                required
               />
             </div>
 
-            <Select
-              label="Feedback Type"
+            <Select
               placeholder="Select type"
-              selectedKeys={[formData.type]}
+              value={formData.type}
               onSelectionChange={(keys: any) => {
                 const selected = Array.from(keys)[0] as FeedbackType;
                 setFormData({ ...formData, type: selected });
               }}
             >
               {feedbackTypes.map((type) => (
-                <SelectItem key={type.value}>
+                <Item key={type.value}>
                   {type.label}
-                </SelectItem>
+                </Item>
               ))}
             </Select>
 
-            <Input
-              label="Subject"
+            <Input
               placeholder="Brief description of your feedback"
               value={formData.subject}
               onChange={(value: any) => setFormData({ ...formData, subject: value })}
-              isRequired
+              required
             />
 
-            <TextArea
-              label="Message"
+            <TextArea
               placeholder="Tell us more about your feedback..."
               value={formData.message}
               onChange={(value: any) => setFormData({ ...formData, message: value })}
               minRows={4}
-              isRequired
+              required
             />
 
             <div className="flex justify-end">
               <Button
                 type="submit"
-                color="primary"
                 isPending={isSubmitting}
                 className="min-w-[120px]"
               >
@@ -155,7 +147,7 @@ export default function HelpFeedbackPage() {
       <div className="text-center space-y-2">
         <p className="text-sm text-default-500">
           You can also reach us at{' '}
-          <Chip size="sm" variant="primary" color="primary">
+          <Chip size="sm" variant="primary">
             support@mindmesh.club
           </Chip>
         </p>

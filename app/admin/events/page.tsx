@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, Item, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -197,9 +197,7 @@ export default function AdminEventsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-          <Button 
-            color="danger" 
-            variant="primary" 
+          <Button variant="primary" 
             onPress={handleDeletePastEvents}
             className="w-full sm:w-auto"
             size="sm"
@@ -208,9 +206,7 @@ export default function AdminEventsPage() {
             <span className="hidden sm:inline ml-2">Delete Past Events</span>
             <span className="sm:hidden ml-2">Delete Past</span>
           </Button>
-          <Button 
-            color="primary" 
-            onPress={open}
+          <Button onPress={open}
             className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600"
             size="sm"
           >
@@ -359,7 +355,6 @@ export default function AdminEventsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          color="danger"
                           variant="ghost"
                           isIconOnly
                           onPress={() => handleDelete(event.$id!)}
@@ -380,13 +375,7 @@ export default function AdminEventsPage() {
       {/* Add/Edit Modal */}
       <Modal 
         isOpen={isOpen} 
-        close={handleCloseModal} 
-        size="3xl" 
-        scrollBehavior="inside"
-        classNames={{
-          base: "max-h-[95vh]",
-          wrapper: "items-center"
-        }}
+        size="3xl"
       >
         <Modal.Dialog>
           <form onSubmit={handleSubmit}>
@@ -400,7 +389,7 @@ export default function AdminEventsPage() {
             </Modal.Header>
             
             <Modal.Body className="py-6">
-              <Tabs aria-label="Event form sections" color="primary">
+              <Tabs aria-label="Event form sections">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4" />
@@ -419,12 +408,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
                         onChange={(e: any) => handleInputChange("image", e.target.value)}
-                        required
-                        startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
-                        description="Enter a direct link to the event image"
-                        classNames={{
-                          input: "text-sm"
-                        }}
+                        required
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -448,53 +432,39 @@ export default function AdminEventsPage() {
                       </div>
                     </div>
 
-                    <Input
-                      label="Event Title"
+                    <Input
                       placeholder="Enter event title"
                       value={formData.title}
                       onChange={(e: any) => handleInputChange("title", e.target.value)}
-                      required
-                      classNames={{
-                        label: "font-semibold",
-                        input: "text-base"
-                      }}
+                      required
                     />
 
-                    <TextArea
-                      label="Description"
+                    <TextArea
                       placeholder="Describe your event in detail"
                       value={formData.description}
                       onChange={(e: any) => handleInputChange("description", e.target.value)}
                       required
-                      minRows={4}
-                      classNames={{
-                        label: "font-semibold"
-                      }}
+                      minRows={4}
                     />
 
-                    <Select
-                      label="Category"
+                    <Select
                       placeholder="Select event category"
-                      selectedKeys={[formData.category!]}
+                      value={formData.category!}
                       onChange={(e: any) => handleInputChange("category", e.target.value)}
-                      required
-                      classNames={{
-                        label: "font-semibold"
-                      }}
+                      required
                     >
-                      <SelectItem key="conference">Conference</SelectItem>
-                      <SelectItem key="workshop">Workshop</SelectItem>
-                      <SelectItem key="masterclass">Masterclass</SelectItem>
-                      <SelectItem key="competition">Competition</SelectItem>
-                      <SelectItem key="bootcamp">Bootcamp</SelectItem>
-                      <SelectItem key="forum">Forum</SelectItem>
+                      <Item key="conference">Conference</Item>
+                      <Item key="workshop">Workshop</Item>
+                      <Item key="masterclass">Masterclass</Item>
+                      <Item key="competition">Competition</Item>
+                      <Item key="bootcamp">Bootcamp</Item>
+                      <Item key="forum">Forum</Item>
                     </Select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch
-                        checked={formData.isFeatured}
+                        isSelected={formData.isFeatured}
                         onChange={(checked: any) => handleInputChange("isFeatured", checked)}
-                        color="warning"
                       >
                         <div className="flex items-center gap-2">
                           <StarIcon className="w-4 h-4 text-yellow-600" />
@@ -502,9 +472,8 @@ export default function AdminEventsPage() {
                         </div>
                       </Switch>
                       <Switch
-                        checked={formData.isPremium}
+                        isSelected={formData.isPremium}
                         onChange={(checked: any) => handleInputChange("isPremium", checked)}
-                        color="secondary"
                       >
                         <div className="flex items-center gap-2">
                           <CrownIcon className="w-4 h-4 text-purple-600" />
@@ -524,49 +493,33 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Date"
+                      <Input
                         type="date"
                         value={formData.date}
                         onChange={(e: any) => handleInputChange("date", e.target.value)}
-                        required
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
-                      <Input
-                        label="Time"
+                      <Input
                         type="text"
                         placeholder="e.g., 09:00 AM - 06:00 PM"
                         value={formData.time}
                         onChange={(e: any) => handleInputChange("time", e.target.value)}
-                        required
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Venue"
+                      <Input
                         placeholder="e.g., Grand Convention Center"
                         value={formData.venue}
                         onChange={(e: any) => handleInputChange("venue", e.target.value)}
-                        required
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
-                      <Input
-                        label="Location"
+                      <Input
                         placeholder="e.g., New York, NY"
                         value={formData.location}
                         onChange={(e: any) => handleInputChange("location", e.target.value)}
-                        required
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
                     </div>
 
@@ -592,40 +545,25 @@ export default function AdminEventsPage() {
                 }>
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Regular Price ($)"
+                      <Input
                         type="number"
                         placeholder="0"
                         value={formData.price?.toString()}
                         onChange={(e: any) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                        required
-                        startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
-                      <Input
-                        label="Discount Price ($)"
+                      <Input
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
-                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
-                        startContent={<DollarSignIcon className="w-4 h-4 text-default-400" />}
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
                       />
-                      <Input
-                        label="Capacity"
+                      <Input
                         type="number"
                         placeholder="50"
                         value={formData.capacity?.toString()}
                         onChange={(e: any) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
-                        required
-                        startContent={<UsersIcon className="w-4 h-4 text-default-400" />}
-                        classNames={{
-                          label: "font-semibold"
-                        }}
+                        required
                       />
                     </div>
 
@@ -662,15 +600,11 @@ export default function AdminEventsPage() {
                   </div>
                 }>
                   <div className="space-y-6 pt-4">
-                    <Input
-                      label="Organizer Name"
+                    <Input
                       placeholder="e.g., John Doe"
                       value={formData.organizerName}
                       onChange={(e: any) => handleInputChange("organizerName", e.target.value)}
-                      required
-                      classNames={{
-                        label: "font-semibold"
-                      }}
+                      required
                     />
                     
                     <div className="space-y-3">
@@ -682,12 +616,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
                         onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
-                        required
-                        startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
-                        description="Enter a direct link to the organizer's avatar"
-                        classNames={{
-                          input: "text-sm"
-                        }}
+                        required
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">
@@ -725,7 +654,6 @@ export default function AdminEventsPage() {
                         <Button 
                           type="button" 
                           onPress={handleAddTag}
-                          color="primary"
                           variant="primary"
                         >
                           Add
@@ -736,9 +664,7 @@ export default function AdminEventsPage() {
                           {formData.tags.map((tag, index) => (
                             <Chip 
                               key={index} 
-                              close={() => handleRemoveTag(tag)} 
                               variant="primary"
-                              color="secondary"
                               className="font-medium"
                             >
                               {tag}
@@ -772,9 +698,7 @@ export default function AdminEventsPage() {
               >
                 Cancel
               </Button>
-              <Button 
-                color="primary" 
-                type="submit" 
+              <Button type="submit" 
                 isPending={submitting}
                 className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
               >

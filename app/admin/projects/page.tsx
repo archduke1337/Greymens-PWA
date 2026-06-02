@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, SelectItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, Item, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -297,8 +297,7 @@ export default function AdminProjectsPage() {
                 </div>
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
-                  startContent={<PlusIcon className="w-5 h-5" />}
+                  className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
                   onPress={handleAdd}
                 >
                   New Project
@@ -321,8 +320,7 @@ export default function AdminProjectsPage() {
                     </p>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
-                      startContent={<PlusIcon className="w-5 h-5" />}
+                      className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
                       onPress={handleAdd}
                     >
                       Create First Project
@@ -332,12 +330,7 @@ export default function AdminProjectsPage() {
                   <div className="overflow-x-auto">
                     <Table 
                       aria-label="Projects table" 
-                      className="min-w-full"
-                      classNames={{
-                        wrapper: "shadow-none border-none",
-                        th: "bg-transparent text-gray-700 dark:text-gray-300 font-semibold border-b border-gray-200 dark:border-gray-700",
-                        td: "border-b border-gray-100 dark:border-gray-800",
-                      }}
+                      className="min-w-full"
                     >
                       <TableHeader>
                         <TableColumn className="text-sm">PROJECT</TableColumn>
@@ -378,10 +371,7 @@ export default function AdminProjectsPage() {
                               <Chip 
                                 size="sm" 
                                 variant="primary" 
-                                color={getCategoryColor(project.category) as any}
-                                classNames={{
-                                  base: "capitalize font-medium"
-                                }}
+                                color={getCategoryColor(project.category) as any}
                               >
                                 {project.category.replace('-', ' ')}
                               </Chip>
@@ -390,10 +380,7 @@ export default function AdminProjectsPage() {
                               <Chip
                                 size="sm"
                                 color={getStatusColor(project.status) as any}
-                                variant="dot"
-                                classNames={{
-                                  base: "capitalize font-medium"
-                                }}
+                                variant="dot"
                               >
                                 {project.status.replace('-', ' ')}
                               </Chip>
@@ -413,12 +400,7 @@ export default function AdminProjectsPage() {
                               {project.isFeatured ? (
                                 <Chip 
                                   size="sm" 
-                                  color="warning" 
-                                  variant="primary" 
-                                  startContent={<StarIcon className="w-3 h-3" />}
-                                  classNames={{
-                                    base: "font-medium"
-                                  }}
+                                  variant="primary" 
                                 >
                                   Featured
                                 </Chip>
@@ -441,7 +423,6 @@ export default function AdminProjectsPage() {
                                   isIconOnly
                                   size="sm"
                                   variant="ghost"
-                                  color="danger"
                                   onPress={() => handleDelete(project.$id!)}
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                 >
@@ -514,13 +495,7 @@ export default function AdminProjectsPage() {
         {/* Add/Edit Modal */}
         <Modal
           isOpen={isOpen}
-          close={close}
-          size="2xl"
-          scrollBehavior="inside"
-          classNames={{
-            base: "border-none",
-            backdrop: "bg-gradient-to-t from-zinc-900/50 to-zinc-900/50 backdrop-opacity-20",
-          }}
+          size="2xl"
         >
           <Modal.Dialog>
             <Modal.Header className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
@@ -545,87 +520,61 @@ export default function AdminProjectsPage() {
             <Modal.Body className="p-6 gap-6">
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="Project Title"
+                  <Input
                     placeholder="Enter project title"
                     value={formData.title}
                     onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
-                    isRequired
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    required
+                    variant="outline"
                   />
-                  <Input
-                    label="Duration"
+                  <Input
                     placeholder="3 months"
                     value={formData.duration}
                     onChange={(e: any) => setFormData({ ...formData, duration: e.target.value })}
-                    isRequired
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    required
+                    variant="outline"
                   />
                 </div>
 
-                <TextArea
-                  label="Description"
+                <TextArea
                   placeholder="Describe your project goals, features, and impact..."
                   value={formData.description}
                   onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
-                  isRequired
+                  required
                   variant="outline"
-                  minRows={3}
-                  classNames={{
-                    label: "text-gray-700 dark:text-gray-300",
-                  }}
+                  minRows={3}
                 />
 
-                <Input
-                  label="Image URL"
+                <Input
                   placeholder="https://images.unsplash.com/photo-..."
                   value={formData.image}
                   onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
-                  isRequired
-                  variant="outline"
-                  description="Use high-quality images from Unsplash or similar platforms"
-                  classNames={{
-                    label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                  required
+                  variant="outline"
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select
-                    label="Category"
-                    selectedKeys={[formData.category]}
+                  <Select
+                    value={formData.category}
                     onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    variant="outline"
                   >
                     {categories.map((cat) => (
-                      <SelectItem key={cat.key} textValue={cat.label}>
+                      <Item key={cat.key} textValue={cat.label}>
                         {cat.label}
-                      </SelectItem>
+                      </Item>
                     ))}
                   </Select>
 
-                  <Select
-                    label="Status"
-                    selectedKeys={[formData.status]}
+                  <Select
+                    value={formData.status}
                     onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    variant="outline"
                   >
                     {statuses.map((status) => (
-                      <SelectItem key={status.key} textValue={status.label}>
+                      <Item key={status.key} textValue={status.label}>
                         {status.label}
-                      </SelectItem>
+                      </Item>
                     ))}
                   </Select>
                 </div>
@@ -652,112 +601,70 @@ export default function AdminProjectsPage() {
                       value={formData.progress.toString()}
                       onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
                       variant="outline"
-                      className="w-20"
-                      classNames={{
-                        input: "text-center",
-                      }}
+                      className="w-20"
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
-                    <Input
-                      label="Stars"
+                    <Input
                       type="number"
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="outline"
-                      startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
-                      classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                      variant="outline"
                     />
-                    <Input
-                      label="Forks"
+                    <Input
                       type="number"
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="outline"
-                      startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
-                      classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                      variant="outline"
                     />
-                    <Input
-                      label="Contributors"
+                    <Input
                       type="number"
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="outline"
-                      startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
-                      classNames={{
-                        label: "text-gray-700 dark:text-gray-300",
-                      }}
+                      variant="outline"
                     />
                   </div>
                 </div>
 
-                <TextArea
-                  label="Technologies"
+                <TextArea
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
                   onChange={(e: any) => setFormData({ ...formData, technologies: e.target.value })}
-                  variant="outline"
-                  description="Separate technologies with commas"
-                  minRows={2}
-                  classNames={{
-                    label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                  variant="outline"
+                  minRows={2}
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    label="Demo URL"
+                  <Input
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
                     onChange={(e: any) => setFormData({ ...formData, demoUrl: e.target.value })}
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    variant="outline"
                   />
 
-                  <Input
-                    label="Repository URL"
+                  <Input
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
                     onChange={(e: any) => setFormData({ ...formData, repoUrl: e.target.value })}
-                    variant="outline"
-                    classNames={{
-                      label: "text-gray-700 dark:text-gray-300",
-                    }}
+                    variant="outline"
                   />
                 </div>
 
-                <TextArea
-                  label="Team Members"
+                <TextArea
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
                   onChange={(e: any) => setFormData({ ...formData, teamMembers: e.target.value })}
-                  variant="outline"
-                  description="Separate names with commas"
-                  minRows={2}
-                  classNames={{
-                    label: "text-gray-700 dark:text-gray-300",
-                    description: "text-gray-500 dark:text-gray-400",
-                  }}
+                  variant="outline"
+                  minRows={2}
                 />
 
                 <Switch
-                  checked={formData.isFeatured}
-                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
-                  classNames={{
-                    wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
-                    label: "text-gray-700 dark:text-gray-300 text-sm",
-                  }}
+                  isSelected={formData.isFeatured}
+                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
                 >
                   Feature this project on the homepage
                 </Switch>
@@ -767,11 +674,8 @@ export default function AdminProjectsPage() {
               <Button variant="ghost" onPress={close} isDisabled={saving}>
                 Cancel
               </Button>
-              <Button
-                color="primary"
-                onPress={handleSave}
-                isPending={saving}
-                startContent={!saving && <SaveIcon className="w-4 h-4" />}
+              <Button onPress={handleSave}
+                isPending={saving}
                 className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
               >
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}

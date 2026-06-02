@@ -13,8 +13,7 @@ export default function EventsError({
     <RouteError
       error={error}
       reset={reset}
-      title="Events Unavailable"
-      description="We couldn't load the events. Please try again."
+      title="Events Unavailable"
     />
   );
 }

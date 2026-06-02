@@ -259,7 +259,6 @@ export default function DiagnosticsPage() {
                   <Button
                     as="a"
                     href="/connectivity-check"
-                    color="primary"
                     variant="primary"
                   >
                     Connection Test
@@ -267,7 +266,6 @@ export default function DiagnosticsPage() {
                   <Button
                     as="a"
                     href="/events"
-                    color="default"
                     variant="primary"
                   >
                     Test Events Page

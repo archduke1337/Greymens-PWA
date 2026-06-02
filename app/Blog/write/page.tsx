@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, SelectItem, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Select, Item, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -133,8 +133,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="ghost"
-          startContent={<ArrowLeftIcon className="w-4 h-4" />}
+          variant="ghost"
           onPress={() => router.back()}
           className="mb-4"
         >
@@ -154,55 +153,49 @@ export default function WriteBlogPage() {
         <Card.Content className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
-            <Input
-              label="Blog Title"
+            <Input
               placeholder="Enter an engaging title..."
               value={formData.title}
               onChange={(e: any) =>
                 setFormData({ ...formData, title: e.target.value })
               }
               required
-              isRequired
+              required
               size="lg"
             />
 
             {/* Excerpt */}
-            <TextArea
-              label="Excerpt (Optional)"
+            <TextArea
               placeholder="Brief summary of your blog..."
               value={formData.excerpt}
               onChange={(e: any) =>
                 setFormData({ ...formData, excerpt: e.target.value })
               }
-              rows={3}
-              description="If not provided, first 150 characters will be used"
+              rows={3}
             />
 
             {/* Category */}
-            <Select
-              label="Category"
+            <Select
               placeholder="Select a category"
               selectedKeys={formData.category ? [formData.category] : []}
               onChange={(e: any) =>
                 setFormData({ ...formData, category: e.target.value })
               }
               required
-              isRequired
+              required
             >
               {blogCategories.map((cat) => (
-                <SelectItem key={cat.value}>{cat.label}</SelectItem>
+                <Item key={cat.value}>{cat.label}</Item>
               ))}
             </Select>
 
             {/* Tags */}
-            <Input
-              label="Tags"
+            <Input
               placeholder="react, javascript, tutorial (comma separated)"
               value={formData.tags}
               onChange={(e: any) =>
                 setFormData({ ...formData, tags: e.target.value })
-              }
-              description="Add relevant tags separated by commas"
+              }
             />
 
             {/* Cover Image */}
@@ -227,9 +220,7 @@ export default function WriteBlogPage() {
                   <Button
                     as="label"
                     htmlFor="cover-image-upload"
-                    variant="primary"
-                    color="primary"
-                    startContent={<ImageIcon className="w-5 h-5" />}
+                    variant="primary"
                     isPending={uploadingImage}
                     className="w-full"
                   >
@@ -268,17 +259,15 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <TextArea
-              label="Blog Content"
+            <TextArea
               placeholder="Write your blog content here... (Markdown supported)"
               value={formData.content}
               onChange={(e: any) =>
                 setFormData({ ...formData, content: e.target.value })
               }
               required
-              isRequired
-              rows={15}
-              description="Write in plain text or Markdown format"
+              required
+              rows={15}
             />
 
             {/* Word Count */}
@@ -298,9 +287,7 @@ export default function WriteBlogPage() {
               </Button>
               <Button
                 type="submit"
-                color="primary"
-                isPending={submitting}
-                endContent={<SendIcon className="w-5 h-5" />}
+                isPending={submitting}
                 className="flex-1"
               >
                 Submit for Review

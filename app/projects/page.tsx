@@ -156,8 +156,7 @@ export default function ProjectsPage() {
                       <div className="absolute top-4 left-4 flex flex-col gap-2">
                         {project.isFeatured && (
                           <Badge 
-                            color="warning" 
-                            variant="solid"
+                            variant="primary"
                             className="font-bold"
                           >
                             <StarIcon className="w-3 h-3 mr-1" />
@@ -187,7 +186,7 @@ export default function ProjectsPage() {
                       <div className="absolute bottom-4 right-4">
                         <Chip
                           color={getStatusColor(project.status) as any}
-                          variant="solid"
+                          variant="primary"
                           size="sm"
                         >
                           {project.status.replace("-", " ")}
@@ -215,8 +214,7 @@ export default function ProjectsPage() {
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
                         <ProgressBar 
-                          value={project.progress} 
-                          color="secondary"
+                          value={project.progress}
                           size="sm"
                         />
                       </div>
@@ -317,10 +315,7 @@ export default function ProjectsPage() {
                           </Button>
                         )}
 
-                        <Button
-                          color="primary"
-                          className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
-                          startContent={<CodeIcon className="w-4 h-4" />}
+                        <Button className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
                           as="a"
                           href={project.repoUrl}
                           target="_blank"

@@ -13,8 +13,7 @@ export default function BlogError({
     <RouteError
       error={error}
       reset={reset}
-      title="Blog Unavailable"
-      description="We couldn't load the blog posts. Please try again."
+      title="Blog Unavailable"
     />
   );
 }

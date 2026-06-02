@@ -14,7 +14,7 @@ export default function TermsPage() {
         <p className="text-lg text-default-600 max-w-3xl">
           Please review our terms, policies, and guidelines carefully
         </p>
-        <Chip size="sm" variant="primary" color="default">
+        <Chip size="sm" variant="primary">
           Last Updated: {lastUpdated}
         </Chip>
       </div>

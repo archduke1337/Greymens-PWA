@@ -266,7 +266,7 @@ export default function AdminBlogsPage() {
                       {blog.featured && (
                         <>
                           <div>•</div>
-                          <Chip size="sm" color="warning">
+                          <Chip size="sm">
                             <StarIcon className="w-3 h-3" /> Featured
                           </Chip>
                         </>
@@ -308,8 +308,7 @@ export default function AdminBlogsPage() {
                       href={`/blog/${blog.slug}`}
                       target="_blank"
                       size="sm"
-                      variant="primary"
-                      startContent={<EyeIcon className="w-4 h-4" />}
+                      variant="primary"
                       className="flex-1 md:flex-none"
                     >
                       View
@@ -319,9 +318,7 @@ export default function AdminBlogsPage() {
                       <>
                         <Button
                           size="sm"
-                          color="success"
-                          variant="primary"
-                          startContent={<CheckIcon className="w-4 h-4" />}
+                          variant="primary"
                           onPress={() => handleApprove(blog.$id!)}
                           isPending={processingBlog === blog.$id}
                           className="flex-1 md:flex-none"
@@ -330,9 +327,7 @@ export default function AdminBlogsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          color="danger"
-                          variant="primary"
-                          startContent={<XIcon className="w-4 h-4" />}
+                          variant="primary"
                           onPress={() => openRejectModal(blog)}
                           className="flex-1 md:flex-none"
                         >
@@ -344,9 +339,7 @@ export default function AdminBlogsPage() {
                     {blog.status === "approved" && (
                       <Button
                         size="sm"
-                        color="warning"
-                        variant="primary"
-                        startContent={<StarIcon className="w-4 h-4" />}
+                        variant="primary"
                         onPress={() => toggleFeatured(blog)}
                         className="flex-1 md:flex-none"
                       >
@@ -356,9 +349,7 @@ export default function AdminBlogsPage() {
 
                     <Button
                       size="sm"
-                      color="danger"
-                      variant="primary"
-                      startContent={<TrashIcon className="w-4 h-4" />}
+                      variant="primary"
                       onPress={() => handleDelete(blog.$id!)}
                       className="flex-1 md:flex-none"
                     >
@@ -391,9 +382,7 @@ export default function AdminBlogsPage() {
             <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
               Cancel
             </Button>
-            <Button
-              color="danger"
-              onPress={handleReject}
+            <Button onPress={handleReject}
               isPending={!!processingBlog}
             >
               Reject Blog

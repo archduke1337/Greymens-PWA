@@ -72,9 +72,8 @@ export default function SponsorsPage() {
               <Button
                 as="a"
                 href="mailto:sponsors@mindmesh.club"
-                color="primary"
-                variant="shadow"
-                endContent={<MailIcon className="w-4 h-4" />}
+                
+                variant="shadow"
               >
                 Become a Sponsor
               </Button>
@@ -105,11 +104,7 @@ export default function SponsorsPage() {
                   <Card.Header className="absolute z-10 top-1 right-1">
                     <Chip 
                       size="sm" 
-                      variant="primary"
-                      classNames={{
-                        base: `bg-gradient-to-r ${tierInfo.color} opacity-0 group-hover:opacity-100 transition-opacity`,
-                        content: "text-white text-[10px] font-semibold px-1"
-                      }}
+                      variant="primary"
                     >
                       {sponsor.tier.toUpperCase()}
                     </Chip>
@@ -186,10 +181,9 @@ export default function SponsorsPage() {
             <Button
               as="a"
               href="mailto:sponsors@mindmesh.club"
-              color="primary"
+              
               size="lg"
-              variant="shadow"
-              endContent={<ArrowRightIcon className="w-4 h-4" />}
+              variant="shadow"
               className="font-semibold"
             >
               Become a Sponsor

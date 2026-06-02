@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, SelectItem, Switch, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, Item, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -162,10 +162,7 @@ export default function AdminSponsorsPage() {
             Manage your club sponsors and partners
           </p>
         </div>
-        <Button
-          color="primary"
-          size="lg"
-          startContent={<PlusIcon className="w-5 h-5" />}
+        <Button size="lg"
           onPress={() => setShowForm(!showForm)}
         >
           {showForm ? "Cancel" : "Add Sponsor"}
@@ -184,88 +181,76 @@ export default function AdminSponsorsPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
-                <Input
-                  label="Company Name"
+                <Input
                   placeholder="e.g., Google"
                   value={formData.name}
                   onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  isRequired
+                  required
                 />
 
-                <Input
-                  label="Logo URL"
+                <Input
                   placeholder="https://example.com/logo.png"
                   value={formData.logo}
                   onChange={(e: any) => setFormData({ ...formData, logo: e.target.value })}
                   required
-                  isRequired
-                  description="Direct link to logo image (PNG, JPG, SVG)"
+                  required
                 />
 
-                <Input
-                  label="Website URL"
+                <Input
                   placeholder="https://example.com"
                   value={formData.website}
                   onChange={(e: any) => setFormData({ ...formData, website: e.target.value })}
                   required
-                  isRequired
+                  required
                 />
 
-                <Select
-                  label="Tier"
-                  selectedKeys={[formData.tier]}
+                <Select
+                  value={formData.tier}
                   onChange={(e: any) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
-                  isRequired
+                  required
                 >
-                  <SelectItem key="platinum">Platinum Partner</SelectItem>
-                  <SelectItem key="gold">Gold Sponsor</SelectItem>
-                  <SelectItem key="silver">Silver Sponsor</SelectItem>
-                  <SelectItem key="bronze">Bronze Sponsor</SelectItem>
-                  <SelectItem key="partner">Community Partner</SelectItem>
+                  <Item key="platinum">Platinum Partner</Item>
+                  <Item key="gold">Gold Sponsor</Item>
+                  <Item key="silver">Silver Sponsor</Item>
+                  <Item key="bronze">Bronze Sponsor</Item>
+                  <Item key="partner">Community Partner</Item>
                 </Select>
 
-                <Select
-                  label="Category"
+                <Select
                   selectedKeys={formData.category ? [formData.category] : []}
                   onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <SelectItem key="tech">Technology</SelectItem>
-                  <SelectItem key="education">Education</SelectItem>
-                  <SelectItem key="finance">Finance</SelectItem>
-                  <SelectItem key="healthcare">Healthcare</SelectItem>
-                  <SelectItem key="other">Other</SelectItem>
+                  <Item key="tech">Technology</Item>
+                  <Item key="education">Education</Item>
+                  <Item key="finance">Finance</Item>
+                  <Item key="healthcare">Healthcare</Item>
+                  <Item key="other">Other</Item>
                 </Select>
 
                 <Input
-                  type="number"
-                  label="Display Order"
+                  type="number"
                   placeholder="0"
                   value={formData.displayOrder.toString()}
-                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                  description="Lower numbers appear first"
+                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
                 />
 
                 <Input
-                  type="date"
-                  label="Start Date"
+                  type="date"
                   value={formData.startDate}
                   onChange={(e: any) => setFormData({ ...formData, startDate: e.target.value })}
                   required
-                  isRequired
+                  required
                 />
 
                 <Input
-                  type="date"
-                  label="End Date (Optional)"
+                  type="date"
                   value={formData.endDate}
-                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
-                  description="Leave empty for ongoing sponsorship"
+                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
                 />
               </div>
 
-              <TextArea
-                label="Description (Optional)"
+              <TextArea
                 placeholder="Brief description of the sponsor..."
                 value={formData.description}
                 onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
@@ -274,14 +259,14 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-8">
                 <Switch
-                  checked={formData.isActive}
+                  isSelected={formData.isActive}
                   onChange={(value: any) => setFormData({ ...formData, isActive: value })}
                 >
                   Active
                 </Switch>
 
                 <Switch
-                  checked={formData.featured}
+                  isSelected={formData.featured}
                   onChange={(value: any) => setFormData({ ...formData, featured: value })}
                 >
                   Featured (Show in footer & homepage)
@@ -313,7 +298,7 @@ export default function AdminSponsorsPage() {
                 </Button>
                 <Button
                   type="submit"
-                  color="primary"
+                  
                   isPending={saving}
                 >
                   {editingSponsor ? "Update Sponsor" : "Create Sponsor"}
@@ -334,9 +319,7 @@ export default function AdminSponsorsPage() {
           <Card>
             <Card.Content className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
-              <Button
-                color="primary"
-                startContent={<PlusIcon className="w-5 h-5" />}
+              <Button startContent={<PlusIcon className="w-5 h-5" />}
                 onPress={() => setShowForm(true)}
               >
                 Add Your First Sponsor
@@ -360,14 +343,14 @@ export default function AdminSponsorsPage() {
                         {tierInfo.label}
                       </Chip>
                       {sponsor.featured && (
-                        <Chip color="warning" size="sm">Featured</Chip>
+                        <Chip  size="sm">Featured</Chip>
                       )}
                       {sponsor.isActive ? (
-                        <Chip color="success" size="sm" startContent={<CheckIcon className="w-3 h-3" />}>
+                        <Chip  size="sm" startContent={<CheckIcon className="w-3 h-3" />}>
                           Active
                         </Chip>
                       ) : (
-                        <Chip color="danger" size="sm" startContent={<XIcon className="w-3 h-3" />}>
+                        <Chip  size="sm" startContent={<XIcon className="w-3 h-3" />}>
                           Inactive
                         </Chip>
                       )}
@@ -403,14 +386,13 @@ export default function AdminSponsorsPage() {
                         target="_blank"
                         size="sm"
                         variant="primary"
-                        className="flex-1"
-                        startContent={<ExternalLinkIcon className="w-4 h-4" />}
+                        className="flex-1"
                       >
                         Visit
                       </Button>
                       <Button
                         size="sm"
-                        color="primary"
+                        
                         variant="primary"
                         isIconOnly
                         onPress={() => handleEdit(sponsor)}
@@ -419,7 +401,7 @@ export default function AdminSponsorsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        color="danger"
+                        
                         variant="primary"
                         isIconOnly
                         onPress={() => handleDelete(sponsor.$id!)}

@@ -13,8 +13,7 @@ export default function Error({
     <RouteError
       error={error}
       reset={reset}
-      title="Something went wrong"
-      description="An unexpected error occurred. Our team has been notified and we're working on it."
+      title="Something went wrong"
     />
   );
 }

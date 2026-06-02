@@ -238,7 +238,7 @@ export default function EventDetailPage() {
           <XCircle className="w-16 h-16 text-danger mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Event Not Found</h2>
           <p className="text-default-500 mb-6">The event you're looking for doesn't exist.</p>
-          <Button color="primary" onPress={() => router.push("/events")}>
+          <Button onPress={() => router.push("/events")}>
             Browse Events
           </Button>
         </div>
@@ -251,8 +251,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="ghost"
-          startContent={<ArrowLeft className="w-4 h-4" />}
+          variant="ghost"
           onPress={() => router.back()}
         >
           Back to Events
@@ -297,18 +296,18 @@ export default function EventDetailPage() {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-wrap gap-2 mb-4">
               {event.isFeatured && (
-                <Badge color="warning" variant="solid" className="font-bold">
+                <Badge variant="primary" className="font-bold">
                   <Star className="w-3 h-3 mr-1" />
                   Featured
                 </Badge>
               )}
               {event.isPremium && (
-                <Badge color="secondary" variant="solid" className="font-bold">
+                <Badge variant="primary" className="font-bold">
                   <Crown className="w-3 h-3 mr-1" />
                   Premium
                 </Badge>
               )}
-              <Badge color="primary" variant="solid">
+              <Badge variant="primary">
                 {event.category}
               </Badge>
             </div>
@@ -417,8 +416,7 @@ export default function EventDetailPage() {
                       <Chip 
                         key={index} 
                         size="lg" 
-                        variant="primary" 
-                        color="secondary"
+                        variant="primary"
                         className="font-medium"
                       >
                         {tag}
@@ -474,7 +472,7 @@ export default function EventDetailPage() {
                     )}
                   </div>
                   {event.discountPrice && event.discountPrice < event.price && (
-                    <Badge color="success" variant="primary" size="lg">
+                    <Badge variant="primary" size="lg">
                       Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
                     </Badge>
                   )}
@@ -530,12 +528,7 @@ export default function EventDetailPage() {
                     size="lg"
                     className="w-full font-bold text-lg"
                     isPending={registering}
-                    onPress={handleRegister}
-                    startContent={
-                      isRegistered ? 
-                      <CheckCircle className="w-5 h-5" /> : 
-                      <Ticket className="w-5 h-5" />
-                    }
+                    onPress={handleRegister}
                   >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
                   </Button>
