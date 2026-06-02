@@ -1,3 +1,5 @@
+"use client";
+
 import { title, subtitle } from "@/components/primitives";
 import { Avatar, Card, Chip } from "@heroui/react";
 
