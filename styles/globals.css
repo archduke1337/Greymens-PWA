@@ -1,3 +1,20 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Dark mode via class strategy */
+@custom-variant dark (&:is(.dark *));
+
+/* Custom theme tokens */
+@theme {
+  --font-sans: "var(--font-sans)";
+  --font-mono: "var(--font-mono)";
+}
+
+/* HeroUI CSS variables */
+@import "@heroui/react";
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}

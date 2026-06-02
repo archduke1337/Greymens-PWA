@@ -9,16 +9,10 @@ const nextConfig = {
       { protocol: 'https', hostname: 'ui-avatars.com' },
       { protocol: 'https', hostname: 'via.placeholder.com' },
     ],
-    unoptimized: process.env.NODE_ENV === 'production' ? false : true
   },
   typescript: {
     tsconfigPath: './tsconfig.json'
   },
-  swcMinify: true,
-  webpack: (config) => {
-    config.resolve.fallback = { fs: false, path: false };
-    return config;
-  }
 };
 
 module.exports = nextConfig;

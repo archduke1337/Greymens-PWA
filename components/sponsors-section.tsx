@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import { Card } from "@heroui/card";
-import { Chip } from "@heroui/chip";
+import { Card } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { Sponsor, sponsorTiers } from "@/lib/sponsors";
 
 interface SponsorsSectionProps {

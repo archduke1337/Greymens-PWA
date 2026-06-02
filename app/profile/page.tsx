@@ -1,11 +1,11 @@
 // app/profile/page.tsx
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { Card, CardHeader, CardBody } from "@heroui/card";
-import { Avatar } from "@heroui/avatar";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Chip } from "@heroui/chip";
+import { Card, CardHeader, CardBody } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { ImageGravity } from "appwrite";

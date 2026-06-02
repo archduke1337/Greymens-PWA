@@ -1,11 +1,11 @@
 "use client";
 
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Badge } from "@heroui/badge";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
-import { Progress } from "@heroui/progress";
+import { Card, CardBody, CardFooter } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Badge } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Progress } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";

@@ -2,10 +2,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Link } from "@heroui/react";
 import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";

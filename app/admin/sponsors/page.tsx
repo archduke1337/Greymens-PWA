@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Switch } from "@heroui/switch";
-import { Chip } from "@heroui/chip";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Textarea } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
+import { Switch } from "@heroui/react";
+import { Chip } from "@heroui/react";
 import { toast } from "sonner";
 import { 
   PlusIcon, 

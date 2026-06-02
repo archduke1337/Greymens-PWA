@@ -1,8 +1,8 @@
 "use client";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Accordion, AccordionItem } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Divider } from "@heroui/react";
 
 export default function TermsPage() {
   const lastUpdated = "November 1, 2025";

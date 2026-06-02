@@ -1,15 +1,15 @@
 // app/admin/events/page.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
-import { Switch } from "@heroui/switch";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Chip } from "@heroui/chip";
-import { Tabs, Tab } from "@heroui/tabs";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Input, Textarea } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
+import { Switch } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Tabs, Tab } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventService, Event } from "@/lib/database";

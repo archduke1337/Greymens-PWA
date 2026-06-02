@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalBody } from "@heroui/modal";
+import { Card, CardBody, CardFooter } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Modal, ModalContent, ModalBody } from "@heroui/react";
 
 export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<any>(null);

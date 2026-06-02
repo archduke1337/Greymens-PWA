@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Input, Textarea } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Link } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
-import { Divider } from "@heroui/divider";
+import { Card, CardBody, CardFooter } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Divider } from "@heroui/react";
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);

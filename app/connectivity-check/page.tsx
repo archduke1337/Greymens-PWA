@@ -6,9 +6,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Spinner } from "@heroui/spinner";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-react";
 
 interface ConnectivityResult {

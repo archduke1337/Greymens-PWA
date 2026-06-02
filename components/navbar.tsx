@@ -5,15 +5,15 @@ import {
   NavbarContent,
   NavbarBrand,
   NavbarItem,
-} from "@heroui/navbar";
+} from "@heroui/react";
 import {
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-} from "@heroui/dropdown";
-import { Button } from "@heroui/button";
-import { Avatar } from "@heroui/avatar";
+} from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Avatar } from "@heroui/react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";

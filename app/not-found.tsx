@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@heroui/button";
-import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/react";
+import { Card, CardBody } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 export default function NotFound() {

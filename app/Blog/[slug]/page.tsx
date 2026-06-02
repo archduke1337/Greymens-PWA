@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardBody } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
+import { Card, CardBody } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Avatar } from "@heroui/react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {

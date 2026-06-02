@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardBody, CardHeader } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { Input, Textarea } from '@heroui/input';
-import { Select, SelectItem } from '@heroui/select';
-import { Chip } from '@heroui/chip';
+import { Card, CardBody, CardHeader } from '@heroui/react';
+import { Button } from '@heroui/react';
+import { Input, Textarea } from '@heroui/react';
+import { Select, SelectItem } from '@heroui/react';
+import { Chip } from '@heroui/react';
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 

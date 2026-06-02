@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
+import { Card, CardBody, CardHeader, CardFooter } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Divider } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { sponsorService, Sponsor, sponsorTiers } from "@/lib/sponsors";
 import { ExternalLinkIcon, MailIcon, TrendingUpIcon, UsersIcon, AwardIcon, SparklesIcon, ArrowRightIcon } from "lucide-react";

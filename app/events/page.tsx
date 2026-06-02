@@ -1,14 +1,14 @@
 // app/events/page.tsx
 "use client";
 
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Badge } from "@heroui/badge";
-import { Avatar } from "@heroui/avatar";
-import { Chip } from "@heroui/chip";
-import { Progress } from "@heroui/progress";
-import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { Card, CardBody, CardHeader, CardFooter } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Badge } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Progress } from "@heroui/react";
+import { Input } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";

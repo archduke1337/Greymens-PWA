@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardBody } from '@heroui/card';
-import { Button } from '@heroui/button';
-import { Chip } from '@heroui/chip';
+import { Card, CardBody } from '@heroui/react';
+import { Button } from '@heroui/react';
+import { Chip } from '@heroui/react';
 import Link from 'next/link';
 
 export default function DashboardPage() {

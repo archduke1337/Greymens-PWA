@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Avatar } from "@heroui/avatar";
-import { Tabs, Tab } from "@heroui/tabs";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
+import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Button } from "@heroui/react";
+import { Chip } from "@heroui/react";
+import { Avatar } from "@heroui/react";
+import { Tabs, Tab } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Textarea } from "@heroui/react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
 import {
