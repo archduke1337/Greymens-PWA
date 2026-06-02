@@ -82,7 +82,7 @@ export default function LoginPage() {
           </div>
 
           <Button
-            variant="outline"
+            variant="secondary"
             className="w-full"
             onPress={handleGoogleLogin}
           >
@@ -92,7 +92,7 @@ export default function LoginPage() {
         <Card.Footer className="flex flex-col gap-2">
           <div className="text-small text-center">
             Don't have an account?{" "}
-            <Link as={NextLink} href="/register" size="sm">
+            <Link href="/register">
               Sign up
             </Link>
           </div>

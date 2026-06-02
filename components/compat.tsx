@@ -127,11 +127,11 @@ CardFooter.displayName = "CardFooter";
 // ============================================================
 
 export const Input = forwardRef<HTMLInputElement, any>(
-  ({ className = "", label, placeholder, value, onChange, type = "text", startContent, endContent, description, disabled, required, required, classNames, onKeyPress, maxLength, name, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, value, onChange, type = "text", startContent, endContent, description, disabled, isRequired, classNames, onKeyPress, maxLength, name, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(isRequired) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <div className="flex items-center gap-2 rounded-lg border border-default-300 bg-transparent px-3 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
@@ -143,7 +143,7 @@ export const Input = forwardRef<HTMLInputElement, any>(
           value={value}
           onChange={onChange}
           disabled={disabled}
-          required={required || required}
+          required={isRequired}
           onKeyPress={onKeyPress}
           maxLength={maxLength}
           name={name}
@@ -163,11 +163,11 @@ Input.displayName = "Input";
 // ============================================================
 
 export const TextArea = forwardRef<HTMLTextAreaElement, any>(
-  ({ className = "", label, placeholder, value, onChange, minRows = 3, rows, disabled, required, required, classNames, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, value, onChange, minRows = 3, rows, disabled, isRequired, required, classNames, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(isRequired) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <textarea
@@ -177,7 +177,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, any>(
         onChange={onChange}
         rows={rows || minRows}
         disabled={disabled}
-        required={required || required}
+        required={isRequired}
         className={`rounded-lg border border-default-300 bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y ${classNames?.input || ""}`}
         {...props}
       />
@@ -191,18 +191,18 @@ TextArea.displayName = "TextArea";
 // ============================================================
 
 export const Select = forwardRef<HTMLSelectElement, any>(
-  ({ className = "", label, placeholder, selectedKeys, onChange, required, required, classNames, children, ...props }: any, ref) => (
+  ({ className = "", label, placeholder, selectedKeys, onChange, isRequired, required, classNames, children, ...props }: any, ref) => (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
         <label className={`text-sm font-medium text-default-700 ${classNames?.label || ""}`}>
-          {label}{(required || required) && <span className="text-danger ml-1">*</span>}
+          {label}{(isRequired) && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <select
         ref={ref}
         value={selectedKeys?.[0] || ""}
         onChange={onChange}
-        required={required || required}
+        required={isRequired}
         className={`rounded-lg border border-default-300 bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer ${classNames?.trigger || ""}`}
         {...props}
       >

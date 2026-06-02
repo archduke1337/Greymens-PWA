@@ -525,14 +525,14 @@ export default function AdminProjectsPage() {
                     value={formData.title}
                     onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
                     required
-                    variant="outline"
+                    variant="secondary"
                   />
                   <Input
                     placeholder="3 months"
                     value={formData.duration}
                     onChange={(e: any) => setFormData({ ...formData, duration: e.target.value })}
                     required
-                    variant="outline"
+                    variant="secondary"
                   />
                 </div>
 
@@ -541,7 +541,7 @@ export default function AdminProjectsPage() {
                   value={formData.description}
                   onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
                   required
-                  variant="outline"
+                  variant="secondary"
                   minRows={3}
                 />
 
@@ -550,14 +550,14 @@ export default function AdminProjectsPage() {
                   value={formData.image}
                   onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
                   required
-                  variant="outline"
+                  variant="secondary"
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <Select
                     value={formData.category}
                     onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
-                    variant="outline"
+                    variant="secondary"
                   >
                     {categories.map((cat) => (
                       <ListBoxItem key={cat.key} textValue={cat.label}>
@@ -569,7 +569,7 @@ export default function AdminProjectsPage() {
                   <Select
                     value={formData.status}
                     onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
-                    variant="outline"
+                    variant="secondary"
                   >
                     {statuses.map((status) => (
                       <ListBoxItem key={status.key} textValue={status.label}>
@@ -600,7 +600,7 @@ export default function AdminProjectsPage() {
                       max="100"
                       value={formData.progress.toString()}
                       onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                      variant="outline"
+                      variant="secondary"
                       className="w-20"
                     />
                   </div>
@@ -611,21 +611,21 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="outline"
+                      variant="secondary"
                     />
                     <Input
                       type="number"
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="outline"
+                      variant="secondary"
                     />
                     <Input
                       type="number"
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="outline"
+                      variant="secondary"
                     />
                   </div>
                 </div>
@@ -634,7 +634,7 @@ export default function AdminProjectsPage() {
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
                   onChange={(e: any) => setFormData({ ...formData, technologies: e.target.value })}
-                  variant="outline"
+                  variant="secondary"
                   minRows={2}
                 />
 
@@ -643,14 +643,14 @@ export default function AdminProjectsPage() {
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
                     onChange={(e: any) => setFormData({ ...formData, demoUrl: e.target.value })}
-                    variant="outline"
+                    variant="secondary"
                   />
 
                   <Input
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
                     onChange={(e: any) => setFormData({ ...formData, repoUrl: e.target.value })}
-                    variant="outline"
+                    variant="secondary"
                   />
                 </div>
 
@@ -658,7 +658,7 @@ export default function AdminProjectsPage() {
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
                   onChange={(e: any) => setFormData({ ...formData, teamMembers: e.target.value })}
-                  variant="outline"
+                  variant="secondary"
                   minRows={2}
                 />
 

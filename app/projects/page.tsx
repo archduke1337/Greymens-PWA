@@ -141,7 +141,7 @@ export default function ProjectsPage() {
                   key={project.$id}
                   className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
                  
-                  isPressable
+                 
                 >
                   <Card.Content className="p-0 overflow-hidden">
                     {/* Project Image */}

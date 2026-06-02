@@ -111,7 +111,7 @@ export default function RegisterPage() {
           </div>
 
           <Button
-            variant="outline"
+            variant="secondary"
             className="w-full"
             onPress={handleGoogleSignup}
           >
@@ -121,7 +121,7 @@ export default function RegisterPage() {
         <Card.Footer className="flex flex-col gap-2">
           <div className="text-small text-center">
             Already have an account?{" "}
-            <Link as={NextLink} href="/login" size="sm">
+            <Link href="/login">
               Login
             </Link>
           </div>

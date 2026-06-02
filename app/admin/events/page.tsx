@@ -408,7 +408,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
                         onChange={(e: any) => handleInputChange("image", e.target.value)}
-                        required
+                        required
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -616,7 +616,7 @@ export default function AdminEventsPage() {
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
                         onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
-                        required
+                        required
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">

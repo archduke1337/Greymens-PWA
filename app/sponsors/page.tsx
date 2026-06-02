@@ -87,7 +87,7 @@ export default function SponsorsPage() {
               return (
                 <Card
                   key={sponsor.$id}
-                  isPressable
+                 
                  
                   as="a"
                   href={sponsor.website}

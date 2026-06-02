@@ -214,11 +214,9 @@ export default function BlogPostPage() {
               {relatedBlogs.map((relatedBlog) => (
                 <Card
                   key={relatedBlog.$id}
-                  isPressable
-                  onPress={() => router.push(`/blog/${relatedBlog.slug}`)}
                   className="hover:shadow-xl transition-all"
                 >
-                  <Card.Content className="p-0">
+                  <CardContent className="p-0">
                     <img
                       src={relatedBlog.coverImage}
                       alt={relatedBlog.title}
@@ -232,7 +230,7 @@ export default function BlogPostPage() {
                         {relatedBlog.excerpt}
                       </p>
                     </div>
-                  </Card.Content>
+                  </CardContent>
                 </Card>
               ))}
             </div>
