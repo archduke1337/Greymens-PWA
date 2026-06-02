@@ -344,17 +344,6 @@ const chipColorMap: Record<string, string> = {
   danger: "bg-danger-100 text-danger-700",
 };
 
-const chipSolidColorMap = chipColorMap;
-
-const chipSolidColorMap2: Record<string, string> = {
-  default: "bg-default-100 text-default-700",
-  primary: "bg-primary-100 text-primary-700",
-  secondary: "bg-secondary-100 text-secondary-700",
-  success: "bg-success-100 text-success-700",
-  warning: "bg-warning-100 text-warning-700",
-  danger: "bg-danger-100 text-danger-700",
-};
-
 const chipOutlineColorMap: Record<string, string> = {
   default: "bg-transparent border border-default-300 text-default-700",
   primary: "bg-transparent border border-primary text-primary",
@@ -375,7 +364,7 @@ const chipLightColorMap: Record<string, string> = {
 
 export const Chip = ({ children, size = "md", color = "default", variant = "solid", onClose, className = "", ...props }: any) => {
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : size === "lg" ? "px-4 py-1.5 text-base" : "px-3 py-1 text-sm";
-  let colorStyle = chipSolidColorMap[color] || chipSolidColorMap.default;
+  let colorStyle = chipColorMap[color] || chipColorMap.default;
   if (variant === "outline" || variant === "bordered") {
     colorStyle = chipOutlineColorMap[color] || chipOutlineColorMap.default;
   } else if (variant === "light" || variant === "ghost") {
