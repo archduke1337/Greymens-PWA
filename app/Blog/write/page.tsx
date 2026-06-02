@@ -183,7 +183,7 @@ export default function WriteBlogPage() {
               required
             >
               {blogCategories.map((cat) => (
-                <Item key={cat.value}>{cat.label}</ListBoxItem>
+                <ListBoxItem key={cat.value}>{cat.label}</ListBoxItem>
               ))}
             </Select>
 

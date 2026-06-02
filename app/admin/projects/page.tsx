@@ -400,7 +400,7 @@ export default function AdminProjectsPage() {
                               {project.isFeatured ? (
                                 <Chip 
                                   size="sm" 
-                                  variant="primary" 
+                                  variant="primary" 
                                 >
                                   Featured
                                 </Chip>
@@ -550,7 +550,7 @@ export default function AdminProjectsPage() {
                   value={formData.image}
                   onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
                   required
-                  variant="outline"
+                  variant="outline"
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -560,7 +560,7 @@ export default function AdminProjectsPage() {
                     variant="outline"
                   >
                     {categories.map((cat) => (
-                      <Item key={cat.key} textValue={cat.label}>
+                      <ListBoxItem key={cat.key} textValue={cat.label}>
                         {cat.label}
                       </ListBoxItem>
                     ))}
@@ -572,7 +572,7 @@ export default function AdminProjectsPage() {
                     variant="outline"
                   >
                     {statuses.map((status) => (
-                      <Item key={status.key} textValue={status.label}>
+                      <ListBoxItem key={status.key} textValue={status.label}>
                         {status.label}
                       </ListBoxItem>
                     ))}
@@ -611,21 +611,21 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
                     <Input
                       type="number"
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
                     <Input
                       type="number"
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="outline"
+                      variant="outline"
                     />
                   </div>
                 </div>

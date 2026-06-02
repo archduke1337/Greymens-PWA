@@ -110,7 +110,7 @@ export default function HelpFeedbackPage() {
               }}
             >
               {feedbackTypes.map((type) => (
-                <Item key={type.value}>
+                <ListBoxItem key={type.value}>
                   {type.label}
                 </ListBoxItem>
               ))}

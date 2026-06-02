@@ -254,7 +254,7 @@ export default function EventsPage() {
                 <Input
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e: any) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   size="lg"
                 />
               </div>
@@ -278,7 +278,7 @@ export default function EventsPage() {
                   className="min-w-[150px]"
                 >
                   {categories.map(category => (
-                    <Item key={category.key}>{category.label}</ListBoxItem>
+                    <ListBoxItem key={category.key}>{category.label}</ListBoxItem>
                   ))}
                 </Select>
               </div>
