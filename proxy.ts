@@ -12,7 +12,7 @@ const ADMIN_ROUTES = ['/admin'];
 // Protected API routes (require authentication)
 const PROTECTED_API_ROUTES = ['/api/test-db'];
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if route is an admin route
