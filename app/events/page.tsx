@@ -300,7 +300,7 @@ export default function EventsPage() {
               className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
               
               isPressable
-              onPress={() = className="shadow-lg"> handleEventClick(event.$id!)}
+              onPress={() => handleEventClick(event.$id!)}
             >
               <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
