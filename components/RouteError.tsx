@@ -30,10 +30,10 @@ export default function RouteError({
             <p className="text-default-500 max-w-sm mx-auto">{description}</p>
           </div>
           <div className="flex gap-3 justify-center">
-            <Button color="primary" variant="solid" onPress={() => reset()}>
+            <Button variant="primary" onPress={() => reset()}>
               Try Again
             </Button>
-            <Button variant="flat" onPress={() => window.location.href = "/"}>
+            <Button  onPress={() => window.location.href = "/"}>
               Go Home
             </Button>
           </div>

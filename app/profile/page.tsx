@@ -185,7 +185,7 @@ export default function ProfilePage() {
             <Avatar
               src={profilePicture}
               className="w-32 h-32"
-              isBordered
+              className="border-2 border-default-300"
               color="primary"
               showFallback
               name={user.name}
@@ -193,7 +193,7 @@ export default function ProfilePage() {
             <Button
               isIconOnly
               size="sm"
-              color="primary"
+              variant="primary"
               className="absolute bottom-0 right-0 shadow-lg"
               onPress={handleFileSelect}
               isLoading={uploadingPhoto}
@@ -221,7 +221,7 @@ export default function ProfilePage() {
             {user.phone && (
               <p className="text-default-500 text-sm">{user.phone}</p>
             )}
-            <Chip color="success" variant="flat" size="sm" className="mt-2">
+            <Chip color="success" variant="primary" size="sm" className="mt-2">
               Active Account
             </Chip>
           </div>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                   <p className="text-sm p-2 break-all">{user.email}</p>
                   <Chip 
                     color={user.emailVerification ? "success" : "warning"} 
-                    variant="flat" 
+                    variant="primary" 
                     size="sm"
                   >
                     {user.emailVerification ? "Verified" : "Not Verified"}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   <p className="text-sm p-2">{user.phone || "Not added"}</p>
                   <Chip 
                     color={user.phoneVerification ? "success" : "warning"} 
-                    variant="flat" 
+                    variant="primary" 
                     size="sm"
                   >
                     {user.phoneVerification ? "Verified" : "Not Verified"}
@@ -294,8 +294,8 @@ export default function ProfilePage() {
               {!isEditing && (
                 <Button
                   size="sm"
-                  color="primary"
-                  variant="flat"
+                  variant="primary"
+                  
                   onPress={() => setIsEditing(true)}
                 >
                   Edit Profile
@@ -317,13 +317,13 @@ export default function ProfilePage() {
                 <div className="flex gap-2">
                   <Button
                     type="submit"
-                    color="primary"
+                    variant="primary"
                     isLoading={updateLoading}
                   >
                     Save Changes
                   </Button>
                   <Button
-                    variant="flat"
+                    
                     onPress={() => {
                       setIsEditing(false);
                       setName(user.name);

@@ -53,7 +53,7 @@ export const Navbar = () => {
         <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownTrigger>
             <Button
-              variant="light"
+              variant="ghost"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
@@ -81,7 +81,7 @@ export const Navbar = () => {
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
                   <Avatar
-                    isBordered
+                    className="border-2 border-default-300"
                     as="button"
                     className="transition-transform"
                     color="primary"
@@ -90,7 +90,7 @@ export const Navbar = () => {
                     src={getAvatarUrl(user.name)}
                   />
                 </DropdownTrigger>
-                <DropdownMenu aria-label="Profile Actions" variant="flat">
+                <DropdownMenu aria-label="Profile Actions" variant="primary">
                   <DropdownItem key="profile" className="h-14 gap-2">
                     <p className="font-semibold">Signed in as</p>
                     <p className="font-semibold">{user.email}</p>
@@ -113,7 +113,7 @@ export const Navbar = () => {
                 </DropdownMenu>
               </Dropdown>
             ) : (
-              <Button as={NextLink} color="primary" href="/login" variant="flat">
+              <Button as={NextLink} variant="primary" href="/login" variant="primary">
                 Login
               </Button>
             )}

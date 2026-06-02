@@ -114,7 +114,7 @@ export default function ConnectivityCheckPage() {
               </div>
             ) : (
               <Button
-                color="primary"
+                variant="primary"
                 size="lg"
                 className="w-full"
                 onPress={checkConnectivity}

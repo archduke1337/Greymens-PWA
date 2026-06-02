@@ -13,7 +13,7 @@ export default function TermsPage() {
         <p className="text-lg text-default-600 max-w-3xl">
           Please review our terms, policies, and guidelines carefully
         </p>
-        <Chip size="sm" variant="flat" color="default">
+        <Chip size="sm" variant="primary" color="default">
           Last Updated: {lastUpdated}
         </Chip>
       </div>
@@ -29,7 +29,7 @@ export default function TermsPage() {
           </p>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="eligibility"
               aria-label="Eligibility"
@@ -115,7 +115,7 @@ export default function TermsPage() {
           </p>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="tiers"
               aria-label="Sponsorship Tiers"
@@ -196,7 +196,7 @@ export default function TermsPage() {
           </p>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <Accordion variant="bordered" selectionMode="multiple">
+          <Accordion variant="outline" selectionMode="multiple">
             <AccordionItem
               key="collection"
               aria-label="Data Collection"

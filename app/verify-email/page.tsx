@@ -90,7 +90,7 @@ function VerifyEmailContent() {
               <Button
                 as={NextLink}
                 href="/profile"
-                color="primary"
+                variant="primary"
                 className="mt-4"
               >
                 Go to Profile
@@ -110,15 +110,15 @@ function VerifyEmailContent() {
                 <Button
                   as={NextLink}
                   href="/settings"
-                  color="primary"
-                  variant="flat"
+                  variant="primary"
+                  
                 >
                   Go to Settings
                 </Button>
                 <Button
                   as={NextLink}
                   href="/"
-                  variant="light"
+                  variant="ghost"
                 >
                   Go Home
                 </Button>

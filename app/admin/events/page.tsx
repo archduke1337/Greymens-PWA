@@ -197,8 +197,8 @@ export default function AdminEventsPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button 
-            color="danger" 
-            variant="flat" 
+            variant="danger" 
+            variant="primary" 
             onPress={handleDeletePastEvents}
             className="w-full sm:w-auto"
             size="sm"
@@ -208,7 +208,7 @@ export default function AdminEventsPage() {
             <span className="sm:hidden ml-2">Delete Past</span>
           </Button>
           <Button 
-            color="primary" 
+            variant="primary" 
             onPress={onOpen}
             className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600"
             size="sm"
@@ -339,7 +339,7 @@ export default function AdminEventsPage() {
                     <TableCell>
                       <Chip
                         color={event.status === "upcoming" ? "success" : "default"}
-                        variant="flat"
+                        variant="primary"
                         size="sm"
                         className="text-xs"
                       >
@@ -350,7 +350,7 @@ export default function AdminEventsPage() {
                       <div className="flex gap-1 md:gap-2">
                         <Button
                           size="sm"
-                          variant="light"
+                          variant="ghost"
                           isIconOnly
                           onPress={() => handleEdit(event)}
                         >
@@ -358,8 +358,8 @@ export default function AdminEventsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          color="danger"
-                          variant="light"
+                          variant="danger"
+                          variant="ghost"
                           isIconOnly
                           onPress={() => handleDelete(event.$id!)}
                           isLoading={deletingId === event.$id}
@@ -399,7 +399,7 @@ export default function AdminEventsPage() {
             </ModalHeader>
             
             <ModalBody className="py-6">
-              <Tabs aria-label="Event form sections" color="primary" variant="underlined">
+              <Tabs aria-label="Event form sections" color="primary">
                 <Tab key="basic" title={
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4" />
@@ -491,8 +491,8 @@ export default function AdminEventsPage() {
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch
-                        isSelected={formData.isFeatured}
-                        onValueChange={(checked) => handleInputChange("isFeatured", checked)}
+                        checked={formData.isFeatured}
+                        onChange={(checked) => handleInputChange("isFeatured", checked)}
                         color="warning"
                       >
                         <div className="flex items-center gap-2">
@@ -501,8 +501,8 @@ export default function AdminEventsPage() {
                         </div>
                       </Switch>
                       <Switch
-                        isSelected={formData.isPremium}
-                        onValueChange={(checked) => handleInputChange("isPremium", checked)}
+                        checked={formData.isPremium}
+                        onChange={(checked) => handleInputChange("isPremium", checked)}
                         color="secondary"
                       >
                         <div className="flex items-center gap-2">
@@ -724,8 +724,8 @@ export default function AdminEventsPage() {
                         <Button 
                           type="button" 
                           onPress={handleAddTag}
-                          color="primary"
-                          variant="flat"
+                          variant="primary"
+                          
                         >
                           Add
                         </Button>
@@ -736,7 +736,7 @@ export default function AdminEventsPage() {
                             <Chip 
                               key={index} 
                               onClose={() => handleRemoveTag(tag)} 
-                              variant="flat"
+                              variant="primary"
                               color="secondary"
                               className="font-medium"
                             >
@@ -765,14 +765,14 @@ export default function AdminEventsPage() {
 
             <ModalFooter className="border-t pt-4">
               <Button 
-                variant="flat" 
+                variant="primary" 
                 onPress={handleCloseModal}
                 className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
               <Button 
-                color="primary" 
+                variant="primary" 
                 type="submit" 
                 isLoading={submitting}
                 className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"

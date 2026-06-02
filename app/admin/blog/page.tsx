@@ -236,7 +236,7 @@ export default function AdminBlogsPage() {
                             ? "danger"
                             : "warning"
                         }
-                        variant="flat"
+                        variant="primary"
                       >
                         {blog.status}
                       </Chip>
@@ -274,7 +274,7 @@ export default function AdminBlogsPage() {
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2">
                       {blog.tags.map((tag, i) => (
-                        <Chip key={i} size="sm" variant="flat">
+                        <Chip key={i} size="sm" variant="primary">
                           #{tag}
                         </Chip>
                       ))}
@@ -306,7 +306,7 @@ export default function AdminBlogsPage() {
                       href={`/blog/${blog.slug}`}
                       target="_blank"
                       size="sm"
-                      variant="flat"
+                      variant="primary"
                       startContent={<EyeIcon className="w-4 h-4" />}
                       className="flex-1 md:flex-none"
                     >
@@ -318,7 +318,7 @@ export default function AdminBlogsPage() {
                         <Button
                           size="sm"
                           color="success"
-                          variant="flat"
+                          variant="primary"
                           startContent={<CheckIcon className="w-4 h-4" />}
                           onPress={() => handleApprove(blog.$id!)}
                           isLoading={processingBlog === blog.$id}
@@ -328,8 +328,8 @@ export default function AdminBlogsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          color="danger"
-                          variant="flat"
+                          variant="danger"
+                          variant="primary"
                           startContent={<XIcon className="w-4 h-4" />}
                           onPress={() => openRejectModal(blog)}
                           className="flex-1 md:flex-none"
@@ -343,7 +343,7 @@ export default function AdminBlogsPage() {
                       <Button
                         size="sm"
                         color="warning"
-                        variant="flat"
+                        variant="primary"
                         startContent={<StarIcon className="w-4 h-4" />}
                         onPress={() => toggleFeatured(blog)}
                         className="flex-1 md:flex-none"
@@ -354,8 +354,8 @@ export default function AdminBlogsPage() {
 
                     <Button
                       size="sm"
-                      color="danger"
-                      variant="flat"
+                      variant="danger"
+                      variant="primary"
                       startContent={<TrashIcon className="w-4 h-4" />}
                       onPress={() => handleDelete(blog.$id!)}
                       className="flex-1 md:flex-none"
@@ -386,11 +386,11 @@ export default function AdminBlogsPage() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={() => setRejectModalOpen(false)}>
+            <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
               Cancel
             </Button>
             <Button
-              color="danger"
+              variant="danger"
               onPress={handleReject}
               isLoading={!!processingBlog}
             >

@@ -145,7 +145,7 @@ export default function TeamPage() {
           <div className="text-center space-y-4">
             <Chip 
               color="secondary" 
-              variant="flat" 
+              variant="primary" 
               size="md"
             >
               Our Leadership
@@ -205,7 +205,7 @@ export default function TeamPage() {
                               <Avatar
                                 src={member.avatar}
                                 className="w-24 h-24 md:w-28 md:h-28 text-large"
-                                isBordered
+                                className="border-2 border-default-300"
                                 color={member.color}
                               />
                             </div>
@@ -217,7 +217,7 @@ export default function TeamPage() {
                               </h2>
                               <Chip 
                                 color={member.color} 
-                                variant="flat"
+                                variant="primary"
                                 size="sm"
                                 className="font-medium"
                               >
@@ -238,7 +238,7 @@ export default function TeamPage() {
                                 <Chip
                                   key={achievement}
                                   size="sm"
-                                  variant="bordered"
+                                  variant="outline"
                                   color={member.color}
                                   className="text-xs"
                                 >
@@ -258,7 +258,7 @@ export default function TeamPage() {
                               href={member.linkedin}
                               target="_blank"
                               rel="noopener noreferrer"
-                              variant="flat"
+                              variant="primary"
                               color={member.color}
                               className="hover:scale-110 transition-transform"
                               size="md"
@@ -274,7 +274,7 @@ export default function TeamPage() {
                               href={member.github}
                               target="_blank"
                               rel="noopener noreferrer"
-                              variant="flat"
+                              variant="primary"
                               color={member.color}
                               className="hover:scale-110 transition-transform"
                               size="md"
@@ -322,8 +322,8 @@ export default function TeamPage() {
             <div className="flex items-center justify-center gap-4 md:gap-6">
               <Button
                 isIconOnly
-                color="secondary"
-                variant="flat"
+                variant="secondary"
+                variant="primary"
                 onPress={handlePrev}
                 isDisabled={currentIndex === 0}
                 size="sm"
@@ -360,8 +360,8 @@ export default function TeamPage() {
 
               <Button
                 isIconOnly
-                color="secondary"
-                variant="flat"
+                variant="secondary"
+                variant="primary"
                 onPress={handleNext}
                 isDisabled={currentIndex === coreTeam.length - 1}
                 size="sm"

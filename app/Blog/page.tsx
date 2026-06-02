@@ -115,7 +115,7 @@ export default function BlogPage() {
         {/* Write Blog Button */}
         {user && (
           <Button
-            color="primary"
+            variant="primary"
             size="lg"
             startContent={<PenIcon className="w-5 h-5" />}
             onPress={() => router.push("/blog/write")}
@@ -170,7 +170,7 @@ export default function BlogPage() {
             </p>
             {user && (
               <Button
-                color="primary"
+                variant="primary"
                 startContent={<PenIcon className="w-5 h-5" />}
                 onPress={() => router.push("/blog/write")}
               >
@@ -207,7 +207,7 @@ export default function BlogPage() {
                     )}
                     <Chip
                       size="sm"
-                      variant="flat"
+                      variant="primary"
                       className="absolute top-4 right-4 bg-black/50 text-white"
                     >
                       {blog.category.replace("-", " ")}
@@ -227,7 +227,7 @@ export default function BlogPage() {
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2">
                       {blog.tags.slice(0, 3).map((tag, index) => (
-                        <Chip key={index} size="sm" variant="flat">
+                        <Chip key={index} size="sm" variant="primary">
                           #{tag}
                         </Chip>
                       ))}

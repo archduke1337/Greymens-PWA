@@ -371,7 +371,7 @@ export default function AdminProjectsPage() {
                             <TableCell>
                               <Chip 
                                 size="sm" 
-                                variant="flat" 
+                                variant="primary" 
                                 color={getCategoryColor(project.category) as any}
                                 classNames={{
                                   base: "capitalize font-medium"
@@ -408,7 +408,7 @@ export default function AdminProjectsPage() {
                                 <Chip 
                                   size="sm" 
                                   color="warning" 
-                                  variant="flat" 
+                                  variant="primary" 
                                   startContent={<StarIcon className="w-3 h-3" />}
                                   classNames={{
                                     base: "font-medium"
@@ -425,7 +425,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="light"
+                                  variant="ghost"
                                   onPress={() => handleEdit(project)}
                                   className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
                                 >
@@ -434,8 +434,8 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="light"
-                                  color="danger"
+                                  variant="ghost"
+                                  variant="danger"
                                   onPress={() => handleDelete(project.$id!)}
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                 >
@@ -544,7 +544,7 @@ export default function AdminProjectsPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     isRequired
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   />
@@ -554,7 +554,7 @@ export default function AdminProjectsPage() {
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     isRequired
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   />
@@ -566,7 +566,7 @@ export default function AdminProjectsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   isRequired
-                  variant="bordered"
+                  variant="outline"
                   minRows={3}
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300" }}
@@ -578,7 +578,7 @@ export default function AdminProjectsPage() {
                   value={formData.image}
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                   isRequired
-                  variant="bordered"
+                  variant="outline"
                   description="Use high-quality images from Unsplash or similar platforms"
                   classNames={{
                     label: "text-gray-700 dark:text-gray-300",
@@ -590,7 +590,7 @@ export default function AdminProjectsPage() {
               label="Category"
                     selectedKeys={[formData.category]}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   >
@@ -605,7 +605,7 @@ export default function AdminProjectsPage() {
               label="Status"
                     selectedKeys={[formData.status]}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   >
@@ -638,7 +638,7 @@ export default function AdminProjectsPage() {
                       max="100"
                       value={formData.progress.toString()}
                       onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       className="w-20"
                       classNames={{
                         input: "text-center" }}
@@ -652,7 +652,7 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.stars.toString()}
                       onChange={(e) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<StarIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300" }}
@@ -663,7 +663,7 @@ export default function AdminProjectsPage() {
                       min="0"
                       value={formData.forks.toString()}
                       onChange={(e) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<GitForkIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300" }}
@@ -674,7 +674,7 @@ export default function AdminProjectsPage() {
                       min="1"
                       value={formData.contributors.toString()}
                       onChange={(e) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                      variant="bordered"
+                      variant="outline"
                       startContent={<UsersIcon className="w-4 h-4 text-gray-400" />}
                       classNames={{
                         label: "text-gray-700 dark:text-gray-300" }}
@@ -687,7 +687,7 @@ export default function AdminProjectsPage() {
                   placeholder="React, Node.js, MongoDB, TypeScript..."
                   value={formData.technologies}
                   onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   description="Separate technologies with commas"
                   minRows={2}
                   classNames={{
@@ -701,7 +701,7 @@ export default function AdminProjectsPage() {
                     placeholder="https://demo.example.com"
                     value={formData.demoUrl}
                     onChange={(e) => setFormData({ ...formData, demoUrl: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   />
@@ -711,7 +711,7 @@ export default function AdminProjectsPage() {
                     placeholder="https://github.com/username/repo"
                     value={formData.repoUrl}
                     onChange={(e) => setFormData({ ...formData, repoUrl: e.target.value })}
-                    variant="bordered"
+                    variant="outline"
                     classNames={{
                       label: "text-gray-700 dark:text-gray-300" }}
                   />
@@ -722,7 +722,7 @@ export default function AdminProjectsPage() {
                   placeholder="John Doe, Jane Smith, Alex Johnson..."
                   value={formData.teamMembers}
                   onChange={(e) => setFormData({ ...formData, teamMembers: e.target.value })}
-                  variant="bordered"
+                  variant="outline"
                   description="Separate names with commas"
                   minRows={2}
                   classNames={{
@@ -731,8 +731,8 @@ export default function AdminProjectsPage() {
                 />
 
                 <Switch
-                  isSelected={formData.isFeatured}
-                  onValueChange={(value) => setFormData({ ...formData, isFeatured: value })}
+                  checked={formData.isFeatured}
+                  onChange={(value) => setFormData({ ...formData, isFeatured: value })}
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-gradient-to-r from-purple-500 to-pink-500",
                     label: "text-gray-700 dark:text-gray-300 text-sm" }}
@@ -742,11 +742,11 @@ export default function AdminProjectsPage() {
               </div>
             </ModalBody>
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="light" onPress={onClose} isDisabled={saving}>
+              <Button variant="ghost" onPress={onClose} isDisabled={saving}>
                 Cancel
               </Button>
               <Button
-                color="primary"
+                variant="primary"
                 onPress={handleSave}
                 isLoading={saving}
                 startContent={!saving && <SaveIcon className="w-4 h-4" />}

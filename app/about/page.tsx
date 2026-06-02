@@ -56,7 +56,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-
       {/* Story Section */}
       <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 shadow-lg">
         <CardContent className="p-8 md:p-12">
@@ -114,10 +113,10 @@ export default function AboutPage() {
             </AvatarGroup>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
-            <Chip color="primary" variant="flat">Leadership</Chip>
-            <Chip color="secondary" variant="flat">Innovation</Chip>
-            <Chip color="success" variant="flat">Creativity</Chip>
-            <Chip color="warning" variant="flat">Excellence</Chip>
+            <Chip color="primary" variant="primary">Leadership</Chip>
+            <Chip color="secondary" variant="primary">Innovation</Chip>
+            <Chip color="success" variant="primary">Creativity</Chip>
+            <Chip color="warning" variant="primary">Excellence</Chip>
           </div>
         </CardContent>
       </Card>

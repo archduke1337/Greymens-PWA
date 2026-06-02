@@ -54,7 +54,7 @@ export default function DashboardPage() {
         </Card>
         <Card className="border border-default-200">
           <CardContent className="text-center py-8">
-            <Chip color="primary" variant="flat">{user.email}</Chip>
+            <Chip color="primary" variant="primary">{user.email}</Chip>
             <p className="text-sm text-default-500 mt-2">Account Email</p>
           </CardContent>
         </Card>
@@ -73,7 +73,7 @@ export default function DashboardPage() {
             <Link key={link.href} href={link.href}>
               <Card className="hover:shadow-lg transition-shadow" className="cursor-pointer border border-default-200 h-full">
                 <CardContent className="flex items-center justify-center py-6">
-                  <Button color={link.color} variant="light" className="text-sm font-medium">
+                  <Button color={link.color} variant="ghost" className="text-sm font-medium">
                     {link.label}
                   </Button>
                 </CardContent>

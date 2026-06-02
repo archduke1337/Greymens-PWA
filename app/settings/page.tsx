@@ -250,7 +250,7 @@ export default function SettingsPage() {
 
               <Button
                 type="submit"
-                color="primary"
+                variant="primary"
                 isLoading={passwordLoading}
               >
                 Update Password
@@ -278,8 +278,8 @@ export default function SettingsPage() {
               </div>
               {!user.emailVerification && (
                 <Button
-                  color="primary"
-                  variant="flat"
+                  variant="primary"
+                  
                   size="sm"
                   onPress={handleSendVerification}
                   isLoading={verificationLoading}
@@ -323,8 +323,8 @@ export default function SettingsPage() {
               <div className="flex gap-2">
                 {user.phone && !user.phoneVerification && (
                   <Button
-                    color="primary"
-                    variant="flat"
+                    variant="primary"
+                    
                     size="sm"
                     onPress={onVerifyModalOpen}
                   >
@@ -332,8 +332,8 @@ export default function SettingsPage() {
                   </Button>
                 )}
                 <Button
-                  color="primary"
-                  variant="flat"
+                  variant="primary"
+                  
                   size="sm"
                   onPress={onPhoneModalOpen}
                 >
@@ -365,8 +365,8 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={emailNotifications}
-              onValueChange={setEmailNotifications}
+              checked={emailNotifications}
+              onChange={setEmailNotifications}
             />
           </div>
 
@@ -380,8 +380,8 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={pushNotifications}
-              onValueChange={setPushNotifications}
+              checked={pushNotifications}
+              onChange={setPushNotifications}
             />
           </div>
         </CardContent>
@@ -401,8 +401,8 @@ export default function SettingsPage() {
               </p>
             </div>
             <Button
-              color="danger"
-              variant="flat"
+              variant="danger"
+              variant="primary"
               onPress={handleDeleteAccount}
             >
               Delete Account
@@ -443,10 +443,10 @@ export default function SettingsPage() {
               )}
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={onPhoneModalClose}>
+              <Button variant="primary" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isLoading={phoneLoading}>
+              <Button  type="submit" isLoading={phoneLoading}>
                 {user.phone ? "Update" : "Add"} Phone
               </Button>
             </ModalFooter>
@@ -483,7 +483,7 @@ export default function SettingsPage() {
                 </div>
               )}
               <Button
-                variant="flat"
+                variant="primary"
                 size="sm"
                 onPress={handleSendPhoneVerification}
                 isLoading={phoneVerifyLoading}
@@ -493,10 +493,10 @@ export default function SettingsPage() {
               </Button>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={onVerifyModalClose}>
+              <Button variant="primary" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
-              <Button color="primary" type="submit" isLoading={phoneVerifyLoading}>
+              <Button  type="submit" isLoading={phoneVerifyLoading}>
                 Verify Phone
               </Button>
             </ModalFooter>

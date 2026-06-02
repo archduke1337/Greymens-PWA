@@ -308,13 +308,13 @@ export default function EventsPage() {
 
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {event.isFeatured && (
-                      <Badge color="warning" variant="solid" className="font-bold">
+                      <Badge color="warning" className="font-bold">
                         <StarIcon className="w-3 h-3 mr-1" />
                         Featured
                       </Badge>
                     )}
                     {event.isPremium && (
-                      <Badge color="secondary" variant="solid" className="font-bold">
+                      <Badge color="secondary" className="font-bold">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
                       </Badge>
@@ -323,7 +323,7 @@ export default function EventsPage() {
 
                   <Button
                     isIconOnly
-                    variant="flat"
+                    variant="primary"
                     className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                     size="sm"
                     onPress={(e) => toggleSaveEvent(e as any, event.$id!)}
@@ -339,7 +339,7 @@ export default function EventsPage() {
 
                   {event.discountPrice && event.discountPrice < event.price && (
                     <div className="absolute bottom-4 left-4">
-                      <Badge color="danger" variant="solid">
+                      <Badge color="danger">
                         {calculateDiscount(event.price, event.discountPrice)}% OFF
                       </Badge>
                     </div>
@@ -390,12 +390,12 @@ export default function EventsPage() {
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     {event.tags.slice(0, 3).map((tag, index) => (
-                      <Chip key={index} size="sm" variant="flat" color="primary">
+                      <Chip key={index} size="sm" variant="primary" color="primary">
                         {tag}
                       </Chip>
                     ))}
                     {event.tags.length > 3 && (
-                      <Chip size="sm" variant="flat">
+                      <Chip size="sm" variant="primary">
                         +{event.tags.length - 3}
                       </Chip>
                     )}

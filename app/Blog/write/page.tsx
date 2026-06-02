@@ -131,7 +131,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="light"
+          variant="ghost"
           startContent={<ArrowLeftIcon className="w-4 h-4" />}
           onPress={() => router.back()}
           className="mb-4"
@@ -221,8 +221,8 @@ export default function WriteBlogPage() {
                   <Button
                     as="label"
                     htmlFor="cover-image-upload"
-                    variant="flat"
-                    color="primary"
+                    variant="primary"
+                    
                     startContent={<ImageIcon className="w-5 h-5" />}
                     isLoading={uploadingImage}
                     className="w-full"
@@ -284,7 +284,7 @@ export default function WriteBlogPage() {
             {/* Submit Button */}
             <div className="flex gap-4 pt-4">
               <Button
-                variant="flat"
+                variant="primary"
                 onPress={() => router.back()}
                 className="flex-1"
               >
@@ -292,7 +292,7 @@ export default function WriteBlogPage() {
               </Button>
               <Button
                 type="submit"
-                color="primary"
+                variant="primary"
                 isLoading={submitting}
                 endContent={<SendIcon className="w-5 h-5" />}
                 className="flex-1"

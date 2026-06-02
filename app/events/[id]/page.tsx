@@ -236,7 +236,7 @@ export default function EventDetailPage() {
           <XCircle className="w-16 h-16 text-danger mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Event Not Found</h2>
           <p className="text-default-500 mb-6">The event you're looking for doesn't exist.</p>
-          <Button color="primary" onPress={() => router.push("/events")}>
+          <Button variant="primary" onPress={() => router.push("/events")}>
             Browse Events
           </Button>
         </div>
@@ -249,7 +249,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="light"
+          variant="ghost"
           startContent={<ArrowLeft className="w-4 h-4" />}
           onPress={() => router.back()}
         >
@@ -270,7 +270,7 @@ export default function EventDetailPage() {
         <div className="absolute top-6 right-6 flex gap-2">
           <Button
             isIconOnly
-            variant="flat"
+            variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={toggleSave}
           >
@@ -282,7 +282,7 @@ export default function EventDetailPage() {
           </Button>
           <Button
             isIconOnly
-            variant="flat"
+            variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
             onPress={handleShare}
           >
@@ -295,18 +295,18 @@ export default function EventDetailPage() {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-wrap gap-2 mb-4">
               {event.isFeatured && (
-                <Badge color="warning" variant="solid" className="font-bold">
+                <Badge color="warning" className="font-bold">
                   <Star className="w-3 h-3 mr-1" />
                   Featured
                 </Badge>
               )}
               {event.isPremium && (
-                <Badge color="secondary" variant="solid" className="font-bold">
+                <Badge color="secondary" className="font-bold">
                   <Crown className="w-3 h-3 mr-1" />
                   Premium
                 </Badge>
               )}
-              <Badge color="primary" variant="solid">
+              <Badge color="primary">
                 {event.category}
               </Badge>
             </div>
@@ -415,7 +415,7 @@ export default function EventDetailPage() {
                       <Chip 
                         key={index} 
                         size="lg" 
-                        variant="flat" 
+                        variant="primary" 
                         color="secondary"
                         className="font-medium"
                       >
@@ -472,7 +472,7 @@ export default function EventDetailPage() {
                     )}
                   </div>
                   {event.discountPrice && event.discountPrice < event.price && (
-                    <Badge color="success" variant="flat" size="lg">
+                    <Badge color="success" variant="primary" size="lg">
                       Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
                     </Badge>
                   )}

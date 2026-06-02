@@ -52,8 +52,8 @@ export default function HelpFeedbackPage() {
               Your feedback has been submitted successfully. We&apos;ll get back to you as soon as possible.
             </p>
             <Button
-              color="primary"
-              variant="flat"
+              variant="primary"
+              
               onPress={() => {
                 setSubmitted(false);
                 setFormData({ name: '', email: '', type: 'general', subject: '', message: '' });
@@ -134,7 +134,7 @@ export default function HelpFeedbackPage() {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                color="primary"
+                variant="primary"
                 isLoading={isSubmitting}
                 className="min-w-[120px]"
               >
@@ -148,7 +148,7 @@ export default function HelpFeedbackPage() {
       <div className="text-center space-y-2">
         <p className="text-sm text-default-500">
           You can also reach us at{' '}
-          <Chip size="sm" variant="flat" color="primary">
+          <Chip size="sm" variant="primary" color="primary">
             support@mindmesh.club
           </Chip>
         </p>

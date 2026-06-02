@@ -159,7 +159,7 @@ export default function AdminSponsorsPage() {
           </p>
         </div>
         <Button
-          color="primary"
+          variant="primary"
           size="lg"
           startContent={<PlusIcon className="w-5 h-5" />}
           onPress={() => setShowForm(!showForm)}
@@ -270,15 +270,15 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-8">
                 <Switch
-                  isSelected={formData.isActive}
-                  onValueChange={(value) => setFormData({ ...formData, isActive: value })}
+                  checked={formData.isActive}
+                  onChange={(value) => setFormData({ ...formData, isActive: value })}
                 >
                   Active
                 </Switch>
 
                 <Switch
-                  isSelected={formData.featured}
-                  onValueChange={(value) => setFormData({ ...formData, featured: value })}
+                  checked={formData.featured}
+                  onChange={(value) => setFormData({ ...formData, featured: value })}
                 >
                   Featured (Show in footer & homepage)
                 </Switch>
@@ -302,14 +302,14 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-4 justify-end">
                 <Button
-                  variant="flat"
+                  variant="primary"
                   onPress={resetForm}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  color="primary"
+                  variant="primary"
                   isLoading={saving}
                 >
                   {editingSponsor ? "Update Sponsor" : "Create Sponsor"}
@@ -331,7 +331,7 @@ export default function AdminSponsorsPage() {
             <CardContent className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
               <Button
-                color="primary"
+                variant="primary"
                 startContent={<PlusIcon className="w-5 h-5" />}
                 onPress={() => setShowForm(true)}
               >
@@ -398,7 +398,7 @@ export default function AdminSponsorsPage() {
                         href={sponsor.website}
                         target="_blank"
                         size="sm"
-                        variant="flat"
+                        variant="primary"
                         className="flex-1"
                         startContent={<ExternalLinkIcon className="w-4 h-4" />}
                       >
@@ -406,8 +406,8 @@ export default function AdminSponsorsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        color="primary"
-                        variant="flat"
+                        variant="primary"
+                        
                         isIconOnly
                         onPress={() => handleEdit(sponsor)}
                       >
@@ -415,8 +415,8 @@ export default function AdminSponsorsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        color="danger"
-                        variant="flat"
+                        variant="danger"
+                        variant="primary"
                         isIconOnly
                         onPress={() => handleDelete(sponsor.$id!)}
                       >

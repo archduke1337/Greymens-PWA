@@ -157,7 +157,7 @@ export default function ProjectsPage() {
                         {project.isFeatured && (
                           <Badge 
                             color="warning" 
-                            variant="solid"
+                           
                             className="font-bold"
                           >
                             <StarIcon className="w-3 h-3 mr-1" />
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
                       {/* Save Button */}
                       <Button
                         isIconOnly
-                        variant="flat"
+                        variant="primary"
                         className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                         size="sm"
                         onPress={() => toggleSaveProject(project.$id!)}
@@ -187,7 +187,7 @@ export default function ProjectsPage() {
                       <div className="absolute bottom-4 right-4">
                         <Chip
                           color={getStatusColor(project.status) as any}
-                          variant="solid"
+                         
                           size="sm"
                         >
                           {project.status.replace("-", " ")}
@@ -252,7 +252,7 @@ export default function ProjectsPage() {
                           <Chip
                             key={index}
                             size="sm"
-                            variant="flat"
+                            variant="primary"
                             className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 text-xs"
                           >
                             {tech}
@@ -261,7 +261,7 @@ export default function ProjectsPage() {
                         {project.technologies.length > 3 && (
                           <Chip
                             size="sm"
-                            variant="flat"
+                            variant="primary"
                             className="text-xs"
                           >
                             +{project.technologies.length - 3}
@@ -298,7 +298,7 @@ export default function ProjectsPage() {
                       <div className="flex gap-2 w-full">
                         <Button
                           isIconOnly
-                          variant="light"
+                          variant="ghost"
                           size="sm"
                         >
                           <ShareIcon className="w-4 h-4" />
@@ -307,7 +307,7 @@ export default function ProjectsPage() {
                         {project.demoUrl && (
                           <Button
                             isIconOnly
-                            variant="light"
+                            variant="ghost"
                             size="sm"
                             as="a"
                             href={project.demoUrl}
@@ -318,7 +318,7 @@ export default function ProjectsPage() {
                         )}
 
                         <Button
-                          color="primary"
+                          variant="primary"
                           className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
                           startContent={<CodeIcon className="w-4 h-4" />}
                           as="a"

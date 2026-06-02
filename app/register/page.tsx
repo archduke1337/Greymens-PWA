@@ -99,7 +99,7 @@ export default function RegisterPage() {
             )}
             <Button
               type="submit"
-              color="primary"
+              variant="primary"
               isLoading={loading}
               className="w-full"
             >
@@ -114,7 +114,7 @@ export default function RegisterPage() {
           </div>
 
           <Button
-            variant="bordered"
+            variant="outline"
             className="w-full"
             startContent={
               <svg className="w-5 h-5" viewBox="0 0 24 24">

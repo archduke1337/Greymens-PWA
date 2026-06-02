@@ -145,8 +145,6 @@ export default function GalleryPage() {
         </div>
       </div>
 
-
-
       {/* Category Filter */}
       <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 shadow-lg">
         <CardContent className="p-6">
@@ -176,7 +174,7 @@ export default function GalleryPage() {
             isPressable
             onPress={() => setSelectedImage(image)}
             className="border-none group hover:scale-105 transition-all duration-300"
-            shadow="md"
+           
           >
             <CardContent className="p-0 overflow-hidden">
               <div className="relative aspect-video overflow-hidden">
@@ -199,7 +197,7 @@ export default function GalleryPage() {
                 </div>
                 <Chip 
                   size="sm" 
-                  variant="flat" 
+                  variant="primary" 
                   color="secondary"
                   className="flex-shrink-0"
                   startContent={<span className="text-xs">👥</span>}
@@ -207,7 +205,7 @@ export default function GalleryPage() {
                   <span className="text-xs">{image.attendees}</span>
                 </Chip>
               </div>
-              <Chip size="sm" variant="bordered" color="default" className="text-xs">
+              <Chip size="sm" variant="outline" color="default" className="text-xs">
                 {categories.find(c => c.id === image.category)?.icon}{" "}
                 {categories.find(c => c.id === image.category)?.label}
               </Chip>
@@ -254,7 +252,7 @@ export default function GalleryPage() {
                       </div>
                       <Chip 
                         size="lg" 
-                        variant="flat" 
+                        variant="primary" 
                         color="secondary"
                         startContent={<span>👥</span>}
                       >
@@ -265,7 +263,7 @@ export default function GalleryPage() {
                     <div className="flex gap-2 mt-2">
                       <Chip 
                         size="md" 
-                        variant="bordered" 
+                        variant="outline" 
                         color="default"
                         startContent={
                           <span>{categories.find(c => c.id === selectedImage.category)?.icon}</span>

@@ -92,7 +92,7 @@ export default function BlogPostPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-xl font-semibold mb-4">Blog not found</p>
-          <Button color="primary" onPress={() => router.push("/blog")}>
+          <Button variant="primary" onPress={() => router.push("/blog")}>
             Back to Blogs
           </Button>
         </div>
@@ -105,7 +105,7 @@ export default function BlogPostPage() {
       {/* Back Button */}
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
-          variant="light"
+          variant="ghost"
           startContent={<ArrowLeftIcon className="w-4 h-4" />}
           onPress={() => router.push("/blog")}
         >
@@ -125,7 +125,7 @@ export default function BlogPostPage() {
         {/* Title Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="container mx-auto max-w-4xl">
-            <Chip color="primary" variant="solid" className="mb-4">
+            <Chip color="primary" className="mb-4">
               {blog.category}
             </Chip>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -169,7 +169,7 @@ export default function BlogPostPage() {
                 </div>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="primary"
                   isIconOnly
                   onPress={handleShare}
                 >
@@ -196,7 +196,7 @@ export default function BlogPostPage() {
             <h3 className="font-semibold mb-4">Tags</h3>
             <div className="flex flex-wrap gap-2">
               {blog.tags.map((tag, index) => (
-                <Chip key={index} variant="flat" color="primary">
+                <Chip key={index} variant="primary" color="primary">
                   #{tag}
                 </Chip>
               ))}
