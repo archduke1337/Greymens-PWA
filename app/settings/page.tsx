@@ -9,10 +9,13 @@ import { Divider } from "@heroui/divider";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
+import type { ExtendedUser } from "@/lib/types";
 
 export default function SettingsPage() {
-  const { user, loading, logout } = useAuth();
+  const { user: authUser, loading, logout } = useAuth();
+  const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
   const { isOpen: isPhoneModalOpen, onOpen: onPhoneModalOpen, onClose: onPhoneModalClose } = useDisclosure();
   const { isOpen: isVerifyModalOpen, onOpen: onVerifyModalOpen, onClose: onVerifyModalClose } = useDisclosure();
@@ -71,7 +74,7 @@ export default function SettingsPage() {
     setPasswordLoading(true);
 
     try {
-      await account.updatePassword(newPassword, oldPassword);
+      await account.updatePassword({ password: newPassword, oldPassword });
       setPasswordSuccess(true);
       setOldPassword("");
       setNewPassword("");
@@ -93,7 +96,7 @@ export default function SettingsPage() {
     setVerificationLoading(true);
 
     try {
-      await account.createVerification(`${window.location.origin}/verify-email`);
+      await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
       setVerificationSuccess(true);
       
       setTimeout(() => {
@@ -144,7 +147,7 @@ export default function SettingsPage() {
 
     try {
       await authService.createPhoneVerification();
-      alert("Verification code sent to your phone!");
+      toast.success("Verification code sent to your phone!");
     } catch (err: any) {
       setPhoneVerifyError(err.message || "Failed to send verification code");
     } finally {
@@ -165,7 +168,8 @@ export default function SettingsPage() {
       
       setTimeout(() => {
         onVerifyModalClose();
-        window.location.reload();
+        setPhoneVerifySuccess(true);
+        // Phone will be shown as verified on next login
       }, 2000);
     } catch (err: any) {
       setPhoneVerifyError(err.message || "Invalid verification code");
@@ -175,12 +179,10 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      try {
-        alert("Account deletion requires backend implementation. Please contact support.");
-      } catch (err: any) {
-        alert("Failed to delete account");
-      }
+    try {
+      toast.warning("Account deletion requires backend implementation. Please contact support.");
+    } catch {
+      toast.error("Failed to delete account");
     }
   };
 

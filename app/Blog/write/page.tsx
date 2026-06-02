@@ -11,11 +11,14 @@ import { Select, SelectItem } from "@heroui/select";
 import { blogService, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage } from "@/lib/errorHandler";
+import type { ExtendedUser } from "@/lib/types";
+import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
+  const user = authUser as unknown as ExtendedUser | null;
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -30,7 +33,7 @@ export default function WriteBlogPage() {
 
   useEffect(() => {
     if (!user) {
-      alert("Please login to write a blog");
+      toast.error("Please login to write a blog");
       router.push("/login");
     }
   }, [user, router]);
@@ -41,13 +44,13 @@ export default function WriteBlogPage() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
+      toast.error("Image size must be less than 5MB");
       return;
     }
 
@@ -55,10 +58,10 @@ export default function WriteBlogPage() {
     try {
       const imageUrl = await blogService.uploadBlogImage(file);
       setFormData({ ...formData, coverImage: imageUrl });
-      alert("Image uploaded successfully!");
+      toast.success("Image uploaded successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("Failed to upload image");
+      toast.error("Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -74,12 +77,12 @@ export default function WriteBlogPage() {
 
     // Validation
     if (!formData.title || !formData.content || !formData.category) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
     if (!formData.coverImage) {
-      alert("Please add a cover image");
+      toast.error("Please add a cover image");
       return;
     }
 
@@ -104,7 +107,7 @@ export default function WriteBlogPage() {
         authorId: user.$id,
         authorName: user.name,
         authorEmail: user.email,
-        authorAvatar: user.prefs?.avatar,
+        authorAvatar: (user as any).prefs?.avatar,
         status: "pending",
         views: 0,
         likes: 0,
@@ -112,14 +115,14 @@ export default function WriteBlogPage() {
         readTime,
       });
 
-      alert(
+      toast.success(
         "Blog submitted successfully! It will be reviewed by our team before publishing."
       );
       router.push("/blog");
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error submitting blog:", message);
-      alert(message || "Failed to submit blog");
+      toast.error(message || "Failed to submit blog");
     } finally {
       setSubmitting(false);
     }
@@ -260,7 +263,7 @@ export default function WriteBlogPage() {
                     alt="Cover preview"
                     className="w-full h-48 object-cover rounded-lg"
                     onError={() => {
-                      alert("Invalid image URL");
+                      toast.error("Invalid image URL");
                       setFormData({ ...formData, coverImage: "" });
                     }}
                   />

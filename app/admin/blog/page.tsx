@@ -10,6 +10,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Textarea } from "@heroui/input";
 import { blogService, Blog } from "@/lib/blog";
+import { toast } from "sonner";
 import {
   CheckIcon,
   XIcon,
@@ -72,15 +73,14 @@ export default function AdminBlogsPage() {
 
   const handleApprove = async (blogId: string) => {
     if (!confirm("Approve this blog for publishing?")) return;
-
     setProcessingBlog(blogId);
     try {
       await blogService.approveBlog(blogId);
-      alert("Blog approved successfully!");
+      toast.success("Blog approved successfully!");
       await loadBlogs();
     } catch (error) {
       console.error("Error approving blog:", error);
-      alert("Failed to approve blog");
+      toast.error("Failed to approve blog");
     } finally {
       setProcessingBlog(null);
     }
@@ -95,19 +95,19 @@ export default function AdminBlogsPage() {
   const handleReject = async () => {
     if (!rejectingBlog) return;
     if (!rejectionReason.trim()) {
-      alert("Please provide a reason for rejection");
+      toast.error("Please provide a reason for rejection");
       return;
     }
 
     setProcessingBlog(rejectingBlog.$id!);
     try {
       await blogService.rejectBlog(rejectingBlog.$id!, rejectionReason);
-      alert("Blog rejected");
+      toast.success("Blog rejected");
       await loadBlogs();
       setRejectModalOpen(false);
     } catch (error) {
       console.error("Error rejecting blog:", error);
-      alert("Failed to reject blog");
+      toast.error("Failed to reject blog");
     } finally {
       setProcessingBlog(null);
     }
@@ -115,25 +115,24 @@ export default function AdminBlogsPage() {
 
   const handleDelete = async (blogId: string) => {
     if (!confirm("Permanently delete this blog? This cannot be undone.")) return;
-
     try {
       await blogService.deleteBlog(blogId);
-      alert("Blog deleted successfully!");
+      toast.success("Blog deleted successfully!");
       await loadBlogs();
     } catch (error) {
       console.error("Error deleting blog:", error);
-      alert("Failed to delete blog");
+      toast.error("Failed to delete blog");
     }
   };
 
   const toggleFeatured = async (blog: Blog) => {
     try {
       await blogService.updateBlog(blog.$id!, { featured: !blog.featured });
-      alert(`Blog ${!blog.featured ? "featured" : "unfeatured"} successfully!`);
+      toast.success(`Blog ${!blog.featured ? "featured" : "unfeatured"} successfully!`);
       await loadBlogs();
     } catch (error) {
       console.error("Error toggling featured:", error);
-      alert("Failed to update blog");
+      toast.error("Failed to update blog");
     }
   };
 

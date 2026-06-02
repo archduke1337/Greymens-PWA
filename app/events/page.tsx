@@ -114,20 +114,18 @@ export default function EventsPage() {
     e.stopPropagation();
     
     if (!user) {
-      alert("Please login to register for events");
+      toast.error("Please login to register for events");
       router.push("/login");
       return;
     }
 
     if (registeredEvents.includes(eventId)) {
-      const confirmed = confirm("Are you sure you want to unregister from this event?");
-      if (!confirmed) return;
-      
+      if (!confirm("Are you sure you want to unregister from this event?")) return;
       const newRegistered = registeredEvents.filter(id => id !== eventId);
       setRegisteredEvents(newRegistered);
       localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
       localStorage.removeItem(`ticket_${eventId}`);
-      alert("Successfully unregistered from event");
+      toast.success("Successfully unregistered from event");
       return;
     }
 
@@ -178,23 +176,16 @@ export default function EventsPage() {
       setRegisteredEvents(newRegistered);
       localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
       
-      // Show appropriate message with better formatting
+      // Show appropriate message
       if (emailResult.success) {
-        alert(
-          "🎉 Registration Successful!\n\n" +
-          "✅ You're registered for the event\n" +
-          "📧 E-ticket sent to: " + user.email + "\n" +
-          "🎫 Ticket ID: " + emailResult.ticketId + "\n\n" +
-          "Please check your email inbox (and spam folder) for your e-ticket."
+        toast.success(
+          `Registration successful! E-ticket sent to ${user.email}`,
+          { description: `Ticket ID: ${emailResult.ticketId}. Check your inbox (and spam folder).` }
         );
       } else {
-        alert(
-          "⚠️ Registration Successful (Email Issue)\n\n" +
-          "✅ You're registered for the event\n" +
-          "❌ E-ticket email failed to send\n" +
-          "🎫 Ticket ID: " + ticketData.ticketId + "\n\n" +
-          "Your ticket is saved locally. You can view it in your dashboard.\n\n" +
-          "If you need help, contact: hello@mindmesh.club"
+        toast.warning(
+          "Registration successful (email issue)",
+          { description: `Ticket ID: ${ticketData.ticketId}. Your ticket is saved locally. Contact hello@mindmesh.club for help.` }
         );
       }
       
@@ -203,7 +194,7 @@ export default function EventsPage() {
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Registration error:", message);
-      alert("❌ " + message);
+      toast.error(message);
     } finally {
       setRegistering(null);
     }

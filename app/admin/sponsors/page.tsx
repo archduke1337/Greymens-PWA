@@ -9,6 +9,7 @@ import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import { Chip } from "@heroui/chip";
+import { toast } from "sonner";
 import { 
   PlusIcon, 
   EditIcon, 
@@ -52,7 +53,7 @@ export default function AdminSponsorsPage() {
       setSponsors(allSponsors);
     } catch (error) {
       console.error("Error loading sponsors:", error);
-      alert("Failed to load sponsors");
+      toast.error("Failed to load sponsors");
     } finally {
       setLoading(false);
     }
@@ -65,36 +66,25 @@ export default function AdminSponsorsPage() {
     try {
       // Validate URL
       if (!formData.logo) {
-        alert("Logo URL is required");
+        toast.error("Logo URL is required");
         setSaving(false);
         return;
       }
 
       if (!formData.website) {
-        alert("Website URL is required");
+        toast.error("Website URL is required");
         setSaving(false);
         return;
-      }
-
-      // Validate logo URL format
-      if (!sponsorService.validateLogoUrl(formData.logo)) {
-        const confirm = window.confirm(
-          "The logo URL might not be a valid image. Continue anyway?"
-        );
-        if (!confirm) {
-          setSaving(false);
-          return;
-        }
       }
 
       if (editingSponsor) {
         // Update existing sponsor
         await sponsorService.updateSponsor(editingSponsor.$id!, formData);
-        alert("Sponsor updated successfully!");
+        toast.success("Sponsor updated successfully!");
       } else {
         // Create new sponsor
         await sponsorService.createSponsor(formData as any);
-        alert("Sponsor created successfully!");
+        toast.success("Sponsor created successfully!");
       }
 
       // Reset form and reload
@@ -103,7 +93,7 @@ export default function AdminSponsorsPage() {
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error saving sponsor:", message);
-      alert(message || "Failed to save sponsor");
+      toast.error(message || "Failed to save sponsor");
     } finally {
       setSaving(false);
     }
@@ -128,15 +118,14 @@ export default function AdminSponsorsPage() {
   };
 
   const handleDelete = async (sponsorId: string) => {
-    if (!confirm("Are you sure you want to delete this sponsor?")) return;
-
+    if (!confirm("Are you sure you want to delete this sponsor? This cannot be undone.")) return;
     try {
       await sponsorService.deleteSponsor(sponsorId);
-      alert("Sponsor deleted successfully!");
+      toast.success("Sponsor deleted successfully!");
       await loadSponsors();
     } catch (error) {
       console.error("Error deleting sponsor:", error);
-      alert("Failed to delete sponsor");
+      toast.error("Failed to delete sponsor");
     }
   };
 
@@ -315,7 +304,7 @@ export default function AdminSponsorsPage() {
                     className="max-h-32 object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
-                      alert("Invalid image URL. Please check the logo URL.");
+                      toast.error("Invalid image URL. Please check the logo URL.");
                     }}
                   />
                 </div>

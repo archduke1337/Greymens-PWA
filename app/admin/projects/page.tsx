@@ -12,6 +12,7 @@ import { Switch } from "@heroui/switch";
 import { useEffect, useState } from "react";
 import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
+import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
 
 export default function AdminProjectsPage() {
@@ -73,7 +74,7 @@ export default function AdminProjectsPage() {
       setProjects(data);
     } catch (error) {
       console.error("Error fetching projects:", error);
-      alert("Failed to fetch projects. Check console for details.");
+      toast.error("Failed to fetch projects. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -139,23 +140,23 @@ export default function AdminProjectsPage() {
   // Validate form
   const validateForm = () => {
     if (!formData.title.trim()) {
-      alert("❌ Please enter a project title");
+      toast.error("Please enter a project title");
       return false;
     }
     if (!formData.description.trim()) {
-      alert("❌ Please enter a project description");
+      toast.error("Please enter a project description");
       return false;
     }
     if (!formData.image.trim()) {
-      alert("❌ Please enter an image URL");
+      toast.error("Please enter an image URL");
       return false;
     }
     if (!formData.duration.trim()) {
-      alert("❌ Please enter project duration");
+      toast.error("Please enter project duration");
       return false;
     }
     if (formData.progress < 0 || formData.progress > 100) {
-      alert("❌ Progress must be between 0 and 100");
+      toast.error("Progress must be between 0 and 100");
       return false;
     }
     return true;
@@ -195,10 +196,10 @@ export default function AdminProjectsPage() {
 
       if (isEditing && selectedProject?.$id) {
         await projectService.updateProject(selectedProject.$id, projectData);
-        alert("✅ Project updated successfully!");
+        toast.success("Project updated successfully!");
       } else {
         await projectService.createProject(projectData);
-        alert("✅ Project created successfully!");
+        toast.success("Project created successfully!");
       }
 
       onClose();
@@ -207,7 +208,7 @@ export default function AdminProjectsPage() {
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error saving project:", message);
-      alert(`❌ Failed to save project: ${message}`);
+      toast.error(`Failed to save project: ${message}`);
     } finally {
       setSaving(false);
     }
@@ -215,16 +216,15 @@ export default function AdminProjectsPage() {
 
   // Delete project
   const handleDelete = async (projectId: string) => {
-    if (!confirm("⚠️ Are you sure you want to delete this project? This action cannot be undone.")) return;
-
+    if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
     try {
       await projectService.deleteProject(projectId);
-      alert("✅ Project deleted successfully!");
+      toast.success("Project deleted successfully!");
       fetchProjects();
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error deleting project:", message);
-      alert(`❌ Failed to delete project: ${message}`);
+      toast.error(`Failed to delete project: ${message}`);
     }
   };
 

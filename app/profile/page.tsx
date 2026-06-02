@@ -8,14 +8,17 @@ import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
+import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user: authUser, loading } = useAuth();
+  const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -46,10 +49,10 @@ export default function ProfilePage() {
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
           user.prefs.profilePictureId,
-          400, // width
-          400, // height
-          "center", // gravity
-          100 // quality
+          400,
+          400,
+          ImageGravity.Center,
+          100
         );
         
         // Convert URL object to string
@@ -116,8 +119,10 @@ export default function ProfilePage() {
 
       // Update user preferences with new picture ID
       await account.updatePrefs({
-        ...user?.prefs,
-        profilePictureId: response.$id,
+        prefs: {
+          ...user?.prefs,
+          profilePictureId: response.$id,
+        },
       });
 
       // FIXED: Get preview URL properly
@@ -126,7 +131,7 @@ export default function ProfilePage() {
         response.$id,
         400,
         400,
-        "center",
+        ImageGravity.Center,
         100
       );
       
@@ -151,7 +156,7 @@ export default function ProfilePage() {
     setUpdateLoading(true);
 
     try {
-      await account.updateName(name);
+      await account.updateName({ name });
       setUpdateSuccess(true);
       setIsEditing(false);
       

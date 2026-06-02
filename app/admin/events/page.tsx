@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
+import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
 
 export default function AdminEventsPage() {
@@ -94,12 +95,12 @@ export default function AdminEventsPage() {
 
     // Validation
     if (!formData.image || !formData.image.startsWith('http')) {
-      alert("Please enter a valid image URL (must start with http:// or https://)");
+      toast.error("Please enter a valid image URL (must start with http:// or https://)");
       return;
     }
 
     if (!formData.organizerAvatar || !formData.organizerAvatar.startsWith('http')) {
-      alert("Please enter a valid organizer avatar URL (must start with http:// or https://)");
+      toast.error("Please enter a valid organizer avatar URL (must start with http:// or https://)");
       return;
     }
 
@@ -114,11 +115,11 @@ export default function AdminEventsPage() {
       
       await loadEvents();
       handleCloseModal();
-      alert(editingEvent ? "Event updated successfully!" : "Event created successfully!");
+      toast.success(editingEvent ? "Event updated successfully!" : "Event created successfully!");
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error saving event:", message);
-      alert(message || "Failed to save event");
+      toast.error(message || "Failed to save event");
     } finally {
       setSubmitting(false);
     }
@@ -131,31 +132,29 @@ export default function AdminEventsPage() {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
-
+    if (!confirm("Are you sure you want to delete this event? This cannot be undone.")) return;
     setDeletingId(eventId);
     try {
       await eventService.deleteEvent(eventId);
       await loadEvents();
-      alert("Event deleted successfully!");
+      toast.success("Event deleted successfully!");
     } catch (error) {
       console.error("Error deleting event:", error);
-      alert("Failed to delete event");
+      toast.error("Failed to delete event");
     } finally {
       setDeletingId(null);
     }
   };
 
   const handleDeletePastEvents = async () => {
-    if (!confirm("Are you sure you want to delete all past events?")) return;
-
+    if (!confirm("Delete ALL past events? This cannot be undone.")) return;
     try {
       const count = await eventService.deletePastEvents();
       await loadEvents();
-      alert(`${count} past events deleted successfully!`);
+      toast.success(`${count} past events deleted successfully!`);
     } catch (error) {
       console.error("Error deleting past events:", error);
-      alert("Failed to delete past events");
+      toast.error("Failed to delete past events");
     }
   };
 

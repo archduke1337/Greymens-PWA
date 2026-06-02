@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const ADMIN_EMAILS = ["sahilmanecode@gmail.com", "mane50205@gmail.com"];
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "sahilmanecode@gmail.com,mane50205@gmail.com").split(",").map(e => e.trim());
 
 export default function AdminLayout({
   children,

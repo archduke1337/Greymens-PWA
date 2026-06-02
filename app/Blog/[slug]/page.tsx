@@ -8,6 +8,7 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Avatar } from "@heroui/avatar";
 import { blogService, Blog } from "@/lib/blog";
+import { toast } from "sonner";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -53,7 +54,7 @@ export default function BlogPostPage() {
       }
     } catch (error) {
       console.error("Error loading blog:", error);
-      alert("Blog not found");
+      toast.error("Blog not found");
       router.push("/blog");
     } finally {
       setLoading(false);
@@ -77,7 +78,7 @@ export default function BlogPostPage() {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
+      toast.success("Link copied to clipboard!");
     }
   };
 

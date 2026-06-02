@@ -30,7 +30,7 @@ function VerifyEmailContent() {
         }
 
         // Call Appwrite verification
-        await account.updateVerification(userId, secret);
+        await account.updateEmailVerification({ userId, secret });
         
         console.log("Verification successful!");
         setStatus("success");

@@ -1,5 +1,5 @@
 // lib/appwrite.ts
-import { Client, Account, Databases, Storage, ID } from "appwrite";
+import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
 
 const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -20,14 +20,17 @@ export const APPWRITE_CONFIG = {
   bucketId: process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!,
 };
 
-export { ID };
-
-// Auth service functions
+export { ID };// Auth service functions
 export const authService = {
   // Create a new account
   async createAccount(email: string, password: string, name: string) {
     try {
-      const userAccount = await account.create(ID.unique(), email, password, name);
+      const userAccount = await account.create({
+        userId: ID.unique(),
+        email,
+        password,
+        name,
+      });
       if (userAccount) {
         return this.login(email, password);
       }
@@ -40,7 +43,7 @@ export const authService = {
   // Login
   async login(email: string, password: string) {
     try {
-      return await (account as any).createEmailPasswordSession(email, password);
+      return await account.createEmailPasswordSession({ email, password });
     } catch (error) {
       throw error;
     }
@@ -57,11 +60,11 @@ export const authService = {
         ? `${window.location.origin}/login`
         : '/login';
 
-      account.createOAuth2Session(
-        "google" as any,
-        successUrl,
-        failureUrl
-      );
+      account.createOAuth2Session({
+        provider: OAuthProvider.Google,
+        success: successUrl,
+        failure: failureUrl,
+      });
     } catch (error) {
       console.error("Google OAuth error:", error);
       throw error;
@@ -80,7 +83,7 @@ export const authService = {
   // Logout
   async logout() {
     try {
-      return await account.deleteSession("current");
+      return await account.deleteSession({ sessionId: "current" });
     } catch (error) {
       throw error;
     }
@@ -97,7 +100,7 @@ export const authService = {
 
   async updatePhoneVerification(userId: string, secret: string) {
     try {
-      return await account.updatePhoneVerification(userId, secret);
+      return await account.updatePhoneVerification({ userId, secret });
     } catch (error) {
       throw error;
     }
@@ -105,7 +108,7 @@ export const authService = {
 
   async updatePhone(phone: string, password: string) {
     try {
-      return await account.updatePhone(phone, password);
+      return await account.updatePhone({ phone, password });
     } catch (error) {
       throw error;
     }
