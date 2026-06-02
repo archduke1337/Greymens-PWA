@@ -115,13 +115,13 @@ export default function AboutPage() {
           <div className="flex justify-center">
             <div className="flex -space-x-4">
               {teamMembers.slice(0, 5).map((avatar, index) => (
-                <Avatar key={index} src={avatar} size="lg" className="border-2 border-white" />
+                <Avatar key={index} size="lg" className="border-2 border-white"><Avatar.Image src={avatar} alt={`Team member ${index}`} /></Avatar>
               ))}
             </div>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
-            <Chip color="primary" variant="primary">Leadership</Chip>
-            <Chip color="secondary" variant="primary">Innovation</Chip>
+            <Chip color="accent" variant="primary">Leadership</Chip>
+            <Chip color="accent" variant="secondary">Innovation</Chip>
             <Chip color="success" variant="primary">Creativity</Chip>
             <Chip color="warning" variant="primary">Excellence</Chip>
           </div>
