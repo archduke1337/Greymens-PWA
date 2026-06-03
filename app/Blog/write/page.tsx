@@ -159,7 +159,6 @@ export default function WriteBlogPage() {
                 setFormData({ ...formData, title: e.target.value })
               }
               required
-              size="lg"
             />
 
             {/* Excerpt */}

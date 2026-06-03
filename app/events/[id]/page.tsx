@@ -496,7 +496,7 @@ export default function EventDetailPage() {
                         size="md" 
                         color={
                           getRegistrationPercentage() > 90 ? "danger" : 
-                          getRegistrationPercentage() > 70 ? "warning" : "primary"
+                          getRegistrationPercentage() > 70 ? "warning" : "accent"
                         }
                         className="mt-2"
                       />
@@ -519,7 +519,6 @@ export default function EventDetailPage() {
 
                 {/* Registration Button */}
                 <div className="space-y-3">                          <Button
-                            color={isRegistered ? "default" : "accent"}
                             variant={isRegistered ? "secondary" : "primary"}
                             className="w-full font-bold text-lg"
                             isPending={registering}

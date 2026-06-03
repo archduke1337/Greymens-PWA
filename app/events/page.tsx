@@ -255,7 +255,6 @@ export default function EventsPage() {
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
                   onChange={(e: any) => setSearchQuery(e.target.value)}
-                  size="md"
                 />
               </div>
 
@@ -419,7 +418,6 @@ export default function EventsPage() {
                   </div>
 
                   <Button
-                    color={registeredEvents.includes(event.$id!) ? "default" : "primary"}
                     variant={registeredEvents.includes(event.$id!) ? "secondary" : "primary"}
                     isPending={registering === event.$id}
                   >
