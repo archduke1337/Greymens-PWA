@@ -108,7 +108,7 @@ export default function BlogPostPage() {
       {/* Back Button */}
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Button
-          variant="ghost"
+          variant="secondary"
         >
           Back to Blogs
         </Button>
