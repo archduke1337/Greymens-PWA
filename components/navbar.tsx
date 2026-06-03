@@ -79,7 +79,7 @@ export const Navbar = () => {
         {!loading && (
           <>
             {user ? (
-              <Dropdown placement="bottom-end">
+              <Dropdown>
                 <DropdownTrigger>
                   <Avatar
                     className="transition-transform border-2 border-default-300 w-8 h-8"
@@ -93,20 +93,20 @@ export const Navbar = () => {
                     <p className="font-semibold">Signed in as</p>
                     <p className="font-semibold">{user.email}</p>
                   </DropdownItem>
-                  <DropdownItem key="dashboard" href="/dashboard">
-                    Dashboard
+                  <DropdownItem key="dashboard">
+                    <a href="/dashboard">Dashboard</a>
                   </DropdownItem>
-                  <DropdownItem key="my-profile" href="/profile">
-                    My Profile
+                  <DropdownItem key="my-profile">
+                    <a href="/profile">My Profile</a>
                   </DropdownItem>
-                  <DropdownItem key="settings" href="/settings">
-                    Settings
+                  <DropdownItem key="settings">
+                    <a href="/settings">Settings</a>
                   </DropdownItem>
-                  <DropdownItem key="help-feedback" href="/help-feedback">
-                    Help & Feedback
+                  <DropdownItem key="help-feedback">
+                    <a href="/help-feedback">Help & Feedback</a>
                   </DropdownItem>
-                  <DropdownItem key="logout" color="danger" href="/logout">
-                    Log Out
+                  <DropdownItem key="logout">
+                    <a href="/logout" className="text-danger">Log Out</a>
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
