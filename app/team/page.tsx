@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Separator } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Separator } from "@heroui/react";
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -194,10 +194,7 @@ export default function TeamPage() {
                           <div className="relative z-10 space-y-5">
                             {/* Avatar */}
                             <div className="flex justify-center">
-                              <Avatar
-                                src={member.avatar}
-                                className="w-24 h-24 md:w-28 md:h-28"
-                              />
+                              <Avatar className="w-24 h-24 md:w-28 md:h-28"><AvatarImage src={member.avatar} alt={member.name} /><AvatarFallback>{member.name?.charAt(0) || 'T'}</AvatarFallback></Avatar>
                             </div>
 
                             {/* Name & Role */}
@@ -308,7 +305,7 @@ export default function TeamPage() {
             <div className="flex items-center justify-center gap-4 md:gap-6">
               <Button
                 isIconOnly
-                variant="primary"
+                variant="secondary"
                 disabled={currentIndex === 0}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
@@ -344,7 +341,7 @@ export default function TeamPage() {
 
               <Button
                 isIconOnly
-                variant="primary"
+                variant="secondary"
                 disabled={currentIndex === coreTeam.length - 1}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
