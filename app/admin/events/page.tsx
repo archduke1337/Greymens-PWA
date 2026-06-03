@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, SelectTrigger, SelectValue, SelectIndicator, SelectPopover, ListBox, ListBoxItem, Switch, SwitchControl, SwitchThumb, SwitchContent, Label, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -343,17 +343,16 @@ export default function AdminEventsPage() {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1 md:gap-2">
-                        <Button
+                      <div className="flex gap-1 md:gap-2">                          <Button
                           size="sm"
-                          variant="ghost"
+                          variant="secondary"
                           isIconOnly
                         >
                           <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="secondary"
                           isIconOnly
                           isPending={deletingId === event.$id}
                         >
