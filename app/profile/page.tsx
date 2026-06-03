@@ -7,7 +7,7 @@ import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardHeader, Chip, Input } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Input } from "@heroui/react";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
@@ -186,12 +186,11 @@ export default function ProfilePage() {
         <CardHeader className="flex flex-col gap-4 items-center pt-8">
           <div className="relative">
             <Avatar
-              src={profilePicture}
               className="w-32 h-32"
-              
-              showFallback
-              name={user.name}
-            />
+            >
+              <AvatarImage src={profilePicture} alt={user.name} />
+              <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
             <Button
               isIconOnly
               size="sm"
@@ -320,9 +319,10 @@ export default function ProfilePage() {
                     Save Changes
                   </Button>
                   <Button
-                    variant="primary"
-                    disabled={updateLoading}
-                    onPress={() => setIsEditing(false)}
+                    size="sm"
+                    className="w-full font-medium"
+                    variant="secondary"
+                    onClick={() => setIsEditing(false)}
                   >
                     Cancel
                   </Button>

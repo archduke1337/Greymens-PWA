@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, Chip } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, Chip } from "@heroui/react";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -145,11 +145,7 @@ export default function BlogPostPage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* Author */}
               <div className="flex items-center gap-3">
-                <Avatar
-                  src={blog.authorAvatar}
-                  name={blog.authorName}
-                  size="lg"
-                />
+                <Avatar className="w-12 h-12"><AvatarImage src={blog.authorAvatar} alt={blog.authorName} /><AvatarFallback>{blog.authorName?.charAt(0) || 'A'}</AvatarFallback></Avatar>
                 <div>
                   <p className="font-semibold">{blog.authorName}</p>
                   <p className="text-sm text-default-500">

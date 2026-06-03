@@ -1,7 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { Avatar, Card, CardContent, Chip } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Card, CardContent, Chip } from "@heroui/react";
 
 export default function AboutPage() {
   const stats = [
@@ -116,7 +116,7 @@ export default function AboutPage() {
           <div className="flex justify-center">
             <div className="flex -space-x-4">
               {teamMembers.slice(0, 5).map((avatar, index) => (
-                <Avatar key={index} src={avatar} size="lg" className="border-2 border-white" name={`Team member ${index}`} />
+                <Avatar key={index} className="border-2 border-white w-12 h-12"><AvatarImage src={avatar} alt={`Team member ${index}`} /><AvatarFallback>{`TM${index}`}</AvatarFallback></Avatar>
               ))}
             </div>
           </div>

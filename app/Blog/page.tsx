@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -228,11 +228,7 @@ export default function BlogPage() {
                 <CardFooter className="px-6 pb-6 pt-0 justify-between">
                   {/* Author */}
                   <div className="flex items-center gap-2">
-                    <Avatar
-                      src={blog.authorAvatar}
-                      name={blog.authorName}
-                      size="sm"
-                    />
+                    <Avatar className="w-8 h-8"><AvatarImage src={blog.authorAvatar} alt={blog.authorName} /><AvatarFallback>{blog.authorName?.charAt(0) || 'A'}</AvatarFallback></Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">
                         {blog.authorName}
