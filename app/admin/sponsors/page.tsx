@@ -214,7 +214,6 @@ export default function AdminSponsorsPage() {
                 </Select>
 
                 <Select
-                  selectedKeys={formData.category ? [formData.category] : []}
                   onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
                 >
                   <ListBoxItem id="tech">Technology</ListBoxItem>

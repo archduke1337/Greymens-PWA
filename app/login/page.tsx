@@ -82,7 +82,6 @@ export default function LoginPage() {
           </div>
 
           <Button
-            variant="secondary"
             className="w-full"
           >
             Continue with Google

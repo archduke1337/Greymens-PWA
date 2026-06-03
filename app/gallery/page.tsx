@@ -104,7 +104,7 @@ export default function GalleryPage() {
                     <span className="text-xs">{image.attendees}</span>
                   </Chip>
                 </div>
-                <Chip size="sm" variant="secondary" className="text-xs">
+                <Chip size="sm" className="text-xs">
                   {categories.find(c => c.id === image.category)?.icon}{" "}
                   {categories.find(c => c.id === image.category)?.label}
                 </Chip>
@@ -150,7 +150,7 @@ export default function GalleryPage() {
                   </div>
                   <p className="text-default-700">{selectedImage.description}</p>
                   <div className="flex gap-2 mt-2">
-                    <Chip size="md" variant="secondary">
+                    <Chip size="md">
                       {categories.find(c => c.id === selectedImage.category)?.label}
                     </Chip>
                   </div>

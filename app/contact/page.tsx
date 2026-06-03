@@ -206,7 +206,6 @@ export default function ContactPage() {
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
-                    variant="secondary"
                     size="lg"
                     disabled={isSubmitting}
                   />
@@ -216,7 +215,6 @@ export default function ContactPage() {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
-                    variant="secondary"
                     size="lg"
                     disabled={isSubmitting}
                   />
@@ -226,7 +224,6 @@ export default function ContactPage() {
                   placeholder="What is this about?"
                   value={formData.subject}
                   onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
-                  variant="secondary"
                   size="lg"
                   disabled={isSubmitting}
                 />
@@ -235,8 +232,6 @@ export default function ContactPage() {
                   placeholder="Tell us more..."
                   value={formData.message}
                   onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
-                  variant="secondary"
-                  minRows={6}
                   size="lg"
                   disabled={isSubmitting}
                 />

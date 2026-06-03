@@ -122,7 +122,7 @@ export default function AboutPage() {
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <Chip color="accent" variant="primary">Leadership</Chip>
-            <Chip color="accent" variant="secondary">Innovation</Chip>
+            <Chip color="accent">Innovation</Chip>
             <Chip  variant="primary">Creativity</Chip>
             <Chip  variant="primary">Excellence</Chip>
           </div>

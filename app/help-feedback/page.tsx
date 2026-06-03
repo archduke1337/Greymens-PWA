@@ -124,7 +124,6 @@ export default function HelpFeedbackPage() {
               placeholder="Tell us more about your feedback..."
               value={formData.message}
               onChange={(value: any) => setFormData({ ...formData, message: value })}
-              minRows={4}
               required
             />
 

@@ -111,7 +111,6 @@ export default function RegisterPage() {
           </div>
 
           <Button
-            variant="secondary"
             className="w-full"
           >
             Continue with Google

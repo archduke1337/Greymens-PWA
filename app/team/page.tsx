@@ -223,7 +223,6 @@ export default function TeamPage() {
                                 <Chip
                                   key={achievement}
                                   size="sm"
-                                  variant="secondary"
                                   className="text-xs"
                                 >
                                   {achievement}

@@ -472,7 +472,6 @@ export default function AdminEventsPage() {
                       value={formData.description}
                       onChange={(e: any) => handleInputChange("description", e.target.value)}
                       required
-                      minRows={4}
                     />
 
                     <Select

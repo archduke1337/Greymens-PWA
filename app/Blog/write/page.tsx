@@ -175,7 +175,6 @@ export default function WriteBlogPage() {
             {/* Category */}
             <Select
               placeholder="Select a category"
-              selectedKeys={formData.category ? [formData.category] : []}
               onChange={(e: any) =>
                 setFormData({ ...formData, category: e.target.value })
               }
