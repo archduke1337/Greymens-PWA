@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button, Card, CardContent } from "@/components/compat";
+import { Button, Card, CardContent } from "@heroui/react";
 
 interface RouteErrorProps {
   error: Error & { digest?: string };

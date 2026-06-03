@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import NextLink from "next/link";
-import { Button, Card, CardContent, CardHeader } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader } from "@heroui/react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();

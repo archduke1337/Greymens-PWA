@@ -7,7 +7,7 @@ import { ImageGravity } from "appwrite";
 import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardHeader, Chip, Input } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardHeader, Chip, Input } from "@heroui/react";
 
 // Profile pictures bucket ID
 const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite

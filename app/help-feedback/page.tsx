@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 

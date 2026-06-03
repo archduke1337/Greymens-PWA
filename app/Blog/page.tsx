@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@/components/compat";
+import { Avatar, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 

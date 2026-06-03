@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Badge, Button, Card, CardContent, CardHeader } from "@/components/compat";
+import { Badge, Button, Card, CardContent, CardHeader } from "@heroui/react";
 import {
   DatabaseIcon,
   ServerIcon,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button, Card, CardContent } from "@/components/compat";
+import { Button, Card, CardContent } from "@heroui/react";
 
 export default function NotFound() {
   const router = useRouter();

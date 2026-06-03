@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
 
 export default function SettingsPage() {
   const { user: authUser, loading, logout } = useAuth();

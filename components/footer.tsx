@@ -2,7 +2,7 @@
 "use client";
 
 import { FooterSponsors } from "./footer-sponsors";
-import { Link } from "@/components/compat";
+import { Link } from "@heroui/react";
 
 export const Footer = () => {
   return (

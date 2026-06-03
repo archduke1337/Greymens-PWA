@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, Chip } from "@/components/compat";
+import { Avatar, Button, Card, CardContent, Chip } from "@heroui/react";
 import {
   ArrowLeftIcon,
   ClockIcon,

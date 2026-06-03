@@ -1,7 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { Avatar, Card, CardContent, Chip } from "@/components/compat";
+import { Avatar, Card, CardContent, Chip } from "@heroui/react";
 
 export default function AboutPage() {
   const stats = [

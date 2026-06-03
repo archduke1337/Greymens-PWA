@@ -3,7 +3,7 @@
 
 import React from "react";
 import { Sponsor, sponsorTiers } from "@/lib/sponsors";
-import { Card, Chip } from "@/components/compat";
+import { Card, Chip } from "@heroui/react";
 
 interface SponsorsSectionProps {
   sponsors: Sponsor[];

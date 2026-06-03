@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@/components/compat";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();

@@ -9,7 +9,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();

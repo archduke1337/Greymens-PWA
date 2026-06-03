@@ -1,4 +1,4 @@
-import { Accordion, AccordionItem, Card, CardContent, CardHeader, Chip, Separator } from "@/components/compat";
+import { Accordion, AccordionItem, Card, CardContent, CardHeader, Chip, Separator } from "@heroui/react";
 "use client";
 
 export default function TermsPage() {

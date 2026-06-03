@@ -2,7 +2,7 @@
 
 import { title, subtitle } from "@/components/primitives";
 import { useState } from "react";
-import { Button, Card, CardContent, CardHeader, Input, Link, TextArea } from "@/components/compat";
+import { Button, Card, CardContent, CardHeader, Input, Link, TextArea } from "@heroui/react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
