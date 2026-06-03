@@ -206,7 +206,6 @@ export default function ContactPage() {
                     placeholder="Enter your name"
                     value={formData.name}
                     onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
-                    size="lg"
                     disabled={isSubmitting}
                   />
                   <Input
@@ -215,7 +214,6 @@ export default function ContactPage() {
                     placeholder="Enter your email"
                     value={formData.email}
                     onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
-                    size="lg"
                     disabled={isSubmitting}
                   />
                 </div>
@@ -224,7 +222,6 @@ export default function ContactPage() {
                   placeholder="What is this about?"
                   value={formData.subject}
                   onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
-                  size="lg"
                   disabled={isSubmitting}
                 />
                 <TextArea
@@ -232,12 +229,10 @@ export default function ContactPage() {
                   placeholder="Tell us more..."
                   value={formData.message}
                   onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
-                  size="lg"
                   disabled={isSubmitting}
                 />
                 <Button
                   type="submit"
-                  size="lg"
                   isPending={isSubmitting}
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
                 >
