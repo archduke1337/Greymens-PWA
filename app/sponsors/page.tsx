@@ -69,14 +69,13 @@ export default function SponsorsPage() {
               </div>
               <h3 className="text-xl font-semibold">No Sponsors Yet</h3>
               <p className="text-default-500">Be the first to support our community</p>
-              <Button
-                as="a"
-                href="mailto:sponsors@mindmesh.club"
-                
-                variant="primary"
-              >
-                Become a Sponsor
-              </Button>
+              <a href="mailto:sponsors@mindmesh.club">
+                <Button
+                  variant="primary"
+                >
+                  Become a Sponsor
+                </Button>
+              </a>
             </CardContent>
           </Card>
         ) : (
@@ -84,17 +83,14 @@ export default function SponsorsPage() {
             {sponsors.map((sponsor, index) => {
               const tierInfo = sponsorTiers[sponsor.tier as keyof typeof sponsorTiers];
               
-              return (
+              return (                  <a
+                    href={sponsor.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group"
+                  >
                 <Card
                   key={sponsor.$id}
-                 
-                 
-                  as="a"
-                  href={sponsor.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group"
-                 
                   style={{
                     animationDelay: `${index * 30}ms`,
                     animation: 'fadeIn 0.5s ease-out forwards',
@@ -131,6 +127,7 @@ export default function SponsorsPage() {
                     </div>
                   </CardFooter>
                 </Card>
+                  </a>
               );
             })}
           </div>
