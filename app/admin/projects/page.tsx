@@ -411,7 +411,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="secondary"
+                                  variant="ghost"
                                   className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
                                 >
                                   <Edit2Icon className="w-4 h-4" />
@@ -419,7 +419,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="secondary"
+                                  variant="ghost"
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                 >
                                   <TrashIcon className="w-4 h-4" />
@@ -650,7 +650,7 @@ export default function AdminProjectsPage() {
             </ModalBody>
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
               <Button
-                variant="secondary"
+                variant="ghost"
                 onPress={close}
                 isDisabled={saving}
               >

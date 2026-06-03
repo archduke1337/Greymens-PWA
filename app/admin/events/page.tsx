@@ -345,14 +345,14 @@ export default function AdminEventsPage() {
                     <TableCell>
                       <div className="flex gap-1 md:gap-2">                          <Button
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           isIconOnly
                         >
                           <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           isIconOnly
                           isPending={deletingId === event.$id}
                         >

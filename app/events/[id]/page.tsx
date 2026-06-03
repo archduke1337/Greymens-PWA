@@ -251,7 +251,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="secondary"
+          variant="ghost"
         >
           Back to Events
         </Button>

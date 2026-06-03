@@ -321,7 +321,7 @@ export default function ProfilePage() {
                   <Button
                     size="sm"
                     className="w-full font-medium"
-                    variant="secondary"
+                    variant="ghost"
                     onClick={() => setIsEditing(false)}
                   >
                     Cancel

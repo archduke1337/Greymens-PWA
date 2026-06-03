@@ -294,7 +294,7 @@ export default function ProjectsPage() {
                       <div className="flex gap-2 w-full">
                         <Button
                           isIconOnly
-                          variant="secondary"
+                          variant="ghost"
                           size="sm"
                         >
                           <ShareIcon className="w-4 h-4" />
@@ -304,7 +304,7 @@ export default function ProjectsPage() {
                           <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
                             <Button
                               isIconOnly
-                              variant="secondary"
+                              variant="ghost"
                               size="sm"
                             >
                               <EyeIcon className="w-4 h-4" />

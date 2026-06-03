@@ -133,7 +133,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="secondary"
+          variant="ghost"
           className="mb-4"
         >
           Back

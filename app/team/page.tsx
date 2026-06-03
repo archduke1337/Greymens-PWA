@@ -305,7 +305,7 @@ export default function TeamPage() {
             <div className="flex items-center justify-center gap-4 md:gap-6">
               <Button
                 isIconOnly
-                variant="secondary"
+                variant="primary"
                 isDisabled={currentIndex === 0}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
@@ -341,7 +341,7 @@ export default function TeamPage() {
 
               <Button
                 isIconOnly
-                variant="secondary"
+                variant="primary"
                 isDisabled={currentIndex === coreTeam.length - 1}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
