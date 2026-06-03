@@ -3,7 +3,7 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { projectService, Project } from "@/lib/database";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
 import {
   CodeIcon,
   UsersIcon,
@@ -108,9 +108,7 @@ export default function ProjectsPage() {
         <div className="flex flex-wrap gap-3 justify-center">
           {categories.map((category) => (
             <Chip
-              key={category.key}
-              variant={selectedCategory === category.key ? "solid" : "flat"}
-              color={selectedCategory === category.key ? "secondary" : "default"}
+              key={category.key}                    variant={selectedCategory === category.key ? "primary" : "secondary"}
               className={`cursor-pointer transition-all ${
                 selectedCategory === category.key 
                   ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
@@ -272,10 +270,11 @@ export default function ProjectsPage() {
                           {project.teamMembers?.slice(0, 3).map((member, index) => (
                             <Avatar
                               key={index}
-                              src={getAvatarUrl(member, index)}
-                              size="sm"
-                              className="border-2 border-white dark:border-gray-900"
-                            />
+                              className="border-2 border-white dark:border-gray-900 w-8 h-8"
+                            >
+                              <AvatarImage src={getAvatarUrl(member, index)} alt={member} />
+                              <AvatarFallback>{member?.charAt(0) || 'M'}</AvatarFallback>
+                            </Avatar>
                           ))}
                           {project.teamMembers && project.teamMembers.length > 3 && (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-900">
@@ -295,32 +294,29 @@ export default function ProjectsPage() {
                       <div className="flex gap-2 w-full">
                         <Button
                           isIconOnly
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                         >
                           <ShareIcon className="w-4 h-4" />
                         </Button>
                         
                         {project.demoUrl && (
-                          <Button
-                            isIconOnly
-                            variant="ghost"
-                            size="sm"
-                            as="a"
-                            href={project.demoUrl}
-                            target="_blank"
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                          </Button>
+                          <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
+                            <Button
+                              isIconOnly
+                              variant="secondary"
+                              size="sm"
+                            >
+                              <EyeIcon className="w-4 h-4" />
+                            </Button>
+                          </a>
                         )}
 
-                        <Button className="flex-1 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold"
-                          as="a"
-                          href={project.repoUrl}
-                          target="_blank"
-                        >
-                          View Code
-                        </Button>
+                        <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                          <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold">
+                            View Code
+                          </Button>
+                        </a>
                       </div>
                     </CardFooter>
                   </CardContent>

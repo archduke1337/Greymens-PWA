@@ -255,32 +255,30 @@ export default function EventsPage() {
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
                   onChange={(e: any) => setSearchQuery(e.target.value)}
-                  size="lg"
+                  size="md"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <Select
+                <select
                   value={sortBy}
-                  onChange={(e: any) => setSortBy(e.target.value)}
-                  size="sm"
-                  className="min-w-[150px]"
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                 >
-                  <ListBoxItem id="date">Date</ListBoxItem>
-                  <ListBoxItem id="price">Price</ListBoxItem>
-                  <ListBoxItem id="popularity">Popularity</ListBoxItem>
-                </Select>
+                  <option value="date">Date</option>
+                  <option value="price">Price</option>
+                  <option value="popularity">Popularity</option>
+                </select>
 
-                <Select
+                <select
                   value={selectedCategory}
-                  onChange={(e: any) => setSelectedCategory(e.target.value)}
-                  size="sm"
-                  className="min-w-[150px]"
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                 >
                   {categories.map(category => (
-                    <ListBoxItem key={category.key}>{category.label}</ListBoxItem>
+                    <option key={category.key} value={category.key}>{category.label}</option>
                   ))}
-                </Select>
+                </select>
               </div>
             </div>
           </CardContent>
@@ -422,8 +420,7 @@ export default function EventsPage() {
 
                   <Button
                     color={registeredEvents.includes(event.$id!) ? "default" : "primary"}
-                    variant={registeredEvents.includes(event.$id!) ? "flat" : "solid"}
-                    size="md"
+                    variant={registeredEvents.includes(event.$id!) ? "secondary" : "primary"}
                     isPending={registering === event.$id}
                   >
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}

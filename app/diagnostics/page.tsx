@@ -256,20 +256,16 @@ export default function DiagnosticsPage() {
               </CardHeader>
               <CardContent className="py-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <Button
-                    as="a"
-                    href="/connectivity-check"
-                    variant="primary"
-                  >
-                    Connection Test
-                  </Button>
-                  <Button
-                    as="a"
-                    href="/events"
-                    variant="primary"
-                  >
-                    Test Events Page
-                  </Button>
+                  <a href="/connectivity-check">
+                    <Button variant="primary">
+                      Connection Test
+                    </Button>
+                  </a>
+                  <a href="/events">
+                    <Button variant="primary">
+                      Test Events Page
+                    </Button>
+                  </a>
                 </div>
               </CardContent>
             </Card>

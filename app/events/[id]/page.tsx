@@ -27,7 +27,7 @@ import {
   Mail
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -251,7 +251,7 @@ export default function EventDetailPage() {
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
-          variant="ghost"
+          variant="secondary"
         >
           Back to Events
         </Button>
@@ -432,11 +432,11 @@ export default function EventDetailPage() {
               <CardContent className="pt-4">
                 <div className="flex items-center gap-4">
                   <Avatar
-                    src={event.organizerAvatar}
-                    name={event.organizerName}
-                    size="lg"
                     className="w-16 h-16"
-                  />
+                  >
+                    <AvatarImage src={event.organizerAvatar} alt={event.organizerName} />
+                    <AvatarFallback>{event.organizerName?.charAt(0) || 'O'}</AvatarFallback>
+                  </Avatar>
                   <div>
                     <p className="font-bold text-lg">{event.organizerName}</p>
                     <p className="text-default-500">Event Organizer</p>
@@ -518,14 +518,12 @@ export default function EventDetailPage() {
                 <Separator />
 
                 {/* Registration Button */}
-                <div className="space-y-3">
-                  <Button
-                    color={isRegistered ? "default" : "primary"}
-                    variant={isRegistered ? "flat" : "solid"}
-                    size="lg"
-                    className="w-full font-bold text-lg"
-                    isPending={registering}
-                  >
+                <div className="space-y-3">                          <Button
+                            color={isRegistered ? "default" : "primary"}
+                            variant={isRegistered ? "secondary" : "primary"}
+                            className="w-full font-bold text-lg"
+                            isPending={registering}
+                          >
                     {registering ? "Registering..." : isRegistered ? "You're Registered!" : "Register Now"}
                   </Button>
 

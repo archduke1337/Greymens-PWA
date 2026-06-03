@@ -378,7 +378,7 @@ export default function AdminProjectsPage() {
                               <Chip
                                 size="sm"
                                 color={getStatusColor(project.status) as any}
-                                variant="dot"
+                                variant="primary"
                               >
                                 {project.status.replace('-', ' ')}
                               </Chip>
@@ -411,7 +411,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="ghost"
+                                  variant="secondary"
                                   className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
                                 >
                                   <Edit2Icon className="w-4 h-4" />
@@ -419,7 +419,7 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="ghost"
+                                  variant="secondary"
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                 >
                                   <TrashIcon className="w-4 h-4" />
@@ -651,7 +651,7 @@ export default function AdminProjectsPage() {
               </div>
             </ModalBody>
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="ghost" onPress={close} disabled={saving}>
+              <Button variant="secondary" onPress={close} disabled={saving}>
                 Cancel
               </Button>
               <Button onPress={handleSave}

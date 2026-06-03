@@ -54,7 +54,7 @@ export const Navbar = () => {
         <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownTrigger>
             <Button
-              variant="ghost"
+              variant="secondary"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
@@ -67,8 +67,8 @@ export const Navbar = () => {
             onMouseLeave={handleMouseLeave}
           >
             {siteConfig.navItems.map((item) => (
-              <DropdownItem key={item.href} href={item.href}>
-                {item.label}
+              <DropdownItem key={item.href} textValue={item.label}>
+                <a href={item.href}>{item.label}</a>
               </DropdownItem>
             ))}
           </DropdownMenu>

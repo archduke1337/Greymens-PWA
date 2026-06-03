@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, Switch, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -201,27 +201,30 @@ export default function AdminSponsorsPage() {
                   required
                 />
 
-                <Select
+                <select
                   value={formData.tier}
-                  onChange={(e: any) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
+                  onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   required
+                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                 >
-                  <ListBoxItem id="platinum">Platinum Partner</ListBoxItem>
-                  <ListBoxItem id="gold">Gold Sponsor</ListBoxItem>
-                  <ListBoxItem id="silver">Silver Sponsor</ListBoxItem>
-                  <ListBoxItem id="bronze">Bronze Sponsor</ListBoxItem>
-                  <ListBoxItem id="partner">Community Partner</ListBoxItem>
-                </Select>
+                  <option value="platinum">Platinum Partner</option>
+                  <option value="gold">Gold Sponsor</option>
+                  <option value="silver">Silver Sponsor</option>
+                  <option value="bronze">Bronze Sponsor</option>
+                  <option value="partner">Community Partner</option>
+                </select>
 
-                <Select
-                  onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+                <select
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                 >
-                  <ListBoxItem id="tech">Technology</ListBoxItem>
-                  <ListBoxItem id="education">Education</ListBoxItem>
-                  <ListBoxItem id="finance">Finance</ListBoxItem>
-                  <ListBoxItem id="healthcare">Healthcare</ListBoxItem>
-                  <ListBoxItem id="other">Other</ListBoxItem>
-                </Select>
+                  <option value="">Select category</option>
+                  <option value="tech">Technology</option>
+                  <option value="education">Education</option>
+                  <option value="finance">Finance</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="other">Other</option>
+                </select>
 
                 <Input
                   type="number"
@@ -337,13 +340,19 @@ export default function AdminSponsorsPage() {
                         <Chip  size="sm">Featured</Chip>
                       )}
                       {sponsor.isActive ? (
-                        <Chip  size="sm" startContent={<CheckIcon className="w-3 h-3" />}>
-                          Active
-                        </Chip>
+                        <Chip
+                        size="sm"
+                      >
+                        <CheckIcon className="w-3 h-3" />
+                        Active
+                      </Chip>
                       ) : (
-                        <Chip  size="sm" startContent={<XIcon className="w-3 h-3" />}>
-                          Inactive
-                        </Chip>
+                        <Chip
+                        size="sm"
+                      >
+                        <XIcon className="w-3 h-3" />
+                        Inactive
+                      </Chip>
                       )}
                     </div>
 
@@ -371,16 +380,15 @@ export default function AdminSponsorsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <Button
-                        as="a"
-                        href={sponsor.website}
-                        target="_blank"
-                        size="sm"
-                        variant="primary"
-                        className="flex-1"
-                      >
-                        Visit
-                      </Button>
+                      <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex-1">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          className="w-full"
+                        >
+                          Visit
+                        </Button>
+                      </a>
                       <Button
                         size="sm"
                         

@@ -126,7 +126,7 @@ export default function GalleryPage() {
       )}
 
       {/* Image Modal */}
-      <Modal isOpen={selectedImage !== null} onClose={undefined}>
+      <Modal isOpen={selectedImage !== null} onClose={() => setSelectedImage(null)}>
         <ModalDialog>
           <ModalBody className="p-0">
             {selectedImage && (
