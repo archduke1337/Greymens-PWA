@@ -134,7 +134,6 @@ export default function BlogPage() {
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
-                size="lg"
               />
               <Select
                 value={selectedCategory}

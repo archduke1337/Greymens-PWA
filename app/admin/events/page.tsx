@@ -474,19 +474,19 @@ export default function AdminEventsPage() {
                       required
                     />
 
-                    <Select
-                      placeholder="Select event category"
+                    <select
                       value={formData.category!}
-                      onChange={(e: any) => handleInputChange("category", e.target.value)}
+                      onChange={(e) => handleInputChange("category", e.target.value)}
                       required
+                      className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                     >
-                      <ListBoxItem id="conference">Conference</ListBoxItem>
-                      <ListBoxItem id="workshop">Workshop</ListBoxItem>
-                      <ListBoxItem id="masterclass">Masterclass</ListBoxItem>
-                      <ListBoxItem id="competition">Competition</ListBoxItem>
-                      <ListBoxItem id="bootcamp">Bootcamp</ListBoxItem>
-                      <ListBoxItem id="forum">Forum</ListBoxItem>
-                    </Select>
+                      <option value="conference">Conference</option>
+                      <option value="workshop">Workshop</option>
+                      <option value="masterclass">Masterclass</option>
+                      <option value="competition">Competition</option>
+                      <option value="bootcamp">Bootcamp</option>
+                      <option value="forum">Forum</option>
+                    </select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                       <Switch

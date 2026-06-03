@@ -173,17 +173,18 @@ export default function WriteBlogPage() {
             />
 
             {/* Category */}
-            <Select
-              placeholder="Select a category"
-              onChange={(e: any) =>
+            <select
+              onChange={(e) =>
                 setFormData({ ...formData, category: e.target.value })
               }
               required
+              className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
             >
+              <option value="">Select a category</option>
               {blogCategories.map((cat) => (
-                <ListBoxItem key={cat.value}>{cat.label}</ListBoxItem>
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
               ))}
-            </Select>
+            </select>
 
             {/* Tags */}
             <Input

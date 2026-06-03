@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from "react";
-import { Button, Card, CardContent, CardFooter, Chip, Modal, ModalBody, ModalDialog } from "@heroui/react";
+import { Button, Card, CardContent, CardFooter, Chip, Modal, ModalBackdrop, ModalContainer, ModalBody, ModalDialog, useOverlayState } from "@heroui/react";
 
 export default function GalleryPage() {
+  const { isOpen, open, close } = useOverlayState();
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -126,39 +127,43 @@ export default function GalleryPage() {
       )}
 
       {/* Image Modal */}
-      <Modal isOpen={selectedImage !== null} onClose={() => setSelectedImage(null)}>
-        <ModalDialog>
-          <ModalBody className="p-0">
-            {selectedImage && (
-              <Card className="border-none">
-                <CardContent className="p-0 overflow-hidden">
-                  <img
-                    src={selectedImage.src}
-                    alt={selectedImage.title}
-                    className="w-full h-auto max-h-[70vh] object-contain"
-                  />
-                </CardContent>
-                <CardFooter className="flex-col items-start gap-3 p-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
-                  <div className="flex justify-between items-start w-full">
-                    <div>
-                      <h3 className="text-2xl font-bold">{selectedImage.title}</h3>
-                      <p className="text-default-600 mt-1">{selectedImage.date}</p>
-                    </div>
-                    <Chip size="lg" variant="primary">
-                      {selectedImage.attendees} attendees
-                    </Chip>
-                  </div>
-                  <p className="text-default-700">{selectedImage.description}</p>
-                  <div className="flex gap-2 mt-2">
-                    <Chip size="md">
-                      {categories.find(c => c.id === selectedImage.category)?.label}
-                    </Chip>
-                  </div>
-                </CardFooter>
-              </Card>
-            )}
-          </ModalBody>
-        </ModalDialog>
+      <Modal>
+        <ModalBackdrop isOpen={isOpen} onOpenChange={(open) => { if (!open) { close(); setSelectedImage(null); } }}>
+          <ModalContainer>
+            <ModalDialog>
+              <ModalBody className="p-0">
+                {selectedImage && (
+                  <Card className="border-none">
+                    <CardContent className="p-0 overflow-hidden">
+                      <img
+                        src={selectedImage.src}
+                        alt={selectedImage.title}
+                        className="w-full h-auto max-h-[70vh] object-contain"
+                      />
+                    </CardContent>
+                    <CardFooter className="flex-col items-start gap-3 p-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
+                      <div className="flex justify-between items-start w-full">
+                        <div>
+                          <h3 className="text-2xl font-bold">{selectedImage.title}</h3>
+                          <p className="text-default-600 mt-1">{selectedImage.date}</p>
+                        </div>
+                        <Chip size="lg" variant="primary">
+                          {selectedImage.attendees} attendees
+                        </Chip>
+                      </div>
+                      <p className="text-default-700">{selectedImage.description}</p>
+                      <div className="flex gap-2 mt-2">
+                        <Chip size="md">
+                          {categories.find(c => c.id === selectedImage.category)?.label}
+                        </Chip>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                )}
+              </ModalBody>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
 
       {/* Call to Action */}
