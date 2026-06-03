@@ -519,7 +519,7 @@ export default function EventDetailPage() {
 
                 {/* Registration Button */}
                 <div className="space-y-3">                          <Button
-                            color={isRegistered ? "default" : "primary"}
+                            color={isRegistered ? "default" : "accent"}
                             variant={isRegistered ? "secondary" : "primary"}
                             className="w-full font-bold text-lg"
                             isPending={registering}

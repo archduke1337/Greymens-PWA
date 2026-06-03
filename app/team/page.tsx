@@ -306,7 +306,7 @@ export default function TeamPage() {
               <Button
                 isIconOnly
                 variant="secondary"
-                disabled={currentIndex === 0}
+                isDisabled={currentIndex === 0}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
               >
@@ -342,7 +342,7 @@ export default function TeamPage() {
               <Button
                 isIconOnly
                 variant="secondary"
-                disabled={currentIndex === coreTeam.length - 1}
+                isDisabled={currentIndex === coreTeam.length - 1}
                 size="sm"
                 className="hover:scale-110 transition-transform disabled:opacity-30"
               >

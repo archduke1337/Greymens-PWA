@@ -651,10 +651,14 @@ export default function AdminProjectsPage() {
               </div>
             </ModalBody>
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="secondary" onPress={close} disabled={saving}>
+              <Button
+                variant="secondary"
+                onClick={close}
+                isDisabled={saving}
+              >
                 Cancel
               </Button>
-              <Button onPress={handleSave}
+              <Button onClick={handleSave}
                 isPending={saving}
                 className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
               >
