@@ -133,7 +133,7 @@ export default function WriteBlogPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="ghost"
+          variant="secondary"
           className="mb-4"
         >
           Back
@@ -213,15 +213,15 @@ export default function WriteBlogPage() {
                     aria-label="Upload cover image"
                     placeholder="Upload cover image"
                   />
+                  <label htmlFor="cover-image-upload" className="w-full block">
                   <Button
-                    as="label"
-                    htmlFor="cover-image-upload"
                     variant="primary"
                     isPending={uploadingImage}
                     className="w-full"
                   >
                     {uploadingImage ? "Uploading..." : "Upload Image"}
                   </Button>
+                  </label>
                   <p className="text-xs text-default-500 mt-2">
                     Max 5MB (JPG, PNG, WebP)
                   </p>

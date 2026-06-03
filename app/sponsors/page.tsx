@@ -175,16 +175,14 @@ export default function SponsorsPage() {
               </Card>
             </div>
 
-            <Button
-              as="a"
-              href="mailto:sponsors@mindmesh.club"
-              
-              size="lg"
-              variant="primary"
-              className="font-semibold"
-            >
-              Become a Sponsor
-            </Button>
+            <a href="mailto:sponsors@mindmesh.club">
+              <Button
+                variant="primary"
+                className="font-semibold"
+              >
+                Become a Sponsor
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </div>
