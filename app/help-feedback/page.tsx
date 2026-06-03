@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Chip, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -98,20 +98,15 @@ export default function HelpFeedbackPage() {
               />
             </div>
 
-            <Select
-              placeholder="Select type"
+            <select
               value={formData.type}
-              onSelectionChange={(keys: any) => {
-                const selected = Array.from(keys)[0] as FeedbackType;
-                setFormData({ ...formData, type: selected });
-              }}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as FeedbackType })}
+              className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
             >
               {feedbackTypes.map((type) => (
-                <ListBoxItem key={type.value}>
-                  {type.label}
-                </ListBoxItem>
+                <option key={type.value} value={type.value}>{type.label}</option>
               ))}
-            </Select>
+            </select>
 
             <Input
               placeholder="Brief description of your feedback"
