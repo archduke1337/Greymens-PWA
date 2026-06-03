@@ -88,13 +88,13 @@ function VerifyEmailContent() {
               <p className="text-default-500">
                 Your email has been successfully verified! You will be redirected to your profile shortly.
               </p>
-              <Button
-                as={NextLink}
-                href="/profile"
-                className="mt-4"
-              >
-                Go to Profile
-              </Button>
+              <a href="/profile">
+                <Button
+                  className="mt-4"
+                >
+                  Go to Profile
+                </Button>
+              </a>
             </>
           )}
           
