@@ -79,7 +79,7 @@ export default function GalleryPage() {
           <div
             key={image.id}
             className="cursor-pointer group hover:scale-105 transition-all duration-300"
-            onClick={() => setSelectedImage(image)}
+            onClick={() => { setSelectedImage(image); open(); }}
           >
             <Card className="border-none">
               <CardContent className="p-0 overflow-hidden">
