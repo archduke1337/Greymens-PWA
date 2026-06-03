@@ -1,5 +1,5 @@
-import { Accordion, AccordionItem, AccordionHeading, AccordionTrigger, AccordionIndicator, AccordionPanel, AccordionBody, Card, CardContent, CardHeader, Chip, Separator } from "@heroui/react";
 "use client";
+import { Accordion, AccordionItem, AccordionHeading, AccordionTrigger, AccordionIndicator, AccordionPanel, AccordionBody, Card, CardContent, CardHeader, Chip, Separator } from "@heroui/react";
 
 export default function TermsPage() {
   const lastUpdated = "November 1, 2025";
