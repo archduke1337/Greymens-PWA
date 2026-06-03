@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, SelectTrigger, SelectValue, SelectIndicator, SelectPopover, ListBox, ListBoxItem, Switch, SwitchControl, SwitchThumb, SwitchContent, Label, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -489,11 +489,12 @@ export default function AdminProjectsPage() {
           </div>
         </div>
         {/* Add/Edit Modal */}
-        <Modal
-          isOpen={isOpen}
-          size="2xl"
-        >
-          <ModalDialog>
+        <Modal>
+          <ModalBackdrop isOpen={isOpen} onOpenChange={(open: boolean) => { if (!open) { close(); resetForm(); } }}>
+            <ModalContainer>
+              <ModalDialog>
+                {({close: dialogClose}: {close: () => void}) => (
+              <>
             <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -677,8 +678,12 @@ export default function AdminProjectsPage() {
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
             </ModalFooter>
-          </ModalDialog>
-        </Modal>
+              </>
+              )}
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
       </div>
 
       <style jsx>{`

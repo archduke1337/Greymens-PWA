@@ -7,7 +7,7 @@ import { eventService, Event } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Select, ListBoxItem, Switch, Tab, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, SelectTrigger, SelectValue, SelectIndicator, SelectPopover, ListBox, ListBoxItem, Switch, SwitchControl, SwitchThumb, SwitchContent, Label, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -370,12 +370,12 @@ export default function AdminEventsPage() {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Modal 
-        isOpen={isOpen} 
-        size="3xl"
-      >
-        <ModalDialog>
-          <form onSubmit={handleSubmit}>
+      <Modal>
+        <ModalBackdrop isOpen={isOpen} onOpenChange={(open: boolean) => { if (!open) handleCloseModal(); }}>
+          <ModalContainer>
+            <ModalDialog>
+              {({close: dialogClose}: {close: () => void}) => (
+                <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1 border-b pb-4">
               <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {editingEvent ? "Edit Event" : "Create New Event"}
@@ -387,13 +387,44 @@ export default function AdminEventsPage() {
             
             <ModalBody className="py-6">
               <Tabs aria-label="Event form sections">
-                <Tab key="basic" title={
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Basic Info</span>
-                    <span className="sm:hidden">Basic</span>
-                  </div>
-                }>
+                <TabListContainer>
+                  <TabList>
+                    <Tab id="basic">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Basic Info</span>
+                        <span className="sm:hidden">Basic</span>
+                      </div>
+                      <TabIndicator />
+                    </Tab>
+                    <Tab id="details">
+                      <div className="flex items-center gap-2">
+                        <MapPinIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Date & Location</span>
+                        <span className="sm:hidden">Location</span>
+                      </div>
+                      <TabIndicator />
+                    </Tab>
+                    <Tab id="pricing">
+                      <div className="flex items-center gap-2">
+                        <DollarSignIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Pricing & Capacity</span>
+                        <span className="sm:hidden">Pricing</span>
+                      </div>
+                      <TabIndicator />
+                    </Tab>
+                    <Tab id="organizer">
+                      <div className="flex items-center gap-2">
+                        <UsersIcon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Organizer & Tags</span>
+                        <span className="sm:hidden">More</span>
+                      </div>
+                      <TabIndicator />
+                    </Tab>
+                  </TabList>
+                </TabListContainer>
+
+                <TabPanel id="basic">
                   <div className="space-y-6 pt-4">
                     {/* Image URL */}
                     <div className="space-y-3">
@@ -479,15 +510,9 @@ export default function AdminEventsPage() {
                       </Switch>
                     </div>
                   </div>
-                </Tab>
+                </TabPanel>
 
-                <Tab key="details" title={
-                  <div className="flex items-center gap-2">
-                    <MapPinIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Date & Location</span>
-                    <span className="sm:hidden">Location</span>
-                  </div>
-                }>
+                <TabPanel id="details">
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
@@ -531,15 +556,9 @@ export default function AdminEventsPage() {
                       </ul>
                     </div>
                   </div>
-                </Tab>
+                </TabPanel>
 
-                <Tab key="pricing" title={
-                  <div className="flex items-center gap-2">
-                    <DollarSignIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Pricing & Capacity</span>
-                    <span className="sm:hidden">Pricing</span>
-                  </div>
-                }>
+                <TabPanel id="pricing">
                   <div className="space-y-6 pt-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <Input
@@ -587,15 +606,9 @@ export default function AdminEventsPage() {
                       </ul>
                     </div>
                   </div>
-                </Tab>
+                </TabPanel>
 
-                <Tab key="organizer" title={
-                  <div className="flex items-center gap-2">
-                    <UsersIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Organizer & Tags</span>
-                    <span className="sm:hidden">More</span>
-                  </div>
-                }>
+                <TabPanel id="organizer">
                   <div className="space-y-6 pt-4">
                     <Input
                       placeholder="e.g., John Doe"
@@ -682,7 +695,7 @@ export default function AdminEventsPage() {
                       </ul>
                     </div>
                   </div>
-                </Tab>
+                </TabPanel>
               </Tabs>
             </ModalBody>
 
@@ -700,8 +713,11 @@ export default function AdminEventsPage() {
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>
             </ModalFooter>
-          </form>
-        </ModalDialog>
+              </form>
+              )}
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
     </div>
   );

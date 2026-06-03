@@ -265,7 +265,6 @@ export default function ContactPage() {
                 <Link
                   key={index}
                   href={method.link}
-                  isExternal
                   className="flex items-start gap-4 p-4 rounded-lg hover:bg-default-100 dark:hover:bg-default-50 transition-all group"
                 >
                   <div className={`p-3 rounded-lg bg-gradient-to-br ${method.color} text-white group-hover:scale-110 transition-transform`}>

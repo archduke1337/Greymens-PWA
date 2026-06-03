@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { blogService, Blog } from "@/lib/blog";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Tab, Tabs, TextArea } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
 import {
   CheckIcon,
   XIcon,
@@ -165,40 +165,37 @@ export default function AdminBlogsPage() {
       <Tabs
         selectedKey={selectedTab}
         onSelectionChange={(key: any) => setSelectedTab(key as string)}
-        size="lg"
         className="mb-8"
       >
-        <Tab
-          key="pending"
-          title={
-            <div className="flex items-center gap-2">
-              <ClockIcon className="w-4 h-4" />
-              <span>Pending ({blogs.filter((b) => b.status === "pending").length})</span>
-            </div>
-          }
-        />
-        <Tab
-          key="approved"
-          title={
-            <div className="flex items-center gap-2">
-              <CheckIcon className="w-4 h-4" />
-              <span>Approved ({blogs.filter((b) => b.status === "approved").length})</span>
-            </div>
-          }
-        />
-        <Tab
-          key="rejected"
-          title={
-            <div className="flex items-center gap-2">
-              <XIcon className="w-4 h-4" />
-              <span>Rejected ({blogs.filter((b) => b.status === "rejected").length})</span>
-            </div>
-          }
-        />
-        <Tab
-          key="all"
-          title={<span>All ({blogs.length})</span>}
-        />
+        <TabListContainer>
+          <TabList>
+            <Tab id="pending">
+              <div className="flex items-center gap-2">
+                <ClockIcon className="w-4 h-4" />
+                <span>Pending ({blogs.filter((b) => b.status === "pending").length})</span>
+              </div>
+              <TabIndicator />
+            </Tab>
+            <Tab id="approved">
+              <div className="flex items-center gap-2">
+                <CheckIcon className="w-4 h-4" />
+                <span>Approved ({blogs.filter((b) => b.status === "approved").length})</span>
+              </div>
+              <TabIndicator />
+            </Tab>
+            <Tab id="rejected">
+              <div className="flex items-center gap-2">
+                <XIcon className="w-4 h-4" />
+                <span>Rejected ({blogs.filter((b) => b.status === "rejected").length})</span>
+              </div>
+              <TabIndicator />
+            </Tab>
+            <Tab id="all">
+              <span>All ({blogs.length})</span>
+              <TabIndicator />
+            </Tab>
+          </TabList>
+        </TabListContainer>
       </Tabs>
 
       {/* Blog List */}
@@ -253,10 +250,11 @@ export default function AdminBlogsPage() {
                     <div className="flex items-center gap-4 text-sm text-default-500">
                       <div className="flex items-center gap-2">
                         <Avatar
-                          src={blog.authorAvatar}
-                          name={blog.authorName}
                           size="sm"
-                        />
+                        >
+                          <AvatarImage src={blog.authorAvatar} alt={blog.authorName} />
+                          <AvatarFallback>{blog.authorName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                        </Avatar>
                         <span>{blog.authorName}</span>
                       </div>
                       <div>•</div>
@@ -303,16 +301,18 @@ export default function AdminBlogsPage() {
 
                   {/* Actions */}
                   <div className="md:col-span-3 flex md:flex-col gap-2">
-                    <Button
-                      as="a"
+                    <a
                       href={`/blog/${blog.slug}`}
                       target="_blank"
-                      size="sm"
-                      variant="primary"
                       className="flex-1 md:flex-none"
                     >
-                      View
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                      >
+                        View
+                      </Button>
+                    </a>
 
                     {blog.status === "pending" && (
                       <>
@@ -360,31 +360,39 @@ export default function AdminBlogsPage() {
       </div>
 
       {/* Rejection Modal */}
-      <Modal isOpen={rejectModalOpen} onClose={undefined}>
-        <ModalDialog>
-          <ModalHeader>Reject Blog</ModalHeader>
-          <ModalBody>
-            <p className="mb-4">
-              Please provide a reason for rejecting this blog:
-            </p>
-            <TextArea
-              placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
-              value={rejectionReason}
-              onChange={(e: any) => setRejectionReason(e.target.value)}
-              rows={4}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onPress={handleReject}
-              isPending={!!processingBlog}
-            >
-              Reject Blog
-            </Button>
-          </ModalFooter>
-        </ModalDialog>
+      <Modal>
+        <ModalBackdrop isOpen={rejectModalOpen} onOpenChange={(open: boolean) => setRejectModalOpen(open)}>
+          <ModalContainer>
+            <ModalDialog>
+              {({close}: {close: () => void}) => (
+                <>
+                  <ModalHeader>Reject Blog</ModalHeader>
+                  <ModalBody>
+                    <p className="mb-4">
+                      Please provide a reason for rejecting this blog:
+                    </p>
+                    <TextArea
+                      placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
+                      value={rejectionReason}
+                      onChange={(e: any) => setRejectionReason(e.target.value)}
+                      rows={4}
+                    />
+                  </ModalBody>
+                  <ModalFooter>
+                    <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onPress={handleReject}
+                      isPending={!!processingBlog}
+                    >
+                      Reject Blog
+                    </Button>
+                  </ModalFooter>
+                </>
+              )}
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
     </div>
   );
