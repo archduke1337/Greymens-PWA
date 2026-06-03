@@ -73,7 +73,7 @@ export default function DashboardPage() {
             <Link key={link.href} href={link.href}>
               <Card className="cursor-pointer border border-default-200 h-full">
                 <CardContent className="flex items-center justify-center py-6">
-                  <Button variant="secondary" className="text-sm font-medium">
+                  <Button variant="ghost" className="text-sm font-medium">
                     {link.label}
                   </Button>
                 </CardContent>

@@ -54,7 +54,7 @@ export const Navbar = () => {
         <Dropdown isOpen={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownTrigger>
             <Button
-              variant="secondary"
+              variant="ghost"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >

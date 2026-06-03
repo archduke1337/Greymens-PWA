@@ -116,7 +116,7 @@ function VerifyEmailContent() {
                 </a>
                 <a href="/">
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                   >
                     Go Home
                   </Button>
