@@ -1,5 +1,5 @@
 "use client";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Avatar } from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Avatar, AvatarImage, AvatarFallback } from "@heroui/react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -82,12 +82,11 @@ export const Navbar = () => {
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
                   <Avatar
-                    as="button"
-                    className="transition-transform border-2 border-default-300"
-                    name={user.name}
-                    size="sm"
-                    src={getAvatarUrl(user.name)}
-                  />
+                    className="transition-transform border-2 border-default-300 w-8 h-8"
+                  >
+                    <AvatarImage src={getAvatarUrl(user.name)} alt={user.name} />
+                    <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="Profile Actions">
                   <DropdownItem key="profile" className="h-14 gap-2">
@@ -112,9 +111,11 @@ export const Navbar = () => {
                 </DropdownMenu>
               </Dropdown>
             ) : (
-              <Button as={NextLink} href="/login" variant="primary">
-                Login
-              </Button>
+              <a href="/login">
+                <Button variant="primary">
+                  Login
+                </Button>
+              </a>
             )}
           </>
         )}
