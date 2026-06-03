@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService, Blog, blogCategories } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input, Select, ListBoxItem} from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input} from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -135,18 +135,18 @@ export default function BlogPage() {
                 onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
               />
-              <Select
+              <select
                 value={selectedCategory}
-                onChange={(e: any) => setSelectedCategory(e.target.value)}
-                className="min-w-[200px]"
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="min-w-[200px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
               >
-                <ListBoxItem id="all">All Categories</ListBoxItem>
-                <ListBoxItem id="tutorial">Tutorial</ListBoxItem>
-                <ListBoxItem id="news">News</ListBoxItem>
-                <ListBoxItem id="event">Event</ListBoxItem>
-                <ListBoxItem id="project">Project</ListBoxItem>
-                <ListBoxItem id="technology">Technology</ListBoxItem>
-              </Select>
+                <option value="all">All Categories</option>
+                <option value="tutorial">Tutorial</option>
+                <option value="news">News</option>
+                <option value="event">Event</option>
+                <option value="project">Project</option>
+                <option value="technology">Technology</option>
+              </select>
             </div>
           </CardContent>
         </Card>

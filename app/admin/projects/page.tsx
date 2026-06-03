@@ -5,7 +5,7 @@ import { projectService, Project } from "@/lib/database";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, SelectTrigger, SelectValue, SelectIndicator, SelectPopover, ListBox, ListBoxItem, Switch, SwitchControl, SwitchThumb, SwitchContent, Label, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -546,27 +546,25 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Select
+                  <select
                     value={formData.category}
-                    onChange={(e: any) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                   >
                     {categories.map((cat) => (
-                      <ListBoxItem key={cat.key} textValue={cat.label}>
-                        {cat.label}
-                      </ListBoxItem>
+                      <option key={cat.key} value={cat.key}>{cat.label}</option>
                     ))}
-                  </Select>
+                  </select>
 
-                  <Select
+                  <select
                     value={formData.status}
-                    onChange={(e: any) => setFormData({ ...formData, status: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
                   >
                     {statuses.map((status) => (
-                      <ListBoxItem key={status.key} textValue={status.label}>
-                        {status.label}
-                      </ListBoxItem>
+                      <option key={status.key} value={status.key}>{status.label}</option>
                     ))}
-                  </Select>
+                  </select>
                 </div>
 
                 <div className="space-y-4">
@@ -653,12 +651,12 @@ export default function AdminProjectsPage() {
             <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="secondary"
-                onClick={close}
+                onPress={close}
                 isDisabled={saving}
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave}
+              <Button onPress={handleSave}
                 isPending={saving}
                 className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
               >

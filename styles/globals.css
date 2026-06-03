@@ -9,8 +9,8 @@
   --font-mono: "var(--font-mono)";
 }
 
-/* HeroUI CSS variables */
-@import "@heroui/react/dist/styles.css";
+/* HeroUI v3 styles */
+@import "@heroui/styles";
 
 /* Base styles */
 @layer base {
