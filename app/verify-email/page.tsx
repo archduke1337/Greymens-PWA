@@ -107,20 +107,20 @@ function VerifyEmailContent() {
                 Please try requesting a new verification email from your settings page.
               </p>
               <div className="flex gap-2 justify-center mt-4">
-                <Button
-                  as={NextLink}
-                  href="/settings"
-                  variant="primary"
-                >
-                  Go to Settings
-                </Button>
-                <Button
-                  as={NextLink}
-                  href="/"
-                  variant="ghost"
-                >
-                  Go Home
-                </Button>
+                <a href="/settings">
+                  <Button
+                    variant="primary"
+                  >
+                    Go to Settings
+                  </Button>
+                </a>
+                <a href="/">
+                  <Button
+                    variant="secondary"
+                  >
+                    Go Home
+                  </Button>
+                </a>
               </div>
             </>
           )}
