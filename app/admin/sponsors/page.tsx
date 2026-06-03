@@ -205,7 +205,7 @@ export default function AdminSponsorsPage() {
                   value={formData.tier}
                   onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 >
                   <option value="platinum">Platinum Partner</option>
                   <option value="gold">Gold Sponsor</option>
@@ -216,7 +216,7 @@ export default function AdminSponsorsPage() {
 
                 <select
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 >
                   <option value="">Select category</option>
                   <option value="tech">Technology</option>
