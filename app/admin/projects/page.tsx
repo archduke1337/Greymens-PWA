@@ -298,6 +298,7 @@ export default function AdminProjectsPage() {
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                  onPress={handleAdd}
                 >
                   New Project
                 </Button>
@@ -320,6 +321,7 @@ export default function AdminProjectsPage() {
                     <Button
                       size="lg"
                       className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
+                      onPress={handleAdd}
                     >
                       Create First Project
                     </Button>
@@ -413,6 +415,7 @@ export default function AdminProjectsPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
+                                  onPress={() => handleEdit(project)}
                                 >
                                   <Edit2Icon className="w-4 h-4" />
                                 </Button>
@@ -421,6 +424,7 @@ export default function AdminProjectsPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                  onPress={() => handleDelete(project.$id!)}
                                 >
                                   <TrashIcon className="w-4 h-4" />
                                 </Button>

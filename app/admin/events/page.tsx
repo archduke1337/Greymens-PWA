@@ -200,6 +200,7 @@ export default function AdminEventsPage() {
           <Button variant="primary" 
             className="w-full sm:w-auto"
             size="sm"
+            onPress={handleDeletePastEvents}
           >
             <Trash2 className="w-4 h-4" />
             <span className="hidden sm:inline ml-2">Delete Past Events</span>
@@ -343,10 +344,12 @@ export default function AdminEventsPage() {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1 md:gap-2">                          <Button
+                      <div className="flex gap-1 md:gap-2">
+                        <Button
                           size="sm"
                           variant="ghost"
                           isIconOnly
+                          onPress={() => handleEdit(event)}
                         >
                           <Pencil className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
@@ -355,6 +358,7 @@ export default function AdminEventsPage() {
                           variant="ghost"
                           isIconOnly
                           isPending={deletingId === event.$id}
+                          onPress={() => handleDelete(event.$id!)}
                         >
                           <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
@@ -662,6 +666,7 @@ export default function AdminEventsPage() {
                         <Button 
                           type="button" 
                           variant="primary"
+                          onPress={handleAddTag}
                         >
                           Add
                         </Button>
@@ -701,6 +706,7 @@ export default function AdminEventsPage() {
               <Button 
                 variant="primary" 
                 className="w-full sm:w-auto"
+                onPress={handleCloseModal}
               >
                 Cancel
               </Button>

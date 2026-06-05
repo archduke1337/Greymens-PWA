@@ -40,7 +40,6 @@ export default function ProfilePage() {
   const loadProfilePicture = () => {
     if (user?.prefs?.profilePictureId) {
       try {
-        // FIXED: Get the URL string properly
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
           user.prefs.profilePictureId,
@@ -50,9 +49,7 @@ export default function ProfilePage() {
           100
         );
         
-        // Convert URL object to string
         const urlString = fileUrl.toString();
-        console.log("Profile picture URL:", urlString);
         setProfilePicture(urlString);
       } catch (error) {
         console.error("Error loading profile picture:", error);
@@ -97,9 +94,9 @@ export default function ProfilePage() {
       if (user?.prefs?.profilePictureId) {
         try {
           await storage.deleteFile(PROFILE_BUCKET_ID, user.prefs.profilePictureId);
-          console.log("Old profile picture deleted");
-        } catch (error) {
-          console.log("No old picture to delete or error:", error);
+        } catch {
+          // No old picture to delete
+        }
         }
       }
 
@@ -110,9 +107,6 @@ export default function ProfilePage() {
         file
       );
 
-      console.log("File uploaded:", response.$id);
-
-      // Update user preferences with new picture ID
       await account.updatePrefs({
         prefs: {
           ...user?.prefs,
@@ -120,25 +114,14 @@ export default function ProfilePage() {
         },
       });
 
-      // FIXED: Get preview URL properly
-      const fileUrl = storage.getFilePreview(
-        PROFILE_BUCKET_ID,
-        response.$id,
-        400,
-        400,
-        ImageGravity.Center,
-        100
-      );
-      
       const urlString = fileUrl.toString();
-      console.log("New profile picture URL:", urlString);
       setProfilePicture(urlString);
       
       setUpdateSuccess(true);
       toast.success("Profile picture updated successfully!");
-    } catch (err: any) {
-      console.error("Upload error:", err);
-      setUpdateError(err.message || "Failed to upload profile picture. Please check bucket permissions.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to upload profile picture. Please check bucket permissions.";
+      setUpdateError(message);
     } finally {
       setUploadingPhoto(false);
     }
@@ -156,9 +139,9 @@ export default function ProfilePage() {
       setIsEditing(false);
       
       toast.success("Profile updated successfully!");
-    } catch (err: any) {
-      console.error("Update error:", err);
-      setUpdateError(err.message || "Failed to update profile");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update profile";
+      setUpdateError(message);
     } finally {
       setUpdateLoading(false);
     }
@@ -294,6 +277,7 @@ export default function ProfilePage() {
                 <Button
                   size="sm"
                   variant="primary"
+                  onPress={() => setIsEditing(true)}
                 >
                   Edit Profile
                 </Button>

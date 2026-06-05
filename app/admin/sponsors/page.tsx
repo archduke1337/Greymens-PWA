@@ -163,6 +163,7 @@ export default function AdminSponsorsPage() {
           </p>
         </div>
         <Button size="lg"
+          onPress={() => showForm ? resetForm() : setShowForm(true)}
         >
           {showForm ? "Cancel" : "Add Sponsor"}
         </Button>
@@ -289,6 +290,7 @@ export default function AdminSponsorsPage() {
               <div className="flex gap-4 justify-end">
                 <Button
                   variant="primary"
+                  onPress={resetForm}
                 >
                   Cancel
                 </Button>
@@ -315,7 +317,9 @@ export default function AdminSponsorsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
-              <Button>
+              <Button
+                onPress={() => setShowForm(true)}
+              >
                 Add Your First Sponsor
               </Button>
             </CardContent>
@@ -394,6 +398,7 @@ export default function AdminSponsorsPage() {
                         
                         variant="primary"
                         isIconOnly
+                        onPress={() => handleEdit(sponsor)}
                       >
                         <EditIcon className="w-4 h-4" />
                       </Button>
@@ -402,6 +407,7 @@ export default function AdminSponsorsPage() {
                         
                         variant="primary"
                         isIconOnly
+                        onPress={() => handleDelete(sponsor.$id!)}
                       >
                         <TrashIcon className="w-4 h-4" />
                       </Button>

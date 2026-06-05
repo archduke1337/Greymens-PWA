@@ -65,6 +65,7 @@ export default function GalleryPage() {
                 key={category.id}
                 variant={selectedCategory === category.id ? "primary" : "secondary"}
                 className="transition-all"
+                onPress={() => setSelectedCategory(category.id)}
               >
                 {category.label}
               </Button>

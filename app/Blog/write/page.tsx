@@ -67,7 +67,8 @@ export default function WriteBlogPage() {
     e.preventDefault();
 
     if (!user) {
-      alert("Please login to submit a blog");
+      toast.error("Please login to submit a blog");
+      router.push("/login");
       return;
     }
 
@@ -135,6 +136,7 @@ export default function WriteBlogPage() {
         <Button
           variant="ghost"
           className="mb-4"
+          onPress={() => router.back()}
         >
           Back
         </Button>
@@ -276,6 +278,7 @@ export default function WriteBlogPage() {
               <Button
                 variant="primary"
                 className="flex-1"
+                onPress={() => router.push("/blog")}
               >
                 Cancel
               </Button>
