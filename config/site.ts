@@ -19,8 +19,6 @@ export const siteConfig = {
     { label: "Logout", href: "/logout" },
   ],
   links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    discord: "https://discord.gg/9b6yyZKmH4",
+    discord: "https://discord.gg/6v89E3SaZT",
   },
 };

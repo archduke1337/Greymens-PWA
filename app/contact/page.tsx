@@ -154,13 +154,6 @@ export default function ContactPage() {
 
   ];
 
-  const quickLinks = [
-    { label: "Join Our Community", href: "/join" },
-    { label: "Upcoming Events", href: "/events" },
-    { label: "Resources", href: "/resources" },
-    { label: "FAQ", href: "/faq" },
-  ];
-
   return (
     <div className="space-y-16 pb-16">
       {/* Hero Section */}
