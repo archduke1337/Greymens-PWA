@@ -719,13 +719,33 @@ interface AuditLog {
 ## 12. Open Items (To Be Locked)
 
 ### 12.1 Seeded Event Types — LOCKED
-All 8 event types seeded in v1: Workshop, Hackathon, Seminar, Competition, Bootcamp, Meetup, Guest Lecture, Certification Exam. Architecture is extensible for future types.
+All 8 event types seeded in v1: Workshop, Hackathon, Seminar, Competition, Bootcamp, Meetup, Guest Lecture, Certification Exam. Architecture is extensible for future types. All events support: docs, materials, external links, registration URLs, event websites.
 
 ### 12.2 Permission Catalog — LOCKED
-All 9 scoped powers available in v1: membership_approver, event_manager, ticket_verifier, blog_reviewer, resource_manager, department_head, operations_head, profile_moderator, notification_admin.
+All powers available in v1: membership_approver, event_manager, ticket_verifier, blog_creator, blog_reviewer, gallery_manager, gallery_uploader, resource_manager, department_head, operations_head, profile_moderator, notification_admin, newsletter_manager, social_media_manager, pr_manager, design_manager.
 
 ### 12.3 Dashboard Modules — LOCKED
-All 5 persona dashboards fully built in v1: Applicant, Member, Lead, Head, Admin.
+All 5 persona dashboards fully built in v1: Applicant, Member, Lead, Head, Admin. Admin can access ALL dashboards.
+
+### 12.4 Role Hierarchy — LOCKED
+applicant → member → core_member → lead → head → admin/dev
+
+### 12.5 Department Structure — LOCKED
+Technical: AI/ML, Cybersecurity, DevOps, Web Development
+Content & Communication: Social Media, PR & Outreach, Editorial Board, Design
+Operations: Treasury, Events & Logistics
+
+### 12.6 Letters — LOCKED
+Welcome letter on membership approval. Promotion letters for lead/head/designation. All letters sent via email + in-app notification + audit log.
+
+### 12.7 Application Form — LOCKED
+Includes gender pronouns, profile picture/avatar, all academic/social fields, oath/terms/constitution acceptance.
+
+### 12.8 Audit Logging — LOCKED
+Comprehensive logging of ALL system actions. Admin can view full audit trail.
+
+### 12.9 PDF Generation — LOCKED
+Admins and heads can generate PDF lists of event registrations with participant details.
 
 ---
 

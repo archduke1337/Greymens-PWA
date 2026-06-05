@@ -17,6 +17,7 @@ Extended user profile data beyond Appwrite auth.
 |-------|------|----------|-------------|
 | userId | string | yes | FK → Appwrite auth user |
 | avatar | string | no | Profile picture URL (storage file ID) |
+| pronouns | string | no | "he/him", "she/her", "they/them", "he/they", "she/they", "prefer_to_say" |
 | phone | string | no | Phone number |
 | urn | string | no | University roll number |
 | program | string | no | e.g., "B.Tech", "MCA" |
@@ -36,6 +37,7 @@ Extended user profile data beyond Appwrite auth.
 | whyJoin | string | no | Why they want to join the club |
 | availability | string | no | "full", "partial", "event_only" |
 | profileVisibility | string | no | "public", "members_only", "private" |
+| showOnAboutPage | boolean | no | Whether to show on About page team section |
 
 **Indexes:** userId (unique)
 
@@ -194,7 +196,7 @@ User-power assignments.
 
 ## 10. events
 
-Event records (base schema).
+Event records (base schema). All event types share these common fields.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -223,6 +225,12 @@ Event records (base schema).
 | tags | string[] | no | Event tags |
 | isFeatured | boolean | yes | Featured on homepage |
 | isPremium | boolean | yes | Premium event flag |
+| eventDocs | json | no | Array of {name, url/fileId} — event documentation, rules |
+| externalLinks | json | no | Array of {label, url} — external resources |
+| materials | json | no | Array of {name, type: 'link'\|'file', url/fileId} — materials for attendees |
+| registrationUrl | string | no | External registration link (for hackathons, etc.) |
+| eventWebsite | string | no | Dedicated event website URL |
+| contactEmail | string | no | Event-specific contact email |
 
 **Indexes:** slug (unique), eventTypeId, status, audience, date, ownerId
 
