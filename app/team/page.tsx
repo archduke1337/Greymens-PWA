@@ -1,69 +1,69 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Separator } from "@heroui/react";
+
+const coreTeam = [
+  {
+    name: "Alex Johnson",
+    role: "President & Founder",
+    avatar: "https://i.pravatar.cc/300?img=12",
+    linkedin: "https://linkedin.com/in/alexjohnson",
+    github: "https://github.com/alexjohnson",
+    bio: "Visionary leader with 8+ years in tech. Passionate about building communities that drive innovation.",
+    achievements: ["Forbes 30 Under 30", "TEDx Speaker"],
+  },
+  {
+    name: "Sarah Chen",
+    role: "Vice President",
+    avatar: "https://i.pravatar.cc/300?img=45",
+    linkedin: "https://linkedin.com/in/sarahchen",
+    github: "https://github.com/sarahchen",
+    bio: "Strategic thinker with MBA from Stanford. Expert in scaling communities and driving engagement.",
+    achievements: ["Top 100 Women in Tech", "Community Builder"],
+  },
+  {
+    name: "Marcus Williams",
+    role: "Technical Lead",
+    avatar: "https://i.pravatar.cc/300?img=33",
+    linkedin: "https://linkedin.com/in/marcuswilliams",
+    github: "https://github.com/marcuswilliams",
+    bio: "Full-stack engineer and open-source contributor. Building scalable solutions for tomorrow.",
+    achievements: ["GitHub Stars 50k+", "Tech Innovation Award"],
+  },
+  {
+    name: "Emily Rodriguez",
+    role: "Creative Director",
+    avatar: "https://i.pravatar.cc/300?img=47",
+    linkedin: "https://linkedin.com/in/emilyrodriguez",
+    github: "https://github.com/emilyrodriguez",
+    bio: "Award-winning designer with a keen eye for aesthetics. Creating experiences that inspire.",
+    achievements: ["Webby Award Winner", "Design Excellence"],
+  },
+  {
+    name: "David Kim",
+    role: "Operations Manager",
+    avatar: "https://i.pravatar.cc/300?img=68",
+    linkedin: "https://linkedin.com/in/davidkim",
+    github: "https://github.com/davidkim",
+    bio: "Operations expert with background in logistics. Making things run like clockwork.",
+    achievements: ["Excellence in Operations", "Process Optimizer"],
+  },
+  {
+    name: "Maya Patel",
+    role: "Community Manager",
+    avatar: "https://i.pravatar.cc/300?img=49",
+    linkedin: "https://linkedin.com/in/mayapatel",
+    github: "https://github.com/mayapatel",
+    bio: "Community advocate with heart. Connecting people and fostering meaningful relationships.",
+    achievements: ["Community Champion", "Engagement Expert"],
+  },
+];
 
 export default function TeamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const coreTeam = [
-    {
-      name: "Alex Johnson",
-      role: "President & Founder",
-      avatar: "https://i.pravatar.cc/300?img=12",
-      linkedin: "https://linkedin.com/in/alexjohnson",
-      github: "https://github.com/alexjohnson",
-      bio: "Visionary leader with 8+ years in tech. Passionate about building communities that drive innovation.",
-      achievements: ["Forbes 30 Under 30", "TEDx Speaker"],
-    },
-    {
-      name: "Sarah Chen",
-      role: "Vice President",
-      avatar: "https://i.pravatar.cc/300?img=45",
-      linkedin: "https://linkedin.com/in/sarahchen",
-      github: "https://github.com/sarahchen",
-      bio: "Strategic thinker with MBA from Stanford. Expert in scaling communities and driving engagement.",
-      achievements: ["Top 100 Women in Tech", "Community Builder"],
-    },
-    {
-      name: "Marcus Williams",
-      role: "Technical Lead",
-      avatar: "https://i.pravatar.cc/300?img=33",
-      linkedin: "https://linkedin.com/in/marcuswilliams",
-      github: "https://github.com/marcuswilliams",
-      bio: "Full-stack engineer and open-source contributor. Building scalable solutions for tomorrow.",
-      achievements: ["GitHub Stars 50k+", "Tech Innovation Award"],
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Creative Director",
-      avatar: "https://i.pravatar.cc/300?img=47",
-      linkedin: "https://linkedin.com/in/emilyrodriguez",
-      github: "https://github.com/emilyrodriguez",
-      bio: "Award-winning designer with a keen eye for aesthetics. Creating experiences that inspire.",
-      achievements: ["Webby Award Winner", "Design Excellence"],
-    },
-    {
-      name: "David Kim",
-      role: "Operations Manager",
-      avatar: "https://i.pravatar.cc/300?img=68",
-      linkedin: "https://linkedin.com/in/davidkim",
-      github: "https://github.com/davidkim",
-      bio: "Operations expert with background in logistics. Making things run like clockwork.",
-      achievements: ["Excellence in Operations", "Process Optimizer"],
-    },
-    {
-      name: "Maya Patel",
-      role: "Community Manager",
-      avatar: "https://i.pravatar.cc/300?img=49",
-      linkedin: "https://linkedin.com/in/mayapatel",
-      github: "https://github.com/mayapatel",
-      bio: "Community advocate with heart. Connecting people and fostering meaningful relationships.",
-      achievements: ["Community Champion", "Engagement Expert"],
-    },
-  ];
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -75,21 +75,23 @@ export default function TeamPage() {
 
       scrollTimeoutRef.current = setTimeout(() => {
         if (e.deltaY > 0) {
-          if (currentIndex < coreTeam.length - 1) {
-            setDirection("right");
-            setTimeout(() => {
-              setCurrentIndex(currentIndex + 1);
-              setDirection(null);
-            }, 50);
-          }
+          setCurrentIndex(prev => {
+            if (prev < coreTeam.length - 1) {
+              setDirection("right");
+              setTimeout(() => setDirection(null), 50);
+              return prev + 1;
+            }
+            return prev;
+          });
         } else {
-          if (currentIndex > 0) {
-            setDirection("left");
-            setTimeout(() => {
-              setCurrentIndex(currentIndex - 1);
-              setDirection(null);
-            }, 50);
-          }
+          setCurrentIndex(prev => {
+            if (prev > 0) {
+              setDirection("left");
+              setTimeout(() => setDirection(null), 50);
+              return prev - 1;
+            }
+            return prev;
+          });
         }
       }, 100);
     };
@@ -107,7 +109,7 @@ export default function TeamPage() {
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [currentIndex, coreTeam.length]);
+  }, []);
 
   return (
     <section className="flex flex-col items-center justify-center w-full min-h-screen relative overflow-hidden py-8 md:py-12">

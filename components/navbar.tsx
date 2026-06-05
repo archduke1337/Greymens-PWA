@@ -1,6 +1,6 @@
 "use client";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button, Avatar, AvatarImage, AvatarFallback } from "@heroui/react";
-import NextLink from "next/link";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -8,6 +8,10 @@ import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { useAuth } from "@/context/AuthContext";
+
+const getAvatarUrl = (name: string) => {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+};
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
@@ -21,28 +25,24 @@ export const Navbar = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const getAvatarUrl = (name: string) => {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-  };
-
   return (
     <nav className="sticky top-0 z-40 w-full flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-default-100">
-      <NextLink className="flex items-center gap-2" href="/">
+      <Link className="flex items-center gap-2" href="/">
         <Logo />
         <p className="font-bold text-inherit">Mind Mesh</p>
-      </NextLink>
+      </Link>
 
       {/* Desktop nav links */}
       {!isMobile && (
         <div className="hidden md:flex items-center gap-1">
           {siteConfig.navItems.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
               className="px-3 py-2 text-sm font-medium text-default-600 hover:text-primary transition-colors rounded-lg hover:bg-default-100"
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </div>
       )}
@@ -55,10 +55,10 @@ export const Navbar = () => {
               <Button variant="ghost">Menu</Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Navigation menu">
-              {siteConfig.navItems.map((item) => (
-                <DropdownItem key={item.href} textValue={item.label}>
-                  <a href={item.href}>{item.label}</a>
-                </DropdownItem>
+      {siteConfig.navItems.map((item) => (
+            <DropdownItem key={item.href} textValue={item.label}>
+              <Link href={item.href}>{item.label}</Link>
+            </DropdownItem>
               ))}
             </DropdownMenu>
           </Dropdown>
@@ -83,17 +83,17 @@ export const Navbar = () => {
                   </DropdownItem>
                   {siteConfig.navMenuItems.map((item) => (
                     <DropdownItem key={item.href}>
-                      <a href={item.href} className={item.href === "/logout" ? "text-danger" : ""}>
+                      <Link href={item.href} className={item.href === "/logout" ? "text-danger" : ""}>
                         {item.label}
-                      </a>
+                      </Link>
                     </DropdownItem>
                   ))}
                 </DropdownMenu>
               </Dropdown>
             ) : (
-              <a href="/login">
+              <Link href="/login">
                 <Button variant="primary">Login</Button>
-              </a>
+              </Link>
             )}
           </>
         )}

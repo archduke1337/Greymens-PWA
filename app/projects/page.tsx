@@ -1,7 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { projectService, Project } from "@/lib/database";
 import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
 import {
@@ -19,6 +19,29 @@ import {
   Loader2Icon
 } from "lucide-react";
 
+const categories = [
+  { key: "all", label: "All Projects" },
+  { key: "ai-ml", label: "AI & ML" },
+  { key: "blockchain", label: "Blockchain" },
+  { key: "mobile", label: "Mobile" },
+  { key: "web", label: "Web" },
+  { key: "iot", label: "IoT" },
+  { key: "quantum", label: "Quantum" },
+];
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "completed": return "success";
+    case "in-progress": return "accent";
+    case "planning": return "warning";
+    default: return "default";
+  }
+};
+
+const getAvatarUrl = (name: string, index: number) => {
+  return `https://i.pravatar.cc/300?img=${(index + 12) * 3}`;
+};
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,57 +49,41 @@ export default function ProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   // Fetch projects from Appwrite
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const data = await projectService.getAllProjects();
-        setProjects(data);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await projectService.getAllProjects();
+      setProjects(data);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const categories = [
-    { key: "all", label: "All Projects", count: projects.length },
-    { key: "ai-ml", label: "AI & ML", count: projects.filter(p => p.category === "ai-ml").length },
-    { key: "blockchain", label: "Blockchain", count: projects.filter(p => p.category === "blockchain").length },
-    { key: "mobile", label: "Mobile", count: projects.filter(p => p.category === "mobile").length },
-    { key: "web", label: "Web", count: projects.filter(p => p.category === "web").length },
-    { key: "iot", label: "IoT", count: projects.filter(p => p.category === "iot").length },
-    { key: "quantum", label: "Quantum", count: projects.filter(p => p.category === "quantum").length },
-  ];
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
-  const filteredProjects = selectedCategory === "all" 
+  const categoriesWithCount = useMemo(() => categories.map(cat => ({
+    ...cat,
+    count: cat.key === "all" 
+      ? projects.length 
+      : projects.filter(p => p.category === cat.key).length
+  })), [projects]);
+
+  const filteredProjects = useMemo(() => selectedCategory === "all" 
     ? projects 
-    : projects.filter(project => project.category === selectedCategory);
+    : projects.filter(project => project.category === selectedCategory),
+    [projects, selectedCategory]);
 
-  const toggleSaveProject = (projectId: string) => {
+  const toggleSaveProject = useCallback((projectId: string) => {
     setSavedProjects(prev =>
       prev.includes(projectId)
         ? prev.filter(id => id !== projectId)
         : [...prev, projectId]
     );
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "success";
-      case "in-progress": return "primary";
-      case "planning": return "warning";
-      default: return "default";
-    }
-  };
-
-  // Generate avatar URLs for team members
-  const getAvatarUrl = (name: string, index: number) => {
-    return `https://i.pravatar.cc/300?img=${(index + 12) * 3}`;
-  };
+  }, []);
 
   return (
     <div className="space-y-12 pb-20">
@@ -106,7 +113,7 @@ export default function ProjectsPage() {
       {/* Category Filters */}
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-wrap gap-3 justify-center">
-          {categories.map((category) => (
+          {categoriesWithCount.map((category) => (
             <Chip
               key={category.key}                    variant={selectedCategory === category.key ? "primary" : "secondary"}
               className={`cursor-pointer transition-all ${
@@ -182,7 +189,7 @@ export default function ProjectsPage() {
                       {/* Status Badge */}
                       <div className="absolute bottom-4 right-4">
                         <Chip
-                          color={getStatusColor(project.status) as any}
+                          color={getStatusColor(project.status) as "success" | "accent" | "warning" | "default"}
                           variant="primary"
                           size="sm"
                         >

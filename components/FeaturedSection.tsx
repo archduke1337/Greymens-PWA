@@ -5,6 +5,14 @@ import { Calendar, MapPin, Users, Star, Crown, ArrowRight, Sparkles } from 'luci
 import { eventService, Event } from '@/lib/database';
 import { Query } from 'appwrite';
 
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
 export default function FeaturedSection() {
      const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
      const [loading, setLoading] = useState(true);
@@ -32,15 +40,7 @@ export default function FeaturedSection() {
           }
      };
 
-     const formatDate = (dateString: string) => {
-          return new Date(dateString).toLocaleDateString('en-US', {
-               month: 'short',
-               day: 'numeric',
-               year: 'numeric'
-          });
-     };
-
-     const handleCardClick = (eventId: string) => {
+      const handleCardClick = (eventId: string) => {
           router.push(`/events/${eventId}`);
      };
 

@@ -2,7 +2,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event as EventType } from "@/lib/database";
@@ -12,15 +12,35 @@ import {
   CalendarIcon,
   MapPinIcon,
   UsersIcon,
-  SearchIcon,
   HeartIcon,
-  TicketIcon,
   SparklesIcon,
   StarIcon,
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, ListBoxItem} from "@heroui/react";
+
+const categories = [
+  { key: "all", label: "All Events" },
+  { key: "conference", label: "Conferences" },
+  { key: "workshop", label: "Workshops" },
+  { key: "masterclass", label: "Masterclasses" },
+  { key: "competition", label: "Competitions" },
+  { key: "bootcamp", label: "Bootcamps" },
+  { key: "forum", label: "Forums" },
+];
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+const calculateDiscount = (original: number, discount: number) => {
+  return Math.round(((original - discount) / original) * 100);
+};
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -34,44 +54,31 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadEvents();
-    loadSavedEvents();
-  }, []);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
-      console.log('🔄 Loading events from database...');
       const allEvents = await eventService.getUpcomingEvents();
-      console.log('✅ Events loaded:', allEvents.length);
-      console.log('📋 Events data:', allEvents);
       setEvents(allEvents);
     } catch (error) {
-      console.error("❌ Error loading events:", error);
+      console.error("Error loading events:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadSavedEvents = () => {
+  const loadSavedEvents = useCallback(() => {
     const saved = localStorage.getItem("savedEvents");
     if (saved) setSavedEvents(JSON.parse(saved));
     
     const registered = localStorage.getItem("registeredEvents");
     if (registered) setRegisteredEvents(JSON.parse(registered));
-  };
+  }, []);
 
-  const categories = [
-    { key: "all", label: "All Events" },
-    { key: "conference", label: "Conferences" },
-    { key: "workshop", label: "Workshops" },
-    { key: "masterclass", label: "Masterclasses" },
-    { key: "competition", label: "Competitions" },
-    { key: "bootcamp", label: "Bootcamps" },
-    { key: "forum", label: "Forums" },
-  ];
+  useEffect(() => {
+    loadEvents();
+    loadSavedEvents();
+  }, [loadEvents, loadSavedEvents]);
 
-  const filteredEvents = events
+  const filteredEvents = useMemo(() => events
     .filter(event =>
       selectedCategory === "all" || event.category === selectedCategory
     )
@@ -91,19 +98,20 @@ export default function EventsPage() {
         default:
           return 0;
       }
-    });
+    }), [events, selectedCategory, searchQuery, sortBy]);
 
-  const toggleSaveEvent = (e: React.MouseEvent, eventId: string) => {
+  const toggleSaveEvent = useCallback((e: React.MouseEvent, eventId: string) => {
     e.stopPropagation();
-    const newSaved = savedEvents.includes(eventId)
-      ? savedEvents.filter(id => id !== eventId)
-      : [...savedEvents, eventId];
-    
-    setSavedEvents(newSaved);
-    localStorage.setItem("savedEvents", JSON.stringify(newSaved));
-  };
+    setSavedEvents(prev => {
+      const newSaved = prev.includes(eventId)
+        ? prev.filter(id => id !== eventId)
+        : [...prev, eventId];
+      localStorage.setItem("savedEvents", JSON.stringify(newSaved));
+      return newSaved;
+    });
+  }, []);
 
-  const toggleRegisterEvent = async (e: React.MouseEvent, eventId: string) => {
+  const toggleRegisterEvent = useCallback(async (e: React.MouseEvent, eventId: string) => {
     e.stopPropagation();
     
     if (!user) {
@@ -114,9 +122,11 @@ export default function EventsPage() {
 
     if (registeredEvents.includes(eventId)) {
       if (!confirm("Are you sure you want to unregister from this event?")) return;
-      const newRegistered = registeredEvents.filter(id => id !== eventId);
-      setRegisteredEvents(newRegistered);
-      localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
+      setRegisteredEvents(prev => {
+        const newRegistered = prev.filter(id => id !== eventId);
+        localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
+        return newRegistered;
+      });
       localStorage.removeItem(`ticket_${eventId}`);
       toast.success("Successfully unregistered from event");
       return;
@@ -124,14 +134,11 @@ export default function EventsPage() {
 
     setRegistering(eventId);
     try {
-      // Find the event details
       const event = events.find(e => e.$id === eventId);
       if (!event) throw new Error("Event not found");
 
-      // Register for event in database
       await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
       
-      // Try to send email with e-ticket
       const emailResult = await sendRegistrationEmail(
         user.email,
         user.name,
@@ -148,7 +155,6 @@ export default function EventsPage() {
         }
       );
 
-      // Store ticket data locally
       const ticketData = {
         ticketId: emailResult.ticketId || `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         eventId: event.$id,
@@ -164,12 +170,12 @@ export default function EventsPage() {
       
       localStorage.setItem(`ticket_${eventId}`, JSON.stringify(ticketData));
       
-      // Update registered events
-      const newRegistered = [...registeredEvents, eventId];
-      setRegisteredEvents(newRegistered);
-      localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
+      setRegisteredEvents(prev => {
+        const newRegistered = [...prev, eventId];
+        localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
+        return newRegistered;
+      });
       
-      // Show appropriate message
       if (emailResult.success) {
         toast.success(
           `Registration successful! E-ticket sent to ${user.email}`,
@@ -182,7 +188,6 @@ export default function EventsPage() {
         );
       }
       
-      // Reload events to update registration count
       await loadEvents();
     } catch (error) {
       const message = getErrorMessage(error);
@@ -191,23 +196,11 @@ export default function EventsPage() {
     } finally {
       setRegistering(null);
     }
-  };
+  }, [user, router, registeredEvents, events, loadEvents]);
 
-  const handleEventClick = (eventId: string) => {
+  const handleEventClick = useCallback((eventId: string) => {
     router.push(`/events/${eventId}`);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const calculateDiscount = (original: number, discount: number) => {
-    return Math.round(((original - discount) / original) * 100);
-  };
+  }, [router]);
 
   if (loading) {
     return (
@@ -254,7 +247,7 @@ export default function EventsPage() {
                 <Input
                   placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e: any) => setSearchQuery(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 />
               </div>
 

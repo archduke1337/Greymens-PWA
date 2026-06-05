@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default function ThreeCanvas() {
@@ -50,7 +50,7 @@ export default function ThreeCanvas() {
     const loader = new GLTFLoader();
     loader.load(
       '/model.glb',
-      (gltf: any) => {
+      (gltf: GLTF) => {
         model = gltf.scene;
 
         const box = new THREE.Box3().setFromObject(model as THREE.Object3D);
@@ -66,7 +66,7 @@ export default function ThreeCanvas() {
         scene.add(model!);
       },
       undefined,
-      (error: any) => {
+      (error: unknown) => {
         console.error('Error loading model:', error);
       }
     );
