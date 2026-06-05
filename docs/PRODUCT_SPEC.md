@@ -31,49 +31,70 @@ Two-layer model:
 
 1. **Status Ladder** (stable access model):
    ```
-   applicant → member → core_member → lead → head → secretary/treasurer/vice_president/president
+   applicant → member → core_member → lead → head → admin/dev
    ```
+   - `admin`: god-level control over everything
+   - `dev`: system developer role (technical access)
 
 2. **Scoped Powers** (narrow operational permissions):
    ```
-   membership_approver, event_manager, ticket_verifier, blog_reviewer,
-   resource_manager, department_head, operations_head
+   membership_approver, event_manager, ticket_verifier,
+   blog_creator, blog_reviewer, gallery_manager, gallery_uploader,
+   resource_manager, department_head, operations_head,
+   profile_moderator, notification_admin, newsletter_manager,
+   social_media_manager, pr_manager, design_manager
    ```
 
 3. **Custom Designations** (admin-created badges):
    ```
-   "CyberSec Lead", "AI/ML Head", "Head of Technical Operations",
-   "Secretary", "Vice President", etc.
+   "CyberSec Lead", "AI/ML Lead", "Head of Technical Operations",
+   "Treasurer", "Secretary", "Social Media Lead", "Design Lead",
+   "Editorial Lead", "PR Lead", etc.
    ```
    - Created by admin
    - Assigned to approved members
    - Appear as profile badges
    - Can be revoked
+   - Promotion/demotion triggers official letter (email + in-app)
 
 ### 2.3 Organization Graph
 
 ```
-Admin (god-level)
+Admin / Dev (god-level / technical)
 ├── Operations Heads (e.g., Head of Technical Operations)
-│   ├── Department: AI/ML
-│   │   ├── Leads (1-3)
-│   │   └── Core Members
-│   ├── Department: Cybersecurity
-│   │   ├── Leads (1-3)
-│   │   └── Core Members
+│   ├── Technical Departments
+│   │   ├── AI/ML
+│   │   ├── Cybersecurity
+│   │   ├── DevOps
+│   │   └── Web Development
 │   └── ...
-├── Operations Heads (e.g., Head of Management)
-│   ├── Department: Marketing
-│   ├── Department: Finance
+├── Operations Heads (e.g., Head of Non-Technical Operations)
+│   ├── Content & Communication
+│   │   ├── Social Media
+│   │   ├── PR & Outreach
+│   │   ├── Editorial Board (newsletter/blogs)
+│   │   └── Design
+│   ├── Operations
+│   │   ├── Treasury
+│   │   └── Events & Logistics
 │   └── ...
 └── ...
 ```
+
+**Departments (College Club Focused):**
+
+| Category | Departments |
+|----------|------------|
+| Technical | AI/ML, Cybersecurity, DevOps, Web Development |
+| Content & Communication | Social Media, PR & Outreach, Editorial Board, Design |
+| Operations | Treasury, Events & Logistics |
 
 - Members can **request** department placement
 - Admin/heads **approve/assign** after review
 - Leads manage their department's core team
 - Operations heads sit above multiple departments
 - Admin has global override on everything
+- Admin can access **ALL dashboards** (applicant, member, lead, head views)
 
 ### 2.4 Event System — Fully Separate Event Types
 
@@ -148,7 +169,7 @@ Official approvals/promotions produce:
                     └──────┬──────┘
                            │ admin/senior approves
                     ┌──────▼──────┐
-                    │   member     │
+                    │   member     │ ◄── receives welcome letter
                     └──────┬──────┘
                            │ promoted
                     ┌──────▼──────┐
@@ -156,30 +177,38 @@ Official approvals/promotions produce:
                     └──────┬──────┘
                            │ appointed
                     ┌──────▼──────┐
-                    │    lead      │
+                    │    lead      │ ◄── receives promotion letter
                     └──────┬──────┘
                            │ appointed
                     ┌──────▼──────┐
-                    │    head      │
+                    │    head      │ ◄── receives promotion letter
                     └──────┬──────┘
-                           │ elected/appointed
+                           │ system role
                     ┌──────▼──────┐
-                    │  officer     │ (secretary/treasurer/VP/president)
+                    │  admin/dev   │ (admin = god-level, dev = technical)
                     └─────────────┘
 
     At any point, admin can: ban, deactivate, revert
+    All promotions trigger: in-app notification + email letter + audit log
 ```
 
 **Status transitions:**
-- `account → applicant`: submit application form
-- `applicant → member`: approved by admin or authorized senior
+- `account → applicant`: submit application form (with pronouns, avatar)
+- `applicant → member`: approved by admin or authorized senior → **welcome letter sent**
 - `applicant → rejected`: rejected with reason (can re-apply)
-- `member → core_member`: promoted by admin
-- `core_member → lead`: appointed by admin/operations head
-- `lead → head`: appointed by admin
-- `head → officer`: elected or appointed by admin
+- `member → core_member`: promoted by admin → **promotion letter sent**
+- `core_member → lead`: appointed by admin/operations head → **promotion letter sent**
+- `lead → head`: appointed by admin → **promotion letter sent**
+- `head → admin/dev`: system role assignment by super-admin
 - Any status → `banned`: admin action
 - Any status → `deactivated`: admin action or self-deactivation
+
+**Letters sent on:**
+- Membership approval: Welcome letter with membership ID
+- Promotion to lead: Lead appointment letter
+- Promotion to head: Head appointment letter
+- Designation assignment: Designation letter with badge details
+- All letters: email + in-app notification + audit log
 
 ---
 
@@ -189,33 +218,40 @@ Official approvals/promotions produce:
 
 | Status | Base Permissions |
 |--------|-----------------|
-| applicant | view_public_content, view_resources, view_roadmaps |
-| member | + register_events, view_member_resources, manage_own_profile |
+| applicant | view_public_content, view_resources, view_roadmaps, view_members |
+| member | + register_events, view_member_resources, manage_own_profile, view_all_members |
 | core_member | + manage_department_resources |
 | lead | + manage_department_team, draft_events |
 | head | + approve_events, manage_multiple_departments |
-| officer | + manage_organization, view_reports |
-| admin | ALL_PERMISSIONS (god-level) |
+| admin | ALL_PERMISSIONS (god-level, can access ALL dashboards) |
+| dev | ALL_PERMISSIONS + system_developer_access |
 
 ### 4.2 Scoped Powers (admin-assignable)
 
-| Power | Scope |
-|-------|-------|
-| `membership_approver` | Can approve/reject membership applications |
-| `event_manager` | Can create/edit/publish events |
-| `ticket_verifier` | Can verify tickets at events |
-| `blog_reviewer` | Can approve/reject blog submissions |
-| `resource_manager` | Can manage resources in scope |
-| `department_head` | Can manage own department |
-| `operations_head` | Can manage multiple departments |
-| `profile_moderator` | Can view/revert profile changes |
-| `notification_admin` | Can send system notifications |
+| Power | Description | Scope |
+|-------|-------------|-------|
+| `membership_approver` | Can approve/reject membership applications | global or department |
+| `event_manager` | Can create/edit/publish events | global or department |
+| `ticket_verifier` | Can verify tickets at events | per-event |
+| `blog_creator` | Can create blog posts | global |
+| `blog_reviewer` | Can approve/reject blog submissions | global |
+| `gallery_manager` | Can manage gallery (approve/delete) | global |
+| `gallery_uploader` | Can upload gallery images | global or department |
+| `resource_manager` | Can manage resources in scope | global or department |
+| `department_head` | Can manage own department | own department |
+| `operations_head` | Can manage multiple departments | multiple departments |
+| `profile_moderator` | Can view/revert profile changes | global or department |
+| `notification_admin` | Can send system notifications | global |
+| `newsletter_manager` | Can manage newsletter/editorial content | global |
+| `social_media_manager` | Can manage social media content | global |
+| `pr_manager` | Can manage PR & outreach content | global |
+| `design_manager` | Can manage design assets | global |
 
 ### 4.3 Permission Resolution
 
 ```
 effective_permissions = base_permissions(status) ∪ scoped_powers ∪ department_permissions
-admin bypass = true (always has all permissions)
+admin bypass = true (always has ALL permissions, can access ALL dashboards)
 ```
 
 ---
@@ -248,14 +284,22 @@ interface EventTypeDef {
 
 interface EventField {
   name: string;
-  type: 'text' | 'number' | 'select' | 'multi-select' | 'boolean' | 'date' | 'file' | 'json';
+  type: 'text' | 'number' | 'select' | 'multi-select' | 'boolean' | 'date' | 'file' | 'url' | 'json';
   label: string;
   required: boolean;
-  options?: string[]; // for select/multi-select
+  options?: string[];
   validation?: any;
   appliesTo?: 'attendee' | 'organizer' | 'both';
 }
 ```
+
+**Common fields for ALL event types (beyond base):**
+- `eventDocs`: Array of {name, url/file} — event documentation, rules, resources
+- `externalLinks`: Array of {label, url} — external resources, hackathon websites
+- `materials`: Array of {name, type: 'link'|'file', url/fileId} — materials shared with attendees
+- `registrationUrl`: string — external registration link (for events like hackathons where registration happens externally)
+- `eventWebsite`: string — dedicated event website URL (for hackathons, etc.)
+- `contactEmail`: string — event-specific contact
 
 ### 5.2 Audience Models
 
@@ -277,7 +321,15 @@ draft → review → approved → published → active → completed
 - **Admin** can override any state
 - Events have an **owner** (creator) and **approver** (who approved)
 
-### 5.4 Seeded Event Types (Initial Set)
+### 5.4 PDF Generation
+
+Admins and heads can generate PDF lists of event registrations:
+- List of all registered participants
+- Includes: name, email, URN, department, registration date, ticket status
+- Filterable by status (confirmed, pending, waitlisted)
+- Downloadable as PDF for offline use at events
+
+### 5.5 Seeded Event Types (Initial Set)
 
 | Type | Key Fields | Registration | Special Rules |
 |------|-----------|--------------|---------------|
@@ -510,21 +562,71 @@ Resources
 
 ### 10.1 Notification Types
 
-| Event | In-App | Email |
-|-------|--------|-------|
-| Application approved | Yes | Yes |
-| Application rejected | Yes | Yes (with reason) |
-| Role/designation assigned | Yes | Yes (with letter) |
-| Role/designation revoked | Yes | Yes (with reason) |
-| Event approved | Yes | Yes |
-| Event rejected | Yes | Yes (with reason) |
-| Ticket issued | Yes | Yes |
-| Exclusive event registration approved | Yes | Yes |
-| Exclusive event registration rejected | Yes | Yes (with reason) |
-| New announcement | Yes | No |
-| Department assignment | Yes | Yes |
+| Event | In-App | Email | Letter |
+|-------|--------|-------|--------|
+| Application approved | Yes | Yes | **Welcome Letter** with membership ID |
+| Application rejected | Yes | Yes (with reason) | No |
+| Role/status promoted | Yes | Yes | **Promotion Letter** (lead/head/board) |
+| Designation assigned | Yes | Yes | **Designation Letter** with badge details |
+| Role/designation revoked | Yes | Yes (with reason) | No |
+| Event approved | Yes | Yes | No |
+| Event rejected | Yes | Yes (with reason) | No |
+| Ticket issued | Yes | Yes | No |
+| Exclusive event registration approved | Yes | Yes | No |
+| Exclusive event registration rejected | Yes | Yes (with reason) | No |
+| New announcement | Yes | No | No |
+| Department assignment | Yes | Yes | No |
+| Gallery image approved | Yes | No | No |
+| Blog published | Yes | No | No |
 
-### 10.2 Notification Record
+### 10.2 Letter Templates
+
+**Welcome Letter:**
+```
+Subject: Welcome to Mind Mesh Club!
+
+Dear [Name],
+
+Congratulations! Your membership application has been approved.
+
+Membership ID: MM-YYYY-XXXX
+Department: [Assigned Department]
+Date of Approval: [Date]
+
+You now have full access to:
+- Member-only events and workshops
+- Department-specific resources
+- Club community and team directory
+
+Welcome aboard!
+
+Best regards,
+Mind Mesh Club Administration
+```
+
+**Promotion Letter:**
+```
+Subject: Promotion to [New Role/Designation]
+
+Dear [Name],
+
+We are pleased to inform you that you have been promoted to [Designation].
+
+Previous Role: [Old Role]
+New Role: [New Designation]
+Effective Date: [Date]
+Approved by: [Approver Name]
+
+As a [Designation], you will have additional responsibilities and access to:
+- [List of new permissions/access]
+
+Congratulations on this achievement!
+
+Best regards,
+Mind Mesh Club Administration
+```
+
+### 10.3 Notification Record
 
 ```typescript
 interface Notification {
@@ -533,9 +635,17 @@ interface Notification {
   type: string;
   title: string;
   body: string;
-  data: Record<string, any>; // related entity IDs
+  letter?: LetterData; // welcome letter, promotion letter, etc.
+  data: Record<string, any>;
   read: boolean;
   createdAt: string;
+}
+
+interface LetterData {
+  template: 'welcome' | 'promotion' | 'designation' | 'custom';
+  subject: string;
+  body: string;
+  metadata: Record<string, any>;
 }
 ```
 
@@ -548,7 +658,7 @@ interface Notification {
 | Collection | Purpose |
 |------------|---------|
 | `users` | Appwrite auth users (managed by Appwrite) |
-| `profiles` | Extended profile data (academic, contact, social) |
+| `profiles` | Extended profile data (academic, contact, social, **pronouns**) |
 | `applications` | Club membership applications |
 | `memberships` | Approved membership records |
 | `designations` | Admin-created designation definitions |
@@ -557,7 +667,7 @@ interface Notification {
 | `user_departments` | User-department assignments |
 | `powers` | Scoped power definitions |
 | `user_powers` | User-power assignments |
-| `events` | Event records (base) |
+| `events` | Event records (base + **docs, materials, external links**) |
 | `event_types` | Event type definitions (extensible) |
 | `event_type_data` | Event-type-specific field values |
 | `registrations` | Event registration records |
@@ -565,9 +675,44 @@ interface Notification {
 | `ticket_verifications` | Verification logs |
 | `resources` | Resource records |
 | `resource_access` | Resource access control |
-| `notifications` | In-app notifications |
-| `audit_logs` | Profile change audit trail |
+| `notifications` | In-app notifications (**with letter data**) |
+| `audit_logs` | **Comprehensive system-wide audit trail** |
 | `approval_workflows` | Multi-step approval records |
+| `gallery` | Gallery images (**new**) |
+| `blogs` | Blog posts (already exists) |
+
+### Comprehensive Audit Logging
+
+**Every action in the system is logged.** This includes:
+- Profile changes (with before/after diff)
+- Membership approvals/rejections
+- Role promotions/demotions
+- Designation assignments/revocations
+- Power grants/revocations
+- Event creation/approval/publishing
+- Ticket issuance/verification/invalidation
+- Resource uploads/deletions
+- Gallery uploads/approvals
+- Blog creation/approval/publishing
+- Notification sends
+- Any admin action
+
+**Audit log record:**
+```typescript
+interface AuditLog {
+  id: string;
+  actorId: string; // who did it
+  actorName: string;
+  actorRole: string;
+  action: string; // e.g., "membership.approve", "event.publish", "profile.update"
+  entityType: string; // "user", "event", "ticket", "resource", etc.
+  entityId: string;
+  details: Record<string, any>; // action-specific data
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: string;
+}
+```
 
 ---
 
