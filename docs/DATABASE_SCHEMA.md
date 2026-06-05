@@ -360,7 +360,7 @@ Resource records.
 
 ## 17. notifications
 
-In-app notifications.
+In-app notifications with optional letter data.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -368,10 +368,25 @@ In-app notifications.
 | type | string | yes | Notification type (see spec) |
 | title | string | yes | Notification title |
 | body | string | yes | Notification body |
+| letter | json | no | Letter data (welcome, promotion, designation) |
 | data | json | no | Related entity IDs |
 | read | boolean | yes | Whether notification is read |
 | readAt | string | no | ISO timestamp |
 | createdAt | string | yes | ISO timestamp |
+
+**Letter data structure:**
+```json
+{
+  "template": "welcome|promotion|designation|custom",
+  "subject": "Welcome to Mind Mesh Club!",
+  "body": "Dear Rahul, congratulations!...",
+  "metadata": {
+    "membershipId": "MM-2025-0189",
+    "designation": "AI/ML Lead",
+    "approvedBy": "Admin Name"
+  }
+}
+```
 
 **Indexes:** userId + read (compound), createdAt
 
@@ -379,23 +394,37 @@ In-app notifications.
 
 ## 18. audit_logs
 
-Profile change audit trail.
+**Comprehensive system-wide audit trail.** Every action in the system is logged.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| userId | string | yes | FK → Appwrite auth user (whose profile changed) |
-| changedBy | string | yes | FK → Appwrite auth user (who made the change) |
-| field | string | yes | Field name that changed |
-| oldValue | any | no | Previous value |
-| newValue | any | no | New value |
-| changeType | string | yes | "update", "create", "delete", "revert" |
-| reason | string | no | Why the change was made |
-| reverted | boolean | yes | Whether this change was reverted |
-| revertedBy | string | no | FK → Appwrite auth user |
-| revertedAt | string | no | ISO timestamp |
-| createdAt | string | yes | ISO timestamp |
+| actorId | string | yes | FK → Appwrite auth user (who did it) |
+| actorName | string | yes | Actor's display name |
+| actorRole | string | yes | Actor's status/role at time of action |
+| action | string | yes | Action identifier (e.g., "membership.approve", "event.publish") |
+| entityType | string | yes | "user", "event", "ticket", "resource", "blog", "gallery", etc. |
+| entityId | string | yes | FK → the entity affected |
+| details | json | no | Action-specific data (before/after values, reasons, etc.) |
+| ipAddress | string | no | Actor's IP address |
+| userAgent | string | no | Actor's browser/client |
+| timestamp | string | yes | ISO timestamp |
 
-**Indexes:** userId, changedBy, field, createdAt
+**Action categories:**
+- `membership.*` — approve, reject, ban, deactivate
+- `profile.*` — update, revert
+- `designation.*` — assign, revoke
+- `power.*` — grant, revoke
+- `event.*` — create, update, approve, reject, publish, cancel
+- `registration.*` — register, approve, reject, cancel
+- `ticket.*` — issue, verify, invalidate, transfer
+- `resource.*` — upload, update, delete
+- `blog.*` — create, approve, reject, publish
+- `gallery.*` — upload, approve, reject, delete
+- `notification.*` — send
+- `department.*` — assign, remove
+- `system.*` — config change, backup, etc.
+
+**Indexes:** actorId, entityType, entityId, action, timestamp
 
 ---
 
@@ -419,8 +448,79 @@ Multi-step approval records.
 
 ---
 
+## 20. gallery
+
+Gallery images for the club.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| title | string | yes | Image title |
+| description | string | no | Image description |
+| imageUrl | string | yes | Image URL (storage file ID) |
+| thumbnailUrl | string | no | Thumbnail URL |
+| category | string | yes | "events", "workshops", "hackathons", "team", "projects", "other" |
+| uploadedBy | string | yes | FK → Appwrite auth user |
+| eventId | string | no | FK → events (if event-specific) |
+| departmentId | string | no | FK → departments (if department-specific) |
+| status | string | yes | "pending", "approved", "rejected" |
+| approvedBy | string | no | FK → Appwrite auth user |
+| approvedAt | string | no | ISO timestamp |
+| rejectionReason | string | no | Why image was rejected |
+| tags | string[] | no | Image tags |
+| isActive | boolean | yes | Whether image is visible |
+| displayOrder | number | no | Sort order |
+
+**Indexes:** category, status, uploadedBy, eventId, isActive
+
+---
+
 ## Collection Relationships
 
+```
+users (Appwrite Auth)
+  ├── profiles (1:1)
+  ├── applications (1:many)
+  ├── memberships (1:1)
+  ├── user_departments (1:many)
+  ├── user_designations (1:many)
+  ├── user_powers (1:many)
+  ├── events (1:many, as owner)
+  ├── registrations (1:many)
+  ├── tickets (1:many)
+  ├── notifications (1:many)
+  ├── audit_logs (1:many, as actor)
+  └── gallery (1:many, as uploader)
+
+departments
+  ├── user_departments (1:many)
+  ├── designations (1:many)
+  ├── resources (1:many)
+  ├── gallery (1:many)
+  └── events (via department scope)
+
+events
+  ├── event_type_data (1:1)
+  ├── registrations (1:many)
+  ├── tickets (1:many)
+  ├── ticket_verifications (1:many)
+  └── gallery (1:many)
+
+event_types
+  ├── events (1:many)
+  └── event_type_data (1:many)
+
+designations
+  ├── user_designations (1:many)
+  └── resources (1:many)
+
+powers
+  └── user_powers (1:many)
+
+tickets
+  └── ticket_verifications (1:many)
+
+resources
+  └── resource_access (1:many)
 ```
 users (Appwrite Auth)
   ├── profiles (1:1)
