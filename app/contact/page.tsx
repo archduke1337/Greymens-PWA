@@ -17,29 +17,20 @@ export default function ContactPage() {
     message: string;
   }>({ type: null, message: "" });
 
-  // Method 1: Using EmailJS (Recommended - No Backend Required)
   const handleSubmitWithEmailJS = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus({ type: null, message: "" });
 
     try {
-      const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      const response = await fetch("/api/send-email", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          service_id: "service_uv7h9yv", // Replace with your EmailJS service ID
-          template_id: "template_5jqtexq", // Replace with your EmailJS template ID
-          user_id: "XDzUiPBDF_TLck0Ds", // Replace with your EmailJS public key
-          template_params: {
-            from_name: formData.name,
-            from_email: formData.email,
-            subject: formData.subject,
-            message: formData.message,
-            to_email: "hello@mindmesh.club",
-          },
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
         }),
       });
 
@@ -52,7 +43,7 @@ export default function ContactPage() {
       } else {
         throw new Error("Failed to send message");
       }
-    } catch (error) {
+    } catch {
       setSubmitStatus({
         type: "error",
         message: "Failed to send message. Please try again or email us directly.",
