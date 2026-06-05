@@ -1,14 +1,11 @@
 // lib/database.ts
 import { ID, Query } from "appwrite";
-import { databases, storage } from "./appwrite";
+import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
 import { getErrorMessage } from "./errorHandler";
 
-// Database and Collection IDs
-export const DATABASE_ID = "68ee09da002cce9f7e39";
-export const EVENTS_COLLECTION_ID = "events";
-export const REGISTRATIONS_COLLECTION_ID = "registrations";
-export const PROJECTS_COLLECTION_ID = "projects";
-export const EVENT_IMAGES_BUCKET_ID = "REDACTED_BUCKET_ID";
+const { databaseId: DATABASE_ID, eventsCollectionId: EVENTS_COLLECTION_ID, registrationsCollectionId: REGISTRATIONS_COLLECTION_ID, projectsCollectionId: PROJECTS_COLLECTION_ID, eventImagesBucketId: EVENT_IMAGES_BUCKET_ID } = APPWRITE_CONFIG;
+
+export { DATABASE_ID, EVENTS_COLLECTION_ID, REGISTRATIONS_COLLECTION_ID, PROJECTS_COLLECTION_ID, EVENT_IMAGES_BUCKET_ID };
 
 export interface Event {
   $id?: string;

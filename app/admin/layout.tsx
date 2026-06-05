@@ -3,10 +3,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Server-side admin emails — loaded from a non-public env var
-// Falls back to the hardcoded list for backward compatibility
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "sahilmanecode@gmail.com,mane50205@gmail.com").split(",").map(e => e.trim());
-
 export default function AdminLayout({
   children,
 }: {
@@ -23,14 +19,22 @@ export default function AdminLayout({
         return;
       }
 
-      const userIsAdmin = ADMIN_EMAILS.includes(user.email);
-
-      if (!userIsAdmin) {
-        router.push("/unauthorized");
-        return;
-      }
-
-      setIsAdmin(true);
+      fetch("/api/admin-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.isAdmin) {
+            router.push("/unauthorized");
+          } else {
+            setIsAdmin(true);
+          }
+        })
+        .catch(() => {
+          router.push("/unauthorized");
+        });
     }
   }, [user, loading, router]);
 

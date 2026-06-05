@@ -3,7 +3,7 @@
  * Diagnoses connection issues between frontend and Appwrite backend
  */
 
-import { Client, Account, Databases, Storage } from "appwrite";
+import { account, databases, storage } from "./appwrite";
 
 export interface ConnectivityStatus {
   appwriteConnected: boolean;
@@ -119,39 +119,14 @@ export async function testAppwriteConnection(): Promise<ConnectivityStatus> {
       status.details.databaseId = databaseId;
     }
 
-    // Try to initialize Appwrite client
-    const client = new Client()
-      .setEndpoint(endpoint || "")
-      .setProject(projectId || "");
-
+    // Use shared Appwrite client from appwrite.ts
     try {
-      const account = new Account(client);
       status.details.accountStatus = "✓ Initialized";
-    } catch (e) {
-      status.errors.push(`Failed to initialize Account: ${String(e)}`);
-    }
-
-    try {
-      const databases = new Databases(client);
       status.details.databaseStatus = "✓ Initialized";
-    } catch (e) {
-      status.errors.push(`Failed to initialize Databases: ${String(e)}`);
-    }
-
-    try {
-      const storage = new Storage(client);
       status.details.storageStatus = "✓ Initialized";
-    } catch (e) {
-      status.errors.push(`Failed to initialize Storage: ${String(e)}`);
-    }
-
-    // If all initializations succeeded
-    if (
-      status.details.accountStatus &&
-      status.details.databaseStatus &&
-      status.details.storageStatus
-    ) {
       status.appwriteConnected = true;
+    } catch (error) {
+      status.errors.push(`Failed to initialize Appwrite services: ${String(error)}`);
     }
   } catch (error) {
     status.errors.push(`Unexpected error during connectivity check: ${String(error)}`);

@@ -1,11 +1,8 @@
 // lib/sponsors.ts
 import { ID, Query } from "appwrite";
-import { databases, storage } from "./appwrite";
-import { DATABASE_ID } from "./database";
+import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
 
-// Collection IDs
-export const SPONSORS_COLLECTION_ID = "sponsors";
-export const SPONSOR_LOGOS_BUCKET_ID = "sponsor-logos";
+const { databaseId: DATABASE_ID, sponsorsCollectionId: SPONSORS_COLLECTION_ID, sponsorLogosBucketId: SPONSOR_LOGOS_BUCKET_ID } = APPWRITE_CONFIG;
 
 // Sponsor Interface
 export interface Sponsor {

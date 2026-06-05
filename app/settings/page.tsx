@@ -276,6 +276,7 @@ export default function SettingsPage() {
                 <Button variant="primary"
                   size="sm"
                   isPending={verificationLoading}
+                  onPress={handleSendVerification}
                 >
                   Send Verification Email
                 </Button>
@@ -317,12 +318,14 @@ export default function SettingsPage() {
                 {user.phone && !user.phoneVerification && (
                   <Button variant="primary"
                     size="sm"
+                    onPress={onVerifyModalOpen}
                   >
                     Verify Phone
                   </Button>
                 )}
                 <Button variant="primary"
                   size="sm"
+                  onPress={onPhoneModalOpen}
                 >
                   {user.phone ? "Update" : "Add"} Phone
                 </Button>
@@ -388,6 +391,11 @@ export default function SettingsPage() {
               </p>
             </div>
             <Button variant="primary"
+              onPress={() => {
+                if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                  handleDeleteAccount();
+                }
+              }}
             >
               Delete Account
             </Button>
@@ -466,6 +474,7 @@ export default function SettingsPage() {
                 size="sm"
                 isPending={phoneVerifyLoading}
                 className="mt-2"
+                onPress={handleSendPhoneVerification}
               >
                 Resend Code
               </Button>

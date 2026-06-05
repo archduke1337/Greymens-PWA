@@ -2,7 +2,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import NextLink from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
 import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@heroui/react";
@@ -112,6 +111,8 @@ export default function RegisterPage() {
 
           <Button
             className="w-full"
+            variant="outline"
+            onPress={handleGoogleSignup}
           >
             Continue with Google
           </Button>

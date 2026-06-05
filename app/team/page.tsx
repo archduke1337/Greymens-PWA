@@ -109,26 +109,6 @@ export default function TeamPage() {
     };
   }, [currentIndex, coreTeam.length]);
 
-  const handleNext = () => {
-    if (currentIndex < coreTeam.length - 1) {
-      setDirection("right");
-      setTimeout(() => {
-        setCurrentIndex(currentIndex + 1);
-        setDirection(null);
-      }, 50);
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setDirection("left");
-      setTimeout(() => {
-        setCurrentIndex(currentIndex - 1);
-        setDirection(null);
-      }, 50);
-    }
-  };
-
   return (
     <section className="flex flex-col items-center justify-center w-full min-h-screen relative overflow-hidden py-8 md:py-12">
       {/* Subtle Background */}

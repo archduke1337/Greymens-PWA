@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
-import NextLink from "next/link";
 import { Button, Card, CardContent, CardHeader } from "@heroui/react";
 
 function VerifyEmailContent() {
@@ -20,8 +19,6 @@ function VerifyEmailContent() {
         const userId = searchParams.get("userId");
         const secret = searchParams.get("secret");
 
-        console.log("Verification params:", { userId, secret: secret?.substring(0, 20) + "..." });
-
         if (!userId || !secret) {
           setStatus("error");
           setErrorMessage("Missing verification parameters");
@@ -31,7 +28,6 @@ function VerifyEmailContent() {
         // Call Appwrite verification
         await account.updateEmailVerification({ userId, secret });
         
-        console.log("Verification successful!");
         setStatus("success");
 
         // Redirect to profile after 3 seconds

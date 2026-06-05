@@ -33,7 +33,7 @@ export default function DashboardPage() {
     { label: 'Settings', href: '/settings', color: 'secondary' as const },
     { label: 'Events', href: '/events', color: 'success' as const },
     { label: 'Projects', href: '/projects', color: 'warning' as const },
-    { label: 'Blog', href: '/Blog', color: 'danger' as const },
+    { label: 'Blog', href: '/blog', color: 'danger' as const },
   ];
 
   return (

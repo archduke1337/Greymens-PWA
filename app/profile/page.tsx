@@ -9,8 +9,7 @@ import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Input } from "@heroui/react";
 
-// Profile pictures bucket ID
-const PROFILE_BUCKET_ID = "profile-pictures"; // Make sure this exists in Appwrite
+const { profilePicturesBucketId: PROFILE_BUCKET_ID } = APPWRITE_CONFIG;
 
 export default function ProfilePage() {
   const { user: authUser, loading } = useAuth();
