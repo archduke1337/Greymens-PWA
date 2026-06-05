@@ -549,7 +549,7 @@ export default function AdminProjectsPage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   >
                     {categories.map((cat) => (
                       <option key={cat.key} value={cat.key}>{cat.label}</option>
@@ -559,7 +559,7 @@ export default function AdminProjectsPage() {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   >
                     {statuses.map((status) => (
                       <option key={status.key} value={status.key}>{status.label}</option>

@@ -262,7 +262,7 @@ export default function EventsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 >
                   <option value="date">Date</option>
                   <option value="price">Price</option>
@@ -272,7 +272,7 @@ export default function EventsPage() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 >
                   {categories.map(category => (
                     <option key={category.key} value={category.key}>{category.label}</option>

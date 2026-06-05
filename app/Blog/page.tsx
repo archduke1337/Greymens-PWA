@@ -138,7 +138,7 @@ export default function BlogPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="min-w-[200px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm"
+                className="min-w-[200px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
               >
                 <option value="all">All Categories</option>
                 <option value="tutorial">Tutorial</option>
