@@ -118,4 +118,11 @@ declare module "lucide-react" {
   export const NavigationIcon: ComponentType<any>;
   export const CompassIcon: ComponentType<any>;
   export const FlagIcon: ComponentType<any>;
+  export const CrownIcon: ComponentType<any>;
+  export const CogIcon: ComponentType<any>;
+  export const Building2Icon: ComponentType<any>;
+  export const HashIcon: ComponentType<any>;
+  export const Pencil: ComponentType<any>;
+  export const Trash2: ComponentType<any>;
+  export const Image: ComponentType<any>;
 }
