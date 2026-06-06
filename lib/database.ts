@@ -2,47 +2,14 @@
 import { ID, Query } from "appwrite";
 import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
 import { getErrorMessage } from "./errorHandler";
+import type { Event, Registration, Project } from "@/lib/types";
 
 const { databaseId: DATABASE_ID, eventsCollectionId: EVENTS_COLLECTION_ID, registrationsCollectionId: REGISTRATIONS_COLLECTION_ID, projectsCollectionId: PROJECTS_COLLECTION_ID, eventImagesBucketId: EVENT_IMAGES_BUCKET_ID } = APPWRITE_CONFIG;
 
 export { DATABASE_ID, EVENTS_COLLECTION_ID, REGISTRATIONS_COLLECTION_ID, PROJECTS_COLLECTION_ID, EVENT_IMAGES_BUCKET_ID };
 
-export interface Event {
-  $id?: string;
-  title: string;
-  description: string;
-  image: string;
-  date: string;
-  time: string;
-  venue: string;
-  location: string;
-  category: string;
-  price: number;
-  discountPrice: number | null;
-  capacity: number;
-  registered: number;
-  organizerName: string;
-  organizerAvatar: string;
-  tags: string[];
-  isFeatured: boolean;
-  isPremium: boolean;
-  status?: string;
-  $createdAt?: string;
-  $updatedAt?: string;
-}
-
-export interface Registration {
-  $id?: string;
-  eventId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  userPhone?: string;
-  registeredAt: string;
-  status?: string;
-  $createdAt?: string;
-  $updatedAt?: string;
-}
+// Re-export types for backward compatibility with existing imports
+export type { Event, Registration, Project };
 
 export interface Project {
   $id?: string;
