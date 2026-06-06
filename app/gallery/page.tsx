@@ -1,44 +1,146 @@
 'use client';
 
-import { useState } from "react";
-import { Button, Card, CardContent, CardFooter, Chip, Modal, ModalBackdrop, ModalContainer, ModalBody, ModalDialog, useOverlayState } from "@heroui/react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
+import { galleryService, type GalleryImage } from "@/lib/gallery";
+import { toast } from "sonner";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  Chip,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalBody,
+  ModalDialog,
+  Input,
+  TextArea,
+  useOverlayState,
+} from "@heroui/react";
+import {
+  Upload,
+  Camera,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Trash2,
+  ImagePlus,
+  Loader2,
+  Filter,
+} from "lucide-react";
+
+const CATEGORIES = [
+  { id: "all", label: "All", icon: "🎨" },
+  { id: "events", label: "Events", icon: "🎉" },
+  { id: "workshops", label: "Workshops", icon: "🛠️" },
+  { id: "hackathons", label: "Hackathons", icon: "💻" },
+  { id: "team", label: "Team", icon: "👥" },
+  { id: "projects", label: "Projects", icon: "🚀" },
+  { id: "other", label: "Other", icon: "📁" },
+];
 
 export default function GalleryPage() {
-  const { isOpen, open, close } = useOverlayState();
-  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
+  const { isOpen: isUploadOpen, open: openUpload, close: closeUpload } = useOverlayState();
+  const { isOpen: isPreviewOpen, open: openPreview, close: closePreview } = useOverlayState();
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const categories = [
-    { id: "all", label: "All", icon: "🎨" },
-    { id: "events", label: "Events", icon: "🎉" },
-    { id: "workshops", label: "Workshops", icon: "🛠️" },
-    { id: "hackathons", label: "Hackathons", icon: "💻" },
-    { id: "team", label: "Team", icon: "👥" },
-    { id: "projects", label: "Projects", icon: "🚀" },
-  ];
+  const canUpload = hasPermission("upload_gallery");
+  const canApprove = hasPermission("approve_gallery");
 
-  const galleryImages = [
-    { id: 1, src: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800", title: "Tech Summit 2024", category: "events", date: "Oct 2024", description: "Annual tech summit bringing together innovators", attendees: 250 },
-    { id: 2, src: "https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800", title: "AI Workshop Series", category: "workshops", date: "Sep 2024", description: "Deep dive into machine learning and AI fundamentals", attendees: 80 },
-    { id: 3, src: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800", title: "Hackathon Winners", category: "hackathons", date: "Aug 2024", description: "48-hour coding marathon with amazing innovations", attendees: 120 },
-    { id: 4, src: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800", title: "Team Building Day", category: "team", date: "Jul 2024", description: "Strengthening bonds and fostering collaboration", attendees: 45 },
-    { id: 5, src: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800", title: "Web Dev Bootcamp", category: "workshops", date: "Jun 2024", description: "Full-stack development intensive training", attendees: 60 },
-    { id: 6, src: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800", title: "Innovation Showcase", category: "projects", date: "May 2024", description: "Exhibition of member-built projects and prototypes", attendees: 200 },
-    { id: 7, src: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800", title: "Networking Night", category: "events", date: "Apr 2024", description: "Connect with industry leaders and alumni", attendees: 150 },
-    { id: 8, src: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800", title: "Code Sprint 2024", category: "hackathons", date: "Mar 2024", description: "24-hour competitive programming challenge", attendees: 95 },
-    { id: 9, src: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800", title: "Leadership Team", category: "team", date: "Feb 2024", description: "Our dedicated team driving innovation forward", attendees: 12 },
-    { id: 10, src: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800", title: "Mobile App Workshop", category: "workshops", date: "Jan 2024", description: "iOS and Android development masterclass", attendees: 70 },
-    { id: 11, src: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=800", title: "Robotics Project Demo", category: "projects", date: "Dec 2023", description: "Showcasing autonomous robotics innovations", attendees: 180 },
-    { id: 12, src: "https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800", title: "Year-End Celebration", category: "events", date: "Nov 2023", description: "Celebrating achievements and milestones together", attendees: 300 },
-  ];
+  // Upload form state
+  const [uploadForm, setUploadForm] = useState({
+    title: "",
+    description: "",
+    category: "events" as GalleryImage["category"],
+    imageUrl: "",
+    tags: "",
+  });
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
-  const filteredImages = selectedCategory === "all"
-    ? galleryImages
-    : galleryImages.filter(img => img.category === selectedCategory);
+  const loadImages = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await galleryService.getApproved(
+        selectedCategory === "all" ? undefined : selectedCategory
+      );
+      setImages(data);
+    } catch (error) {
+      console.error("Error loading gallery:", error);
+      toast.error("Failed to load gallery images");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    loadImages();
+  }, [loadImages]);
+
+  const handleUpload = async () => {
+    if (!user) return;
+    if (!uploadForm.title) {
+      toast.error("Title is required");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      let imageUrl = uploadForm.imageUrl;
+
+      if (uploadFile) {
+        imageUrl = await galleryService.uploadImage(uploadFile);
+      }
+
+      if (!imageUrl) {
+        toast.error("Please provide an image URL or upload a file");
+        setUploading(false);
+        return;
+      }
+
+      await galleryService.create({
+        title: uploadForm.title,
+        description: uploadForm.description,
+        imageUrl,
+        category: uploadForm.category,
+        uploadedBy: user.$id,
+        status: canApprove ? "approved" : "pending",
+        isActive: true,
+        tags: uploadForm.tags
+          ? uploadForm.tags.split(",").map((t) => t.trim()).filter(Boolean)
+          : [],
+        approvedBy: canApprove ? user.$id : undefined,
+        approvedAt: canApprove ? new Date().toISOString() : undefined,
+      });
+
+      toast.success(
+        canApprove
+          ? "Image uploaded and published!"
+          : "Image uploaded! It will be visible after admin approval."
+      );
+      closeUpload();
+      setUploadForm({ title: "", description: "", category: "events", imageUrl: "", tags: "" });
+      setUploadFile(null);
+      loadImages();
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-12 pb-16">
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="text-center space-y-4 relative">
         <div className="absolute top-0 left-1/4 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute top-20 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700" />
@@ -55,109 +157,132 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {/* Category Filter */}
+      {/* Category Filter + Upload Button */}
       <Card className="border-none bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
         <CardContent className="p-6">
-          <h3 className="text-xl font-semibold mb-4 text-center">Filter by Category</h3>
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.id ? "primary" : "secondary"}
-                className="transition-all"
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                {category.label}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
+              {CATEGORIES.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "primary" : "secondary"}
+                  className="transition-all"
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  {category.label}
+                </Button>
+              ))}
+            </div>
+            {canUpload && (
+              <Button variant="primary" onPress={openUpload} startContent={<ImagePlus className="w-4 h-4" />}>
+                Upload Photo
               </Button>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredImages.map((image) => (
-          <div
-            key={image.id}
-            className="cursor-pointer group hover:scale-105 transition-all duration-300"
-            onClick={() => { setSelectedImage(image); open(); }}
-          >
-            <Card className="border-none">
-              <CardContent className="p-0 overflow-hidden">
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={image.src}
-                    alt={image.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <p className="text-white text-sm font-medium">{image.description}</p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 p-4">
-                <div className="flex justify-between items-center w-full gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base md:text-lg font-semibold truncate">{image.title}</h3>
-                    <p className="text-xs text-default-500">{image.date}</p>
-                  </div>
-                  <Chip size="sm" variant="primary" className="flex-shrink-0">
-                    <span className="text-xs">{image.attendees}</span>
-                  </Chip>
-                </div>
-                <Chip size="sm" className="text-xs">
-                  {categories.find(c => c.id === image.category)?.icon}{" "}
-                  {categories.find(c => c.id === image.category)?.label}
-                </Chip>
-              </CardFooter>
-            </Card>
-          </div>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {filteredImages.length === 0 && (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin h-12 w-12 text-purple-500" />
+        </div>
+      ) : images.length === 0 ? (
         <Card className="border-none">
           <CardContent className="p-12 text-center">
-            <p className="text-4xl mb-4">🔍</p>
-            <h3 className="text-xl font-semibold mb-2">No images found</h3>
-            <p className="text-default-500">Try selecting a different category</p>
+            <p className="text-4xl mb-4">📸</p>
+            <h3 className="text-xl font-semibold mb-2">No photos yet</h3>
+            <p className="text-default-500">
+              {canUpload ? "Be the first to upload a photo!" : "Check back later for photos from our events."}
+            </p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {images.map((image) => (
+            <div
+              key={image.$id}
+              className="cursor-pointer group hover:scale-105 transition-all duration-300"
+              onClick={() => { setSelectedImage(image); openPreview(); }}
+            >
+              <Card className="border-none">
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="relative aspect-video overflow-hidden">
+                    <img
+                      src={image.imageUrl}
+                      alt={image.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                      <p className="text-white text-sm font-medium">{image.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex-col items-start gap-2 p-4">
+                  <div className="flex justify-between items-center w-full gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base md:text-lg font-semibold truncate">{image.title}</h3>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <Chip size="sm" variant="soft">
+                      {CATEGORIES.find((c) => c.id === image.category)?.icon}{" "}
+                      {CATEGORIES.find((c) => c.id === image.category)?.label || image.category}
+                    </Chip>
+                    {image.tags?.map((tag) => (
+                      <Chip key={tag} size="sm" variant="soft" color="accent">
+                        {tag}
+                      </Chip>
+                    ))}
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          ))}
+        </div>
       )}
 
-      {/* Image Modal */}
+      {/* Image Preview Modal */}
       <Modal>
-        <ModalBackdrop isOpen={isOpen} onOpenChange={(open) => { if (!open) { close(); setSelectedImage(null); } }}>
+        <ModalBackdrop
+          isOpen={isPreviewOpen}
+          onOpenChange={(open) => { if (!open) { closePreview(); setSelectedImage(null); } }}
+        >
           <ModalContainer>
-            <ModalDialog>
+            <ModalDialog size="xl">
               <ModalBody className="p-0">
                 {selectedImage && (
                   <Card className="border-none">
                     <CardContent className="p-0 overflow-hidden">
                       <img
-                        src={selectedImage.src}
+                        src={selectedImage.imageUrl}
                         alt={selectedImage.title}
                         className="w-full h-auto max-h-[70vh] object-contain"
                       />
                     </CardContent>
-                    <CardFooter className="flex-col items-start gap-3 p-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
+                    <CardFooter className="flex-col items-start gap-3 p-6">
                       <div className="flex justify-between items-start w-full">
                         <div>
                           <h3 className="text-2xl font-bold">{selectedImage.title}</h3>
-                          <p className="text-default-600 mt-1">{selectedImage.date}</p>
+                          {selectedImage.description && (
+                            <p className="text-default-600 mt-1">{selectedImage.description}</p>
+                          )}
                         </div>
-                        <Chip size="lg" variant="primary">
-                          {selectedImage.attendees} attendees
+                        <Chip size="lg" variant="soft">
+                          {CATEGORIES.find((c) => c.id === selectedImage.category)?.label}
                         </Chip>
                       </div>
-                      <p className="text-default-700">{selectedImage.description}</p>
-                      <div className="flex gap-2 mt-2">
-                        <Chip size="md">
-                          {categories.find(c => c.id === selectedImage.category)?.label}
-                        </Chip>
-                      </div>
+                      {selectedImage.tags && selectedImage.tags.length > 0 && (
+                        <div className="flex gap-2">
+                          {selectedImage.tags.map((tag) => (
+                            <Chip key={tag} size="sm" variant="soft" color="accent">
+                              {tag}
+                            </Chip>
+                          ))}
+                        </div>
+                      )}
                     </CardFooter>
                   </Card>
                 )}
@@ -167,7 +292,87 @@ export default function GalleryPage() {
         </ModalBackdrop>
       </Modal>
 
-      {/* Call to Action */}
+      {/* Upload Modal */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isUploadOpen}
+          onOpenChange={(open) => { if (!open) closeUpload(); }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalBody>
+                <h2 className="text-xl font-bold">Upload Photo</h2>
+                <div className="space-y-4">
+                  <Input
+                    label="Title"
+                    placeholder="Photo title"
+                    value={uploadForm.title}
+                    onValueChange={(val) => setUploadForm((p) => ({ ...p, title: val }))}
+                  />
+                  <TextArea
+                    label="Description"
+                    placeholder="Describe this photo..."
+                    value={uploadForm.description}
+                    onValueChange={(val) => setUploadForm((p) => ({ ...p, description: val }))}
+                    minRows={2}
+                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Category</label>
+                    <select
+                      value={uploadForm.category}
+                      onChange={(e) => setUploadForm((p) => ({ ...p, category: e.target.value as GalleryImage["category"] }))}
+                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                    >
+                      <option value="events">Events</option>
+                      <option value="workshops">Workshops</option>
+                      <option value="hackathons">Hackathons</option>
+                      <option value="team">Team</option>
+                      <option value="projects">Projects</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <Input
+                    label="Image URL (optional if uploading file)"
+                    placeholder="https://example.com/photo.jpg"
+                    value={uploadForm.imageUrl}
+                    onValueChange={(val) => setUploadForm((p) => ({ ...p, imageUrl: val }))}
+                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Or upload a file</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-default-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
+                    />
+                  </div>
+                  <Input
+                    label="Tags (comma separated)"
+                    placeholder="tech, innovation, workshop"
+                    value={uploadForm.tags}
+                    onValueChange={(val) => setUploadForm((p) => ({ ...p, tags: val }))}
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="ghost" onPress={closeUpload}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={handleUpload}
+                  isPending={uploading}
+                  startContent={<Upload className="w-4 h-4" />}
+                >
+                  Upload
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
+
+      {/* CTA */}
       <Card className="border-none bg-gradient-to-r from-pink-500 to-purple-600 text-white">
         <CardContent className="p-8 md:p-12 text-center">
           <h2 className="text-3xl font-bold mb-3">Want to be part of our story?</h2>
@@ -177,21 +382,10 @@ export default function GalleryPage() {
           <Button
             size="lg"
             className="bg-white text-purple-600 font-semibold hover:scale-105 transition-transform"
+            onPress={() => window.location.href = "/register"}
           >
             Join Our Community
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Footer Note */}
-      <Card className="border-none bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-violet-950/30 dark:to-fuchsia-950/30">
-        <CardContent className="p-6 text-center">
-          <p className="text-default-600">
-            📸 All photos are from our community events. If you&apos;d like your photo removed, please contact us.
-          </p>
-          <p className="text-sm text-default-500 mt-3">
-            © 2025 Mind Mesh. All rights reserved.
-          </p>
         </CardContent>
       </Card>
     </div>

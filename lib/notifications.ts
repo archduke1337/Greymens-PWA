@@ -28,6 +28,15 @@ export const notificationService = {
     return response as unknown as Notification;
   },
 
+  async getAll(limit = 200): Promise<Notification[]> {
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      NOTIFICATIONS_COLLECTION,
+      [Query.orderDesc("$createdAt"), Query.limit(limit)]
+    );
+    return response.documents as unknown as Notification[];
+  },
+
   async getUserNotifications(userId: string, limit = 50): Promise<Notification[]> {
     const response = await databases.listDocuments(
       DATABASE_ID,
