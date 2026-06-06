@@ -85,7 +85,7 @@ export default function EventsPage() {
     .filter(event =>
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      (event.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     .sort((a, b) => {
       switch (sortBy) {
@@ -377,14 +377,14 @@ export default function EventsPage() {
                   )}
 
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {event.tags.slice(0, 3).map((tag, index) => (
+                    {(event.tags || []).slice(0, 3).map((tag, index) => (
                       <Chip key={index} size="sm" variant="primary">
                         {tag}
                       </Chip>
                     ))}
-                    {event.tags.length > 3 && (
+                    {(event.tags || []).length > 3 && (
                       <Chip size="sm" variant="primary">
-                        +{event.tags.length - 3}
+                        +{(event.tags || []).length - 3}
                       </Chip>
                     )}
                   </div>

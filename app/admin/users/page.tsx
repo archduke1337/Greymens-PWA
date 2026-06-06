@@ -585,15 +585,14 @@ export default function AdminUsersPage() {
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
 
-                isClearable
-                onClear={() => setSearchQuery("")}
+
               />
             </div>
             <div className="flex gap-2 flex-wrap">
               {(
                 [
                   "all",
-                  "member",
+                  "active",
                   "inactive",
                   "banned",
                   "no_account",
@@ -708,9 +707,8 @@ export default function AdminUsersPage() {
                           ) : (
                             eu.departments.slice(0, 2).map((ud) => (
                               <Chip
-                                key={ud.$id}
-                                color={getDepartmentRoleColor(ud.role)}
-                                variant="soft"
+                                key={ud.$id}                  color={getDepartmentRoleColor(ud.role) as any}
+                  variant="soft"
                                 size="sm"
                                 className="text-xs"
                               >

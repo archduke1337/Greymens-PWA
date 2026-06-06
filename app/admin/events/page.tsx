@@ -38,7 +38,7 @@ export default function AdminEventsPage() {
     tags: [],
     isFeatured: false,
     isPremium: false,
-    status: "upcoming"
+    status: "draft"
   });
   const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -162,15 +162,15 @@ export default function AdminEventsPage() {
       location: "",
       category: "conference",
       price: 0,
-      discountPrice: null,
-      capacity: 50,
-      registered: 0,
-      organizerName: "",
-      organizerAvatar: "",
-      tags: [],
-      isFeatured: false,
-      isPremium: false,
-      status: "upcoming"
+    discountPrice: undefined,
+    capacity: 50,
+    registered: 0,
+    organizerName: "",
+    organizerAvatar: "",
+    tags: [],
+    isFeatured: false,
+    isPremium: false,
+    status: "draft"
     });
     setTagInput("");
     close();
@@ -238,7 +238,7 @@ export default function AdminEventsPage() {
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
                 <p className="text-2xl font-bold">
-                  {events.filter(e => e.status === "upcoming").length}
+                  {events.filter(e => e.status === "active").length}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -335,7 +335,7 @@ export default function AdminEventsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        color={event.status === "upcoming" ? "success" : "default"}
+                        color={event.status === "active" ? "success" : "default"}
                         variant="primary"
                         size="sm"
                         className="text-xs"

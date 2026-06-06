@@ -277,7 +277,7 @@ export default function EventTicketsPage() {
                 placeholder="Search by ticket code or user ID..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
-                startContent={<Search className="w-4 h-4 text-default-400" />}
+
               />
             </div>
             <div className="flex gap-2">

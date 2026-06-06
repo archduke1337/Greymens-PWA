@@ -399,7 +399,7 @@ export default function EventDetailPage() {
             </Card>
 
             {/* Tags */}
-            {event.tags.length > 0 && (
+            {event.tags && event.tags.length > 0 && (
               <Card className="border-none shadow-lg">
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
@@ -409,7 +409,7 @@ export default function EventDetailPage() {
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="flex flex-wrap gap-2">
-                    {event.tags.map((tag, index) => (
+                    {(event.tags || []).map((tag, index) => (
                       <Chip 
                         key={index} 
                         size="lg" 

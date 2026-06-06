@@ -172,7 +172,7 @@ export default function NotificationsPage() {
           <Button
             size="sm"
             variant="ghost"
-            isLoading={markingAll}
+            isPending={markingAll}
             onPress={handleMarkAllAsRead}
           >
             Mark all read
@@ -194,7 +194,6 @@ export default function NotificationsPage() {
           {notifications.map((notification) => (
             <Card
               key={notification.$id}
-            isPressable
             onPress={() => handleMarkAsRead(notification)}
               className={`transition-all ${
                 !notification.read
