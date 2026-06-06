@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { eventService, type Event } from "@/lib/database";
 import { membershipService } from "@/lib/memberships";
-import { applicationService, type Application } from "@/lib/applications";
-import { departmentService, type Department } from "@/lib/departments";
+import type { Application } from "@/lib/types";;
+import type { Department, UserDepartment } from "@/lib/types";;
 import { ticketService } from "@/lib/tickets";
 import {
   Users,

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { eventService, type Event } from "@/lib/database";
-import { departmentService, type Department, type UserDepartment } from "@/lib/departments";
-import { applicationService, type Application } from "@/lib/applications";
+import type { Department, UserDepartment } from "@/lib/types";;
+import type { Application } from "@/lib/types";;
 import { membershipService } from "@/lib/memberships";
 import {
   BarChart3,

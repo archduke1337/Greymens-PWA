@@ -50,7 +50,7 @@ import {
   TabList,
   TabIndicator,
   TabPanel,
-  Textarea,
+  TextArea,
   useOverlayState,
 } from "@heroui/react";
 
@@ -324,7 +324,7 @@ export default function AdminMembershipPage() {
                     <ClockIcon className="w-4 h-4" />
                     <span>Pending</span>
                     {counts.pending > 0 && (
-                      <Chip size="sm" color="warning" variant="flat">
+                      <Chip size="sm" color="warning" variant="soft">
                         {counts.pending}
                       </Chip>
                     )}
@@ -402,7 +402,7 @@ export default function AdminMembershipPage() {
                                     {deptNames.length > 0 && (
                                       <div className="flex flex-wrap gap-1">
                                         {deptNames.map((name) => (
-                                          <Chip key={name} size="sm" variant="flat" color="primary" className="text-xs">
+                                          <Chip key={name} size="sm" variant="soft" color="accent" className="text-xs">
                                             {name}
                                           </Chip>
                                         ))}
@@ -412,7 +412,7 @@ export default function AdminMembershipPage() {
 
                                   <Button
                                     size="sm"
-                                    variant="light"
+                                    variant="ghost"
                                     className="p-0 h-auto text-xs text-default-400 md:hidden"
                                     onPress={() => setExpandedId(isExpanded ? null : app.$id!)}
                                   >
@@ -458,7 +458,7 @@ export default function AdminMembershipPage() {
                                 <div className="flex flex-wrap gap-1">
                                   {deptNames.length > 0 ? (
                                     deptNames.map((name) => (
-                                      <Chip key={name} size="sm" variant="flat" color="primary">
+                                      <Chip key={name} size="sm" variant="soft" color="accent">
                                         {name}
                                       </Chip>
                                     ))
@@ -473,7 +473,7 @@ export default function AdminMembershipPage() {
                                   <Button
                                     size="sm"
                                     color="success"
-                                    variant="flat"
+                                    variant="soft"
                                     onPress={() => handleOpenAction(app, "approve")}
                                     isDisabled={processing}
                                   >
@@ -483,7 +483,7 @@ export default function AdminMembershipPage() {
                                   <Button
                                     size="sm"
                                     color="danger"
-                                    variant="flat"
+                                    variant="soft"
                                     onPress={() => handleOpenAction(app, "reject")}
                                     isDisabled={processing}
                                   >
@@ -602,7 +602,7 @@ export default function AdminMembershipPage() {
                               <div className="flex flex-wrap gap-2">
                                 {getDepartmentNames(actionTarget.preferredDepartments).map(
                                   (name) => (
-                                    <Chip key={name} variant="flat" color="primary">
+                                    <Chip key={name} variant="soft" color="accent">
                                       {name}
                                     </Chip>
                                   )
@@ -616,7 +616,7 @@ export default function AdminMembershipPage() {
                             <label className="block text-sm font-medium mb-2">
                               Rejection Reason *
                             </label>
-                            <Textarea
+                            <TextArea
                               placeholder="Explain why this application is being rejected..."
                               value={rejectReason}
                               onValueChange={setRejectReason}
@@ -631,7 +631,7 @@ export default function AdminMembershipPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="flat"
+                      variant="soft"
                       onPress={() => {
                         dialogClose();
                         close();

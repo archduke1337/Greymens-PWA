@@ -130,7 +130,7 @@ export default function AdminMembershipRejectedPage() {
             <Button
               isIconOnly
               size="sm"
-              variant="light"
+              variant="ghost"
               onPress={() => router.push("/admin/membership")}
             >
               <ArrowLeftIcon className="w-5 h-5" />
@@ -250,7 +250,7 @@ export default function AdminMembershipRejectedPage() {
                             {/* Mobile-only expandable */}
                             <Button
                               size="sm"
-                              variant="light"
+                              variant="ghost"
                               className="p-0 h-auto text-xs text-default-400 lg:hidden"
                               onPress={() =>
                                 setExpandedId(isExpanded ? null : item.application.$id!)
@@ -276,7 +276,7 @@ export default function AdminMembershipRejectedPage() {
                                 {deptNames.length > 0 && (
                                   <div className="flex flex-wrap gap-1">
                                     {deptNames.map((name) => (
-                                      <Chip key={name} size="sm" variant="flat" color="primary">
+                                      <Chip key={name} size="sm" variant="soft" color="accent">
                                         {name}
                                       </Chip>
                                     ))}
@@ -305,7 +305,7 @@ export default function AdminMembershipRejectedPage() {
                           <div className="flex flex-wrap gap-1">
                             {deptNames.length > 0 ? (
                               deptNames.map((name) => (
-                                <Chip key={name} size="sm" variant="flat" color="primary">
+                                <Chip key={name} size="sm" variant="soft" color="accent">
                                   {name}
                                 </Chip>
                               ))

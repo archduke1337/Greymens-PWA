@@ -23,7 +23,7 @@ import {
   CardHeader,
   Chip,
   Input,
-  Textarea,
+  TextArea,
   Select,
   SelectItem,
 } from "@heroui/react";
@@ -397,11 +397,11 @@ export default function ProfilePage() {
               <p className="text-sm text-default-400">{profile.pronouns}</p>
             )}
             <div className="flex flex-wrap gap-2 justify-center mt-2">
-              <Chip size="sm" variant="flat" color={currentStatus.color as any}>
+              <Chip size="sm" variant="soft" color={currentStatus.color as any}>
                 {currentStatus.label}
               </Chip>
               {userDesignationsResolved.map((d) => (
-                <Chip key={d.$id} size="sm" variant="flat" color="secondary">
+                <Chip key={d.$id} size="sm" variant="soft" color="secondary">
                   {d.name}
                 </Chip>
               ))}
@@ -413,7 +413,7 @@ export default function ProfilePage() {
               <>
                 <Button
                   size="sm"
-                  color="primary"
+                  color="accent"
                   isLoading={saving}
                   onPress={handleSave}
                 >
@@ -421,7 +421,7 @@ export default function ProfilePage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="flat"
+                  variant="soft"
                   onPress={() => {
                     setIsEditing(false);
                     if (profile) {
@@ -449,7 +449,7 @@ export default function ProfilePage() {
                 </Button>
               </>
             ) : (
-              <Button size="sm" variant="flat" onPress={() => setIsEditing(true)}>
+              <Button size="sm" variant="soft" onPress={() => setIsEditing(true)}>
                 Edit Profile
               </Button>
             )}
@@ -467,7 +467,7 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-default-600">Bio</label>
             {isEditing ? (
-              <Textarea
+              <TextArea
                 value={editForm.bio}
                 onValueChange={(val) => setEditForm((prev) => ({ ...prev, bio: val }))}
                 placeholder="Tell us about yourself..."
@@ -498,13 +498,13 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="flat" onPress={addSkill}>
+                  <Button size="sm" variant="soft" onPress={addSkill}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.skills.map((skill) => (
-                    <Chip key={skill} size="sm" variant="flat" onClose={() => removeSkill(skill)}>
+                    <Chip key={skill} size="sm" variant="soft" onClose={() => removeSkill(skill)}>
                       {skill}
                     </Chip>
                   ))}
@@ -514,7 +514,7 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {profile?.skills && profile.skills.length > 0 ? (
                   profile.skills.map((skill) => (
-                    <Chip key={skill} size="sm" variant="flat">
+                    <Chip key={skill} size="sm" variant="soft">
                       {skill}
                     </Chip>
                   ))
@@ -543,13 +543,13 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="flat" onPress={addInterest}>
+                  <Button size="sm" variant="soft" onPress={addInterest}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.interests.map((interest) => (
-                    <Chip key={interest} size="sm" variant="flat" onClose={() => removeInterest(interest)}>
+                    <Chip key={interest} size="sm" variant="soft" onClose={() => removeInterest(interest)}>
                       {interest}
                     </Chip>
                   ))}
@@ -559,7 +559,7 @@ export default function ProfilePage() {
               <div className="flex flex-wrap gap-2">
                 {profile?.interests && profile.interests.length > 0 ? (
                   profile.interests.map((interest) => (
-                    <Chip key={interest} size="sm" variant="flat">
+                    <Chip key={interest} size="sm" variant="soft">
                       {interest}
                     </Chip>
                   ))
@@ -793,7 +793,7 @@ export default function ProfilePage() {
                 <Chip
                   size="sm"
                   color={membership.status === "active" ? "success" : "danger"}
-                  variant="flat"
+                  variant="soft"
                 >
                   {membership.status}
                 </Chip>
@@ -811,7 +811,7 @@ export default function ProfilePage() {
                 userDepartmentsResolved.map((dept) => {
                   const userDept = userDepartments.find((ud) => ud.departmentId === dept.$id);
                   return (
-                    <Chip key={dept.$id} size="sm" variant="flat" color="primary">
+                    <Chip key={dept.$id} size="sm" variant="soft" color="accent">
                       {dept.name}
                       {userDept && (
                         <span className="ml-1 text-default-400">({userDept.role})</span>
@@ -845,7 +845,7 @@ export default function ProfilePage() {
                     </div>
                     <Chip
                       size="sm"
-                      variant="flat"
+                      variant="soft"
                       color={
                         ticket.status === "checked_in"
                           ? "success"
@@ -877,7 +877,7 @@ export default function ProfilePage() {
             <div className="flex flex-wrap gap-2">
               {userDesignationsResolved.length > 0 ? (
                 userDesignationsResolved.map((desig) => (
-                  <Chip key={desig.$id} size="sm" variant="flat" color="secondary">
+                  <Chip key={desig.$id} size="sm" variant="soft" color="secondary">
                     {desig.name}
                     <span className="ml-1 text-default-400 text-xs">Lvl {desig.level}</span>
                   </Chip>

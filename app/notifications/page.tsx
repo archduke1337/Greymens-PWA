@@ -41,7 +41,7 @@ function LetterContent({ letter }: { letter: LetterData }) {
       {letter.metadata && Object.keys(letter.metadata).length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-default-200">
           {Object.entries(letter.metadata).map(([key, value]) => (
-            <Chip key={key} size="sm" variant="flat">
+            <Chip key={key} size="sm" variant="soft">
               {key}: {String(value)}
             </Chip>
           ))}
@@ -171,8 +171,8 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <Button
             size="sm"
-            variant="flat"
-            color="primary"
+            variant="soft"
+            color="accent"
             isLoading={markingAll}
             onPress={handleMarkAllAsRead}
           >

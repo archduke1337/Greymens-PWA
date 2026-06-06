@@ -137,7 +137,7 @@ export default function AdminMembershipApprovedPage() {
             <Button
               isIconOnly
               size="sm"
-              variant="light"
+              variant="ghost"
               onPress={() => router.push("/admin/membership")}
             >
               <ArrowLeftIcon className="w-5 h-5" />
@@ -290,12 +290,12 @@ export default function AdminMembershipApprovedPage() {
                         <TableCell className="hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {deptName ? (
-                              <Chip size="sm" variant="flat" color="success">
+                              <Chip size="sm" variant="soft" color="success">
                                 {deptName}
                               </Chip>
                             ) : preferredDepts.length > 0 ? (
                               preferredDepts.map((name) => (
-                                <Chip key={name} size="sm" variant="flat" color="primary">
+                                <Chip key={name} size="sm" variant="soft" color="accent">
                                   {name}
                                 </Chip>
                               ))
@@ -325,7 +325,7 @@ export default function AdminMembershipApprovedPage() {
                                   ? "danger"
                                   : "default"
                             }
-                            variant="flat"
+                            variant="soft"
                             size="sm"
                           >
                             {member.membership.status}

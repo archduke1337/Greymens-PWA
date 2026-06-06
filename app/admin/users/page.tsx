@@ -709,7 +709,7 @@ export default function AdminUsersPage() {
                               <Chip
                                 key={ud.$id}
                                 color={getDepartmentRoleColor(ud.role)}
-                                variant="flat"
+                                variant="soft"
                                 size="sm"
                                 className="text-xs"
                               >
@@ -719,7 +719,7 @@ export default function AdminUsersPage() {
                           )}
                           {eu.departments.length > 2 && (
                             <Chip
-                              variant="flat"
+                              variant="soft"
                               size="sm"
                               className="text-xs"
                             >
@@ -840,7 +840,7 @@ export default function AdminUsersPage() {
                             )}
                           </Chip>
                           {selectedUser.membership?.membershipNumber && (
-                            <Chip variant="flat" size="sm">
+                            <Chip variant="soft" size="sm">
                               {selectedUser.membership.membershipNumber}
                             </Chip>
                           )}
@@ -974,7 +974,7 @@ export default function AdminUsersPage() {
                               (skill, index) => (
                                 <Chip
                                   key={index}
-                                  variant="flat"
+                                  variant="soft"
                                   size="sm"
                                 >
                                   {skill}
@@ -996,9 +996,9 @@ export default function AdminUsersPage() {
                               (interest, index) => (
                                 <Chip
                                   key={index}
-                                  variant="flat"
+                                  variant="soft"
                                   size="sm"
-                                  color="primary"
+                                  color="accent"
                                 >
                                   {interest}
                                 </Chip>
@@ -1026,7 +1026,7 @@ export default function AdminUsersPage() {
                               <div className="flex items-center gap-2">
                                 <Chip
                                   color={getDepartmentRoleColor(ud.role)}
-                                  variant="flat"
+                                  variant="soft"
                                   size="sm"
                                 >
                                   {getDepartmentRoleLabel(ud.role)}
@@ -1430,7 +1430,7 @@ export default function AdminUsersPage() {
                                       ? "success"
                                       : "default"
                                   }
-                                  variant="flat"
+                                  variant="soft"
                                   size="sm"
                                   className="text-xs"
                                 >
