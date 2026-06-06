@@ -1,7 +1,23 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePermissions } from "@/context/PermissionContext";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+
+const ADMIN_SECTIONS = [
+  { label: "Dashboard", href: "/admin", icon: "📊" },
+  { label: "Membership", href: "/admin/membership", icon: "👥" },
+  { label: "Events", href: "/admin/events", icon: "🎯" },
+  { label: "Users", href: "/admin/users", icon: "👤" },
+  { label: "Departments", href: "/admin/departments", icon: "🏢" },
+  { label: "Designations", href: "/admin/designations", icon: "🏅" },
+  { label: "Powers", href: "/admin/powers", icon: "⚡" },
+  { label: "Blogs", href: "/admin/blog", icon: "📝" },
+  { label: "Projects", href: "/admin/projects", icon: "🚀" },
+  { label: "Sponsors", href: "/admin/sponsors", icon: "🤝" },
+  { label: "Audit Log", href: "/admin/audit", icon: "📋" },
+];
 
 export default function AdminLayout({
   children,
@@ -9,7 +25,9 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
+  const { status } = usePermissions();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -19,6 +37,13 @@ export default function AdminLayout({
         return;
       }
 
+      // Check admin status via permission context or email fallback
+      if (status === "admin" || status === "dev") {
+        setIsAdmin(true);
+        return;
+      }
+
+      // Fallback to API check
       fetch("/api/admin-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -36,7 +61,7 @@ export default function AdminLayout({
           router.push("/unauthorized");
         });
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, status]);
 
   if (loading || isAdmin === null) {
     return (
@@ -49,5 +74,45 @@ export default function AdminLayout({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen">
+      {/* Admin Sidebar */}
+      <aside className="w-64 bg-card border-r border-border p-4 hidden lg:block">
+        <div className="mb-6">
+          <h2 className="text-lg font-bold">Admin Panel</h2>
+          <p className="text-sm text-muted-foreground">Club Management</p>
+        </div>
+        <nav className="space-y-1">
+          {ADMIN_SECTIONS.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                pathname === section.href
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <span>{section.icon}</span>
+              <span>{section.label}</span>
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-6 pt-6 border-t border-border">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <span>←</span>
+            <span>Back to Dashboard</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
+    </div>
+  );
 }

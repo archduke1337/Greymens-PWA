@@ -5,7 +5,9 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 import { AuthProvider } from "@/context/AuthContext";
+import { PermissionProvider } from "@/context/PermissionContext";
 import { Toaster } from "@/components/toaster";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -21,6 +23,12 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: siteConfig.name,
+  },
 };
 
 export const viewport: Viewport = {
@@ -28,6 +36,9 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
   ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -46,14 +57,17 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
-            <div className="relative flex flex-col min-h-screen">
-              <Navbar />
-              <main className="flex-grow w-full">
-                {children}
-              </main>
-              <Footer />
-            </div>
-            <Toaster />
+            <PermissionProvider>
+              <ServiceWorkerRegistration />
+              <div className="relative flex flex-col min-h-screen">
+                <Navbar />
+                <main className="flex-grow w-full">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+              <Toaster />
+            </PermissionProvider>
           </AuthProvider>
         </Providers>
       </body>

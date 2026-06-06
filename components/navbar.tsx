@@ -7,7 +7,9 @@ import { useState, useEffect } from "react";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 
 const getAvatarUrl = (name: string) => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
@@ -15,8 +17,12 @@ const getAvatarUrl = (name: string) => {
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
+  const { status } = usePermissions();
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+
+  const isAdmin = status === "admin" || status === "dev";
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -44,6 +50,22 @@ export const Navbar = () => {
               {item.label}
             </Link>
           ))}
+          {isLoggedIn && (
+            <Link
+              href="/dashboard"
+              className="px-3 py-2 text-sm font-medium text-primary hover:text-primary transition-colors rounded-lg hover:bg-primary/10"
+            >
+              Dashboard
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="px-3 py-2 text-sm font-medium text-warning hover:text-warning transition-colors rounded-lg hover:bg-warning/10"
+            >
+              Admin
+            </Link>
+          )}
         </div>
       )}
 
@@ -60,11 +82,23 @@ export const Navbar = () => {
               <Link href={item.href}>{item.label}</Link>
             </DropdownItem>
               ))}
+              {isLoggedIn && (
+                <DropdownItem key="dashboard" textValue="Dashboard">
+                  <Link href="/dashboard">Dashboard</Link>
+                </DropdownItem>
+              )}
+              {isAdmin && (
+                <DropdownItem key="admin" textValue="Admin">
+                  <Link href="/admin">Admin</Link>
+                </DropdownItem>
+              )}
             </DropdownMenu>
           </Dropdown>
         )}
 
         <ThemeSwitch />
+
+        {!loading && user && <NotificationBell />}
 
         {!loading && (
           <>
@@ -88,6 +122,11 @@ export const Navbar = () => {
                       </Link>
                     </DropdownItem>
                   ))}
+                  {isAdmin && (
+                    <DropdownItem key="admin-panel">
+                      <Link href="/admin" className="text-warning">Admin Panel</Link>
+                    </DropdownItem>
+                  )}
                 </DropdownMenu>
               </Dropdown>
             ) : (
