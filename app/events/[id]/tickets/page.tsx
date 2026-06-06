@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ticketService, type Ticket } from "@/lib/tickets";
+import { ticketService } from "@/lib/tickets";
+import type { Ticket } from "@/lib/types";
 import { eventService, type Event } from "@/lib/database";
 import { toast } from "sonner";
 import {

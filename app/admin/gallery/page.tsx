@@ -227,8 +227,8 @@ export default function AdminGalleryPage() {
               <Input
                 placeholder="Search images..."
                 value={searchQuery}
-                onValueChange={setSearchQuery}
-                startContent={<Search className="w-4 h-4 text-default-400" />}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
+
               />
             </div>
           </div>
@@ -301,20 +301,19 @@ export default function AdminGalleryPage() {
                   <>
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="primary"
                       onPress={() => handleApprove(image)}
                       isPending={approvingId === image.$id}
-                      startContent={<CheckCircle className="w-4 h-4" />}
                     >
+                      <CheckCircle className="w-4 h-4" />
                       Approve
                     </Button>
                     <Button
                       size="sm"
-                      color="danger"
-                      variant="outline"
+                      variant="danger"
                       onPress={() => { setRejectTarget(image); open(); }}
-                      startContent={<XCircle className="w-4 h-4" />}
                     >
+                      <XCircle className="w-4 h-4" />
                       Reject
                     </Button>
                   </>
@@ -343,16 +342,18 @@ export default function AdminGalleryPage() {
                 <p className="text-sm text-default-500">
                   Provide a reason for rejecting &quot;{rejectTarget?.title}&quot;
                 </p>
-                <Input
-                  label="Rejection Reason"
-                  placeholder="Why is this being rejected?"
-                  value={rejectReason}
-                  onValueChange={setRejectReason}
-                />
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Rejection Reason</label>
+                  <Input
+                    placeholder="Why is this being rejected?"
+                    value={rejectReason}
+                    onChange={(e: any) => setRejectReason(e.target.value)}
+                  />
+                </div>
               </ModalBody>
               <ModalFooter>
                 <Button variant="ghost" onPress={close}>Cancel</Button>
-                <Button color="danger" onPress={handleReject} isPending={rejecting} isDisabled={!rejectReason.trim()}>
+                <Button variant="danger" onPress={handleReject} isPending={rejecting} isDisabled={!rejectReason.trim()}>
                   Reject
                 </Button>
               </ModalFooter>

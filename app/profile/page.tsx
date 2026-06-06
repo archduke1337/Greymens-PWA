@@ -24,8 +24,6 @@ import {
   Chip,
   Input,
   TextArea,
-  Select,
-  SelectItem,
 } from "@heroui/react";
 
 const { profilePicturesBucketId: PROFILE_BUCKET_ID } = APPWRITE_CONFIG;
@@ -397,11 +395,11 @@ export default function ProfilePage() {
               <p className="text-sm text-default-400">{profile.pronouns}</p>
             )}
             <div className="flex flex-wrap gap-2 justify-center mt-2">
-              <Chip size="sm" variant="soft" color={currentStatus.color as any}>
+              <Chip size="sm" variant="primary">
                 {currentStatus.label}
               </Chip>
               {userDesignationsResolved.map((d) => (
-                <Chip key={d.$id} size="sm" variant="soft" color="secondary">
+                <Chip key={d.$id} size="sm" variant="secondary">
                   {d.name}
                 </Chip>
               ))}
@@ -413,15 +411,15 @@ export default function ProfilePage() {
               <>
                 <Button
                   size="sm"
-                  color="accent"
-                  isLoading={saving}
+                  variant="primary"
+                  isPending={saving}
                   onPress={handleSave}
                 >
                   Save Changes
                 </Button>
                 <Button
                   size="sm"
-                  variant="soft"
+                  variant="ghost"
                   onPress={() => {
                     setIsEditing(false);
                     if (profile) {
@@ -449,7 +447,7 @@ export default function ProfilePage() {
                 </Button>
               </>
             ) : (
-              <Button size="sm" variant="soft" onPress={() => setIsEditing(true)}>
+              <Button size="sm" variant="ghost" onPress={() => setIsEditing(true)}>
                 Edit Profile
               </Button>
             )}
@@ -469,9 +467,9 @@ export default function ProfilePage() {
             {isEditing ? (
               <TextArea
                 value={editForm.bio}
-                onValueChange={(val) => setEditForm((prev) => ({ ...prev, bio: val }))}
+                onChange={(e: any) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell us about yourself..."
-                minRows={3}
+                rows={3}
               />
             ) : (
               <p className="text-sm text-default-700 whitespace-pre-wrap">
@@ -485,12 +483,10 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-default-600">Skills</label>
             {isEditing ? (
               <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
+                <div className="flex gap-2">                    <Input
                     value={newSkill}
-                    onValueChange={setNewSkill}
+                    onChange={(e: any) => setNewSkill(e.target.value)}
                     placeholder="Add a skill..."
-                    size="sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -498,15 +494,13 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="soft" onPress={addSkill}>
+                  <Button size="sm" variant="ghost" onPress={addSkill}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.skills.map((skill) => (
-                    <Chip key={skill} size="sm" variant="soft" onClose={() => removeSkill(skill)}>
-                      {skill}
-                    </Chip>
+                    <Chip key={skill} size="sm" variant="primary">{skill}<button onClick={() => removeSkill(skill)} className="ml-1 text-xs">x</button></Chip>
                   ))}
                 </div>
               </div>
@@ -530,12 +524,10 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-default-600">Interests</label>
             {isEditing ? (
               <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
+                <div className="flex gap-2">                    <Input
                     value={newInterest}
-                    onValueChange={setNewInterest}
+                    onChange={(e: any) => setNewInterest(e.target.value)}
                     placeholder="Add an interest..."
-                    size="sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -543,15 +535,13 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="soft" onPress={addInterest}>
+                  <Button size="sm" variant="ghost" onPress={addInterest}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.interests.map((interest) => (
-                    <Chip key={interest} size="sm" variant="soft" onClose={() => removeInterest(interest)}>
-                      {interest}
-                    </Chip>
+                    <Chip key={interest} size="sm" variant="primary">{interest}<button onClick={() => removeInterest(interest)} className="ml-1 text-xs">x</button></Chip>
                   ))}
                 </div>
               </div>
@@ -581,9 +571,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.githubUrl}
-                    onValueChange={(val) => setEditForm((prev) => ({ ...prev, githubUrl: val }))}
+                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, githubUrl: e.target.value }))}
                     placeholder="GitHub profile URL"
-                    size="sm"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -592,9 +581,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.linkedinUrl}
-                    onValueChange={(val) => setEditForm((prev) => ({ ...prev, linkedinUrl: val }))}
+                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))}
                     placeholder="LinkedIn profile URL"
-                    size="sm"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -603,9 +591,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.portfolioUrl}
-                    onValueChange={(val) => setEditForm((prev) => ({ ...prev, portfolioUrl: val }))}
+                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, portfolioUrl: e.target.value }))}
                     placeholder="Portfolio website URL"
-                    size="sm"
                   />
                 </div>
               </div>
@@ -667,47 +654,58 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
           {isEditing ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Program"
-                placeholder="Select program"
-                selectedKey={editForm.program}
-                onSelectionChange={(key) => setEditForm((prev) => ({ ...prev, program: key as string }))}
-              >
-                {PROGRAM_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </Select>
-              <Input
-                label="Branch"
-                value={editForm.branch}
-                onValueChange={(val) => setEditForm((prev) => ({ ...prev, branch: val }))}
-                placeholder="e.g. Computer Science"
-              />
-              <Select
-                label="Year"
-                placeholder="Select year"
-                selectedKey={editForm.year}
-                onSelectionChange={(key) => setEditForm((prev) => ({ ...prev, year: key as string }))}
-              >
-                {YEAR_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </Select>
-              <Select
-                label="Semester"
-                placeholder="Select semester"
-                selectedKey={editForm.semester}
-                onSelectionChange={(key) => setEditForm((prev) => ({ ...prev, semester: key as string }))}
-              >
-                {SEMESTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </Select>
-              <div className="space-y-1.5">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Program</label>
+                <select
+                  value={editForm.program}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, program: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                >
+                  <option value="">Select program</option>
+                  {PROGRAM_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Branch</label>
                 <Input
-                  label="URN (University Roll Number)"
+                  value={editForm.branch}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
+                  placeholder="e.g. Computer Science"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Year</label>
+                <select
+                  value={editForm.year}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, year: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                >
+                  <option value="">Select year</option>
+                  {YEAR_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Semester</label>
+                <select
+                  value={editForm.semester}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, semester: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                >
+                  <option value="">Select semester</option>
+                  {SEMESTER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium mb-1 block">URN (University Roll Number)</label>
+                <Input
                   value={editForm.urn}
-                  onValueChange={(val) => setEditForm((prev) => ({ ...prev, urn: val }))}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, urn: e.target.value }))}
                   placeholder="Enter URN"
                 />
                 <p className="text-xs text-warning flex items-center gap-1">
@@ -717,17 +715,19 @@ export default function ProfilePage() {
                   This field is audited - changes are logged
                 </p>
               </div>
-              <Input
-                label="Phone"
-                value={editForm.phone}
-                onValueChange={(val) => setEditForm((prev) => ({ ...prev, phone: val }))}
-                placeholder="Phone number"
-              />
-              <div className="space-y-1.5 md:col-span-2">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Phone</label>
                 <Input
-                  label="Address"
+                  value={editForm.phone}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Phone number"
+                />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-sm font-medium mb-1 block">Address</label>
+                <Input
                   value={editForm.address}
-                  onValueChange={(val) => setEditForm((prev) => ({ ...prev, address: val }))}
+                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
                   placeholder="Address"
                 />
                 <p className="text-xs text-warning flex items-center gap-1">
@@ -792,8 +792,7 @@ export default function ProfilePage() {
                 </div>
                 <Chip
                   size="sm"
-                  color={membership.status === "active" ? "success" : "danger"}
-                  variant="soft"
+                  variant={membership.status === "active" ? "primary" : "danger"}
                 >
                   {membership.status}
                 </Chip>
@@ -850,7 +849,7 @@ export default function ProfilePage() {
                         ticket.status === "checked_in"
                           ? "success"
                           : ticket.status === "completed"
-                          ? "primary"
+                          ? "secondary"
                           : ticket.status === "invalidated"
                           ? "danger"
                           : "default"
@@ -876,8 +875,7 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-default-600">Designations</label>
             <div className="flex flex-wrap gap-2">
               {userDesignationsResolved.length > 0 ? (
-                userDesignationsResolved.map((desig) => (
-                  <Chip key={desig.$id} size="sm" variant="soft" color="secondary">
+                userDesignationsResolved.map((desig) => (                    <Chip key={desig.$id} size="sm" variant="secondary">
                     {desig.name}
                     <span className="ml-1 text-default-400 text-xs">Lvl {desig.level}</span>
                   </Chip>

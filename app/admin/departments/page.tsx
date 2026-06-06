@@ -505,25 +505,29 @@ export default function AdminDepartmentsPage() {
                   </ModalHeader>
 
                   <ModalBody className="py-6 space-y-5">
-                    <Input
-                      label="Department Name"
-                      placeholder="e.g., Web Development"
-                      value={formData.name}
-                      onChange={(e: any) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Department Name</label>
+                      <Input
+                        placeholder="e.g., Web Development"
+                        value={formData.name}
+                        onChange={(e: any) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
 
-                    <TextArea
-                      label="Description"
-                      placeholder="Brief description of the department..."
-                      value={formData.description}
-                      onChange={(e: any) =>
-                        setFormData({ ...formData, description: e.target.value })
-                      }
-                      rows={3}
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Description</label>
+                      <TextArea
+                        placeholder="Brief description of the department..."
+                        value={formData.description}
+                        onChange={(e: any) =>
+                          setFormData({ ...formData, description: e.target.value })
+                        }
+                        rows={3}
+                      />
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <select
@@ -556,52 +560,60 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Icon"
-                        placeholder="Emoji or text (e.g., &#128187;)"
-                        value={formData.icon}
-                        onChange={(e: any) =>
-                          setFormData({ ...formData, icon: e.target.value })
-                        }
-                      />
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Icon</label>
+                        <Input
+                          placeholder="Emoji or text"
+                          value={formData.icon}
+                          onChange={(e: any) =>
+                            setFormData({ ...formData, icon: e.target.value })
+                          }
+                        />
+                      </div>
 
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Display Order</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={formData.displayOrder?.toString()}
+                          onChange={(e: any) =>
+                            setFormData({
+                              ...formData,
+                              displayOrder: parseInt(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Parent Department ID (optional)</label>
                       <Input
-                        label="Display Order"
-                        type="number"
-                        placeholder="0"
-                        value={formData.displayOrder?.toString()}
+                        placeholder="Leave empty for top-level department"
+                        value={formData.parentId || ""}
                         onChange={(e: any) =>
                           setFormData({
                             ...formData,
-                            displayOrder: parseInt(e.target.value) || 0,
+                            parentId: e.target.value || undefined,
                           })
                         }
                       />
                     </div>
 
-                    <Input
-                      label="Parent Department ID (optional)"
-                      placeholder="Leave empty for top-level department"
-                      value={formData.parentId || ""}
-                      onChange={(e: any) =>
-                        setFormData({
-                          ...formData,
-                          parentId: e.target.value || undefined,
-                        })
-                      }
-                    />
-
-                    <Input
-                      label="Head User ID (optional)"
-                      placeholder="User ID of the department head"
-                      value={formData.headId || ""}
-                      onChange={(e: any) =>
-                        setFormData({
-                          ...formData,
-                          headId: e.target.value || undefined,
-                        })
-                      }
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Head User ID (optional)</label>
+                      <Input
+                        placeholder="User ID of the department head"
+                        value={formData.headId || ""}
+                        onChange={(e: any) =>
+                          setFormData({
+                            ...formData,
+                            headId: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </div>
 
                     <Switch
                       isSelected={formData.isActive}

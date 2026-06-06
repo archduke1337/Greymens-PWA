@@ -3,7 +3,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ticketService, type Ticket } from "@/lib/tickets";
+import { ticketService } from "@/lib/tickets";
+import type { Ticket } from "@/lib/types";
 import { toast } from "sonner";
 import {
   Camera,

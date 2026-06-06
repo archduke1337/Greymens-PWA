@@ -428,7 +428,7 @@ export default function AdminUsersPage() {
 
   const getRoleColor = (
     status: string
-  ): "success" | "warning" | "danger" | "default" | "primary" => {
+  ): "success" | "warning" | "danger" | "default" | "accent" => {
     switch (status) {
       case "active":
         return "success";
@@ -458,10 +458,10 @@ export default function AdminUsersPage() {
 
   const getDepartmentRoleColor = (
     role: string
-  ): "primary" | "secondary" | "default" => {
+  ): "accent" | "secondary" | "default" => {
     switch (role) {
       case "lead":
-        return "primary";
+        return "accent";
       case "core_member":
         return "secondary";
       default:
@@ -584,7 +584,7 @@ export default function AdminUsersPage() {
                 placeholder="Search by name, URN, phone, branch, skills..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
-                startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
+
                 isClearable
                 onClear={() => setSearchQuery("")}
               />
@@ -690,12 +690,13 @@ export default function AdminUsersPage() {
                         <Chip
                           color={getRoleColor(
                             eu.membership?.status || "none"
-                          )}
-                          variant="primary"
+                          )}                variant="primary"
                           size="sm"
                           className="text-xs"
                         >
-                          {getRoleLabel(eu.membership?.status || "none")}
+                          {getRoleLabel(
+                            eu.membership?.status || "none"
+                          )}
                         </Chip>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">

@@ -16,6 +16,7 @@ import {
   ModalContainer,
   ModalBody,
   ModalDialog,
+  ModalFooter,
   Input,
   TextArea,
   useOverlayState,
@@ -174,7 +175,8 @@ export default function GalleryPage() {
               ))}
             </div>
             {canUpload && (
-              <Button variant="primary" onPress={openUpload} startContent={<ImagePlus className="w-4 h-4" />}>
+              <Button variant="primary" onPress={openUpload}>
+                <ImagePlus className="w-4 h-4" />
                 Upload Photo
               </Button>
             )}
@@ -251,7 +253,7 @@ export default function GalleryPage() {
           onOpenChange={(open) => { if (!open) { closePreview(); setSelectedImage(null); } }}
         >
           <ModalContainer>
-            <ModalDialog size="xl">
+            <ModalDialog>
               <ModalBody className="p-0">
                 {selectedImage && (
                   <Card className="border-none">
@@ -303,19 +305,23 @@ export default function GalleryPage() {
               <ModalBody>
                 <h2 className="text-xl font-bold">Upload Photo</h2>
                 <div className="space-y-4">
-                  <Input
-                    label="Title"
-                    placeholder="Photo title"
-                    value={uploadForm.title}
-                    onValueChange={(val) => setUploadForm((p) => ({ ...p, title: val }))}
-                  />
-                  <TextArea
-                    label="Description"
-                    placeholder="Describe this photo..."
-                    value={uploadForm.description}
-                    onValueChange={(val) => setUploadForm((p) => ({ ...p, description: val }))}
-                    minRows={2}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Title</label>
+                    <Input
+                      placeholder="Photo title"
+                      value={uploadForm.title}
+                      onChange={(e: any) => setUploadForm((p) => ({ ...p, title: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Description</label>
+                    <TextArea
+                      placeholder="Describe this photo..."
+                      value={uploadForm.description}
+                      onChange={(e: any) => setUploadForm((p) => ({ ...p, description: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Category</label>
                     <select
@@ -331,12 +337,14 @@ export default function GalleryPage() {
                       <option value="other">Other</option>
                     </select>
                   </div>
-                  <Input
-                    label="Image URL (optional if uploading file)"
-                    placeholder="https://example.com/photo.jpg"
-                    value={uploadForm.imageUrl}
-                    onValueChange={(val) => setUploadForm((p) => ({ ...p, imageUrl: val }))}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Image URL (optional if uploading file)</label>
+                    <Input
+                      placeholder="https://example.com/photo.jpg"
+                      value={uploadForm.imageUrl}
+                      onChange={(e: any) => setUploadForm((p) => ({ ...p, imageUrl: e.target.value }))}
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Or upload a file</label>
                     <input
@@ -346,12 +354,14 @@ export default function GalleryPage() {
                       className="w-full text-sm text-default-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
                     />
                   </div>
-                  <Input
-                    label="Tags (comma separated)"
-                    placeholder="tech, innovation, workshop"
-                    value={uploadForm.tags}
-                    onValueChange={(val) => setUploadForm((p) => ({ ...p, tags: val }))}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tags (comma separated)</label>
+                    <Input
+                      placeholder="tech, innovation, workshop"
+                      value={uploadForm.tags}
+                      onChange={(e: any) => setUploadForm((p) => ({ ...p, tags: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </ModalBody>
               <ModalFooter>

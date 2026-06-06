@@ -489,25 +489,29 @@ export default function AdminDesignationsPage() {
                   </ModalHeader>
 
                   <ModalBody className="py-6 space-y-5">
-                    <Input
-                      label="Designation Name"
-                      placeholder="e.g., Head of Web Development"
-                      value={formData.name}
-                      onChange={(e: any) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Designation Name</label>
+                      <Input
+                        placeholder="e.g., Head of Web Development"
+                        value={formData.name}
+                        onChange={(e: any) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
 
-                    <TextArea
-                      label="Description"
-                      placeholder="What does this designation entail?"
-                      value={formData.description}
-                      onChange={(e: any) =>
-                        setFormData({ ...formData, description: e.target.value })
-                      }
-                      rows={3}
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Description</label>
+                      <TextArea
+                        placeholder="What does this designation entail?"
+                        value={formData.description}
+                        onChange={(e: any) =>
+                          setFormData({ ...formData, description: e.target.value })
+                        }
+                        rows={3}
+                      />
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -532,30 +536,34 @@ export default function AdminDesignationsPage() {
                         </select>
                       </div>
 
-                      <Input
-                        label="Level"
-                        type="number"
-                        placeholder="1"
-                        value={formData.level.toString()}
-                        onChange={(e: any) =>
-                          setFormData({
-                            ...formData,
-                            level: parseInt(e.target.value) || 1,
-                          })
-                        }
-                        required
-                      />
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Level</label>
+                        <Input
+                          type="number"
+                          placeholder="1"
+                          value={formData.level.toString()}
+                          onChange={(e: any) =>
+                            setFormData({
+                              ...formData,
+                              level: parseInt(e.target.value) || 1,
+                            })
+                          }
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Badge Icon"
-                        placeholder="Emoji or text"
-                        value={formData.badgeIcon}
-                        onChange={(e: any) =>
-                          setFormData({ ...formData, badgeIcon: e.target.value })
-                        }
-                      />
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">Badge Icon</label>
+                        <Input
+                          placeholder="Emoji or text"
+                          value={formData.badgeIcon}
+                          onChange={(e: any) =>
+                            setFormData({ ...formData, badgeIcon: e.target.value })
+                          }
+                        />
+                      </div>
 
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium">Badge Color</label>
@@ -570,32 +578,36 @@ export default function AdminDesignationsPage() {
                       </div>
                     </div>
 
-                    <Input
-                      label="Max Holders (optional)"
-                      type="number"
-                      placeholder="Leave empty for unlimited"
-                      value={formData.maxHolders?.toString() || ""}
-                      onChange={(e: any) =>
-                        setFormData({
-                          ...formData,
-                          maxHolders: e.target.value
-                            ? parseInt(e.target.value)
-                            : undefined,
-                        })
-                      }
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Max Holders (optional)</label>
+                      <Input
+                        type="number"
+                        placeholder="Leave empty for unlimited"
+                        value={formData.maxHolders?.toString() || ""}
+                        onChange={(e: any) =>
+                          setFormData({
+                            ...formData,
+                            maxHolders: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
+                      />
+                    </div>
 
-                    <Input
-                      label="Department ID (optional)"
-                      placeholder="Link to a specific department"
-                      value={formData.departmentId || ""}
-                      onChange={(e: any) =>
-                        setFormData({
-                          ...formData,
-                          departmentId: e.target.value || undefined,
-                        })
-                      }
-                    />
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Department ID (optional)</label>
+                      <Input
+                        placeholder="Link to a specific department"
+                        value={formData.departmentId || ""}
+                        onChange={(e: any) =>
+                          setFormData({
+                            ...formData,
+                            departmentId: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </div>
 
                     <Switch
                       isSelected={formData.isActive}

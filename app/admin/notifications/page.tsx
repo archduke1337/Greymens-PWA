@@ -152,7 +152,8 @@ export default function AdminNotificationsPage() {
             View and send system notifications
           </p>
         </div>
-        <Button variant="primary" onPress={open} startContent={<Send className="w-4 h-4" />}>
+        <Button variant="primary" onPress={open}>
+          <Send className="w-4 h-4" />
           Send Notification
         </Button>
       </div>
@@ -163,8 +164,8 @@ export default function AdminNotificationsPage() {
           <Input
             placeholder="Search notifications..."
             value={searchQuery}
-            onValueChange={setSearchQuery}
-            startContent={<Search className="w-4 h-4 text-default-400" />}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
+
           />
         </CardContent>
       </Card>
@@ -219,25 +220,31 @@ export default function AdminNotificationsPage() {
               <ModalHeader>Send Notification</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
-                    label="Recipient User ID"
-                    placeholder="Enter the user's ID"
-                    value={form.userId}
-                    onValueChange={(val) => setForm((p) => ({ ...p, userId: val }))}
-                  />
-                  <Input
-                    label="Title"
-                    placeholder="Notification title"
-                    value={form.title}
-                    onValueChange={(val) => setForm((p) => ({ ...p, title: val }))}
-                  />
-                  <TextArea
-                    label="Body"
-                    placeholder="Notification message..."
-                    value={form.body}
-                    onValueChange={(val) => setForm((p) => ({ ...p, body: val }))}
-                    minRows={3}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Recipient User ID</label>
+                    <Input
+                      placeholder="Enter the user's ID"
+                      value={form.userId}
+                      onChange={(e: any) => setForm((p) => ({ ...p, userId: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Title</label>
+                    <Input
+                      placeholder="Notification title"
+                      value={form.title}
+                      onChange={(e: any) => setForm((p) => ({ ...p, title: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Body</label>
+                    <TextArea
+                      placeholder="Notification message..."
+                      value={form.body}
+                      onChange={(e: any) => setForm((p) => ({ ...p, body: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">Type</label>
                     <select
@@ -259,8 +266,8 @@ export default function AdminNotificationsPage() {
                   variant="primary"
                   onPress={handleSend}
                   isPending={sending}
-                  startContent={<Send className="w-4 h-4" />}
                 >
+                  <Send className="w-4 h-4" />
                   Send
                 </Button>
               </ModalFooter>

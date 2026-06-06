@@ -171,8 +171,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <Button
             size="sm"
-            variant="soft"
-            color="accent"
+            variant="ghost"
             isLoading={markingAll}
             onPress={handleMarkAllAsRead}
           >
@@ -195,9 +194,8 @@ export default function NotificationsPage() {
           {notifications.map((notification) => (
             <Card
               key={notification.$id}
-              isHoverable
-              isPressable
-              onPress={() => handleMarkAsRead(notification)}
+            isPressable
+            onPress={() => handleMarkAsRead(notification)}
               className={`transition-all ${
                 !notification.read
                   ? "border-l-4 border-l-primary bg-primary-50/30"

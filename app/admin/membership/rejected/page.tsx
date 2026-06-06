@@ -147,9 +147,7 @@ export default function AdminMembershipRejectedPage() {
           <Input
             placeholder="Search by name, branch, or reason..."
             value={searchQuery}
-            onValueChange={setSearchQuery}
-            startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
-            isClearable
+            onChange={(e: any) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>

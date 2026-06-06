@@ -472,8 +472,7 @@ export default function AdminMembershipPage() {
                                 <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    color="success"
-                                    variant="soft"
+                                    variant="ghost"
                                     onPress={() => handleOpenAction(app, "approve")}
                                     isDisabled={processing}
                                   >
@@ -482,8 +481,7 @@ export default function AdminMembershipPage() {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    color="danger"
-                                    variant="soft"
+                                    variant="ghost"
                                     onPress={() => handleOpenAction(app, "reject")}
                                     isDisabled={processing}
                                   >
@@ -619,8 +617,8 @@ export default function AdminMembershipPage() {
                             <TextArea
                               placeholder="Explain why this application is being rejected..."
                               value={rejectReason}
-                              onValueChange={setRejectReason}
-                              minRows={3}
+                              onChange={(e: any) => setRejectReason(e.target.value)}
+                              rows={3}
                               className="w-full"
                             />
                           </div>
@@ -631,7 +629,7 @@ export default function AdminMembershipPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="soft"
+                      variant="ghost"
                       onPress={() => {
                         dialogClose();
                         close();
@@ -642,7 +640,7 @@ export default function AdminMembershipPage() {
                       Cancel
                     </Button>
                     <Button
-                      color={actionType === "approve" ? "success" : "danger"}
+                      variant={actionType === "approve" ? "primary" : "danger"}
                       onPress={handleConfirmAction}
                       isPending={processing}
                     >

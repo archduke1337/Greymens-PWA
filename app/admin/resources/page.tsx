@@ -134,7 +134,7 @@ export default function AdminResourcesPage() {
         entityType: "resource",
         entityId: editTarget?.$id || "new",
         details: { title: form.title },
-        timestamp: new Date().toISOString(),
+
       });
 
       close();
@@ -211,8 +211,8 @@ export default function AdminResourcesPage() {
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
             Manage club resources across departments and roles
           </p>
-        </div>
-        <Button variant="primary" onPress={openCreate} startContent={<Plus className="w-4 h-4" />}>
+        </div>          <Button variant="primary" onPress={openCreate}>
+          <Plus className="w-4 h-4" />
           Add Resource
         </Button>
       </div>
@@ -225,8 +225,8 @@ export default function AdminResourcesPage() {
               <Input
                 placeholder="Search resources..."
                 value={searchQuery}
-                onValueChange={setSearchQuery}
-                startContent={<Search className="w-4 h-4 text-default-400" />}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
+
               />
             </div>
             <div className="flex gap-2">
@@ -291,7 +291,7 @@ export default function AdminResourcesPage() {
                     <Button size="sm" variant="ghost" onPress={() => openEdit(resource)} isIconOnly>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" color="danger" onPress={() => handleDelete(resource)} isIconOnly>
+                    <Button size="sm" variant="danger-soft" onPress={() => handleDelete(resource)} isIconOnly>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -310,19 +310,23 @@ export default function AdminResourcesPage() {
               <ModalHeader>{editTarget ? "Edit Resource" : "Create Resource"}</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <Input
-                    label="Title"
-                    placeholder="Resource title"
-                    value={form.title}
-                    onValueChange={(val) => setForm((p) => ({ ...p, title: val }))}
-                  />
-                  <TextArea
-                    label="Description"
-                    placeholder="Brief description"
-                    value={form.description}
-                    onValueChange={(val) => setForm((p) => ({ ...p, description: val }))}
-                    minRows={2}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Title</label>
+                    <Input
+                      placeholder="Resource title"
+                      value={form.title}
+                      onChange={(e: any) => setForm((p) => ({ ...p, title: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Description</label>
+                    <TextArea
+                      placeholder="Brief description"
+                      value={form.description}
+                      onChange={(e: any) => setForm((p) => ({ ...p, description: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-1 block">Type</label>
@@ -364,23 +368,29 @@ export default function AdminResourcesPage() {
                       </select>
                     </div>
                   )}
-                  <Input
-                    label="URL (optional)"
-                    placeholder="https://..."
-                    value={form.url}
-                    onValueChange={(val) => setForm((p) => ({ ...p, url: val }))}
-                  />
-                  <Input
-                    label="Tags (comma separated)"
-                    placeholder="tag1, tag2, tag3"
-                    value={form.tags}
-                    onValueChange={(val) => setForm((p) => ({ ...p, tags: val }))}
-                  />
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">URL (optional)</label>
+                    <Input
+                      placeholder="https://..."
+                      value={form.url}
+                      onChange={(e: any) => setForm((p) => ({ ...p, url: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tags (comma separated)</label>
+                    <Input
+                      placeholder="tag1, tag2, tag3"
+                      value={form.tags}
+                      onChange={(e: any) => setForm((p) => ({ ...p, tags: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="ghost" onPress={close}>Cancel</Button>
-                <Button variant="primary" onPress={handleSave}>
+                <Button variant="ghost" onPress={close}>Cancel</Button>                    <Button
+                    variant="primary"
+                    onPress={handleSave}
+                  >
                   {editTarget ? "Update" : "Create"}
                 </Button>
               </ModalFooter>
