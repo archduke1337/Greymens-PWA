@@ -135,6 +135,7 @@ export default function ProfilePage() {
     interests: [] as string[],
   });
 
+<<<<<<< Updated upstream
   const [newSkill, setNewSkill] = useState("");
   const [newInterest, setNewInterest] = useState("");
 
@@ -197,6 +198,14 @@ export default function ProfilePage() {
         const fileUrl = storage.getFilePreview(
           PROFILE_BUCKET_ID,
           u.prefs.profilePictureId,
+=======
+  const loadProfilePicture = () => {
+    if ((user?.prefs as any)?.profilePictureId) {
+      try {
+        const fileUrl = storage.getFilePreview(
+          PROFILE_BUCKET_ID,
+          (user.prefs as any).profilePictureId,
+>>>>>>> Stashed changes
           400,
           400,
           ImageGravity.Center,
@@ -234,21 +243,42 @@ export default function ProfilePage() {
 
     setUploadingPhoto(true);
     try {
+<<<<<<< Updated upstream
       if (authUser?.prefs?.profilePictureId) {
         try {
           await storage.deleteFile(PROFILE_BUCKET_ID, authUser.prefs.profilePictureId);
         } catch {
           /* old picture may not exist */
+=======
+      // Delete old profile picture if exists
+      if ((user?.prefs as any)?.profilePictureId) {
+        try {
+          await storage.deleteFile(PROFILE_BUCKET_ID, (user.prefs as any).profilePictureId);
+        } catch {
+          // No old picture to delete
+>>>>>>> Stashed changes
         }
       }
       const response = await storage.createFile(PROFILE_BUCKET_ID, ID.unique(), file);
       await account.updatePrefs({
+<<<<<<< Updated upstream
         ...authUser?.prefs,
         profilePictureId: response.$id,
       });
       const url = storage.getFileView(PROFILE_BUCKET_ID, response.$id).toString();
       setProfilePicture(url);
       toast.success("Profile picture updated");
+=======
+        ...user?.prefs,
+        profilePictureId: response.$id,
+      });
+
+      const urlString = storage.getFileView(PROFILE_BUCKET_ID, response.$id).toString();
+      setProfilePicture(urlString);
+      
+      setUpdateSuccess(true);
+      toast.success("Profile picture updated successfully!");
+>>>>>>> Stashed changes
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to upload picture");
     } finally {

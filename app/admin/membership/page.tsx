@@ -45,6 +45,10 @@ import {
   TableHeader,
   TableRow,
   Tabs,
+<<<<<<< Updated upstream
+=======
+  Tab,
+>>>>>>> Stashed changes
   TabListContainer,
   TabList,
   TabIndicator,
@@ -323,7 +327,11 @@ export default function AdminMembershipPage() {
                     <ClockIcon className="w-4 h-4" />
                     <span>Pending</span>
                     {counts.pending > 0 && (
+<<<<<<< Updated upstream
                       <Chip size="sm" color="warning" variant="flat">
+=======
+                      <Chip size="sm" color="warning" variant="soft">
+>>>>>>> Stashed changes
                         {counts.pending}
                       </Chip>
                     )}
@@ -401,7 +409,11 @@ export default function AdminMembershipPage() {
                                     {deptNames.length > 0 && (
                                       <div className="flex flex-wrap gap-1">
                                         {deptNames.map((name) => (
+<<<<<<< Updated upstream
                                           <Chip key={name} size="sm" variant="flat" color="primary" className="text-xs">
+=======
+                                          <Chip key={name} size="sm" variant="soft" color="default" className="text-xs">
+>>>>>>> Stashed changes
                                             {name}
                                           </Chip>
                                         ))}
@@ -411,7 +423,11 @@ export default function AdminMembershipPage() {
 
                                   <Button
                                     size="sm"
+<<<<<<< Updated upstream
                                     variant="light"
+=======
+                                    variant="ghost"
+>>>>>>> Stashed changes
                                     className="p-0 h-auto text-xs text-default-400 md:hidden"
                                     onPress={() => setExpandedId(isExpanded ? null : app.$id!)}
                                   >
@@ -457,7 +473,11 @@ export default function AdminMembershipPage() {
                                 <div className="flex flex-wrap gap-1">
                                   {deptNames.length > 0 ? (
                                     deptNames.map((name) => (
+<<<<<<< Updated upstream
                                       <Chip key={name} size="sm" variant="flat" color="primary">
+=======
+                                      <Chip key={name} size="sm" variant="soft" color="default">
+>>>>>>> Stashed changes
                                         {name}
                                       </Chip>
                                     ))
@@ -471,8 +491,12 @@ export default function AdminMembershipPage() {
                                 <div className="flex gap-2">
                                   <Button
                                     size="sm"
+<<<<<<< Updated upstream
                                     color="success"
                                     variant="flat"
+=======
+                                    variant="primary"
+>>>>>>> Stashed changes
                                     onPress={() => handleOpenAction(app, "approve")}
                                     isDisabled={processing}
                                   >
@@ -481,8 +505,12 @@ export default function AdminMembershipPage() {
                                   </Button>
                                   <Button
                                     size="sm"
+<<<<<<< Updated upstream
                                     color="danger"
                                     variant="flat"
+=======
+                                    variant="danger"
+>>>>>>> Stashed changes
                                     onPress={() => handleOpenAction(app, "reject")}
                                     isDisabled={processing}
                                   >
@@ -601,7 +629,11 @@ export default function AdminMembershipPage() {
                               <div className="flex flex-wrap gap-2">
                                 {getDepartmentNames(actionTarget.preferredDepartments).map(
                                   (name) => (
+<<<<<<< Updated upstream
                                     <Chip key={name} variant="flat" color="primary">
+=======
+                                    <Chip key={name} variant="soft" color="default">
+>>>>>>> Stashed changes
                                       {name}
                                     </Chip>
                                   )
@@ -630,7 +662,11 @@ export default function AdminMembershipPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
+<<<<<<< Updated upstream
                       variant="flat"
+=======
+                      variant="secondary"
+>>>>>>> Stashed changes
                       onPress={() => {
                         dialogClose();
                         close();
@@ -641,7 +677,11 @@ export default function AdminMembershipPage() {
                       Cancel
                     </Button>
                     <Button
+<<<<<<< Updated upstream
                       color={actionType === "approve" ? "success" : "danger"}
+=======
+                      variant={actionType === "approve" ? "primary" : "danger"}
+>>>>>>> Stashed changes
                       onPress={handleConfirmAction}
                       isPending={processing}
                     >
@@ -657,5 +697,8 @@ export default function AdminMembershipPage() {
     </div>
   );
 }
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

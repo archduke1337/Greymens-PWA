@@ -41,7 +41,11 @@ function LetterContent({ letter }: { letter: LetterData }) {
       {letter.metadata && Object.keys(letter.metadata).length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2 border-t border-default-200">
           {Object.entries(letter.metadata).map(([key, value]) => (
+<<<<<<< Updated upstream
             <Chip key={key} size="sm" variant="flat">
+=======
+            <Chip key={key} size="sm" variant="soft">
+>>>>>>> Stashed changes
               {key}: {String(value)}
             </Chip>
           ))}
@@ -171,7 +175,11 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <Button
             size="sm"
+<<<<<<< Updated upstream
             variant="flat"
+=======
+            variant="soft"
+>>>>>>> Stashed changes
             color="primary"
             isLoading={markingAll}
             onPress={handleMarkAllAsRead}
@@ -195,14 +203,22 @@ export default function NotificationsPage() {
           {notifications.map((notification) => (
             <Card
               key={notification.$id}
+<<<<<<< Updated upstream
               isHoverable
               isPressable
               onPress={() => handleMarkAsRead(notification)}
               className={`transition-all ${
+=======
+              className={`transition-all hover:bg-default-100 cursor-pointer ${
+>>>>>>> Stashed changes
                 !notification.read
                   ? "border-l-4 border-l-primary bg-primary-50/30"
                   : "opacity-70"
               }`}
+<<<<<<< Updated upstream
+=======
+              onPress={() => handleMarkAsRead(notification)}
+>>>>>>> Stashed changes
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
