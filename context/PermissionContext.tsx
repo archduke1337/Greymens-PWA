@@ -135,8 +135,12 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
         if (highestLevel >= 6) setStatus("head");
       }
 
-      // Check admin via email (simple check for now)
-      if (user.email === "admin@mindmesh.club" || user.email === "gauravramyadav@gmail.com") {
+      // Check admin via dedicated admin collection check
+      // Admins should be determined by the database, not hardcoded emails.
+      // The Appwrite userprefs 'role' field or a dedicated 'admins' collection
+      // should be used. For now, we check if the user has an 'admin' status
+      // stored in their Appwrite preferences.
+      if ((user.prefs as Record<string, unknown>)?.role === "admin") {
         setStatus("admin");
       }
     } catch (error) {

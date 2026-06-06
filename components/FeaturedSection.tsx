@@ -28,7 +28,7 @@ export default function FeaturedSection() {
                setLoading(true);
                const events = await eventService.getAllEvents([
                     Query.equal('isFeatured', true),
-                    Query.equal('status', 'upcoming'),
+                    Query.equal('status', 'published'),
                     Query.orderAsc('date'),
                     Query.limit(6)
                ]);

@@ -13,15 +13,36 @@ export { ID };
 // Single source of truth for Appwrite config
 export const APPWRITE_CONFIG = {
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+  // Collections
   projectsCollectionId: "projects",
   eventsCollectionId: "events",
   registrationsCollectionId: "registrations",
   sponsorsCollectionId: "sponsors",
   blogsCollectionId: "blogs",
+  profilesCollectionId: "profiles",
+  applicationsCollectionId: "applications",
+  membershipsCollectionId: "memberships",
+  departmentsCollectionId: "departments",
+  userDepartmentsCollectionId: "user_departments",
+  designationsCollectionId: "designations",
+  userDesignationsCollectionId: "user_designations",
+  powersCollectionId: "powers",
+  userPowersCollectionId: "user_powers",
+  eventTypesCollectionId: "event_types",
+  eventTypeDataCollectionId: "event_type_data",
+  ticketsCollectionId: "tickets",
+  ticketVerificationsCollectionId: "ticket_verifications",
+  notificationsCollectionId: "notifications",
+  auditLogsCollectionId: "audit_logs",
+  resourcesCollectionId: "resources",
+  approvalWorkflowsCollectionId: "approval_workflows",
+  galleryCollectionId: "gallery",
+  // Buckets
   eventImagesBucketId: "REDACTED_BUCKET_ID",
   sponsorLogosBucketId: "sponsor-logos",
   blogImagesBucketId: "blog-images",
   profilePicturesBucketId: "profile-pictures",
+  galleryImagesBucketId: "gallery-images",
 };
 export const authService = {
   // Create a new account
