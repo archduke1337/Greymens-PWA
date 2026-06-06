@@ -230,6 +230,7 @@ export interface Event {
   description: string;
   image?: string;
   eventTypeId: string;
+  category?: string;
   status: "draft" | "review" | "approved" | "published" | "active" | "completed" | "cancelled";
   audience: "public" | "member_only" | "exclusive";
   date: string;
@@ -361,6 +362,8 @@ export interface Registration {
   $updatedAt?: string;
   eventId: string;
   userId: string;
+  userName?: string;
+  userEmail?: string;
   status: "pending" | "approved" | "rejected" | "cancelled" | "waitlisted";
   registeredAt: string;
   approvedBy?: string;
@@ -544,21 +547,70 @@ export interface ApprovalStep {
 // ============================================================
 
 export type Permission =
+  // Base status permissions
   | "view_public_content"
   | "view_resources"
   | "view_roadmaps"
   | "view_members"
+  | "submit_application"
+  | "edit_own_application"
   | "register_events"
   | "view_member_resources"
   | "manage_own_profile"
   | "view_all_members"
+  | "request_department_assignment"
+  // Department permissions
   | "manage_department_resources"
   | "manage_department_team"
+  | "participate_in_department_events"
+  | "view_department_stats"
+  // Event permissions
   | "draft_events"
   | "approve_events"
+  | "approve_events_in_scope"
+  // Operations permissions
   | "manage_multiple_departments"
-  | "manage_organization"
+  | "view_operations_stats"
   | "view_reports"
+  | "manage_organization"
+  // Power-granted permissions
+  | "approve_applications"
+  | "reject_applications"
+  | "view_application_details"
+  | "create_events"
+  | "edit_events"
+  | "publish_events"
+  | "manage_registrations"
+  | "verify_tickets"
+  | "manual_checkin"
+  | "view_attendee_list"
+  | "create_blogs"
+  | "approve_blogs"
+  | "reject_blogs"
+  | "edit_blogs"
+  | "approve_gallery"
+  | "reject_gallery"
+  | "delete_gallery"
+  | "upload_gallery"
+  | "upload_resources"
+  | "edit_resources"
+  | "delete_resources"
+  | "assign_department_roles"
+  | "view_department_data"
+  | "approve_department_events"
+  | "view_operations_data"
+  | "view_audit_logs"
+  | "revert_profile_changes"
+  | "view_sensitive_data"
+  | "send_notifications"
+  | "manage_notification_templates"
+  | "manage_newsletter"
+  | "publish_newsletter"
+  | "manage_social_media"
+  | "manage_pr_content"
+  | "manage_design_assets"
+  | "system_developer_access"
+  // Meta permissions
   | "ALL_PERMISSIONS"
   | string; // allow custom permissions
 

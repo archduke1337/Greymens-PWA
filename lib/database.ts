@@ -11,28 +11,6 @@ export { DATABASE_ID, EVENTS_COLLECTION_ID, REGISTRATIONS_COLLECTION_ID, PROJECT
 // Re-export types for backward compatibility with existing imports
 export type { Event, Registration, Project };
 
-export interface Project {
-  $id?: string;
-  title: string;
-  description: string;
-  image: string;
-  category: string;
-  status: string;
-  progress: number;
-  technologies: string[];
-  stars: number;
-  forks: number;
-  contributors: number;
-  duration: string;
-  isFeatured: boolean;
-  demoUrl: string;
-  repoUrl: string;
-  teamMembers: string[];
-  createdAt: string;
-  $createdAt?: string;
-  $updatedAt?: string;
-}
-
 export const eventService = {
   async getAllEvents(queries: string[] = []) {
     try {
