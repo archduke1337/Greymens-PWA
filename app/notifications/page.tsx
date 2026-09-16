@@ -157,15 +157,24 @@ export default function NotificationsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+        <div className="text-center" role="status" aria-label="Loading notifications">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
           <p className="mt-4 text-default-500">Loading notifications...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="text-center" role="status" aria-label="Redirecting to login">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
+          <p className="mt-4 text-default-500">Sign in required — taking you to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
@@ -202,10 +211,13 @@ export default function NotificationsPage() {
       {notifications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-            <svg className="w-16 h-16 text-default-300" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+            <svg aria-hidden="true" className="w-16 h-16 text-default-300" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
             </svg>
             <p className="text-default-400">No notifications yet</p>
+            <p className="text-sm text-default-500">
+              Membership updates and event reminders will appear here.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -240,7 +252,7 @@ export default function NotificationsPage() {
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
                         )}
                       </div>
                       <p className="text-sm text-default-600 line-clamp-2">

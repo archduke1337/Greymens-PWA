@@ -149,12 +149,13 @@ export default function ResourcesPage() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by audience">
               {LAYERS.map((option) => (
                 <Button
                   key={option.value}
                   size="sm"
                   variant={layer === option.value ? "primary" : "ghost"}
+                  aria-pressed={layer === option.value}
                   onPress={() => setLayer(option.value)}
                 >
                   {option.label}
@@ -166,9 +167,9 @@ export default function ResourcesPage() {
       </Card>
 
       {state.status === "loading" ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20" role="status" aria-label="Loading resources">
           <Loader2
-            aria-label="Loading resources"
+            aria-hidden="true"
             className="w-8 h-8 animate-spin text-default-400"
           />
         </div>

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from "sonner";
-import { Button, Card, CardContent, CardHeader, Chip, Input, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -15,19 +14,22 @@ interface FormData {
 }
 
 export default function HelpFeedbackPage() {
-  const [formData, setFormData] = useState<FormData>({
+  const emptyForm: FormData = {
     name: '',
     email: '',
     type: 'general',
     subject: '',
     message: '',
-  });
+  };
+  const [formData, setFormData] = useState<FormData>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const res = await fetch("/api/feedback", {
         method: "POST",
@@ -40,7 +42,7 @@ export default function HelpFeedbackPage() {
       }
       setSubmitted(true);
     } catch (error) {
-      toast.error(
+      setSubmitError(
         error instanceof Error ? error.message : "Failed to submit feedback. Please try again."
       );
     } finally {
@@ -61,16 +63,20 @@ export default function HelpFeedbackPage() {
         <Card className="border border-default-200">
           <CardContent className="text-center py-16 space-y-4">
             <div className="w-16 h-16 mx-auto rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
-              <svg className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg aria-hidden="true" className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold">Thank You!</h1>
-            <p className="text-default-500">
+            <h1 tabIndex={-1} autoFocus className="text-2xl font-bold outline-none">Thank You!</h1>
+            <p className="text-default-500" role="status">
               Your feedback has been submitted successfully. We&apos;ll get back to you as soon as possible.
             </p>
             <Button variant="primary"
-              onPress={() => setSubmitted(false)}
+              onPress={() => {
+                setFormData({ ...emptyForm });
+                setSubmitError(null);
+                setSubmitted(false);
+              }}
             >
               Submit Another
             </Button>
@@ -98,6 +104,11 @@ export default function HelpFeedbackPage() {
         </CardHeader>
         <CardContent className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {submitError && (
+              <div role="alert" className="p-3 rounded-lg bg-danger-50 dark:bg-danger-900/20 text-danger text-sm">
+                {submitError}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label htmlFor="feedback-name" className="text-sm font-medium">Name</label>
@@ -174,9 +185,12 @@ export default function HelpFeedbackPage() {
       <div className="text-center space-y-2">
         <p className="text-sm text-default-500">
           You can also reach us at{' '}
-          <Chip size="sm" variant="primary">
+          <a
+            href="mailto:support@greymens.club"
+            className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
             support@greymens.club
-          </Chip>
+          </a>
         </p>
       </div>
     </div>

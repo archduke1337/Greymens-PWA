@@ -47,6 +47,7 @@ export default function SettingsPage() {
   // Phone verification state
   const [verificationCode, setVerificationCode] = useState("");
   const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
+  const [phoneResending, setPhoneResending] = useState(false);
   const [phoneVerifyError, setPhoneVerifyError] = useState("");
   const [phoneVerifySuccess, setPhoneVerifySuccess] = useState(false);
 
@@ -177,7 +178,7 @@ export default function SettingsPage() {
 
   const handleSendPhoneVerification = async () => {
     setPhoneVerifyError("");
-    setPhoneVerifyLoading(true);
+    setPhoneResending(true);
 
     try {
       await authService.createPhoneVerification();
@@ -185,7 +186,7 @@ export default function SettingsPage() {
     } catch (err) {
       setPhoneVerifyError(errorMessage(err, "Failed to send verification code"));
     } finally {
-      setPhoneVerifyLoading(false);
+      setPhoneResending(false);
     }
   };
 
@@ -199,10 +200,11 @@ export default function SettingsPage() {
       if (!user) return;
       await authService.updatePhoneVerification(user.$id, verificationCode);
       setPhoneVerifySuccess(true);
-      
+      setVerificationCode("");
+
       setTimeout(() => {
         onVerifyModalClose();
-        setPhoneVerifySuccess(true);
+        setPhoneVerifySuccess(false);
         // Phone will be shown as verified on next login
       }, 2000);
     } catch (err) {
@@ -224,7 +226,14 @@ export default function SettingsPage() {
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="text-center" role="status" aria-label="Redirecting to login">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
+          <p className="mt-4 text-default-500">Sign in required — taking you to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -524,10 +533,10 @@ export default function SettingsPage() {
                 />
               </div>
               {phoneVerifyError && (
-                <div className="text-danger text-sm">{phoneVerifyError}</div>
+                <div className="text-danger text-sm" role="alert">{phoneVerifyError}</div>
               )}
               {phoneVerifySuccess && (
-                <div className="text-success text-sm">
+                <div className="text-success text-sm" role="status">
                   Phone verified successfully!
                 </div>
               )}
@@ -535,7 +544,8 @@ export default function SettingsPage() {
                 type="button"
                 variant="primary"
                 size="sm"
-                isPending={phoneVerifyLoading}
+                isPending={phoneResending}
+                isDisabled={phoneVerifyLoading}
                 className="mt-2"
                 onPress={handleSendPhoneVerification}
               >

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { account } from "@/lib/appwrite";
 import type {
   Profile,
@@ -128,6 +129,7 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [membership, setMembership] = useState<Membership | null>(null);
 
@@ -148,6 +150,7 @@ export default function ProfilePage() {
     if (!authUser) return;
     try {
       setLoading(true);
+      setLoadError(null);
       const response = await fetch("/api/profile", { credentials: "include" });
       const payload = (await response.json().catch(() => null)) as
         | { profile?: Profile | null; membership?: Membership | null; tickets?: Ticket[]; error?: string }
@@ -162,7 +165,7 @@ export default function ProfilePage() {
       setProfilePicture(getAvatarUrl(profileData?.avatar, authUser.name || "User"));
     } catch (err) {
       console.error("Failed to load profile:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to load profile data");
+      setLoadError(err instanceof Error ? err.message : "Failed to load profile data");
     } finally {
       setLoading(false);
     }
@@ -340,7 +343,32 @@ export default function ProfilePage() {
     );
   }
 
-  if (!authUser) return null;
+  if (!authUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="text-center" role="status" aria-label="Redirecting to login">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
+          <p className="mt-4 text-default-500">Sign in required — taking you to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <Card>
+          <CardContent className="text-center py-16 space-y-4">
+            <h1 className="text-2xl font-bold">Couldn&apos;t load your profile</h1>
+            <p className="text-default-500">{loadError}</p>
+            <Button variant="primary" onPress={loadProfile}>
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -482,7 +510,7 @@ export default function ProfilePage() {
 
           {/* Skills */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Skills</label>
+            <h3 className="text-sm font-medium text-default-600">Skills</h3>
             {isEditing ? (
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -536,7 +564,7 @@ export default function ProfilePage() {
 
           {/* Interests */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Interests</label>
+            <h3 className="text-sm font-medium text-default-600">Interests</h3>
             {isEditing ? (
               <div className="space-y-2">
                 <div className="flex gap-2">
@@ -590,7 +618,7 @@ export default function ProfilePage() {
 
           {/* Social Links */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Social Links</label>
+            <h3 className="text-sm font-medium text-default-600">Social Links</h3>
             {isEditing ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -819,7 +847,7 @@ export default function ProfilePage() {
         <CardContent className="space-y-6">
           {/* Membership */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Membership</label>
+            <h3 className="text-sm font-medium text-default-600">Membership</h3>
             {membership ? (
               <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                 <div className="flex-1">
@@ -843,7 +871,7 @@ export default function ProfilePage() {
 
           {/* Departments */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Departments</label>
+            <h3 className="text-sm font-medium text-default-600">Departments</h3>
             <div className="flex flex-wrap gap-2">
               {userDepartmentsResolved.length > 0 ? (
                 userDepartmentsResolved.map((dept) => {
@@ -865,9 +893,9 @@ export default function ProfilePage() {
 
           {/* Tickets */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">
+            <h3 className="text-sm font-medium text-default-600">
               Events Attended ({tickets.length} tickets)
-            </label>
+            </h3>
             {tickets.length > 0 ? (
               <div className="space-y-2">
                 {tickets.slice(0, 10).map((ticket) => (
@@ -899,9 +927,12 @@ export default function ProfilePage() {
                   </div>
                 ))}
                 {tickets.length > 10 && (
-                  <p className="text-xs text-default-400 text-center">
-                    And {tickets.length - 10} more tickets...
-                  </p>
+                  <Link
+                    href="/events"
+                    className="block text-xs text-primary hover:opacity-90 text-center"
+                  >
+                    And {tickets.length - 10} more — browse events
+                  </Link>
                 )}
               </div>
             ) : (
@@ -911,7 +942,7 @@ export default function ProfilePage() {
 
           {/* Designations */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Designations</label>
+            <h3 className="text-sm font-medium text-default-600">Designations</h3>
             <div className="flex flex-wrap gap-2">
               {userDesignationsResolved.length > 0 ? (
                 userDesignationsResolved.map((desig) => (                    <Chip key={desig.$id} size="sm" variant="secondary">

@@ -2,7 +2,7 @@
 import { Accordion, AccordionItem, AccordionHeading, AccordionTrigger, AccordionIndicator, AccordionPanel, AccordionBody, Card, CardContent, CardHeader, Chip, Separator } from "@heroui/react";
 
 export default function TermsPage() {
-  const lastUpdated = "November 1, 2025";
+  const lastUpdated = "September 17, 2026";
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-16 px-4">
@@ -315,7 +315,7 @@ export default function TermsPage() {
                     <li>Correct or update information</li>
                     <li>Request data deletion</li>
                     <li>Opt-out of communications</li>
-                    <li>Contact: privacy@greymens.club</li>
+                    <li>Contact: <a href="mailto:privacy@greymens.club" className="text-primary hover:underline">privacy@greymens.club</a></li>
                   </ul>
                 </AccordionBody>
               </AccordionPanel>
@@ -360,7 +360,7 @@ export default function TermsPage() {
           <CardContent className="p-6">
             <h3 className="font-semibold text-lg mb-2">Contact</h3>
             <p className="text-sm text-default-600">
-              Questions? Email legal@greymens.club or visit our office during
+              Questions? Email <a href="mailto:legal@greymens.club" className="text-primary hover:underline">legal@greymens.club</a> or visit our office during
               business hours.
             </p>
           </CardContent>
@@ -375,7 +375,7 @@ export default function TermsPage() {
             updates. By continuing membership, you agree to these terms.
           </p>
           <p className="text-xs text-default-500 mt-2">
-            © 2025 Greymens. All rights reserved.
+            © {new Date().getFullYear()} Greymens. All rights reserved.
           </p>
         </CardContent>
       </Card>
