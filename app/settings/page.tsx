@@ -1,0 +1,558 @@
+// app/settings/page.tsx
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { account, authService } from "@/lib/appwrite";
+import type { ExtendedUser } from "@/lib/types";
+import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
+
+// Notification preference keys stored on the authenticated account.
+const EMAIL_NOTIFICATIONS_PREF = "emailNotifications";
+const PUSH_NOTIFICATIONS_PREF = "pushNotifications";
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+export default function SettingsPage() {
+  const { user: authUser, loading, refreshUser } = useAuth();
+  const user = authUser as unknown as ExtendedUser | null;
+  const router = useRouter();
+  const { isOpen: isPhoneModalOpen, open: onPhoneModalOpen, close: onPhoneModalClose } = useOverlayState();
+  const { isOpen: isVerifyModalOpen, open: onVerifyModalOpen, close: onVerifyModalClose } = useOverlayState();
+  
+  // Password change state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // Email verification state
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
+
+  // Phone number state
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phonePassword, setPhonePassword] = useState("");
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [phoneSuccess, setPhoneSuccess] = useState(false);
+
+  // Phone verification state
+  const [verificationCode, setVerificationCode] = useState("");
+  const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
+  const [phoneVerifyError, setPhoneVerifyError] = useState("");
+  const [phoneVerifySuccess, setPhoneVerifySuccess] = useState(false);
+
+  // Preferences state. Seeded from the account preferences once the session is
+  // known, so the switches reflect what is actually stored.
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [savingPreference, setSavingPreference] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    const prefs = (user.prefs ?? {}) as Record<string, unknown>;
+    setEmailNotifications(prefs[EMAIL_NOTIFICATIONS_PREF] !== false);
+    setPushNotifications(prefs[PUSH_NOTIFICATIONS_PREF] !== false);
+  }, [user]);
+
+  const updateNotificationPreference = async (key: string, value: boolean) => {
+    if (!user) return;
+    const previous = value === false;
+    setSavingPreference(key);
+    if (key === EMAIL_NOTIFICATIONS_PREF) setEmailNotifications(value);
+    else setPushNotifications(value);
+
+    try {
+      // Appwrite replaces preferences wholesale, so existing prefs must be kept.
+      await account.updatePrefs({ ...(user.prefs ?? {}), [key]: value });
+      await refreshUser();
+      toast.success("Notification preference saved");
+    } catch (err) {
+      if (key === EMAIL_NOTIFICATIONS_PREF) setEmailNotifications(previous);
+      else setPushNotifications(previous);
+      toast.error(errorMessage(err, "Failed to save notification preference"));
+    } finally {
+      setSavingPreference(null);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      await account.updatePassword({ password: newPassword, oldPassword });
+      setPasswordSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      
+      setTimeout(() => {
+        setPasswordSuccess(false);
+      }, 3000);
+    } catch (err) {
+      setPasswordError(errorMessage(err, "Failed to change password"));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    setVerificationError("");
+    setVerificationSuccess(false);
+    setVerificationLoading(true);
+
+    try {
+      await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
+      setVerificationSuccess(true);
+      
+      setTimeout(() => {
+        setVerificationSuccess(false);
+      }, 5000);
+    } catch (err) {
+      setVerificationError(errorMessage(err, "Failed to send verification email"));
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
+  const handleAddPhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPhoneError("");
+    setPhoneSuccess(false);
+    setPhoneLoading(true);
+
+    try {
+      // Phone number must be in E.164 format: +[country code][number]
+      // Example: +911234567890 for India
+      if (!phoneNumber.startsWith("+")) {
+        setPhoneError("Phone number must start with + and country code (e.g., +911234567890)");
+        setPhoneLoading(false);
+        return;
+      }
+
+      await authService.updatePhone(phoneNumber, phonePassword);
+      setPhoneSuccess(true);
+      onPhoneModalClose();
+      
+      // Open verification modal
+      onVerifyModalOpen();
+      
+      setTimeout(() => {
+        setPhoneSuccess(false);
+      }, 3000);
+    } catch (err) {
+      setPhoneError(errorMessage(err, "Failed to add phone number"));
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleSendPhoneVerification = async () => {
+    setPhoneVerifyError("");
+    setPhoneVerifyLoading(true);
+
+    try {
+      await authService.createPhoneVerification();
+      toast.success("Verification code sent to your phone!");
+    } catch (err) {
+      setPhoneVerifyError(errorMessage(err, "Failed to send verification code"));
+    } finally {
+      setPhoneVerifyLoading(false);
+    }
+  };
+
+  const handleVerifyPhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPhoneVerifyError("");
+    setPhoneVerifySuccess(false);
+    setPhoneVerifyLoading(true);
+
+    try {
+      if (!user) return;
+      await authService.updatePhoneVerification(user.$id, verificationCode);
+      setPhoneVerifySuccess(true);
+      
+      setTimeout(() => {
+        onVerifyModalClose();
+        setPhoneVerifySuccess(true);
+        // Phone will be shown as verified on next login
+      }, 2000);
+    } catch (err) {
+      setPhoneVerifyError(errorMessage(err, "Invalid verification code"));
+    } finally {
+      setPhoneVerifyLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div role="status" className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
+          <p className="mt-4 text-default-500">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+
+      {/* Security Settings */}
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-xl font-semibold">Security</h2>
+        </CardHeader>
+        <CardContent className="gap-6">
+          {/* Change Password */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">Change Password</h3>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div className="space-y-1">
+                <label htmlFor="settings-current-password" className="text-sm font-medium">Current password</label>
+                <Input
+                  id="settings-current-password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e: any) => setOldPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-new-password" className="text-sm font-medium">New password</label>
+                <Input
+                  id="settings-new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e: any) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-confirm-password" className="text-sm font-medium">Confirm new password</label>
+                <Input
+                  id="settings-confirm-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e: any) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
+
+              {passwordError && (
+                <div className="text-danger text-sm">{passwordError}</div>
+              )}
+
+              {passwordSuccess && (
+                <div className="text-success text-sm">
+                  Password changed successfully!
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                isPending={passwordLoading}
+              >
+                Update Password
+              </Button>
+            </form>
+          </div>
+
+          <Separator />
+
+          {/* Email Verification */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">Email Verification</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-default-500">
+                  Status: {user.emailVerification ? (
+                    <span className="text-success">Verified ✓</span>
+                  ) : (
+                    <span className="text-warning">Not Verified</span>
+                  )}
+                </p>
+                <p className="text-sm text-default-500 mt-1">
+                  {user.email}
+                </p>
+              </div>
+              {!user.emailVerification && (
+                <Button variant="primary"
+                  size="sm"
+                  isPending={verificationLoading}
+                  onPress={handleSendVerification}
+                >
+                  Send Verification Email
+                </Button>
+              )}
+            </div>
+
+            {verificationError && (
+              <div className="text-danger text-sm mt-2">{verificationError}</div>
+            )}
+
+            {verificationSuccess && (
+              <div className="text-success text-sm mt-2">
+                Verification email sent! Check your inbox.
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Phone Number */}
+          <div>
+            <h3 className="text-lg font-medium mb-4">Phone Number</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-default-500">
+                  Status: {user.phoneVerification ? (
+                    <span className="text-success">Verified ✓</span>
+                  ) : user.phone ? (
+                    <span className="text-warning">Not Verified</span>
+                  ) : (
+                    <span className="text-default-400">Not Added</span>
+                  )}
+                </p>
+                <p className="text-sm text-default-500 mt-1">
+                  {user.phone || "No phone number added"}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {user.phone && !user.phoneVerification && (
+                  <Button variant="primary"
+                    size="sm"
+                    onPress={onVerifyModalOpen}
+                  >
+                    Verify Phone
+                  </Button>
+                )}
+                <Button variant="primary"
+                  size="sm"
+                  onPress={onPhoneModalOpen}
+                >
+                  {user.phone ? "Update" : "Add"} Phone
+                </Button>
+              </div>
+            </div>
+
+            {phoneSuccess && (
+              <div className="text-success text-sm mt-2">
+                Phone number updated successfully!
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notification Settings */}
+      <Card className="mb-6">
+        <CardHeader>
+          <h2 className="text-xl font-semibold">Notifications</h2>
+        </CardHeader>
+        <CardContent className="gap-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">Email Notifications</p>
+              <p className="text-sm text-default-500">
+                Receive email updates about your account
+              </p>
+            </div>
+            <Switch
+              isSelected={emailNotifications}
+              isDisabled={savingPreference !== null}
+              aria-label="Email notifications"
+              onChange={(value: boolean) =>
+                updateNotificationPreference(EMAIL_NOTIFICATIONS_PREF, value)
+              }
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">Push Notifications</p>
+              <p className="text-sm text-default-500">
+                Receive push notifications in your browser
+              </p>
+            </div>
+            <Switch
+              isSelected={pushNotifications}
+              isDisabled={savingPreference !== null}
+              aria-label="Push notifications"
+              onChange={(value: boolean) =>
+                updateNotificationPreference(PUSH_NOTIFICATIONS_PREF, value)
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-danger">
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
+        </CardHeader>
+        <CardContent className="gap-4">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div>
+              <p className="font-medium">Request account deletion</p>
+              <p className="text-sm text-default-500">
+                Membership and governance records are retained under the club charter, so
+                deletion is completed by an administrator. Requesting deletion starts that
+                process and does not remove anything immediately.
+              </p>
+            </div>
+            <Link
+              href="/contact"
+              className="inline-flex items-center rounded-lg border border-danger px-4 py-2 text-sm font-medium text-danger hover:bg-danger-50 transition-colors"
+            >
+              Request deletion
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Add/Update Phone Modal */}
+      <Modal isOpen={isPhoneModalOpen}>
+        <ModalDialog>
+          <form onSubmit={handleAddPhone}>
+            <ModalHeader>
+              {user.phone ? "Update" : "Add"} Phone Number
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-1">
+                <label htmlFor="settings-phone-number" className="text-sm font-medium">Phone number</label>
+                <Input
+                  id="settings-phone-number"
+                  placeholder="+911234567890"
+                  value={phoneNumber}
+                  onChange={(e: any) => setPhoneNumber(e.target.value)}
+                  required
+                  disabled={phoneLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-phone-password" className="text-sm font-medium">Password</label>
+                <Input
+                  id="settings-phone-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={phonePassword}
+                  onChange={(e: any) => setPhonePassword(e.target.value)}
+                  required
+                  disabled={phoneLoading}
+                />
+              </div>
+              {phoneError && (
+                <div className="text-danger text-sm">{phoneError}</div>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" variant="ghost" onPress={onPhoneModalClose}>
+                Cancel
+              </Button>
+              <Button type="submit" isPending={phoneLoading}>
+                {user.phone ? "Update" : "Add"} Phone
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalDialog>
+      </Modal>
+
+      {/* Verify Phone Modal */}
+      <Modal isOpen={isVerifyModalOpen}>
+        <ModalDialog>
+          <form onSubmit={handleVerifyPhone}>
+            <ModalHeader>
+              Verify Phone Number
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-sm text-default-500 mb-4">
+                Enter the verification code sent to your phone number
+              </p>
+              <div className="space-y-1">
+                <label htmlFor="settings-verification-code" className="text-sm font-medium">Verification code</label>
+                <Input
+                  id="settings-verification-code"
+                  placeholder="Enter 6-digit code"
+                  value={verificationCode}
+                  onChange={(e: any) => setVerificationCode(e.target.value)}
+                  required
+                  maxLength={6}
+                  disabled={phoneVerifyLoading}
+                />
+              </div>
+              {phoneVerifyError && (
+                <div className="text-danger text-sm">{phoneVerifyError}</div>
+              )}
+              {phoneVerifySuccess && (
+                <div className="text-success text-sm">
+                  Phone verified successfully!
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                isPending={phoneVerifyLoading}
+                className="mt-2"
+                onPress={handleSendPhoneVerification}
+              >
+                Resend Code
+              </Button>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="button" variant="ghost" onPress={onVerifyModalClose}>
+                Cancel
+              </Button>
+              <Button type="submit" isPending={phoneVerifyLoading}>
+                Verify Phone
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalDialog>
+      </Modal>
+    </div>
+  );
+}

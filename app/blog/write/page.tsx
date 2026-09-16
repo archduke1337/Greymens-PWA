@@ -1,0 +1,324 @@
+// app/blog/write/page.tsx
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
+import { getErrorMessage } from "@/lib/errorHandler";
+import type { ExtendedUser } from "@/lib/types";
+import { toast } from "sonner";
+import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
+import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
+
+export default function WriteBlogPage() {
+  const router = useRouter();
+  const { user: authUser } = useAuth();
+  const user = authUser as unknown as ExtendedUser | null;
+  const { hasPermission, loading: permLoading } = usePermissions();
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    excerpt: "",
+    content: "",
+    coverImage: "",
+    category: "",
+    tags: "",
+  });
+
+  useEffect(() => {
+    if (permLoading) return;
+    if (!user) {
+      toast.error("Please login to write a blog");
+      router.push("/login");
+      return;
+    }
+    if (!hasPermission("blog.create")) {
+      toast.error("You don't have permission to create blogs");
+      router.push("/unauthorized");
+    }
+  }, [user, permLoading, hasPermission, router]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // The browser cannot write to the blog-images bucket, so the file is
+      // validated and stored by the server, which also enforces the
+      // `blog.create` capability.
+      const body = new FormData();
+      body.set("file", file);
+      const response = await fetch("/api/blogs/image", { method: "POST", body });
+      const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || "Failed to upload image");
+      }
+      setFormData({ ...formData, coverImage: payload.url });
+      toast.success("Image uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error(getErrorMessage(error) || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast.error("Please login to submit a blog");
+      router.push("/login");
+      return;
+    }
+
+    // Validation
+    if (!formData.title || !formData.content || !formData.category) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!formData.coverImage) {
+      toast.error("Please add a cover image");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const slug = generateSlug(formData.title);
+      const readTime = calculateReadTime(formData.content);
+      const tags = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
+
+      const response = await fetch("/api/blogs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: formData.title,
+          slug,
+          excerpt: formData.excerpt || formData.content.substring(0, 150),
+          content: formData.content,
+          coverImage: formData.coverImage,
+          category: formData.category,
+          tags,
+          readTime,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to submit blog");
+      }
+
+      toast.success(
+        "Blog submitted successfully! It will be reviewed by our team before publishing."
+      );
+      router.push("/blog");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error submitting blog:", message);
+      toast.error(message || "Failed to submit blog");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Header */}
+      <div className="mb-8">
+        <Button
+          variant="ghost"
+          className="mb-4"
+          onPress={() => router.back()}
+        >
+          Back
+        </Button>
+        <h1 className="text-4xl font-bold mb-2">Write a Blog</h1>
+        <p className="text-default-600">
+          Share your knowledge and insights with the community
+        </p>
+      </div>
+
+      {/* Form */}
+      <Card className="border-none shadow-xl">
+        <CardHeader className="bg-muted">
+          <h2 className="text-xl font-bold">Blog Details</h2>
+        </CardHeader>
+        <CardContent className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <Input
+              placeholder="Enter an engaging title..."
+              value={formData.title}
+              onChange={(e: any) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              required
+            />
+
+            {/* Excerpt */}
+            <TextArea
+              placeholder="Brief summary of your blog..."
+              value={formData.excerpt}
+              onChange={(e: any) =>
+                setFormData({ ...formData, excerpt: e.target.value })
+              }
+              rows={3}
+            />
+
+            {/* Category */}
+            <select
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              required
+              className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+            >
+              <option value="">Select a category</option>
+              {blogCategories.map((cat) => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+
+            {/* Tags */}
+            <Input
+              placeholder="react, javascript, tutorial (comma separated)"
+              value={formData.tags}
+              onChange={(e: any) =>
+                setFormData({ ...formData, tags: e.target.value })
+              }
+            />
+
+            {/* Cover Image */}
+            <div className="space-y-4">
+              <label className="text-sm font-medium">
+                Cover Image <span className="text-danger">*</span>
+              </label>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Upload Button */}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="sr-only"
+                    id="cover-image-upload"
+                    title="Upload cover image"
+                    aria-label="Upload cover image"
+                    placeholder="Upload cover image"
+                  />
+                  <label htmlFor="cover-image-upload" className="w-full block">
+                  <Button
+                    variant="primary"
+                    isPending={uploadingImage}
+                    className="w-full"
+                  >
+                    {uploadingImage ? "Uploading..." : "Upload Image"}
+                  </Button>
+                  </label>
+                  <p className="text-xs text-default-500 mt-2">
+                    Max 5MB (JPG, PNG, WebP)
+                  </p>
+                </div>
+
+                {/* Or URL Input */}
+                <Input
+                  placeholder="Or paste image URL"
+                  value={formData.coverImage}
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, coverImage: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Image Preview */}
+              {formData.coverImage && (
+                <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
+                  <p className="text-sm font-medium mb-2">Preview:</p>
+                  <img
+                    src={formData.coverImage}
+                    alt="Cover preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                    onError={() => {
+                      toast.error("Invalid image URL");
+                      setFormData({ ...formData, coverImage: "" });
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Content */}
+            <TextArea
+              placeholder="Write your blog content here... (Markdown supported)"
+              value={formData.content}
+              onChange={(e: any) =>
+                setFormData({ ...formData, content: e.target.value })
+              }
+              required
+              rows={15}
+            />
+
+            {/* Word Count */}
+            <div className="text-sm text-default-500">
+              {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
+              {calculateReadTime(formData.content)} min read
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onPress={() => router.push("/blog")}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                isPending={submitting}
+                className="flex-1"
+              >
+                Submit for Review
+              </Button>
+            </div>
+
+            {/* Info */}
+            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
+              <p className="text-sm">
+                <strong>Note:</strong> Your blog will be reviewed by our team
+                before being published. You&apos;ll be notified once it&apos;s approved!
+              </p>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

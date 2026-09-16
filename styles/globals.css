@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Dark mode via class strategy */
+@custom-variant dark (&:is(.dark *));
+
+/* Custom theme tokens.
+ * next/font exposes --font-sans as a real variable on <body>; reference it
+ * unquoted so Tailwind resolves the token instead of emitting the literal.
+ */
+@theme {
+  --font-sans: var(--font-sans);
+}
+
+/* HeroUI v3 styles */
+@import "@heroui/styles";
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
