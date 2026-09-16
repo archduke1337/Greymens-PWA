@@ -23,6 +23,18 @@ and `PermissionGate` are presentation/UX conveniences and must never be
 treated as access control. Every privileged API re-checks from the verified
 session.
 
+## Session bridge (read this before touching auth)
+
+The browser SDK talks to Appwrite directly, but its `a_session_*` cookie
+belongs to the API domain — it never reaches this app on cross-domain
+deployments (or localhost under third-party-cookie blocking). Plain
+`fetch()` calls to `/api/*` therefore arrived anonymous even right after a
+successful login. The fix: `AuthContext` mirrors the SDK's session secret
+into a first-party `gm_session` cookie (`syncSessionCookie` /
+`clearSessionCookie` in `lib/appwrite.ts`), which `proxy.ts` and
+`resolveSessionSecret` (`lib/server-auth.ts`) read. The value is verified
+against Appwrite per request, never trusted blindly.
+
 ## Modules
 
 - `lib/capabilities.ts` — the capability vocabulary (client-safe).

@@ -214,3 +214,78 @@ export const authService = {
     }
   },
 };
+
+// ---------------------------------------------------------------------------
+// First-party session bridge.
+//
+// The browser SDK authenticates against the Appwrite endpoint directly and,
+// on any cross-domain deployment (Vercel app + Cloud backend, and localhost
+// under third-party-cookie blocking), the `a_session_*` cookie it receives
+// belongs to the API domain — it is never sent to this Next.js app. The SDK
+// keeps working through its localStorage `cookieFallback` + `X-Fallback-
+// Cookies` header, but plain fetch() calls to our own /api/* routes carry
+// neither, so every server route saw an anonymous caller: dashboards bounced
+// to login right after a successful login, and authed UI disagreed with the
+// server on every screen.
+//
+// The bridge mirrors the SDK's own session secret into a first-party,
+// SameSite=Lax cookie (`gm_session`) that the API routes and proxy.ts read.
+// The value is verified against Appwrite on every request (never trusted
+// blindly), and it introduces no new exposure class: anything able to read
+// it via XSS already owns the localStorage fallback it is copied from.
+// ---------------------------------------------------------------------------
+
+/** Name of the first-party session mirror cookie. */
+export const SESSION_COOKIE_NAME = "gm_session";
+
+// 30 days, rolling — refreshed on every app load and every 5-minute session
+// poll, which also keeps it alive under Safari ITP's 7-day cap on
+// script-writable cookies for actively used accounts.
+const SESSION_COOKIE_MAX_AGE = 30 * 24 * 60 * 60;
+
+/** Session secret the browser SDK keeps in its localStorage fallback. */
+export function getBrowserSessionSecret(): string | null {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+    if (!projectId) return null;
+    const raw = window.localStorage.getItem("cookieFallback");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const value = parsed[`a_session_${projectId}`];
+    return typeof value === "string" && value ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Mirror the current session into the first-party cookie (or clear it). */
+export function syncSessionCookie(): void {
+  try {
+    if (typeof document === "undefined") return;
+    const secret = getBrowserSessionSecret();
+    if (!secret) {
+      clearSessionCookie();
+      return;
+    }
+    const secure =
+      typeof window !== "undefined" && window.location.protocol === "https:"
+        ? "; Secure"
+        : "";
+    document.cookie =
+      `${SESSION_COOKIE_NAME}=${encodeURIComponent(secret)}` +
+      `; Path=/; Max-Age=${SESSION_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
+  } catch {
+    // Best effort: a missing mirror only degrades to anonymous API calls.
+  }
+}
+
+/** Remove the first-party session mirror (logout, dead session). */
+export function clearSessionCookie(): void {
+  try {
+    if (typeof document === "undefined") return;
+    document.cookie = `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
+  } catch {
+    // Best effort only.
+  }
+}

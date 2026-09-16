@@ -42,11 +42,16 @@ function matchesRoute(pathname: string, route: string): boolean {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for session cookie (Appwrite uses a_session_legacy or a_session_<project>)
+  // Session presence is a routing hint only. Besides the native Appwrite
+  // cookie, honor the first-party gm_session mirror (literal name kept here
+  // to avoid pulling the SDK into the edge bundle; see SESSION_COOKIE_NAME
+  // in lib/appwrite.ts). Without it, cross-domain logins pass the browser
+  // check but bounce at every protected route.
   const hasSession = request.cookies
     .getAll()
     .some(
       (cookie) =>
+        cookie.name === "gm_session" ||
         cookie.name.startsWith("a_session_") ||
         cookie.name === "a_session_legacy",
     );

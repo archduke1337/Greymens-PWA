@@ -1,7 +1,7 @@
 import { Account, Client, Query, type Models } from "appwrite";
 import { NextRequest, NextResponse } from "next/server";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createAdminClient, SESSION_COOKIE_NAME } from "@/lib/appwrite";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { fail } from "@/lib/api";
 
@@ -11,12 +11,43 @@ export type AuthResult =
   | { user: AppwriteUser; response?: undefined }
   | { user: null; response: NextResponse };
 
-function getSessionValue(request: NextRequest): string | null {
-  const sessionCookie = request.cookies
-    .getAll()
-    .find(({ name }) => name.startsWith("a_session_") && name !== "a_session_");
+export interface RequestCookie {
+  name: string;
+  value: string;
+}
 
+/**
+ * Resolve the Appwrite session secret from request cookies.
+ *
+ * Pure and unit-tested. Precedence:
+ * 1. `gm_session` — the first-party mirror the browser writes from the SDK's
+ *    localStorage fallback (see lib/appwrite.ts). This is the only session
+ *    the server sees on cross-domain deployments.
+ * 2. `a_session_*` — native Appwrite cookie (same-origin / self-hosted).
+ * 3. `a_session_legacy` — older SDK cookie name; honored so legacy holders
+ *    are not stranded by the proxy/server mismatch.
+ */
+export function resolveSessionSecret(
+  cookies: Array<RequestCookie>,
+): string | null {
+  const mirror = cookies.find(({ name }) => name === SESSION_COOKIE_NAME);
+  if (mirror?.value) {
+    try {
+      return decodeURIComponent(mirror.value) || null;
+    } catch {
+      return mirror.value || null;
+    }
+  }
+  const legacy = cookies.find(({ name }) => name === "a_session_legacy");
+  if (legacy?.value) return legacy.value;
+  const sessionCookie = cookies.find(
+    ({ name }) => name.startsWith("a_session_") && name !== "a_session_",
+  );
   return sessionCookie?.value || null;
+}
+
+function getSessionValue(request: NextRequest): string | null {
+  return resolveSessionSecret(request.cookies.getAll());
 }
 
 export async function getAuthenticatedUser(

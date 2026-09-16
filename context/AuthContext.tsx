@@ -1,7 +1,7 @@
 // context/AuthContext.tsx
 "use client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { authService } from "@/lib/appwrite";
+import { authService, clearSessionCookie, syncSessionCookie } from "@/lib/appwrite";
 import type { AppwriteUser } from "@/lib/types";
 
 interface AuthContextType {
@@ -33,11 +33,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Single place where account state lands: keeps the first-party session
+  // mirror (gm_session) in lockstep so /api/* routes and proxy.ts see the
+  // same session the browser SDK holds. A null user always clears it.
+  const applyUser = useCallback((next: AppwriteUser | null) => {
+    setUser(next);
+    if (next) syncSessionCookie();
+    else clearSessionCookie();
+    return next;
+  }, []);
+
   const checkUser = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
-      return currentUser;
+      return applyUser(currentUser);
     } catch {
       // Unknown failure (network, outage): getCurrentUser only returns null
       // for a genuinely absent session, so anything thrown here must preserve
@@ -46,22 +55,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyUser]);
 
   const refreshUser = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
-      setUser(currentUser);
-      return currentUser;
+      return applyUser(currentUser);
     } catch {
       // Transient failure: keep polling and retry once after 30s instead of
       // clearing the interval forever. Last-good user is preserved meanwhile.
       setTimeout(() => {
-        authService.getCurrentUser().then(setUser).catch(() => {});
+        authService
+          .getCurrentUser()
+          .then((retryUser) => {
+            applyUser(retryUser);
+          })
+          .catch(() => {});
       }, 30000);
       return null;
     }
-  }, []);
+  }, [applyUser]);
 
   useEffect(() => {
     checkUser();
@@ -97,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     await authService.logout();
-    setUser(null);
+    applyUser(null);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
