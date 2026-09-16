@@ -104,6 +104,9 @@ const AUTHENTICATED_READ_TABLES = new Set([
 // anyone with the endpoint, since row security is off.
 const SERVER_ONLY_TABLES = new Set([
   "gallery",
+  // Registrations are written and read only through /api/events/register and
+  // the admin queue, which scope every read to the session owner or the door.
+  "registrations",
   "role_templates",
   "role_assignments",
   "authorized_activities",
@@ -146,26 +149,65 @@ function tablePermissions(id) {
  * application keeps writing to a column that does not exist. Reconciling here
  * is what makes `npm run db:setup` safe to re-run as a migration.
  */
+/**
+ * Best-effort full listing of a paginated Appwrite endpoint.
+ *
+ * Hard limits discovered against the live API: pages hold at most 25 rows no
+ * matter the requested limit, `offset` is ignored by listColumns, and columns
+ * expose no cursorable id — so tables wider than 25 columns cannot be fully
+ * enumerated through this SDK. Callers must therefore treat "already exists"
+ * creation errors as present, not fatal (see ensureColumns).
+ */
+async function listAll(listFn, params, key) {
+  const rows = [];
+  const limit = 25;
+  let offset = 0;
+  let total = Infinity;
+
+  while (rows.length < total) {
+    const page = await listFn({ ...params, limit, offset });
+    const items = page[key] ?? [];
+
+    rows.push(...items);
+    total = typeof page.total === "number" ? page.total : rows.length;
+    if (items.length === 0) break;
+    offset += items.length;
+  }
+  return rows;
+}
+
 async function ensureColumns(tableId, columns) {
-  const existing = await db.listColumns({ databaseId: DB_ID, tableId, total: true });
-  const present = new Set(existing.columns.map((column) => column.key));
+  const existing = await listAll(
+    (params) => db.listColumns(params),
+    { databaseId: DB_ID, tableId },
+    "columns",
+  );
+  const present = new Set(existing.map((column) => column.key));
   const added = [];
 
   for (const c of columns) {
     if (present.has(c.key)) continue;
     const params = { databaseId: DB_ID, tableId, key: c.key, required: c.required ?? false };
-    if (c.type === "string") {
-      await db.createStringColumn({ ...params, size: c.size ?? 255, array: c.array ?? false });
-    } else if (c.type === "integer") {
-      await db.createIntegerColumn(params);
-    } else if (c.type === "boolean") {
-      await db.createBooleanColumn(params);
-    } else if (c.type === "datetime") {
-      await db.createDatetimeColumn(params);
-    } else {
-      throw new Error(`Unsupported column type for ${c.key}: ${c.type}`);
+    try {
+      if (c.type === "string") {
+        await db.createStringColumn({ ...params, size: c.size ?? 255, array: c.array ?? false });
+      } else if (c.type === "integer") {
+        await db.createIntegerColumn(params);
+      } else if (c.type === "boolean") {
+        await db.createBooleanColumn(params);
+      } else if (c.type === "datetime") {
+        await db.createDatetimeColumn(params);
+      } else {
+        throw new Error(`Unsupported column type for ${c.key}: ${c.type}`);
+      }
+      added.push(c.key);
+    } catch (columnError) {
+      // Columns past the 25-row listing cap are invisible to the presence
+      // check above but very much exist: "already exists" means present.
+      // Anything else is a real schema problem and still fails loudly.
+      if (/already exists/i.test(columnError.message ?? "")) continue;
+      throw columnError;
     }
-    added.push(c.key);
   }
 
   return added;
@@ -174,8 +216,12 @@ async function ensureColumns(tableId, columns) {
 /** Create any declared index that is missing from an existing table. */
 async function ensureIndexes(tableId, indexes) {
   if (indexes.length === 0) return [];
-  const existing = await db.listIndexes({ databaseId: DB_ID, tableId, total: true });
-  const present = new Map(existing.indexes.map((index) => [index.key, index]));
+  const existing = await listAll(
+    (params) => db.listIndexes(params),
+    { databaseId: DB_ID, tableId },
+    "indexes",
+  );
+  const present = new Map(existing.map((index) => [index.key, index]));
   const added = [];
 
   for (const i of indexes) {
@@ -549,10 +595,12 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "badgeColor", type: "string", size: 20 },
     { key: "isActive", type: "boolean", required: true },
     { key: "maxHolders", type: "integer" },
+    { key: "displayOrder", type: "integer" },
   ], [
     { key: "idx_slug", type: "unique", columns: ["slug"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_level", type: "key", columns: ["level"] },
+    { key: "idx_order", type: "key", columns: ["displayOrder"] },
   ]);
 
   await createTable("user_designations", "User Designations", [

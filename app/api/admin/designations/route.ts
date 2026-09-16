@@ -40,19 +40,69 @@ function validate(body: Record<string, unknown>) {
   }
   if (typeof body.category !== "string" || !CATEGORIES.has(body.category))
     return "Invalid designation category";
+  if (
+    body.departmentId !== undefined &&
+    body.departmentId !== null &&
+    body.departmentId !== "" &&
+    (typeof body.departmentId !== "string" || body.departmentId.length > 36)
+  )
+    return "Invalid department";
+  if (
+    body.badgeIcon !== undefined &&
+    (typeof body.badgeIcon !== "string" || body.badgeIcon.length > 100)
+  )
+    return "Invalid badge icon";
+  if (
+    body.badgeColor !== undefined &&
+    (typeof body.badgeColor !== "string" || body.badgeColor.length > 20)
+  )
+    return "Invalid badge color";
+  if (
+    body.maxHolders !== undefined &&
+    body.maxHolders !== null &&
+    (!Number.isInteger(body.maxHolders) || Number(body.maxHolders) < 1)
+  )
+    return "Invalid holder limit";
+  if (
+    body.displayOrder !== undefined &&
+    body.displayOrder !== null &&
+    (!Number.isInteger(body.displayOrder) || Number(body.displayOrder) < 0)
+  )
+    return "Invalid display order";
 
   return null;
 }
 
 function pickDesignationFields(body: Record<string, unknown>) {
   // Explicit allowlist: never spread client body (mass-assignment).
-  return {
+  const out: Record<string, unknown> = {
     name: String(body.name ?? "").trim(),
     slug: String(body.slug ?? "").trim(),
     level: Number(body.level),
     category: String(body.category ?? "").trim(),
     description: typeof body.description === "string" ? body.description.slice(0, 2000) : "",
   };
+
+  if (
+    typeof body.departmentId === "string" &&
+    body.departmentId.trim() &&
+    body.departmentId.length <= 36
+  ) {
+    out.departmentId = body.departmentId.trim();
+  }
+  if (typeof body.badgeIcon === "string" && body.badgeIcon.length <= 100) {
+    out.badgeIcon = body.badgeIcon;
+  }
+  if (typeof body.badgeColor === "string" && body.badgeColor.length <= 20) {
+    out.badgeColor = body.badgeColor;
+  }
+  if (Number.isInteger(body.maxHolders) && Number(body.maxHolders) >= 1) {
+    out.maxHolders = Number(body.maxHolders);
+  }
+  if (Number.isInteger(body.displayOrder) && Number(body.displayOrder) >= 0) {
+    out.displayOrder = Number(body.displayOrder);
+  }
+  return out;
 }
 
 export async function GET(request: NextRequest) {

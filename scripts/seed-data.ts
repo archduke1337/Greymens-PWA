@@ -278,7 +278,7 @@ async function seedDepartments() {
         await databases.updateRow(DB_ID, "departments", docId, { ...payload });
         console.log(`  ~ ${dept.name} (updated by id)`);
       } catch (e2: any) {
-        console.log(`  ! ${dept.name}: ${e2.message ?? e.message}`);
+        console.log(`  ! ${dept.name}: first ${e.message} / then ${e2.message ?? e.message}`);
       }
     }
   }
@@ -287,16 +287,37 @@ async function seedDepartments() {
 async function seedPowers() {
   console.log("\n=== Seeding Powers ===");
   for (const power of POWERS) {
+    // Upsert by name: the unique index on powers.name rejects a blind
+    // re-create (Appwrite raises row_unique_constraint_violation rather than
+    // document-exists), so a repeat run must update instead of duplicating.
+    // The document id stays the power name: user_powers.powerId stores either
+    // form and the grant map is keyed by name.
     try {
-      // The document id is the power name, not a random id. `user_powers.powerId`
-      // is compared against `POWER_GRANTS`, which is keyed by name, and several
-      // call sites store the name. Using a deterministic id makes the two forms
-      // interchangeable and makes re-running this script idempotent (a repeat
-      // run hits the existing id instead of creating a duplicate power).
-      await databases.createRow(DB_ID, "powers", power.name, power);
-      console.log(`  ✓ ${power.displayName}`);
+      const found = await databases.listRows(DB_ID, "powers", [
+        Query.equal("name", [power.name]),
+        Query.limit(1),
+      ]);
+      if (found.rows.length > 0) {
+        await databases.updateRow(DB_ID, "powers", found.rows[0].$id, {
+          ...power,
+        });
+        console.log(`  ~ ${power.displayName} (updated)`);
+      } else {
+        await databases.createRow(DB_ID, "powers", power.name, power);
+        console.log(`  ✓ ${power.displayName}`);
+      }
     } catch (e: any) {
-      console.log(`  ! ${power.displayName}: ${e.message}`);
+      // Fallback: deterministic ID collision means it exists — update by ID.
+      try {
+        await databases.updateRow(DB_ID, "powers", power.name, {
+          ...power,
+        });
+        console.log(`  ~ ${power.displayName} (updated by id)`);
+      } catch (e2: any) {
+        console.log(
+          `  ! ${power.displayName}: first ${e.message} / then ${e2.message ?? e.message}`,
+        );
+      }
     }
   }
 }
@@ -327,7 +348,7 @@ async function seedEventTypes() {
         await databases.updateRow(DB_ID, "event_types", docId, { ...payload });
         console.log(`  ~ ${et.displayName} (updated by id)`);
       } catch (e2: any) {
-        console.log(`  ! ${et.displayName}: ${e2.message ?? e.message}`);
+        console.log(`  ! ${et.displayName}: first ${e.message} / then ${e2.message ?? e.message}`);
       }
     }
   }
@@ -355,11 +376,15 @@ async function seedDesignations() {
       }
     } catch (e: any) {
       // Fallback: deterministic ID collision means it exists — update by ID.
+      // Both errors are printed: the fallback used to mask the primary one,
+      // which hid the real cause of designation seed failures.
       try {
         await databases.updateRow(DB_ID, "designations", docId, { ...payload });
         console.log(`  ~ ${desig.name} (updated by id)`);
       } catch (e2: any) {
-        console.log(`  ! ${desig.name}: ${e2.message ?? e.message}`);
+        console.log(
+          `  ! ${desig.name}: first ${e.message} / then ${e2.message ?? e.message}`,
+        );
       }
     }
   }
