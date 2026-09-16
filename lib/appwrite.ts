@@ -10,6 +10,19 @@ export const storage = new Storage(client);
 export const databases = new Databases(client);
 export { ID };
 
+export function createAdminClient() {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
+  if (!endpoint || !projectId || !apiKey) throw new Error("Server Appwrite configuration is incomplete");
+  const adminClient = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+  return {
+    account: new Account(adminClient),
+    databases: new Databases(adminClient),
+    storage: new Storage(adminClient),
+  };
+}
+
 // Single source of truth for Appwrite config
 export const APPWRITE_CONFIG = {
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
@@ -38,7 +51,7 @@ export const APPWRITE_CONFIG = {
   approvalWorkflowsCollectionId: "approval_workflows",
   galleryCollectionId: "gallery",
   // Buckets
-  eventImagesBucketId: "REDACTED_BUCKET_ID",
+  eventImagesBucketId: "event-images",
   sponsorLogosBucketId: "sponsor-logos",
   blogImagesBucketId: "blog-images",
   profilePicturesBucketId: "profile-pictures",

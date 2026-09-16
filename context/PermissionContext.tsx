@@ -1,14 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { resolvePermissions, hasPermission as checkPermission, hasAnyPermission as checkAnyPermission, hasAllPermissions as checkAllPermissions } from "@/lib/permissions";
-import { profileService } from "@/lib/profiles";
-import { applicationService } from "@/lib/applications";
-import { membershipService } from "@/lib/memberships";
-import { departmentService } from "@/lib/departments";
-import { designationService } from "@/lib/designations";
-import { powerService } from "@/lib/powers";
+import {
+  hasPermission as checkPermission,
+  hasAnyPermission as checkAllAnyPermissions,
+  hasAllPermissions as checkAllPermissions,
+} from "@/lib/permissions";
 import type {
   MembershipStatus,
   Profile,
@@ -36,11 +34,53 @@ interface PermissionContextType {
   hasPermission: (permission: string, scope?: string) => boolean;
   hasAnyPermission: (permissions: string[], scope?: string) => boolean;
   hasAllPermissions: (permissions: string[], scope?: string) => boolean;
+  isRole: (role: MembershipStatus) => boolean;
+  isRoleOrAbove: (role: MembershipStatus) => boolean;
   loading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 }
 
-const PermissionContext = createContext<PermissionContextType>({
+const ROLE_HIERARCHY: MembershipStatus[] = [
+  "no_account",
+  "account",
+  "applicant",
+  "member",
+  "core_member",
+  "lead",
+  "head",
+  "admin",
+  "dev",
+];
+
+/**
+ * The server is the authority on status. Anything it can return that this union
+ * does not model is treated conservatively rather than optimistically:
+ * `suspended` has no client counterpart, and a restricted account must never
+ * inherit member-level UI defaults.
+ */
+function toMembershipStatus(value: unknown): MembershipStatus {
+  if (typeof value !== "string") return "account";
+  if (value === "suspended") return "banned";
+  return (ROLE_HIERARCHY as string[]).includes(value) || value === "banned" || value === "deactivated"
+    ? (value as MembershipStatus)
+    : "account";
+}
+
+interface PermissionsPayload {
+  status: MembershipStatus;
+  profile: Profile | null;
+  application: Application | null;
+  membership: Membership | null;
+  userDepartments: UserDepartment[];
+  userDesignations: UserDesignation[];
+  userPowers: UserPower[];
+  allDepartments: Department[];
+  allDesignations: Designation[];
+  allPowers: Power[];
+}
+
+const EMPTY_PAYLOAD: PermissionsPayload = {
   status: "no_account",
   profile: null,
   application: null,
@@ -51,10 +91,18 @@ const PermissionContext = createContext<PermissionContextType>({
   allDepartments: [],
   allDesignations: [],
   allPowers: [],
+};
+
+const PermissionContext = createContext<PermissionContextType>({
+  ...EMPTY_PAYLOAD,
+  status: "no_account",
   hasPermission: () => false,
   hasAnyPermission: () => false,
   hasAllPermissions: () => false,
+  isRole: () => false,
+  isRoleOrAbove: () => false,
   loading: true,
+  error: null,
   refresh: async () => {},
 });
 
@@ -62,89 +110,53 @@ export const usePermissions = () => useContext(PermissionContext);
 
 export function PermissionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [status, setStatus] = useState<MembershipStatus>("no_account");
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [application, setApplication] = useState<Application | null>(null);
-  const [membership, setMembership] = useState<Membership | null>(null);
-  const [userDepartments, setUserDepartments] = useState<UserDepartment[]>([]);
-  const [userDesignations, setUserDesignations] = useState<UserDesignation[]>([]);
-  const [userPowers, setUserPowers] = useState<UserPower[]>([]);
-  const [allDepartments, setAllDepartments] = useState<Department[]>([]);
-  const [allDesignations, setAllDesignations] = useState<Designation[]>([]);
-  const [allPowers, setAllPowers] = useState<Power[]>([]);
+  const [payload, setPayload] = useState<PermissionsPayload>(EMPTY_PAYLOAD);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  /**
+   * One authenticated request replaces nine direct database reads.
+   *
+   * The previous implementation queried `profiles`, `applications`,
+   * `memberships`, `user_departments`, `user_designations`, `user_powers`,
+   * `departments`, `designations` and `powers` from the browser on every
+   * authenticated render, which required every one of those tables — including
+   * the identity tables — to be readable by any signed-in account.
+   */
   const loadUserData = useCallback(async () => {
     if (!user) {
-      setStatus("no_account");
-      setProfile(null);
-      setApplication(null);
-      setMembership(null);
-      setUserDepartments([]);
-      setUserDesignations([]);
-      setUserPowers([]);
+      setPayload(EMPTY_PAYLOAD);
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
-      const [profileData, appData, memData, depts, desigs, powers, allDepts, allDesigs, allPowersData] = await Promise.all([
-        profileService.getByUserId(user.$id),
-        applicationService.getByUserId(user.$id),
-        membershipService.getByUserId(user.$id),
-        departmentService.getUserDepartments(user.$id),
-        designationService.getUserDesignations(user.$id),
-        powerService.getUserPowers(user.$id),
-        departmentService.getAll(),
-        designationService.getAll(),
-        powerService.getAll(),
-      ]);
-
-      setProfile(profileData);
-      setApplication(appData);
-      setMembership(memData);
-      setUserDepartments(depts);
-      setUserDesignations(desigs);
-      setUserPowers(powers);
-      setAllDepartments(allDepts);
-      setAllDesignations(allDesigs);
-      setAllPowers(allPowersData);
-
-      // Determine status
-      if (memData?.status === "active") {
-        setStatus("member");
-      } else if (appData?.status === "approved") {
-        setStatus("member");
-      } else if (appData?.status === "pending") {
-        setStatus("applicant");
-      } else if (appData?.status === "rejected") {
-        setStatus("applicant");
-      } else if (profileData) {
-        setStatus("account");
-      } else {
-        setStatus("account");
+      const response = await fetch("/api/permissions", { cache: "no-store" });
+      if (!response.ok) {
+        // Preserve the last-good payload instead of downgrading to a wrong
+        // tier; surface the failure through error state.
+        setError(`Unable to load permissions (status ${response.status})`);
+        return;
       }
-
-      // Check for elevated roles via designations
-      if (desigs.length > 0) {
-        const highestLevel = Math.max(...desigs.map(d => {
-          const desig = allDesigs.find(dd => dd.$id === d.designationId);
-          return desig?.level || 0;
-        }));
-        if (highestLevel >= 5) setStatus("lead");
-        if (highestLevel >= 6) setStatus("head");
-      }
-
-      // Check admin via dedicated admin collection check
-      // Admins should be determined by the database, not hardcoded emails.
-      // The Appwrite userprefs 'role' field or a dedicated 'admins' collection
-      // should be used. For now, we check if the user has an 'admin' status
-      // stored in their Appwrite preferences.
-      if ((user.prefs as Record<string, unknown>)?.role === "admin") {
-        setStatus("admin");
-      }
+      const data = await response.json() as Record<string, unknown>;
+      setPayload({
+        status: toMembershipStatus(data.status),
+        profile: (data.profile as Profile | null) ?? null,
+        application: (data.application as Application | null) ?? null,
+        membership: (data.membership as Membership | null) ?? null,
+        userDepartments: (data.departments as UserDepartment[]) ?? [],
+        userDesignations: (data.designations as UserDesignation[]) ?? [],
+        userPowers: (data.powers as UserPower[]) ?? [],
+        allDepartments: (data.allDepartments as Department[]) ?? [],
+        allDesignations: (data.allDesignations as Designation[]) ?? [],
+        allPowers: (data.allPowers as Power[]) ?? [],
+      });
+      setError(null);
     } catch (error) {
-      console.error("Error loading user data:", error);
+      console.error("Error loading permissions:", error);
+      // Preserve the last-good payload instead of downgrading to a wrong tier.
+      setError(error instanceof Error ? error.message : "Unable to load permissions");
     } finally {
       setLoading(false);
     }
@@ -156,59 +168,80 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const hasPermission = useCallback(
     (permission: string, scope?: string) => {
-      if (status === "no_account") return false;
+      if (payload.status === "no_account") return false;
       return checkPermission(
         {
-          status,
-          powers: userPowers,
-          departments: userDepartments,
-          designations: userDesignations,
-          allPowers,
-          allDepartments,
-          allDesignations,
+          status: payload.status,
+          powers: payload.userPowers,
+          departments: payload.userDepartments,
+          designations: payload.userDesignations,
+          allPowers: payload.allPowers,
+          allDepartments: payload.allDepartments,
+          allDesignations: payload.allDesignations,
         },
         permission,
         scope
       );
     },
-    [status, userPowers, userDepartments, userDesignations, allPowers, allDepartments, allDesignations]
+    [payload]
   );
 
   const hasAnyPermission = useCallback(
-    (permissions: string[], scope?: string) => {
-      return permissions.some((p) => hasPermission(p, scope));
-    },
-    [hasPermission]
+    (permissions: string[], scope?: string) => checkAllAnyPermissions(
+      {
+        status: payload.status,
+        powers: payload.userPowers,
+        departments: payload.userDepartments,
+        designations: payload.userDesignations,
+        allPowers: payload.allPowers,
+        allDepartments: payload.allDepartments,
+        allDesignations: payload.allDesignations,
+      },
+      permissions,
+      scope
+    ),
+    [payload]
   );
 
   const hasAllPermissions = useCallback(
-    (permissions: string[], scope?: string) => {
-      return permissions.every((p) => hasPermission(p, scope));
-    },
-    [hasPermission]
+    (permissions: string[], scope?: string) => checkAllPermissions(
+      {
+        status: payload.status,
+        powers: payload.userPowers,
+        departments: payload.userDepartments,
+        designations: payload.userDesignations,
+        allPowers: payload.allPowers,
+        allDepartments: payload.allDepartments,
+        allDesignations: payload.allDesignations,
+      },
+      permissions,
+      scope
+    ),
+    [payload]
   );
 
-  return (
-    <PermissionContext.Provider
-      value={{
-        status,
-        profile,
-        application,
-        membership,
-        userDepartments,
-        userDesignations,
-        userPowers,
-        allDepartments,
-        allDesignations,
-        allPowers,
-        hasPermission,
-        hasAnyPermission,
-        hasAllPermissions,
-        loading,
-        refresh: loadUserData,
-      }}
-    >
-      {children}
-    </PermissionContext.Provider>
+  const isRole = useCallback((role: MembershipStatus) => payload.status === role, [payload.status]);
+
+  const isRoleOrAbove = useCallback(
+    (role: MembershipStatus) =>
+      ROLE_HIERARCHY.indexOf(payload.status) >= ROLE_HIERARCHY.indexOf(role),
+    [payload.status]
   );
+
+  const value = useMemo(
+    () => ({
+      ...payload,
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      isRole,
+      isRoleOrAbove,
+      loading,
+      error,
+      refresh: loadUserData,
+    }),
+    [payload, hasPermission, hasAnyPermission, hasAllPermissions, isRole, isRoleOrAbove, loading, error, loadUserData]
+  );
+
+  return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;
 }

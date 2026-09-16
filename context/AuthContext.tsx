@@ -1,17 +1,17 @@
 // context/AuthContext.tsx
 "use client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Models } from "appwrite";
 import { authService } from "@/lib/appwrite";
+import type { AppwriteUser } from "@/lib/types";
 
 interface AuthContextType {
-  user: Models.User<Models.Preferences> | null;
+  user: AppwriteUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => void;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<AppwriteUser | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   loginWithGoogle: () => {},
   logout: async () => {},
-  refreshUser: async () => {},
+  refreshUser: async () => null,
 });
 
 const SESSION_REFRESH_INTERVAL = 1000 * 60 * 5; // 5 minutes
@@ -29,7 +29,7 @@ const SESSION_REFRESH_INTERVAL = 1000 * 60 * 5; // 5 minutes
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [user, setUser] = useState<AppwriteUser | null>(null);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -50,12 +50,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
+      return currentUser;
     } catch {
       setUser(null);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      // Transient failure: keep polling and retry once after 30s instead of
+      // clearing the interval forever.
+      setTimeout(() => {
+        authService.getCurrentUser().then(setUser).catch(() => {});
+      }, 30000);
+      return null;
     }
   }, []);
 
@@ -95,6 +98,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    // Best-effort cache + service-worker cleanup on successful logout.
+    // Must never throw or block the redirect.
+    try {
+      if (typeof caches !== "undefined" && caches.keys) {
+        const keys = await caches.keys().catch(() => [] as string[]);
+        await Promise.all(
+          (keys || []).map((key) => caches.delete(key).catch(() => false)),
+        );
+      }
+    } catch {
+      // ignore — best effort only
+    }
+    try {
+      const registrations = await navigator.serviceWorker
+        ?.getRegistrations()
+        .catch(() => [] as ServiceWorkerRegistration[]);
+      if (registrations) {
+        await Promise.all(
+          registrations.map((registration) =>
+            registration.unregister().catch(() => false),
+          ),
+        );
+      }
+    } catch {
+      // ignore — best effort only
     }
   };
 
