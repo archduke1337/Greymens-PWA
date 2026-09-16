@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { blogService, blogCategories } from "@/lib/blog";
+import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ export default function WriteBlogPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
+  const { hasPermission, loading: permLoading } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -28,11 +30,17 @@ export default function WriteBlogPage() {
   });
 
   useEffect(() => {
+    if (permLoading) return;
     if (!user) {
       toast.error("Please login to write a blog");
       router.push("/login");
+      return;
     }
-  }, [user, router]);
+    if (!hasPermission("blog.create")) {
+      toast.error("You don't have permission to create blogs");
+      router.push("/unauthorized");
+    }
+  }, [user, permLoading, hasPermission, router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,12 +60,21 @@ export default function WriteBlogPage() {
 
     setUploadingImage(true);
     try {
-      const imageUrl = await blogService.uploadBlogImage(file);
-      setFormData({ ...formData, coverImage: imageUrl });
+      // The browser cannot write to the blog-images bucket, so the file is
+      // validated and stored by the server, which also enforces the
+      // `blog.create` capability.
+      const body = new FormData();
+      body.set("file", file);
+      const response = await fetch("/api/blogs/image", { method: "POST", body });
+      const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error || "Failed to upload image");
+      }
+      setFormData({ ...formData, coverImage: payload.url });
       toast.success("Image uploaded successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      toast.error(getErrorMessage(error) || "Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -86,31 +103,32 @@ export default function WriteBlogPage() {
     setSubmitting(true);
 
     try {
-      const slug = blogService.generateSlug(formData.title);
-      const readTime = blogService.calculateReadTime(formData.content);
+      const slug = generateSlug(formData.title);
+      const readTime = calculateReadTime(formData.content);
       const tags = formData.tags
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag);
 
-      await blogService.createBlog({
-        title: formData.title,
-        slug,
-        excerpt: formData.excerpt || formData.content.substring(0, 150),
-        content: formData.content,
-        coverImage: formData.coverImage,
-        category: formData.category,
-        tags,
-        authorId: user.$id,
-        authorName: user.name,
-        authorEmail: user.email,
-        authorAvatar: (user as any).prefs?.avatar,
-        status: "pending",
-        views: 0,
-        likes: 0,
-        featured: false,
-        readTime,
+      const response = await fetch("/api/blogs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: formData.title,
+          slug,
+          excerpt: formData.excerpt || formData.content.substring(0, 150),
+          content: formData.content,
+          coverImage: formData.coverImage,
+          category: formData.category,
+          tags,
+          readTime,
+        }),
       });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to submit blog");
+      }
 
       toast.success(
         "Blog submitted successfully! It will be reviewed by our team before publishing."
@@ -148,7 +166,7 @@ export default function WriteBlogPage() {
 
       {/* Form */}
       <Card className="border-none shadow-xl">
-        <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+        <CardHeader className="bg-muted">
           <h2 className="text-xl font-bold">Blog Details</h2>
         </CardHeader>
         <CardContent className="p-8">
@@ -270,7 +288,7 @@ export default function WriteBlogPage() {
             {/* Word Count */}
             <div className="text-sm text-default-500">
               {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
-              {blogService.calculateReadTime(formData.content)} min read
+              {calculateReadTime(formData.content)} min read
             </div>
 
             {/* Submit Button */}
@@ -295,7 +313,7 @@ export default function WriteBlogPage() {
             <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
               <p className="text-sm">
                 <strong>Note:</strong> Your blog will be reviewed by our team
-                before being published. You'll be notified once it's approved!
+                before being published. You&apos;ll be notified once it&apos;s approved!
               </p>
             </div>
           </form>

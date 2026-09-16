@@ -4,7 +4,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
-import { blogService, Blog, blogCategories } from "@/lib/blog";
+import { blogService } from "@/lib/blog";
+import type { Blog } from "@/lib/blog";
+import { blogCategories } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input} from "@heroui/react";
 import {
@@ -25,6 +27,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadBlogs();
@@ -36,11 +39,14 @@ export default function BlogPage() {
 
   const loadBlogs = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const publishedBlogs = await blogService.getPublishedBlogs();
       setBlogs(publishedBlogs);
       setFilteredBlogs(publishedBlogs);
     } catch (error) {
       console.error("Error loading blogs:", error);
+      setError(error instanceof Error ? error.message : "Unable to load blogs");
     } finally {
       setLoading(false);
     }
@@ -92,12 +98,10 @@ export default function BlogPage() {
     <div className="space-y-12 pb-20">
       {/* Hero Section */}
       <div className="text-center space-y-6 relative py-12">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 mb-6">
-          <SparklesIcon className="w-5 h-5 text-purple-500" />
-          <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-6">
+          <SparklesIcon className="w-5 h-5 text-primary" />
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             Latest Articles
           </span>
         </div>
@@ -116,8 +120,10 @@ export default function BlogPage() {
 
         {/* Write Blog Button */}
         {user && (
-          <Button size="lg"
+          <Button
+            size="lg"
             className="mt-4"
+            onPress={() => router.push("/blog/write")}
           >
             Write a Blog
           </Button>
@@ -135,17 +141,21 @@ export default function BlogPage() {
                 onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
               />
+              <label htmlFor="blog-category" className="sr-only">
+                Filter by category
+              </label>
               <select
+                id="blog-category"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="min-w-[200px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
               >
                 <option value="all">All Categories</option>
-                <option value="tutorial">Tutorial</option>
-                <option value="news">News</option>
-                <option value="event">Event</option>
-                <option value="project">Project</option>
-                <option value="technology">Technology</option>
+                {blogCategories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
               </select>
             </div>
           </CardContent>
@@ -154,7 +164,17 @@ export default function BlogPage() {
 
       {/* Blog Grid */}
       <div className="max-w-7xl mx-auto px-6">
-        {filteredBlogs.length === 0 ? (
+        {error ? (
+          <Card>
+            <CardContent className="text-center py-16 space-y-4">
+              <h3 className="text-xl font-semibold">Blogs could not be loaded</h3>
+              <p className="text-default-500 max-w-md mx-auto">{error}</p>
+              <Button onPress={loadBlogs}>
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : filteredBlogs.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold mb-2">No blogs found</h3>
@@ -176,6 +196,12 @@ export default function BlogPage() {
               <Card
                 key={blog.$id}
                 className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
+                onClick={() => router.push(`/blog/${blog.slug}`)}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter") router.push(`/blog/${blog.slug}`);
+                }}
+                role="link"
+                tabIndex={0}
               >
                 <CardContent className="p-0">
                   {/* Cover Image */}
