@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      # The dependency tree needs legacy peer resolution (see README setup).
+      NPM_CONFIG_LEGACY_PEER_DEPS: "true"
+      # Static build needs the public Appwrite trio present, not real.
+      NEXT_PUBLIC_APPWRITE_ENDPOINT: https://fra.cloud.appwrite.io/v1
+      NEXT_PUBLIC_APPWRITE_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_APPWRITE_DATABASE_ID: greymens_db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: node scripts/provision-check.js
+      - run: npx vitest run
+      - run: npm run build
