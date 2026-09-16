@@ -1,13 +1,16 @@
 /**
  * Mind Mesh — Seed Data Script
  *
- * Seeds departments, powers, and event types into Appwrite.
+ * Seeds departments, powers, event types, designations, and governance
+ * role_templates (Option B) into Appwrite.
  * Run with: npx tsx scripts/seed-data.ts
  */
 
-import { Client, Databases, ID } from "appwrite";
+import { Client, TablesDB, Query } from "node-appwrite";
 import dotenv from "dotenv";
 import path from "path";
+import { OFFICE_CAPABILITIES } from "../lib/capabilities";
+import { GOVERNANCE_OFFICES } from "../lib/governance";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -17,7 +20,7 @@ const client = new Client()
   .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
   .setKey(process.env.APPWRITE_API_KEY!);
 
-const databases = new Databases(client);
+const databases = new TablesDB(client);
 const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 
 // ============================================================
@@ -251,14 +254,31 @@ const DESIGNATIONS = [
 async function seedDepartments() {
   console.log("\n=== Seeding Departments ===");
   for (const dept of DEPARTMENTS) {
+    const docId = `dept-${dept.slug}`;
+    const payload = { ...dept, isActive: true };
     try {
-      await databases.createDocument(DB_ID, "departments", ID.unique(), {
-        ...dept,
-        isActive: true,
-      });
-      console.log(`  ✓ ${dept.name}`);
+      // Upsert by slug lookup first (reruns update instead of duplicating).
+      const found = await databases.listRows(DB_ID, "departments", [
+        Query.equal("slug", [dept.slug]),
+        Query.limit(1),
+      ]);
+      if (found.rows.length > 0) {
+        await databases.updateRow(DB_ID, "departments", found.rows[0].$id, {
+          ...payload,
+        });
+        console.log(`  ~ ${dept.name} (updated)`);
+      } else {
+        await databases.createRow(DB_ID, "departments", docId, payload);
+        console.log(`  ✓ ${dept.name}`);
+      }
     } catch (e: any) {
-      console.log(`  ! ${dept.name}: ${e.message}`);
+      // Fallback: deterministic ID collision means it exists — update by ID.
+      try {
+        await databases.updateRow(DB_ID, "departments", docId, { ...payload });
+        console.log(`  ~ ${dept.name} (updated by id)`);
+      } catch (e2: any) {
+        console.log(`  ! ${dept.name}: ${e2.message ?? e.message}`);
+      }
     }
   }
 }
@@ -267,7 +287,12 @@ async function seedPowers() {
   console.log("\n=== Seeding Powers ===");
   for (const power of POWERS) {
     try {
-      await databases.createDocument(DB_ID, "powers", ID.unique(), power);
+      // The document id is the power name, not a random id. `user_powers.powerId`
+      // is compared against `POWER_GRANTS`, which is keyed by name, and several
+      // call sites store the name. Using a deterministic id makes the two forms
+      // interchangeable and makes re-running this script idempotent (a repeat
+      // run hits the existing id instead of creating a duplicate power).
+      await databases.createRow(DB_ID, "powers", power.name, power);
       console.log(`  ✓ ${power.displayName}`);
     } catch (e: any) {
       console.log(`  ! ${power.displayName}: ${e.message}`);
@@ -278,14 +303,31 @@ async function seedPowers() {
 async function seedEventTypes() {
   console.log("\n=== Seeding Event Types ===");
   for (const et of EVENT_TYPES) {
+    const docId = `etype-${et.name}`;
+    const payload = { ...et, isActive: true };
     try {
-      await databases.createDocument(DB_ID, "event_types", ID.unique(), {
-        ...et,
-        isActive: true,
-      });
-      console.log(`  ✓ ${et.displayName}`);
+      // Upsert by name lookup first (reruns update instead of duplicating).
+      const found = await databases.listRows(DB_ID, "event_types", [
+        Query.equal("name", [et.name]),
+        Query.limit(1),
+      ]);
+      if (found.rows.length > 0) {
+        await databases.updateRow(DB_ID, "event_types", found.rows[0].$id, {
+          ...payload,
+        });
+        console.log(`  ~ ${et.displayName} (updated)`);
+      } else {
+        await databases.createRow(DB_ID, "event_types", docId, payload);
+        console.log(`  ✓ ${et.displayName}`);
+      }
     } catch (e: any) {
-      console.log(`  ! ${et.displayName}: ${e.message}`);
+      // Fallback: deterministic ID collision means it exists — update by ID.
+      try {
+        await databases.updateRow(DB_ID, "event_types", docId, { ...payload });
+        console.log(`  ~ ${et.displayName} (updated by id)`);
+      } catch (e2: any) {
+        console.log(`  ! ${et.displayName}: ${e2.message ?? e.message}`);
+      }
     }
   }
 }
@@ -293,14 +335,81 @@ async function seedEventTypes() {
 async function seedDesignations() {
   console.log("\n=== Seeding Designations ===");
   for (const desig of DESIGNATIONS) {
+    const docId = `desig-${desig.slug}`;
+    const payload = { ...desig, isActive: true };
     try {
-      await databases.createDocument(DB_ID, "designations", ID.unique(), {
-        ...desig,
-        isActive: true,
-      });
-      console.log(`  ✓ ${desig.name}`);
+      // Upsert by slug lookup first (reruns update instead of duplicating).
+      const found = await databases.listRows(DB_ID, "designations", [
+        Query.equal("slug", [desig.slug]),
+        Query.limit(1),
+      ]);
+      if (found.rows.length > 0) {
+        await databases.updateRow(DB_ID, "designations", found.rows[0].$id, {
+          ...payload,
+        });
+        console.log(`  ~ ${desig.name} (updated)`);
+      } else {
+        await databases.createRow(DB_ID, "designations", docId, payload);
+        console.log(`  ✓ ${desig.name}`);
+      }
     } catch (e: any) {
-      console.log(`  ! ${desig.name}: ${e.message}`);
+      // Fallback: deterministic ID collision means it exists — update by ID.
+      try {
+        await databases.updateRow(DB_ID, "designations", docId, { ...payload });
+        console.log(`  ~ ${desig.name} (updated by id)`);
+      } catch (e2: any) {
+        console.log(`  ! ${desig.name}: ${e2.message ?? e.message}`);
+      }
+    }
+  }
+}
+
+async function seedRoleTemplates() {
+  // Option B: one role_template per Charter office, seeded from
+  // OFFICE_CAPABILITIES (single source). Deterministic IDs make reruns
+  // idempotent: create office-<id>, on conflict update capabilities.
+  // Admin needs no template (wildcard "*"), so no admin template is seeded.
+  console.log("\n=== Seeding Role Templates (offices) ===");
+  for (const office of GOVERNANCE_OFFICES) {
+    const caps = OFFICE_CAPABILITIES[office.id] ?? [];
+    if (caps.length === 0) {
+      console.log(`  - ${office.title} (no capabilities, skipped)`);
+      continue;
+    }
+    const docId = `office-${office.id}`;
+    const payload = {
+      name: office.title,
+      slug: office.id,
+      description: `${office.title} — ${office.layer}${office.elected ? " (elected)" : " (appointed)"} per Charter`,
+      capabilities: caps,
+      teamId: null,
+      teamRole: null,
+      label: office.layer,
+      isActive: true,
+    };
+    try {
+      // Upsert by slug lookup first (idx_slug unique).
+      const found = await databases.listRows(DB_ID, "role_templates", [
+        Query.equal("slug", [office.id]),
+        Query.limit(1),
+      ]);
+      if (found.rows.length > 0) {
+        await databases.updateRow(DB_ID, "role_templates", found.rows[0].$id, {
+          ...payload,
+        });
+        console.log(`  ~ ${office.title} (updated)`);
+      } else {
+        await databases.createRow(DB_ID, "role_templates", docId, payload);
+        console.log(`  ✓ ${office.title}`);
+      }
+    } catch (e: any) {
+      // Fallback: deterministic ID collision means it exists — update by ID.
+      try {
+        await databases.updateRow(DB_ID, "role_templates", docId, { ...payload });
+        console.log(`  ~ ${office.title} (updated by id)`);
+      } catch (e2: any) {
+        console.log(`  ! ${office.title}: ${e2.message ?? e.message}`);
+      }
     }
   }
 }
@@ -317,6 +426,7 @@ async function main() {
   await seedPowers();
   await seedEventTypes();
   await seedDesignations();
+  await seedRoleTemplates();
 
   console.log("\n=== Seeding complete ===");
 }
