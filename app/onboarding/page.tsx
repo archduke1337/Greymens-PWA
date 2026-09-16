@@ -15,6 +15,130 @@ const STEPS = [
   { id: 5, title: "Legal", description: "Terms & oath" },
 ];
 
+interface OnboardingForm {
+  phone: string;
+  urn: string;
+  dateOfBirth: string;
+  gender: string;
+  address: string;
+  program: string;
+  branch: string;
+  year: string;
+  semester: string;
+  preferredDepartments: string[];
+  skills: string[];
+  interests: string[];
+  experience: string;
+  whyJoin: string;
+  availability: string;
+  githubUrl: string;
+  linkedinUrl: string;
+  portfolioUrl: string;
+  bio: string;
+  oathAccepted: boolean;
+  termsAccepted: boolean;
+  constitutionAccepted: boolean;
+}
+
+const EMPTY_FORM: OnboardingForm = {
+  phone: "",
+  urn: "",
+  dateOfBirth: "",
+  gender: "",
+  address: "",
+  program: "",
+  branch: "",
+  year: "",
+  semester: "",
+  preferredDepartments: [],
+  skills: [],
+  interests: [],
+  experience: "",
+  whyJoin: "",
+  availability: "full",
+  githubUrl: "",
+  linkedinUrl: "",
+  portfolioUrl: "",
+  bio: "",
+  oathAccepted: false,
+  termsAccepted: false,
+  constitutionAccepted: false,
+};
+
+const DRAFT_VERSION = 1;
+
+function draftKey(userId: string): string {
+  return `onboarding-draft:${userId}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  if (!value.every((item) => typeof item === "string")) return null;
+  return value as string[];
+}
+
+/** Overlay a stored draft: non-empty draft values win (newest user intent). */
+function mergeDraft(
+  base: OnboardingForm,
+  draft: Record<string, unknown>,
+): OnboardingForm {
+  const next: OnboardingForm = { ...base };
+
+  for (const key of Object.keys(base) as Array<keyof OnboardingForm>) {
+    const incoming = draft[key];
+    if (incoming === undefined || incoming === null) continue;
+    const current = base[key];
+
+    if (typeof current === "string") {
+      if (typeof incoming === "string" && incoming !== "") {
+        (next[key] as string) = incoming;
+      }
+    } else if (Array.isArray(current)) {
+      const list = stringArray(incoming);
+      if (list && list.length > 0) (next[key] as string[]) = list;
+    } else if (typeof current === "boolean") {
+      if (typeof incoming === "boolean") (next[key] as boolean) = incoming;
+    }
+  }
+  return next;
+}
+
+function readDraft(userId: string): {
+  step: number;
+  form: Record<string, unknown>;
+  hasContent: boolean;
+} | null {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(draftKey(userId));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || parsed.v !== DRAFT_VERSION) return null;
+    const step =
+      typeof parsed.step === "number" &&
+      Number.isInteger(parsed.step) &&
+      parsed.step >= 1 &&
+      parsed.step <= STEPS.length
+        ? parsed.step
+        : 1;
+    const form = isRecord(parsed.form) ? parsed.form : {};
+    const hasContent = Object.values(form).some((value) =>
+      typeof value === "string"
+        ? value !== ""
+        : Array.isArray(value)
+          ? value.length > 0
+          : value === true,
+    );
+    return { step, form, hasContent };
+  } catch {
+    return null;
+  }
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -25,33 +149,12 @@ export default function OnboardingPage() {
   const [deptLoading, setDeptLoading] = useState(true);
   const [deptError, setDeptError] = useState(false);
   const [deptReloadKey, setDeptReloadKey] = useState(0);
-  // Prefill runs once: context refetches must not clobber in-progress edits.
-  const prefilledRef = useRef(false);
+  // Initialization runs once per account: server prefill first, then the
+  // local draft over it. Later context refetches must not clobber edits.
+  const initializedRef = useRef<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    phone: "",
-    urn: "",
-    dateOfBirth: "",
-    gender: "",
-    address: "",
-    program: "",
-    branch: "",
-    year: "",
-    semester: "",
-    preferredDepartments: [] as string[],
-    skills: [] as string[],
-    interests: [] as string[],
-    experience: "",
-    whyJoin: "",
-    availability: "full",
-    githubUrl: "",
-    linkedinUrl: "",
-    portfolioUrl: "",
-    bio: "",
-    oathAccepted: false,
-    termsAccepted: false,
-    constitutionAccepted: false,
-  });
+  const [formData, setFormData] = useState<OnboardingForm>(EMPTY_FORM);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   useEffect(() => {
     if (permLoading) return;
@@ -71,35 +174,74 @@ export default function OnboardingPage() {
     }
   }, [authLoading, permLoading, user, router]);
 
-  // Reapply prefill: a rejected applicant already has profile/application data.
-  // Runs exactly once — later context refetches must not overwrite edits.
+  // One-time initialization per account, in priority order:
+  // 1. server prefill (reapply data), 2. local draft overlay (newest intent).
+  // Runs only after the permission context settles, so "no server data" is a
+  // real answer rather than a loading race. Later refetches never rewrite.
   useEffect(() => {
-    if (prefilledRef.current) return;
-    if (!profile && !application) return;
-    prefilledRef.current = true;
-    setFormData((prev) => ({
-      ...prev,
-      phone: profile?.phone ?? prev.phone,
-      urn: profile?.urn ?? prev.urn,
-      dateOfBirth: profile?.dateOfBirth ?? prev.dateOfBirth,
-      gender: profile?.gender ?? prev.gender,
-      address: profile?.address ?? prev.address,
-      program: profile?.program ?? prev.program,
-      branch: profile?.branch ?? prev.branch,
-      year: profile?.year ?? prev.year,
-      semester: profile?.semester ?? prev.semester,
-      skills: profile?.skills ?? prev.skills,
-      interests: profile?.interests ?? prev.interests,
-      experience: profile?.experience ?? prev.experience,
-      whyJoin: profile?.whyJoin ?? prev.whyJoin,
-      availability: profile?.availability ?? prev.availability,
-      githubUrl: profile?.githubUrl ?? prev.githubUrl,
-      linkedinUrl: profile?.linkedinUrl ?? prev.linkedinUrl,
-      portfolioUrl: profile?.portfolioUrl ?? prev.portfolioUrl,
-      bio: profile?.bio ?? prev.bio,
-      preferredDepartments: application?.preferredDepartments ?? prev.preferredDepartments,
-    }));
-  }, [profile, application]);
+    if (!user || permLoading) return;
+    if (initializedRef.current === user.$id) return;
+    initializedRef.current = user.$id;
+
+    let next: OnboardingForm = { ...EMPTY_FORM };
+    if (profile || application) {
+      // Direct nullish picks (no generic helper: it widens key inference and
+      // breaks field types). Server values fill gaps; blanks keep current.
+      next = {
+        ...next,
+        phone: profile?.phone ?? next.phone,
+        urn: profile?.urn ?? next.urn,
+        dateOfBirth: profile?.dateOfBirth ?? next.dateOfBirth,
+        gender: profile?.gender ?? next.gender,
+        address: profile?.address ?? next.address,
+        program: profile?.program ?? next.program,
+        branch: profile?.branch ?? next.branch,
+        year: profile?.year ?? next.year,
+        semester: profile?.semester ?? next.semester,
+        skills: profile?.skills ?? next.skills,
+        interests: profile?.interests ?? next.interests,
+        experience: profile?.experience ?? next.experience,
+        whyJoin: profile?.whyJoin ?? next.whyJoin,
+        availability: profile?.availability ?? next.availability,
+        githubUrl: profile?.githubUrl ?? next.githubUrl,
+        linkedinUrl: profile?.linkedinUrl ?? next.linkedinUrl,
+        portfolioUrl: profile?.portfolioUrl ?? next.portfolioUrl,
+        bio: profile?.bio ?? next.bio,
+        preferredDepartments:
+          application?.preferredDepartments ?? next.preferredDepartments,
+      };
+    }
+
+    const draft = readDraft(user.$id);
+    if (draft) {
+      next = mergeDraft(next, draft.form);
+      setStep(draft.step);
+      if (draft.hasContent) {
+        setDraftRestored(true);
+        toast.info("Draft restored — pick up where you left off.");
+      }
+    }
+    setFormData(next);
+  }, [user, permLoading, profile, application]);
+
+  // Autosave every edit (debounced) under the account id, so a reload, a
+  // dead tab, or a failed catalogue fetch never loses half-filled input.
+  // Never saves before initialization completes.
+  useEffect(() => {
+    if (!user || initializedRef.current !== user.$id) return;
+    const timer = setTimeout(() => {
+      try {
+        if (typeof window === "undefined" || !window.localStorage) return;
+        window.localStorage.setItem(
+          draftKey(user.$id),
+          JSON.stringify({ v: DRAFT_VERSION, savedAt: Date.now(), step, form: formData }),
+        );
+      } catch {
+        // Private mode / quota: the form still works, it just won't persist.
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [formData, step, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -290,6 +432,12 @@ export default function OnboardingPage() {
       }
 
       toast.success("Application submitted successfully!");
+      // Submitted — the draft has served its purpose.
+      try {
+        window.localStorage.removeItem(draftKey(user.$id));
+      } catch {
+        // Ignore storage failures on the success path.
+      }
       router.push("/dashboard");
     } catch (error) {
       toast.error(
@@ -315,6 +463,11 @@ export default function OnboardingPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">Join Greymens Club</h1>
           <p className="text-muted-foreground mt-2">Complete your membership application</p>
+          <p className="text-xs text-muted-foreground mt-1" role="note">
+            {draftRestored
+              ? "Restored your saved progress — it keeps saving as you type."
+              : "Your progress saves automatically on this device as you type."}
+          </p>
         </div>
 
         {/* Progress: completed steps are buttons back to that step; the
