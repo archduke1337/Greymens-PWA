@@ -10,7 +10,10 @@ export const title = tv({
       cyan: "from-[#00b7fa] to-[#01cfea]",
       green: "from-[#6FEE8D] to-[#17c964]",
       pink: "from-[#FF72E1] to-[#F54C7A]",
-      foreground: "dark:from-[#FFFFFF] dark:to-[#4B4B4B]",
+      // Needs stops in BOTH modes: the compound below applies
+      // bg-clip-text + text-transparent whenever a color is set, so
+      // dark-only stops render invisible text in light mode.
+      foreground: "from-foreground to-default-500 dark:from-[#FFFFFF] dark:to-[#8E8E8E]",
     },
     size: {
       sm: "text-3xl lg:text-4xl",

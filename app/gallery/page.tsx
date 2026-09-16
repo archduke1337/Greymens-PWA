@@ -3,6 +3,7 @@
 import type { GalleryImage } from "@/lib/gallery";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Button,
@@ -32,6 +33,7 @@ import {
   Users,
   Rocket,
   Folder,
+  X as XIcon,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -49,6 +51,7 @@ const CATEGORIES = [
 ];
 
 export default function GalleryPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   const {
@@ -63,6 +66,7 @@ export default function GalleryPage() {
   } = useOverlayState();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
@@ -84,6 +88,7 @@ export default function GalleryPage() {
   const loadImages = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const params = new URLSearchParams();
       if (mineOnly) params.set("scope", "mine");
       if (selectedCategory !== "all") params.set("category", selectedCategory);
@@ -101,7 +106,8 @@ export default function GalleryPage() {
       setImages(payload.images ?? []);
     } catch (error) {
       console.error("Error loading gallery:", error);
-      toast.error("Failed to load gallery images");
+      setLoadError(getErrorMessage(error) || "Unable to load gallery");
+      setImages([]);
     } finally {
       setLoading(false);
     }
@@ -225,12 +231,22 @@ export default function GalleryPage() {
 
       {/* Gallery Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20" role="status" aria-label="Loading gallery">
           <Loader2
-            aria-label="Loading gallery"
+            aria-hidden
             className="h-8 w-8 animate-spin text-muted-foreground"
           />
         </div>
+      ) : loadError ? (
+        <Card>
+          <CardContent className="p-12 text-center space-y-4">
+            <h3 className="text-xl font-semibold">Couldn&apos;t load the gallery</h3>
+            <p className="text-default-500">{loadError}</p>
+            <Button variant="primary" onPress={loadImages}>
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
       ) : images.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
@@ -249,9 +265,11 @@ export default function GalleryPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {images.map((image) => (
-            <div
+            <button
               key={image.$id}
-              className="cursor-pointer group hover:scale-105 transition-all duration-300"
+              type="button"
+              aria-label={`Open preview: ${image.title}`}
+              className="group block w-full text-left rounded-xl hover:scale-[1.02] focus-visible:scale-[1.02] transition-transform duration-300 focus-visible:outline-2 focus-visible:outline-primary"
               onClick={() => {
                 setSelectedImage(image);
                 openPreview();
@@ -266,8 +284,8 @@ export default function GalleryPage() {
                       loading="lazy"
                       src={image.imageUrl}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:translate-y-full md:group-hover:translate-y-0 group-focus-within:translate-y-0 transition-transform duration-300">
                       <p className="text-white text-sm font-medium">
                         {image.description}
                       </p>
@@ -300,7 +318,7 @@ export default function GalleryPage() {
                   </div>
                 </CardFooter>
               </Card>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -321,7 +339,19 @@ export default function GalleryPage() {
               <ModalBody className="p-0">
                 {selectedImage && (
                   <Card className="border-none">
-                    <CardContent className="p-0 overflow-hidden">
+                    <CardContent className="relative p-0 overflow-hidden">
+                      <Button
+                        isIconOnly
+                        variant="secondary"
+                        aria-label="Close preview"
+                        className="absolute top-3 right-3 z-10"
+                        onPress={() => {
+                          closePreview();
+                          setSelectedImage(null);
+                        }}
+                      >
+                        <XIcon className="w-4 h-4" aria-hidden="true" />
+                      </Button>
                       <img
                         alt={selectedImage.title}
                         className="w-full h-auto max-h-[70vh] object-contain"
@@ -385,10 +415,11 @@ export default function GalleryPage() {
                 <h2 className="text-xl font-bold">Upload photo</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-title" className="text-sm font-medium mb-1 block">
                       Title
                     </label>
                     <Input
+                      id="gallery-title"
                       placeholder="Photo title"
                       value={uploadForm.title}
                       onChange={(e: any) =>
@@ -397,10 +428,11 @@ export default function GalleryPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-description" className="text-sm font-medium mb-1 block">
                       Description
                     </label>
                     <TextArea
+                      id="gallery-description"
                       placeholder="Describe this photo..."
                       rows={2}
                       value={uploadForm.description}
@@ -413,10 +445,11 @@ export default function GalleryPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-category" className="text-sm font-medium mb-1 block">
                       Category
                     </label>
                     <select
+                      id="gallery-category"
                       className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
                       value={uploadForm.category}
                       onChange={(e) =>
@@ -435,10 +468,11 @@ export default function GalleryPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-image-url" className="text-sm font-medium mb-1 block">
                       Image URL (optional if uploading file)
                     </label>
                     <Input
+                      id="gallery-image-url"
                       placeholder="https://example.com/photo.jpg"
                       value={uploadForm.imageUrl}
                       onChange={(e: any) =>
@@ -450,10 +484,11 @@ export default function GalleryPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-file" className="text-sm font-medium mb-1 block">
                       Or upload a file
                     </label>
                     <input
+                      id="gallery-file"
                       accept="image/*"
                       className="w-full text-sm text-default-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
                       type="file"
@@ -463,10 +498,11 @@ export default function GalleryPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">
+                    <label htmlFor="gallery-tags" className="text-sm font-medium mb-1 block">
                       Tags (comma separated)
                     </label>
                     <Input
+                      id="gallery-tags"
                       placeholder="tech, innovation, workshop"
                       value={uploadForm.tags}
                       onChange={(e: any) =>
@@ -507,7 +543,7 @@ export default function GalleryPage() {
           <Button
             className="bg-white text-primary font-semibold hover:scale-105 transition-transform"
             size="lg"
-            onPress={() => (window.location.href = "/register")}
+            onPress={() => router.push("/register")}
           >
             Join Our Community
           </Button>

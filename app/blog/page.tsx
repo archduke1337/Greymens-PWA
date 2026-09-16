@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { title, subtitle } from "@/components/primitives";
 import { blogService } from "@/lib/blog";
@@ -135,7 +136,11 @@ export default function BlogPage() {
         <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
+              <label htmlFor="blog-search" className="sr-only">
+                Search blogs
+              </label>
               <Input
+                id="blog-search"
                 placeholder="Search blogs..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
@@ -176,7 +181,7 @@ export default function BlogPage() {
           </Card>
         ) : filteredBlogs.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📝</div>
+            <div className="text-6xl mb-4" aria-hidden="true">📝</div>
             <h3 className="text-xl font-semibold mb-2">No blogs found</h3>
             <p className="text-default-500 mb-6">
               {user
@@ -193,23 +198,27 @@ export default function BlogPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredBlogs.map((blog) => (
-              <Card
+              // Real link, not a div with a key handler: natively keyboard
+              // operable, announces as a link, supports open-in-new-tab.
+              <Link
                 key={blog.$id}
-                className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                onClick={() => router.push(`/blog/${blog.slug}`)}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === "Enter") router.push(`/blog/${blog.slug}`);
-                }}
-                role="link"
-                tabIndex={0}
+                href={`/blog/${blog.slug}`}
+                className="group rounded-xl focus-visible:outline-2 focus-visible:outline-primary"
+              >
+              <Card
+                className="h-full border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group-hover:border-primary/30"
               >
                 <CardContent className="p-0">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={blog.coverImage}
-                      alt={blog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      alt=""
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 motion-reduce:transform-none"
                     />
                     {blog.featured && (
                       <Chip
@@ -277,6 +286,7 @@ export default function BlogPage() {
                   </div>
                 </CardFooter>
               </Card>
+              </Link>
             ))}
           </div>
         )}

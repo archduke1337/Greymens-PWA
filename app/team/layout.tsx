@@ -4,8 +4,8 @@ export default function TeamLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col items-center justify-center w-full min-h-screen">
-      <div className="w-full max-w-7xl">
+    <section aria-label="Team" className="flex flex-col items-center w-full min-h-screen py-8">
+      <div className="w-full max-w-7xl px-4">
         {children}
       </div>
     </section>

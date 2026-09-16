@@ -82,8 +82,15 @@ export function NotificationBell() {
         setIsOpen(false);
       }
     };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const handleMarkAsRead = async (notification: Notification) => {
@@ -140,7 +147,7 @@ export function NotificationBell() {
         <div
           role="menu"
           aria-label="Notifications"
-          className="absolute right-0 top-full mt-2 w-80 bg-background border border-default-200 rounded-xl shadow-xl z-50 overflow-hidden"
+          className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] bg-background border border-default-200 rounded-xl shadow-xl z-50 overflow-hidden"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-default-200">
             <h3 className="text-sm font-semibold">Notifications</h3>
@@ -169,6 +176,7 @@ export function NotificationBell() {
                 {notifications.map((notification) => (
                   <button
                     key={notification.$id}
+                    role="menuitem"
                     onClick={() => handleMarkAsRead(notification)}
                     className={`w-full text-left px-4 py-3 hover:bg-default-50 transition-colors ${
                       !notification.read ? "bg-primary-50/30" : ""

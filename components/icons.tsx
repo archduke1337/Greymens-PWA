@@ -18,6 +18,8 @@ export const DiscordIcon: React.FC<IconSvgProps> = ({
 }) => {
   return (
     <svg
+      aria-hidden="true"
+      focusable="false"
       height={size || height}
       viewBox="0 0 24 24"
       width={size || width}
@@ -39,6 +41,8 @@ export const TwitterIcon: React.FC<IconSvgProps> = ({
 }) => {
   return (
     <svg
+      aria-hidden="true"
+      focusable="false"
       height={size || height}
       viewBox="0 0 24 24"
       width={size || width}
@@ -60,6 +64,8 @@ export const GithubIcon: React.FC<IconSvgProps> = ({
 }) => {
   return (
     <svg
+      aria-hidden="true"
+      focusable="false"
       height={size || height}
       viewBox="0 0 24 24"
       width={size || width}

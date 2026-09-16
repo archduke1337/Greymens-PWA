@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { title, subtitle } from "@/components/primitives";
 import { Avatar, AvatarImage, AvatarFallback, Card, CardContent, Chip } from "@heroui/react";
 
@@ -34,13 +35,9 @@ export default function AboutPage() {
     },
   ];
 
-  const teamMembers = [
-    "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    "https://i.pravatar.cc/150?u=a04258a2462d826712d",
-    "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    "https://i.pravatar.cc/150?u=a04258114e29026302d",
-    "https://i.pravatar.cc/150?u=a04258114e29026708c",
-  ];
+  // Initials avatars, not stock faces: no external image dependency, no
+  // fabricated team photos, deterministic per label.
+  const teamPreview = ["Leadership", "Innovation", "Creativity", "Excellence", "Growth"];
 
   return (
     <div className="space-y-16 pb-16">
@@ -104,7 +101,7 @@ export default function AboutPage() {
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="text-4xl">{value.icon}</div>
+                  <div className="text-4xl" aria-hidden="true">{value.icon}</div>
                   <div>
                     <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
                     <p className="text-default-600">{value.description}</p>
@@ -125,10 +122,18 @@ export default function AboutPage() {
           </p>
           <div className="flex justify-center">
             <div className="flex -space-x-4">
-              {teamMembers.slice(0, 5).map((avatar, index) => (
-                <Avatar key={index} className="border-2 border-white w-12 h-12"><AvatarImage src={avatar} alt={`Team member ${index}`} /><AvatarFallback>{`TM${index}`}</AvatarFallback></Avatar>
+              {teamPreview.map((label) => (
+                <Avatar key={label} className="border-2 border-white w-12 h-12"><AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(label)}`} alt="" /><AvatarFallback>{label.slice(0, 2)}</AvatarFallback></Avatar>
               ))}
             </div>
+          </div>
+          <div className="flex justify-center mt-6">
+            <Link
+              href="/team"
+              className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Meet the leadership
+            </Link>
           </div>
           <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <Chip color="accent" variant="primary">Leadership</Chip>

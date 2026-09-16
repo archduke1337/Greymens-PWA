@@ -15,6 +15,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
   const { theme, setTheme } = useTheme();
   const isSSR = useIsSSR();
   const isLight = theme === "light" || isSSR;
+  const isDark = !isLight;
 
   const onChange = () => {
     setTheme(isLight ? "dark" : "light");
@@ -24,12 +25,13 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
     <button
       role="switch"
       aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
-      aria-checked={isLight}
+      aria-checked={isDark}
       onClick={onChange}
       className={clsx(
         "px-px transition-opacity hover:opacity-80 cursor-pointer",
-        "inline-flex items-center justify-center w-auto h-auto",
+        "inline-flex items-center justify-center min-w-11 min-h-11",
         "bg-transparent rounded-lg",
+        "focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2",
         className
       )}
     >

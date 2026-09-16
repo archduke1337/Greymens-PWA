@@ -137,6 +137,7 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {submitStatus.type && (
                   <div
+                    role={submitStatus.type === "success" ? "status" : "alert"}
                     className={`p-4 rounded-lg ${submitStatus.type === "success"
                       ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
                       : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
@@ -217,6 +218,9 @@ export default function ContactPage() {
                 <Link
                   key={index}
                   href={method.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${method.title}: ${method.value} (opens in new tab)`}
                   className="flex items-start gap-4 p-4 rounded-lg hover:bg-default-100 dark:hover:bg-default-50 transition-all group"
                 >
                   <div className={`p-3 rounded-lg bg-gradient-to-br ${method.color} text-white group-hover:scale-110 transition-transform`}>

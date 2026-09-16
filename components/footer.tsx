@@ -122,6 +122,8 @@ export const Footer = () => {
               <li>
                 <a 
                   href="https://discord.gg/6v89E3SaZT"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-default-600 hover:text-primary"
                 >
                   Discord
@@ -138,10 +140,10 @@ export const Footer = () => {
               © {new Date().getFullYear()} Greymens Club. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <Link href="/about" className="text-sm text-default-600 hover:text-primary">
+              <Link href="/docs" className="text-sm text-default-600 hover:text-primary">
                 Privacy Policy
               </Link>
-              <Link href="/about" className="text-sm text-default-600 hover:text-primary">
+              <Link href="/docs" className="text-sm text-default-600 hover:text-primary">
                 Terms of Service
               </Link>
             </div>

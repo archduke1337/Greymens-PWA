@@ -16,16 +16,20 @@ export default function PermissionGate({
   capability,
   scope,
   fallback = null,
+  loadingFallback = null,
   children,
 }: {
   capability: string;
   scope?: string;
   fallback?: React.ReactNode;
+  loadingFallback?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { hasPermission, loading, status } = usePermissions();
 
-  if (loading) return null;
+  // Reserve space while permissions resolve instead of popping gated UI in
+  // late; callers that care pass an explicit skeleton via loadingFallback.
+  if (loading) return <>{loadingFallback}</>;
   const restricted = ["banned", "suspended", "deactivated"].includes(
     status as string,
   );

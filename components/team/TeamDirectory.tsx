@@ -106,10 +106,15 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
                     {socialLinks(member).length > 0 ? (
                       <div className="flex gap-2 pt-1">
                         {socialLinks(member).map(({ href, label, Icon }) => (
-                          <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}>
-                            <Button isIconOnly size="sm" variant="secondary" aria-label={label}>
-                              <Icon className="w-4 h-4" />
-                            </Button>
+                          <a
+                            key={label}
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${member.name} on ${label} (opens in new tab)`}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-default-100 text-default-600 hover:bg-default-200 hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                          >
+                            <Icon className="w-4 h-4" aria-hidden="true" />
                           </a>
                         ))}
                       </div>

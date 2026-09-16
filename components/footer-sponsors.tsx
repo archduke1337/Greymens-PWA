@@ -33,21 +33,28 @@ export function FooterSponsors() {
         </p>
       </div>
       <div className="grid grid-cols-3 md:grid-cols-6 gap-6 items-center justify-items-center opacity-60 hover:opacity-100 transition-opacity">
-        {sponsors.map((sponsor) => (
-          <a
-            key={sponsor.$id}
-            href={sponsor.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group"
-          >
-            <img
-              src={sponsor.logo}
-              alt={sponsor.name}
-              className="w-20 h-20 object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
-            />
-          </a>
-        ))}
+        {sponsors.map((sponsor) =>
+          sponsor.website ? (
+            <a
+              key={sponsor.$id}
+              href={sponsor.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${sponsor.name} (opens in new tab)`}
+              className="group"
+            >
+              <img
+                src={sponsor.logo}
+                alt={sponsor.name}
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+                className="w-20 h-20 object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+              />
+            </a>
+          ) : null,
+        )}
       </div>
     </div>
   );
