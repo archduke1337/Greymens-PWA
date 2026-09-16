@@ -10,7 +10,8 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <RouteError error={error} reset={reset} title="Something went wrong" description=""
+    <RouteError error={error} reset={reset} title="Something went wrong"
+      description="We couldn't load this page. Please try again."
     />
   );
 }

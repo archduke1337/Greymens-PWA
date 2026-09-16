@@ -1,6 +1,6 @@
 // app/login/page.tsx
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
@@ -45,6 +45,12 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth_failed") {
+      setError("Google sign-in didn't complete. Please try again.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

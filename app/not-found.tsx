@@ -19,15 +19,21 @@ export default function NotFound() {
               The page you&apos;re looking for doesn&apos;t exist or has been moved.
             </p>
           </div>
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
             <Button variant="primary"
               onPress={() => router.push("/")}
             >
               Go Home
             </Button>
             <Button
-              variant="primary"
-              onPress={() => router.back()}
+              variant="ghost"
+              onPress={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/");
+                }
+              }}
             >
               Go Back
             </Button>
