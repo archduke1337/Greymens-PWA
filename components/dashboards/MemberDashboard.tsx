@@ -1,16 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { eventService, type Event, type Registration } from "@/lib/database";
-import { ticketService, type Ticket } from "@/lib/tickets";
-import { notificationService, type Notification } from "@/lib/notifications";
-import { resourceService, type Resource } from "@/lib/resources";
+import type { Event, Notification, Registration, Resource } from "@/lib/types";
+/** The caller's own issued tickets, as returned by /api/events/register. */
+type MemberTicket = {
+  $id: string;
+  eventId: string;
+  ticketCode: string;
+  status: string;
+  issuedAt?: string;
+};
+
 import {
   Calendar,
-  Ticket,
+  Ticket as TicketIcon,
   Users,
   Award,
   Bell,
@@ -29,53 +35,64 @@ export default function MemberDashboard() {
   const { userDepartments, userDesignations, membership } = usePermissions();
 
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<MemberTicket[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
-    try {
-      const [events, userRegs, userTickets, notifs, res] = await Promise.all([
-        eventService.getAllEvents(),
-        eventService.getUserRegistrations(user.$id),
-        ticketService.getByUser(user.$id),
-        notificationService.getUserNotifications(user.$id, 10),
-        resourceService.getAll(),
-      ]);
-
-      const now = new Date().toISOString().split("T")[0];
-      const upcoming = events
-        .filter((e) => e.date >= now)
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(0, 5);
-      setUpcomingEvents(upcoming);
-      setRegistrations(userRegs);
-      setTickets(userTickets);
-      setNotifications(notifs);
-      setResources(res.slice(0, 6));
-    } catch (err) {
-      console.error("Error loading member dashboard:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+
+    const loadData = async () => {
+      try {
+        const [dashboardResponse, ticketResponse, notificationResponse, resourceResponse] = await Promise.all([
+          fetch("/api/dashboard", { credentials: "include", cache: "no-store" }),
+          fetch("/api/events/register", { credentials: "include", cache: "no-store" }),
+          fetch("/api/notifications?limit=10", { credentials: "include", cache: "no-store" }),
+          fetch("/api/resources", { credentials: "include", cache: "no-store" }),
+        ]);
+        const dashboard = (await dashboardResponse.json()) as {
+          upcomingEvents?: Event[];
+          registrations?: Registration[];
+          myEvents?: Array<{ event: Event | null }>;
+          error?: string;
+        };
+        const ticketPayload = (await ticketResponse.json()) as { tickets?: MemberTicket[] };
+        const notificationPayload = (await notificationResponse.json()) as { notifications?: Notification[] };
+        const resourcePayload = (await resourceResponse.json()) as { resources?: Resource[] };
+        if (!dashboardResponse.ok) throw new Error(dashboard.error || "Unable to load dashboard");
+        if (!cancelled) {
+          setUpcomingEvents(dashboard.upcomingEvents ?? []);
+          setRegisteredEvents((dashboard.myEvents ?? []).flatMap(({ event }) => (event ? [event] : [])));
+          setRegistrations(dashboard.registrations ?? []);
+          setTickets(ticketResponse.ok ? ticketPayload.tickets ?? [] : []);
+          setNotifications(notificationResponse.ok ? notificationPayload.notifications ?? [] : []);
+          setResources(resourceResponse.ok ? (resourcePayload.resources ?? []).slice(0, 6) : []);
+        }
+      } catch (loadError) {
+        if (!cancelled) console.error("Error loading member dashboard:", loadError);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const now = new Date().toISOString().split("T")[0];
   const pastEvents = registrations.filter((r) => {
-    const event = upcomingEvents.find((e) => e.$id === r.eventId);
+    const event = registeredEvents.find((e) => e.$id === r.eventId);
     return event && event.date < now;
   });
 
   const upcomingRegistrations = registrations.filter((r) => {
-    const event = upcomingEvents.find((e) => e.$id === r.eventId);
+    const event = registeredEvents.find((e) => e.$id === r.eventId);
     return event && event.date >= now;
   });
 
@@ -86,8 +103,8 @@ export default function MemberDashboard() {
   const badges = userDesignations.length;
 
   const stats = [
-    { label: "Events Attended", value: pastEvents.length, icon: Calendar, color: "text-purple-400" },
-    { label: "Active Tickets", value: activeTickets.length, icon: Ticket, color: "text-emerald-400" },
+    { label: "Events Attended", value: pastEvents.length, icon: Calendar, color: "text-primary" },
+    { label: "Active Tickets", value: activeTickets.length, icon: TicketIcon, color: "text-emerald-400" },
     { label: "Departments", value: userDepartments.length, icon: Users, color: "text-blue-400" },
     { label: "Badges", value: badges, icon: Award, color: "text-amber-400" },
   ];
@@ -113,7 +130,7 @@ export default function MemberDashboard() {
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back, <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{user?.name}</span>
+          Welcome back, <span className="tracking-tight text-foreground">{user?.name}</span>
         </h1>
         <p className="text-zinc-400">
           {membership?.membershipNumber && (
@@ -143,7 +160,7 @@ export default function MemberDashboard() {
         <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">My Events</h2>
-            <Link href="/events" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+            <Link href="/events" className="text-sm text-primary hover:opacity-90 flex items-center gap-1">
               View All <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -169,12 +186,12 @@ export default function MemberDashboard() {
             upcomingRegistrations.length > 0 ? (
               <div className="space-y-3">
                 {upcomingRegistrations.map((reg) => {
-                  const event = upcomingEvents.find((e) => e.$id === reg.eventId);
+                  const event = registeredEvents.find((e) => e.$id === reg.eventId);
                   if (!event) return null;
                   return (
                     <div key={reg.$id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-zinc-800/50 transition-colors">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
-                        <Calendar className="w-5 h-5 text-purple-400" />
+                      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{event.title}</h3>
@@ -200,7 +217,7 @@ export default function MemberDashboard() {
               <div className="text-center py-8">
                 <Calendar className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
                 <p className="text-sm text-zinc-500">No upcoming events registered</p>
-                <Link href="/events" className="text-sm text-purple-400 hover:text-purple-300 mt-2 inline-block">
+                <Link href="/events" className="text-sm text-primary hover:opacity-90 mt-2 inline-block">
                   Browse Events
                 </Link>
               </div>
@@ -208,7 +225,7 @@ export default function MemberDashboard() {
           ) : pastEvents.length > 0 ? (
             <div className="space-y-3">
               {pastEvents.map((reg) => {
-                const event = upcomingEvents.find((e) => e.$id === reg.eventId);
+                const event = registeredEvents.find((e) => e.$id === reg.eventId);
                 if (!event) return null;
                 return (
                   <div key={reg.$id} className="flex items-center gap-4 p-3 rounded-lg opacity-60">
@@ -245,7 +262,7 @@ export default function MemberDashboard() {
                     href={`/events/${event.$id}`}
                     className="block p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
                   >
-                    <h3 className="font-medium text-sm group-hover:text-purple-400 transition-colors truncate">
+                    <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
                       {event.title}
                     </h3>
                     <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
@@ -274,7 +291,7 @@ export default function MemberDashboard() {
                     className={`p-3 rounded-lg ${notif.read ? "opacity-60" : "bg-zinc-800/50"}`}
                   >
                     <div className="flex items-start gap-2">
-                      {!notif.read && <Bell className="w-3 h-3 text-purple-400 mt-1 flex-shrink-0" />}
+                      {!notif.read && <Bell className="w-3 h-3 text-primary mt-1 flex-shrink-0" />}
                       <div className="min-w-0">
                         <h4 className="text-sm font-medium truncate">{notif.title}</h4>
                         <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{notif.body}</p>
@@ -295,7 +312,7 @@ export default function MemberDashboard() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Resources</h2>
-              <Link href="/resources" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+              <Link href="/resources" className="text-sm text-primary hover:opacity-90 flex items-center gap-1">
                 View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>

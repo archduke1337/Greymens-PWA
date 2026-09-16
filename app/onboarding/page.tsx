@@ -4,9 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { profileService } from "@/lib/profiles";
-import { applicationService } from "@/lib/applications";
-import { departmentService } from "@/lib/departments";
 import { toast } from "sonner";
 import type { Department } from "@/lib/types";
 
@@ -21,10 +18,12 @@ const STEPS = [
 export default function OnboardingPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { status, application, loading: permLoading } = usePermissions();
+  const { status, application, profile, loading: permLoading } = usePermissions();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [deptError, setDeptError] = useState(false);
+  const [deptReloadKey, setDeptReloadKey] = useState(0);
 
   const [formData, setFormData] = useState({
     phone: "",
@@ -52,14 +51,66 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    if (!permLoading && status !== "no_account" && status !== "account") {
-      router.push("/dashboard");
-    }
-  }, [status, permLoading, router]);
+    if (permLoading) return;
+    if (status === "no_account" || status === "account") return;
+    // The server maps rejected applications to `applicant`; a rejected
+    // applicant must stay on the form to reapply instead of bouncing to /dashboard.
+    if (status === "applicant" && application?.status === "rejected") return;
+    router.push("/dashboard");
+  }, [status, application?.status, permLoading, router]);
+
+  // Reapply prefill: a rejected applicant already has profile/application data.
+  useEffect(() => {
+    if (!profile && !application) return;
+    setFormData((prev) => ({
+      ...prev,
+      phone: profile?.phone ?? prev.phone,
+      urn: profile?.urn ?? prev.urn,
+      dateOfBirth: profile?.dateOfBirth ?? prev.dateOfBirth,
+      gender: profile?.gender ?? prev.gender,
+      address: profile?.address ?? prev.address,
+      program: profile?.program ?? prev.program,
+      branch: profile?.branch ?? prev.branch,
+      year: profile?.year ?? prev.year,
+      semester: profile?.semester ?? prev.semester,
+      skills: profile?.skills ?? prev.skills,
+      interests: profile?.interests ?? prev.interests,
+      experience: profile?.experience ?? prev.experience,
+      whyJoin: profile?.whyJoin ?? prev.whyJoin,
+      availability: profile?.availability ?? prev.availability,
+      githubUrl: profile?.githubUrl ?? prev.githubUrl,
+      linkedinUrl: profile?.linkedinUrl ?? prev.linkedinUrl,
+      portfolioUrl: profile?.portfolioUrl ?? prev.portfolioUrl,
+      bio: profile?.bio ?? prev.bio,
+      preferredDepartments: application?.preferredDepartments ?? prev.preferredDepartments,
+    }));
+  }, [profile, application]);
 
   useEffect(() => {
-    departmentService.getAll().then(setDepartments).catch(console.error);
-  }, []);
+    let cancelled = false;
+    fetch("/api/departments", { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load departments");
+        return (await response.json()) as { departments?: Department[] };
+      })
+      .then((payload) => {
+        if (!cancelled) {
+          setDepartments(payload.departments ?? []);
+          setDeptError(false);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Department catalogue error:", error);
+          setDeptError(true);
+          toast.error("Departments could not be loaded. Please try again.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deptReloadKey]);
 
   const updateField = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -75,57 +126,149 @@ export default function OnboardingPage() {
     });
   };
 
+  const validateStep = (currentStep: number): boolean => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.phone.trim()) {
+          toast.error("Phone number is required");
+          return false;
+        }
+        if (!formData.urn.trim()) {
+          toast.error("University roll number is required");
+          return false;
+        }
+        if (!formData.dateOfBirth) {
+          toast.error("Date of birth is required");
+          return false;
+        }
+        if (!formData.gender) {
+          toast.error("Gender is required");
+          return false;
+        }
+        return true;
+      case 2:
+        if (!formData.program) {
+          toast.error("Program is required");
+          return false;
+        }
+        if (!formData.branch) {
+          toast.error("Branch is required");
+          return false;
+        }
+        if (!formData.year) {
+          toast.error("Year is required");
+          return false;
+        }
+        if (!formData.semester) {
+          toast.error("Semester is required");
+          return false;
+        }
+        return true;
+      case 3:
+        if (formData.preferredDepartments.length < 1) {
+          toast.error("Select at least one department");
+          return false;
+        }
+        if (!formData.whyJoin.trim()) {
+          toast.error("Please tell us why you want to join");
+          return false;
+        }
+        if (!formData.availability) {
+          toast.error("Availability is required");
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = () => {
+    if (!validateStep(step)) return;
+    setStep(step + 1);
+  };
+
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please login to submit your application");
+      router.push("/login");
+      return;
+    }
     if (!formData.oathAccepted || !formData.termsAccepted || !formData.constitutionAccepted) {
       toast.error("Please accept all terms and oaths");
       return;
     }
-    if (!formData.urn || !formData.program || !formData.branch || !formData.year || !formData.whyJoin) {
+    if (
+      !formData.phone.trim() ||
+      !formData.urn.trim() ||
+      !formData.dateOfBirth ||
+      !formData.gender ||
+      !formData.program ||
+      !formData.branch ||
+      !formData.year ||
+      !formData.semester ||
+      !formData.whyJoin.trim() ||
+      !formData.availability
+    ) {
       toast.error("Please fill all required fields");
+      return;
+    }
+    if (formData.preferredDepartments.length < 1) {
+      toast.error("Select at least one department");
       return;
     }
 
     setLoading(true);
     try {
-      const profile = await profileService.create({
-        userId: user.$id,
-        phone: formData.phone,
-        urn: formData.urn,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender as any,
-        address: formData.address,
-        program: formData.program,
-        branch: formData.branch,
-        year: formData.year,
-        semester: formData.semester,
-        preferredDepartments: formData.preferredDepartments,
-        skills: formData.skills,
-        interests: formData.interests,
-        experience: formData.experience,
-        whyJoin: formData.whyJoin,
-        availability: formData.availability as any,
-        githubUrl: formData.githubUrl,
-        linkedinUrl: formData.linkedinUrl,
-        portfolioUrl: formData.portfolioUrl,
-        bio: formData.bio,
-        profileVisibility: "members_only",
+      const response = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          profile: {
+            phone: formData.phone,
+            urn: formData.urn,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+            address: formData.address,
+            program: formData.program,
+            branch: formData.branch,
+            year: formData.year,
+            semester: formData.semester,
+            skills: formData.skills,
+            interests: formData.interests,
+            experience: formData.experience,
+            whyJoin: formData.whyJoin,
+            availability: formData.availability,
+            githubUrl: formData.githubUrl,
+            linkedinUrl: formData.linkedinUrl,
+            portfolioUrl: formData.portfolioUrl,
+            bio: formData.bio,
+            profileVisibility: "members_only",
+          },
+          application: {
+            oathAccepted: formData.oathAccepted,
+            termsAccepted: formData.termsAccepted,
+            constitutionAccepted: formData.constitutionAccepted,
+            preferredDepartments: formData.preferredDepartments,
+          },
+        }),
       });
 
-      await applicationService.create({
-        userId: user.$id,
-        status: "pending",
-        profileId: profile.$id!,
-        oathAccepted: formData.oathAccepted,
-        termsAccepted: formData.termsAccepted,
-        constitutionAccepted: formData.constitutionAccepted,
-        preferredDepartments: formData.preferredDepartments,
-      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to submit application");
+      }
 
       toast.success("Application submitted successfully!");
       router.push("/dashboard");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to submit application");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to submit application"
+      );
     } finally {
       setLoading(false);
     }
@@ -149,9 +292,9 @@ export default function OnboardingPage() {
         </div>
 
         {/* Progress */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8" role="list" aria-label="Onboarding progress">
           {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center">
+            <div key={s.id} className="flex items-center" role="listitem" aria-current={step === s.id ? "step" : undefined}>
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step >= s.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
@@ -177,8 +320,9 @@ export default function OnboardingPage() {
           {step === 1 && (
             <>
               <div>
-                <label className="text-sm font-medium">Phone Number *</label>
+                <label htmlFor="onboarding-phone" className="text-sm font-medium">Phone Number *</label>
                 <input
+                  id="onboarding-phone"
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
@@ -187,8 +331,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">University Roll Number *</label>
+                <label htmlFor="onboarding-urn" className="text-sm font-medium">University Roll Number *</label>
                 <input
+                  id="onboarding-urn"
                   type="text"
                   value={formData.urn}
                   onChange={(e) => updateField("urn", e.target.value)}
@@ -198,8 +343,9 @@ export default function OnboardingPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Date of Birth</label>
+                  <label htmlFor="onboarding-dob" className="text-sm font-medium">Date of Birth *</label>
                   <input
+                    id="onboarding-dob"
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={(e) => updateField("dateOfBirth", e.target.value)}
@@ -207,8 +353,9 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Gender</label>
+                  <label htmlFor="onboarding-gender" className="text-sm font-medium">Gender *</label>
                   <select
+                    id="onboarding-gender"
                     value={formData.gender}
                     onChange={(e) => updateField("gender", e.target.value)}
                     className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -222,8 +369,9 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium">Address</label>
+                <label htmlFor="onboarding-address" className="text-sm font-medium">Address</label>
                 <textarea
+                  id="onboarding-address"
                   value={formData.address}
                   onChange={(e) => updateField("address", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -237,8 +385,9 @@ export default function OnboardingPage() {
           {step === 2 && (
             <>
               <div>
-                <label className="text-sm font-medium">Program *</label>
+                <label htmlFor="onboarding-program" className="text-sm font-medium">Program *</label>
                 <select
+                  id="onboarding-program"
                   value={formData.program}
                   onChange={(e) => updateField("program", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -255,8 +404,9 @@ export default function OnboardingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Branch *</label>
+                <label htmlFor="onboarding-branch" className="text-sm font-medium">Branch *</label>
                 <select
+                  id="onboarding-branch"
                   value={formData.branch}
                   onChange={(e) => updateField("branch", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -273,8 +423,9 @@ export default function OnboardingPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Year *</label>
+                  <label htmlFor="onboarding-year" className="text-sm font-medium">Year *</label>
                   <select
+                    id="onboarding-year"
                     value={formData.year}
                     onChange={(e) => updateField("year", e.target.value)}
                     className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -287,8 +438,9 @@ export default function OnboardingPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Semester</label>
+                  <label htmlFor="onboarding-semester" className="text-sm font-medium">Semester *</label>
                   <select
+                    id="onboarding-semester"
                     value={formData.semester}
                     onChange={(e) => updateField("semester", e.target.value)}
                     className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -308,12 +460,13 @@ export default function OnboardingPage() {
           {step === 3 && (
             <>
               <div>
-                <label className="text-sm font-medium">Preferred Departments * (select at least 1)</label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <span id="onboarding-depts-label" className="text-sm font-medium">Preferred Departments * (select at least 1)</span>
+                <div className="grid grid-cols-2 gap-2 mt-2" role="group" aria-labelledby="onboarding-depts-label">
                   {departments.map((dept) => (
                     <button
                       key={dept.$id}
                       type="button"
+                      aria-pressed={formData.preferredDepartments.includes(dept.$id!)}
                       onClick={() => toggleArrayField("preferredDepartments", dept.$id!)}
                       className={`p-2 rounded-md border text-left text-sm ${
                         formData.preferredDepartments.includes(dept.$id!)
@@ -327,8 +480,9 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium">Skills</label>
+                <label htmlFor="onboarding-skills" className="text-sm font-medium">Skills</label>
                 <input
+                  id="onboarding-skills"
                   type="text"
                   placeholder="React, Python, Design (comma separated)"
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -339,8 +493,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Interests</label>
+                <label htmlFor="onboarding-interests" className="text-sm font-medium">Interests</label>
                 <input
+                  id="onboarding-interests"
                   type="text"
                   placeholder="AI, Web Dev, Cybersecurity (comma separated)"
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -351,8 +506,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Prior Experience</label>
+                <label htmlFor="onboarding-experience" className="text-sm font-medium">Prior Experience</label>
                 <textarea
+                  id="onboarding-experience"
                   value={formData.experience}
                   onChange={(e) => updateField("experience", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -361,8 +517,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Why do you want to join? *</label>
+                <label htmlFor="onboarding-whyjoin" className="text-sm font-medium">Why do you want to join? *</label>
                 <textarea
+                  id="onboarding-whyjoin"
                   value={formData.whyJoin}
                   onChange={(e) => updateField("whyJoin", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -371,8 +528,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Availability *</label>
+                <label htmlFor="onboarding-availability" className="text-sm font-medium">Availability *</label>
                 <select
+                  id="onboarding-availability"
                   value={formData.availability}
                   onChange={(e) => updateField("availability", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -388,8 +546,9 @@ export default function OnboardingPage() {
           {step === 4 && (
             <>
               <div>
-                <label className="text-sm font-medium">Bio</label>
+                <label htmlFor="onboarding-bio" className="text-sm font-medium">Bio</label>
                 <textarea
+                  id="onboarding-bio"
                   value={formData.bio}
                   onChange={(e) => updateField("bio", e.target.value)}
                   className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
@@ -398,8 +557,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">GitHub URL</label>
+                <label htmlFor="onboarding-github" className="text-sm font-medium">GitHub URL</label>
                 <input
+                  id="onboarding-github"
                   type="url"
                   value={formData.githubUrl}
                   onChange={(e) => updateField("githubUrl", e.target.value)}
@@ -408,8 +568,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">LinkedIn URL</label>
+                <label htmlFor="onboarding-linkedin" className="text-sm font-medium">LinkedIn URL</label>
                 <input
+                  id="onboarding-linkedin"
                   type="url"
                   value={formData.linkedinUrl}
                   onChange={(e) => updateField("linkedinUrl", e.target.value)}
@@ -418,8 +579,9 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Portfolio URL</label>
+                <label htmlFor="onboarding-portfolio" className="text-sm font-medium">Portfolio URL</label>
                 <input
+                  id="onboarding-portfolio"
                   type="url"
                   value={formData.portfolioUrl}
                   onChange={(e) => updateField("portfolioUrl", e.target.value)}
@@ -481,6 +643,25 @@ export default function OnboardingPage() {
           )}
         </div>
 
+        {/* Department load failure blocks submission until resolved */}
+        {deptError && (
+          <div
+            role="alert"
+            className="mt-6 p-4 rounded-md border border-destructive/30 bg-destructive/10 flex items-center justify-between gap-4"
+          >
+            <p className="text-sm">
+              Departments could not be loaded. Your application cannot be submitted until they are available.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDeptReloadKey((k) => k + 1)}
+              className="px-4 py-2 rounded-md border hover:bg-muted transition-colors flex-shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between mt-6">
           {step > 1 ? (
@@ -495,16 +676,16 @@ export default function OnboardingPage() {
           )}
           {step < STEPS.length ? (
             <button
-              onClick={() => setStep(step + 1)}
-              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              onClick={handleNext}
+              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity hover:opacity-90"
             >
               Next
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              disabled={loading}
-              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              disabled={loading || departments.length === 0}
+              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity disabled:opacity-50 hover:opacity-90"
             >
               {loading ? "Submitting..." : "Submit Application"}
             </button>

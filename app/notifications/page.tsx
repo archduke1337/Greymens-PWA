@@ -5,25 +5,30 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { notificationService } from "@/lib/notifications";
 import type { Notification, LetterData } from "@/lib/types";
+import { timeAgo } from "@/lib/format";
 import { toast } from "sonner";
-import { Button, Card, CardContent, CardHeader, Chip } from "@heroui/react";
+import { Button, Card, CardContent, Chip } from "@heroui/react";
 
-function timeAgo(date: string) {
-  const now = Date.now();
-  const then = new Date(date).getTime();
-  const diff = now - then;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function parseLetterContent(raw: unknown): LetterData | null {
+  if (!raw) return null;
+  if (typeof raw !== "string") return raw as LetterData;
+  try {
+    return JSON.parse(raw) as LetterData;
+  } catch {
+    return null;
+  }
+}
+
+function SafeLetter({ letter }: { letter: unknown }) {
+  const parsed = parseLetterContent(letter);
+  if (!parsed) {
+    return (
+      <p className="mt-3 text-xs text-default-400">
+        Letter content could not be displayed.
+      </p>
+    );
+  }
+  return <LetterContent letter={parsed} />;
 }
 
 function LetterContent({ letter }: { letter: LetterData }) {
@@ -57,14 +62,17 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const data = await notificationService.getUserNotifications(user.$id, 100);
+      setLoadError(null);
+      const data = await notificationService.getUserNotifications(100);
       setNotifications(data);
     } catch {
+      setLoadError("Failed to load notifications.");
       toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
@@ -99,7 +107,7 @@ export default function NotificationsPage() {
 
     setMarkingAll(true);
     try {
-      await notificationService.markAllAsRead(user.$id);
+      await notificationService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       toast.success(`Marked ${unreadCount} notification${unreadCount > 1 ? "s" : ""} as read`);
     } catch {
@@ -180,6 +188,17 @@ export default function NotificationsPage() {
         )}
       </div>
 
+      {loadError && (
+        <Card>
+          <CardContent className="flex items-center justify-between gap-4 p-4">
+            <p className="text-sm text-danger" role="alert">{loadError}</p>
+            <Button size="sm" variant="ghost" onPress={() => void loadNotifications()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {notifications.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
@@ -192,51 +211,56 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-3">
           {notifications.map((notification) => (
-            <Card
+            <button
               key={notification.$id}
-            onPress={() => handleMarkAsRead(notification)}
-              className={`transition-all ${
-                !notification.read
-                  ? "border-l-4 border-l-primary bg-primary-50/30"
-                  : "opacity-70"
-              }`}
-
+              type="button"
+              onClick={() => handleMarkAsRead(notification)}
+              aria-label={
+                notification.read
+                  ? `Notification: ${notification.title}`
+                  : `Unread notification: ${notification.title}. Mark as read`
+              }
+              className="block w-full cursor-pointer text-left"
             >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">
-                        {notification.title}
+              <Card
+                className={`transition-all ${
+                  !notification.read
+                    ? "border-l-4 border-l-primary bg-primary-50/30"
+                    : "opacity-70"
+                }`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold truncate">
+                          {notification.title}
+                        </p>
+                        {!notification.read && (
+                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <p className="text-sm text-default-600 line-clamp-2">
+                        {notification.body}
                       </p>
-                      {!notification.read && (
-                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                      <p className="text-xs text-default-400">
+                        {notification.$createdAt
+                          ? timeAgo(notification.$createdAt)
+                          : ""}
+                      </p>
+
+                      {/* Letter Content */}
+                      {notification.letter && (
+                        <SafeLetter letter={notification.letter} />
                       )}
                     </div>
-                    <p className="text-sm text-default-600 line-clamp-2">
-                      {notification.body}
-                    </p>
-                    <p className="text-xs text-default-400">
-                      {notification.$createdAt ? timeAgo(notification.$createdAt) : ""}
-                    </p>
-
-                    {/* Letter Content */}
-                    {notification.letter && (
-                      <LetterContent
-                        letter={
-                          typeof notification.letter === "string"
-                            ? JSON.parse(notification.letter)
-                            : notification.letter
-                        }
-                      />
-                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </button>
           ))}
         </div>
       )}

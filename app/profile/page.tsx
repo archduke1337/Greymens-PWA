@@ -4,15 +4,16 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
-import { ImageGravity } from "appwrite";
-import { account, storage, ID, APPWRITE_CONFIG } from "@/lib/appwrite";
-import { profileService } from "@/lib/profiles";
-import { departmentService } from "@/lib/departments";
-import { designationService } from "@/lib/designations";
-import { ticketService } from "@/lib/tickets";
-import { membershipService } from "@/lib/memberships";
-import type { Profile, Department, Designation, Membership, Ticket } from "@/lib/types";
+import { account } from "@/lib/appwrite";
+import type {
+  Profile,
+  Department,
+  Designation,
+  Membership,
+  Ticket,
+} from "@/lib/types";
 import { toast } from "sonner";
+import { getAvatarUrl, timeAgo } from "@/lib/format";
 import {
   Avatar,
   AvatarImage,
@@ -25,8 +26,6 @@ import {
   Input,
   TextArea,
 } from "@heroui/react";
-
-const { profilePicturesBucketId: PROFILE_BUCKET_ID } = APPWRITE_CONFIG;
 
 const PRONOUNS_OPTIONS = [
   { value: "he/him", label: "He/Him" },
@@ -69,32 +68,49 @@ const SEMESTER_OPTIONS = [
   { value: "8", label: "Semester 8" },
 ];
 
-function getAvatarUrl(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=400`;
+interface ProfileForm {
+  name: string;
+  pronouns: NonNullable<Profile["pronouns"]>;
+  bio: string;
+  phone: string;
+  urn: string;
+  program: string;
+  branch: string;
+  year: string;
+  semester: string;
+  address: string;
+  githubUrl: string;
+  linkedinUrl: string;
+  portfolioUrl: string;
+  skills: string[];
+  interests: string[];
 }
 
-function timeAgo(date: string) {
-  const now = Date.now();
-  const then = new Date(date).getTime();
-  const diff = now - then;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+// Single mapping from stored profile to editable form state, so load and cancel
+// can never drift apart.
+function toEditForm(profile: Profile | null, name: string): ProfileForm {
+  return {
+    name,
+    pronouns: profile?.pronouns || "prefer_to_say",
+    bio: profile?.bio || "",
+    phone: profile?.phone || "",
+    urn: profile?.urn || "",
+    program: profile?.program || "",
+    branch: profile?.branch || "",
+    year: profile?.year || "",
+    semester: profile?.semester || "",
+    address: profile?.address || "",
+    githubUrl: profile?.githubUrl || "",
+    linkedinUrl: profile?.linkedinUrl || "",
+    portfolioUrl: profile?.portfolioUrl || "",
+    skills: profile?.skills || [],
+    interests: profile?.interests || [],
+  };
 }
 
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const {
-    profile: permissionProfile,
     status,
     userDepartments,
     userDesignations,
@@ -115,23 +131,7 @@ export default function ProfilePage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [membership, setMembership] = useState<Membership | null>(null);
 
-  const [editForm, setEditForm] = useState({
-    name: "",
-    pronouns: "" as Profile["pronouns"],
-    bio: "",
-    phone: "",
-    urn: "",
-    program: "",
-    branch: "",
-    year: "",
-    semester: "",
-    address: "",
-    githubUrl: "",
-    linkedinUrl: "",
-    portfolioUrl: "",
-    skills: [] as string[],
-    interests: [] as string[],
-  });
+  const [editForm, setEditForm] = useState<ProfileForm>(() => toEditForm(null, ""));
 
   const [newSkill, setNewSkill] = useState("");
   const [newInterest, setNewInterest] = useState("");
@@ -148,66 +148,25 @@ export default function ProfilePage() {
     if (!authUser) return;
     try {
       setLoading(true);
-      const [profileData, membershipData, ticketData] = await Promise.all([
-        profileService.getByUserId(authUser.$id),
-        membershipService.getByUserId(authUser.$id),
-        ticketService.getByUser(authUser.$id),
-      ]);
+      const response = await fetch("/api/profile", { credentials: "include" });
+      const payload = (await response.json().catch(() => null)) as
+        | { profile?: Profile | null; membership?: Membership | null; tickets?: Ticket[]; error?: string }
+        | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to load profile");
+
+      const profileData = payload?.profile ?? null;
       setProfile(profileData);
-      setMembership(membershipData);
-      setTickets(ticketData);
-
-      if (profileData) {
-        setEditForm({
-          name: authUser.name || "",
-          pronouns: profileData.pronouns || "prefer_to_say",
-          bio: profileData.bio || "",
-          phone: profileData.phone || "",
-          urn: profileData.urn || "",
-          program: profileData.program || "",
-          branch: profileData.branch || "",
-          year: profileData.year || "",
-          semester: profileData.semester || "",
-          address: profileData.address || "",
-          githubUrl: profileData.githubUrl || "",
-          linkedinUrl: profileData.linkedinUrl || "",
-          portfolioUrl: profileData.portfolioUrl || "",
-          skills: profileData.skills || [],
-          interests: profileData.interests || [],
-        });
-      } else {
-        setEditForm((prev) => ({ ...prev, name: authUser.name || "" }));
-      }
-
-      loadProfilePicture(authUser);
+      setMembership(payload?.membership ?? null);
+      setTickets(payload?.tickets ?? []);
+      setEditForm(toEditForm(profileData, authUser.name || ""));
+      setProfilePicture(getAvatarUrl(profileData?.avatar, authUser.name || "User"));
     } catch (err) {
       console.error("Failed to load profile:", err);
-      toast.error("Failed to load profile data");
+      toast.error(err instanceof Error ? err.message : "Failed to load profile data");
     } finally {
       setLoading(false);
     }
   }, [authUser]);
-
-  const loadProfilePicture = (currentUser?: typeof authUser) => {
-    const u = currentUser || authUser;
-    if (u?.prefs?.profilePictureId) {
-      try {
-        const fileUrl = storage.getFilePreview(
-          PROFILE_BUCKET_ID,
-          u.prefs.profilePictureId,
-          400,
-          400,
-          ImageGravity.Center,
-          100
-        );
-        setProfilePicture(fileUrl.toString());
-      } catch {
-        setProfilePicture(getAvatarUrl(u.name || "User"));
-      }
-    } else {
-      setProfilePicture(getAvatarUrl(u?.name || "User"));
-    }
-  };
 
   useEffect(() => {
     if (!authLoading && !authUser) {
@@ -220,6 +179,8 @@ export default function ProfilePage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset so selecting the same file again still fires a change event.
+    e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
@@ -232,20 +193,18 @@ export default function ProfilePage() {
 
     setUploadingPhoto(true);
     try {
-      if (authUser?.prefs?.profilePictureId) {
-        try {
-          await storage.deleteFile(PROFILE_BUCKET_ID, authUser.prefs.profilePictureId);
-        } catch {
-          /* old picture may not exist */
-        }
-      }
-      const response = await storage.createFile(PROFILE_BUCKET_ID, ID.unique(), file);
-      await account.updatePrefs({
-        ...authUser?.prefs,
-        profilePictureId: response.$id,
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
       });
-      const url = storage.getFileView(PROFILE_BUCKET_ID, response.$id).toString();
-      setProfilePicture(url);
+      const payload = (await response.json().catch(() => null)) as { avatar?: string; error?: string } | null;
+      if (!response.ok || !payload?.avatar) {
+        throw new Error(payload?.error || "Failed to upload picture");
+      }
+      setProfilePicture(payload.avatar);
       toast.success("Profile picture updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to upload picture");
@@ -256,36 +215,42 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     if (!authUser) return;
+    const trimmedName = editForm.name.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 128) {
+      toast.error("Name must be between 2 and 128 characters");
+      return;
+    }
+
     setSaving(true);
     try {
-      if (editForm.name !== authUser.name) {
-        await account.updateName({ name: editForm.name });
+      if (trimmedName !== authUser.name) {
+        await account.updateName({ name: trimmedName });
       }
 
-      const profileData: Partial<Profile> = {
-        pronouns: editForm.pronouns,
-        bio: editForm.bio,
-        phone: editForm.phone,
-        urn: editForm.urn,
-        program: editForm.program,
-        branch: editForm.branch,
-        year: editForm.year,
-        semester: editForm.semester,
-        address: editForm.address,
-        githubUrl: editForm.githubUrl,
-        linkedinUrl: editForm.linkedinUrl,
-        portfolioUrl: editForm.portfolioUrl,
-        skills: editForm.skills,
-        interests: editForm.interests,
-      };
-
-      if (profile) {
-        await profileService.update(authUser.$id, profileData);
-      } else {
-        await profileService.create({
-          userId: authUser.$id,
-          ...profileData,
-        } as any);
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pronouns: editForm.pronouns,
+          bio: editForm.bio,
+          phone: editForm.phone,
+          urn: editForm.urn,
+          program: editForm.program,
+          branch: editForm.branch,
+          year: editForm.year,
+          semester: editForm.semester,
+          address: editForm.address,
+          githubUrl: editForm.githubUrl,
+          linkedinUrl: editForm.linkedinUrl,
+          portfolioUrl: editForm.portfolioUrl,
+          skills: editForm.skills,
+          interests: editForm.interests,
+        }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Failed to save profile");
       }
 
       await refresh();
@@ -301,10 +266,21 @@ export default function ProfilePage() {
 
   const addSkill = () => {
     const trimmed = newSkill.trim();
-    if (trimmed && !editForm.skills.includes(trimmed)) {
-      setEditForm((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }));
-      setNewSkill("");
+    if (!trimmed) return;
+    if (trimmed.length > 100) {
+      toast.error("Skills must be 100 characters or fewer");
+      return;
     }
+    if (editForm.skills.includes(trimmed)) {
+      toast.error("That skill is already listed");
+      return;
+    }
+    if (editForm.skills.length >= 50) {
+      toast.error("You can list up to 50 skills");
+      return;
+    }
+    setEditForm((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }));
+    setNewSkill("");
   };
 
   const removeSkill = (skill: string) => {
@@ -316,10 +292,21 @@ export default function ProfilePage() {
 
   const addInterest = () => {
     const trimmed = newInterest.trim();
-    if (trimmed && !editForm.interests.includes(trimmed)) {
-      setEditForm((prev) => ({ ...prev, interests: [...prev.interests, trimmed] }));
-      setNewInterest("");
+    if (!trimmed) return;
+    if (trimmed.length > 100) {
+      toast.error("Interests must be 100 characters or fewer");
+      return;
     }
+    if (editForm.interests.includes(trimmed)) {
+      toast.error("That interest is already listed");
+      return;
+    }
+    if (editForm.interests.length >= 50) {
+      toast.error("You can list up to 50 interests");
+      return;
+    }
+    setEditForm((prev) => ({ ...prev, interests: [...prev.interests, trimmed] }));
+    setNewInterest("");
   };
 
   const removeInterest = (interest: string) => {
@@ -344,9 +331,9 @@ export default function ProfilePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div role="status" className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
           <p className="mt-4 text-default-500">Loading profile...</p>
         </div>
       </div>
@@ -366,9 +353,11 @@ export default function ProfilePage() {
               <AvatarFallback>{authUser.name?.charAt(0) || "U"}</AvatarFallback>
             </Avatar>
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingPhoto}
-              className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+              aria-label="Change profile picture"
+              className="absolute bottom-1 right-1 bg-primary text-white rounded-full p-2 shadow-lg transition-opacity disabled:opacity-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
             >
               {uploadingPhoto ? (
                 <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
@@ -422,25 +411,7 @@ export default function ProfilePage() {
                   variant="ghost"
                   onPress={() => {
                     setIsEditing(false);
-                    if (profile) {
-                      setEditForm({
-                        name: authUser.name || "",
-                        pronouns: profile.pronouns || "prefer_to_say",
-                        bio: profile.bio || "",
-                        phone: profile.phone || "",
-                        urn: profile.urn || "",
-                        program: profile.program || "",
-                        branch: profile.branch || "",
-                        year: profile.year || "",
-                        semester: profile.semester || "",
-                        address: profile.address || "",
-                        githubUrl: profile.githubUrl || "",
-                        linkedinUrl: profile.linkedinUrl || "",
-                        portfolioUrl: profile.portfolioUrl || "",
-                        skills: profile.skills || [],
-                        interests: profile.interests || [],
-                      });
-                    }
+                    setEditForm(toEditForm(profile, authUser.name || ""));
                   }}
                 >
                   Cancel
@@ -461,14 +432,45 @@ export default function ProfilePage() {
           <h2 className="text-lg font-semibold">About</h2>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Pronouns */}
+          <div className="space-y-2">
+            <label htmlFor="profile-pronouns" className="text-sm font-medium text-default-600">
+              Pronouns
+            </label>
+            {isEditing ? (
+              <select
+                id="profile-pronouns"
+                value={editForm.pronouns}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, pronouns: e.target.value as ProfileForm["pronouns"] }))
+                }
+                className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+              >
+                {PRONOUNS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-default-700">
+                {profile?.pronouns && profile.pronouns !== "prefer_to_say"
+                  ? PRONOUNS_OPTIONS.find((opt) => opt.value === profile.pronouns)?.label || profile.pronouns
+                  : "Not shared"}
+              </p>
+            )}
+          </div>
+
           {/* Bio */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-default-600">Bio</label>
+            <label htmlFor="profile-bio" className="text-sm font-medium text-default-600">Bio</label>
             {isEditing ? (
               <TextArea
+                id="profile-bio"
                 value={editForm.bio}
-                onChange={(e: any) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell us about yourself..."
+                maxLength={5000}
                 rows={3}
               />
             ) : (
@@ -483,10 +485,13 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-default-600">Skills</label>
             {isEditing ? (
               <div className="space-y-2">
-                <div className="flex gap-2">                    <Input
+                <div className="flex gap-2">
+                  <Input
                     value={newSkill}
-                    onChange={(e: any) => setNewSkill(e.target.value)}
+                    onChange={(e) => setNewSkill(e.target.value)}
                     placeholder="Add a skill..."
+                    maxLength={100}
+                    aria-label="Add a skill"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -494,13 +499,23 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="ghost" onPress={addSkill}>
+                  <Button size="sm" variant="ghost" aria-label="Add skill" onPress={addSkill}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.skills.map((skill) => (
-                    <Chip key={skill} size="sm" variant="primary">{skill}<button onClick={() => removeSkill(skill)} className="ml-1 text-xs">x</button></Chip>
+                    <Chip key={skill} size="sm" variant="primary">
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(skill)}
+                        aria-label={`Remove skill ${skill}`}
+                        className="ml-1 text-xs"
+                      >
+                        ×
+                      </button>
+                    </Chip>
                   ))}
                 </div>
               </div>
@@ -524,10 +539,13 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-default-600">Interests</label>
             {isEditing ? (
               <div className="space-y-2">
-                <div className="flex gap-2">                    <Input
+                <div className="flex gap-2">
+                  <Input
                     value={newInterest}
-                    onChange={(e: any) => setNewInterest(e.target.value)}
+                    onChange={(e) => setNewInterest(e.target.value)}
                     placeholder="Add an interest..."
+                    maxLength={100}
+                    aria-label="Add an interest"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -535,13 +553,23 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="ghost" onPress={addInterest}>
+                  <Button size="sm" variant="ghost" aria-label="Add interest" onPress={addInterest}>
                     Add
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {editForm.interests.map((interest) => (
-                    <Chip key={interest} size="sm" variant="primary">{interest}<button onClick={() => removeInterest(interest)} className="ml-1 text-xs">x</button></Chip>
+                    <Chip key={interest} size="sm" variant="primary">
+                      {interest}
+                      <button
+                        type="button"
+                        onClick={() => removeInterest(interest)}
+                        aria-label={`Remove interest ${interest}`}
+                        className="ml-1 text-xs"
+                      >
+                        ×
+                      </button>
+                    </Chip>
                   ))}
                 </div>
               </div>
@@ -571,7 +599,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.githubUrl}
-                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, githubUrl: e.target.value }))}
+                    aria-label="GitHub profile URL"
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, githubUrl: e.target.value }))}
                     placeholder="GitHub profile URL"
                   />
                 </div>
@@ -581,7 +610,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.linkedinUrl}
-                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))}
+                    aria-label="LinkedIn profile URL"
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))}
                     placeholder="LinkedIn profile URL"
                   />
                 </div>
@@ -591,7 +621,8 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.portfolioUrl}
-                    onChange={(e: any) => setEditForm((prev) => ({ ...prev, portfolioUrl: e.target.value }))}
+                    aria-label="Portfolio website URL"
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, portfolioUrl: e.target.value }))}
                     placeholder="Portfolio website URL"
                   />
                 </div>
@@ -655,10 +686,11 @@ export default function ProfilePage() {
           {isEditing ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Program</label>
+                <label htmlFor="profile-program" className="text-sm font-medium mb-1 block">Program</label>
                 <select
+                  id="profile-program"
                   value={editForm.program}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, program: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, program: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
                 >
                   <option value="">Select program</option>
@@ -668,18 +700,20 @@ export default function ProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Branch</label>
+                <label htmlFor="profile-branch" className="text-sm font-medium mb-1 block">Branch</label>
                 <Input
+                  id="profile-branch"
                   value={editForm.branch}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, branch: e.target.value }))}
                   placeholder="e.g. Computer Science"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Year</label>
+                <label htmlFor="profile-year" className="text-sm font-medium mb-1 block">Year</label>
                 <select
+                  id="profile-year"
                   value={editForm.year}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, year: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, year: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
                 >
                   <option value="">Select year</option>
@@ -689,10 +723,11 @@ export default function ProfilePage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Semester</label>
+                <label htmlFor="profile-semester" className="text-sm font-medium mb-1 block">Semester</label>
                 <select
+                  id="profile-semester"
                   value={editForm.semester}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, semester: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, semester: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
                 >
                   <option value="">Select semester</option>
@@ -702,10 +737,11 @@ export default function ProfilePage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium mb-1 block">URN (University Roll Number)</label>
+                <label htmlFor="profile-urn" className="text-sm font-medium mb-1 block">URN (University Roll Number)</label>
                 <Input
+                  id="profile-urn"
                   value={editForm.urn}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, urn: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, urn: e.target.value }))}
                   placeholder="Enter URN"
                 />
                 <p className="text-xs text-warning flex items-center gap-1">
@@ -716,18 +752,20 @@ export default function ProfilePage() {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Phone</label>
+                <label htmlFor="profile-phone" className="text-sm font-medium mb-1 block">Phone</label>
                 <Input
+                  id="profile-phone"
                   value={editForm.phone}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="Phone number"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-sm font-medium mb-1 block">Address</label>
+                <label htmlFor="profile-address" className="text-sm font-medium mb-1 block">Address</label>
                 <Input
+                  id="profile-address"
                   value={editForm.address}
-                  onChange={(e: any) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
                   placeholder="Address"
                 />
                 <p className="text-xs text-warning flex items-center gap-1">
@@ -741,31 +779,31 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs text-default-400">Program</label>
+                <span className="text-xs text-default-400">Program</span>
                 <p className="text-sm">{profile?.program || "-"}</p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-default-400">Branch</label>
+                <span className="text-xs text-default-400">Branch</span>
                 <p className="text-sm">{profile?.branch || "-"}</p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-default-400">Year</label>
+                <span className="text-xs text-default-400">Year</span>
                 <p className="text-sm">{profile?.year || "-"}</p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-default-400">Semester</label>
+                <span className="text-xs text-default-400">Semester</span>
                 <p className="text-sm">{profile?.semester ? `Semester ${profile.semester}` : "-"}</p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-default-400">URN</label>
+                <span className="text-xs text-default-400">URN</span>
                 <p className="text-sm font-mono">{profile?.urn || "-"}</p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-default-400">Phone</label>
+                <span className="text-xs text-default-400">Phone</span>
                 <p className="text-sm">{profile?.phone || "-"}</p>
               </div>
               <div className="space-y-1 md:col-span-2">
-                <label className="text-xs text-default-400">Address</label>
+                <span className="text-xs text-default-400">Address</span>
                 <p className="text-sm">{profile?.address || "-"}</p>
               </div>
             </div>
@@ -792,7 +830,8 @@ export default function ProfilePage() {
                 </div>
                 <Chip
                   size="sm"
-                  variant={membership.status === "active" ? "primary" : "danger"}
+                  color={membership.status === "active" ? "success" : "danger"}
+                  variant="soft"
                 >
                   {membership.status}
                 </Chip>
@@ -849,10 +888,10 @@ export default function ProfilePage() {
                         ticket.status === "checked_in"
                           ? "success"
                           : ticket.status === "completed"
-                          ? "secondary"
+                          ? "accent"
                           : ticket.status === "invalidated"
-                          ? "danger"
-                          : "default"
+                            ? "danger"
+                            : "default"
                       }
                     >
                       {ticket.status.replace("_", " ")}

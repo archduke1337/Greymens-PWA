@@ -56,7 +56,7 @@ const QUICK_LINKS = [
     description: "Read our founding document",
     href: "/docs/constitution",
     icon: BookOpen,
-    color: "text-purple-400",
+    color: "text-primary",
   },
   {
     label: "Learning Roadmaps",
@@ -94,7 +94,7 @@ export default function ApplicantDashboard() {
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome, <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{user?.name}</span>
+          Welcome, <span className="tracking-tight text-foreground">{user?.name}</span>
         </h1>
         <p className="text-zinc-400">Track your application and explore what MindMesh Club has to offer.</p>
       </div>
@@ -158,7 +158,7 @@ export default function ApplicantDashboard() {
                   ? "bg-emerald-500"
                   : appStatus === "rejected"
                   ? "bg-red-500"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500"
+                  : "bg-primary"
               }`}
               style={{ width: `${config.progress}%` }}
             />
@@ -171,7 +171,7 @@ export default function ApplicantDashboard() {
                     config.progress >= (i + 1) * 33.33
                       ? appStatus === "rejected" && i === 2
                         ? "border-red-500 bg-red-500"
-                        : "border-purple-500 bg-purple-500"
+                        : "border-primary bg-primary"
                       : "border-zinc-700 bg-zinc-800"
                   }`}
                 />
@@ -206,7 +206,7 @@ export default function ApplicantDashboard() {
                 <p className="text-xs text-zinc-500 mb-2">Preferred Departments</p>
                 <div className="flex flex-wrap gap-2">
                   {application.preferredDepartments.map((dept) => (
-                    <span key={dept} className="px-2.5 py-1 text-xs rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <span key={dept} className="px-2.5 py-1 text-xs rounded-full bg-muted text-primary border border-border">
                       {dept}
                     </span>
                   ))}
@@ -251,8 +251,8 @@ export default function ApplicantDashboard() {
             { step: 3, title: "Join Your Department", desc: "Get assigned to your preferred department and start collaborating with the team." },
           ].map((item) => (
             <div key={item.step} className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <span className="text-sm font-semibold text-purple-400">{item.step}</span>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                <span className="text-sm font-semibold text-primary">{item.step}</span>
               </div>
               <div>
                 <h3 className="font-medium text-sm">{item.title}</h3>

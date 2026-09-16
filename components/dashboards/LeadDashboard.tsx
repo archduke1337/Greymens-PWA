@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import type { Application, Event } from "@/lib/types";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/context/PermissionContext";
-import { eventService, type Event } from "@/lib/database";
-import type { Department, UserDepartment } from "@/lib/types";;
-import type { Application } from "@/lib/types";;
 import {
   LayoutDashboard,
-  Calendar,
   Users,
-  ClipboardCheck,
   ChevronRight,
   FileText,
   Clock,
@@ -22,54 +17,69 @@ import {
   FolderOpen,
 } from "lucide-react";
 
-export default function LeadDashboard() {
-  const { user } = useAuth();
-  const { userDepartments, userDesignations, allDepartments, hasPermission } = usePermissions();
+import { usePermissions } from "@/context/PermissionContext";
 
-  const [events, setEvents] = useState<Event[]>([]);
-  const [pendingApplications, setPendingApplications] = useState<Application[]>([]);
-  const [departmentMembers, setDepartmentMembers] = useState<Record<string, number>>({});
+export default function LeadDashboard() {
+  const { userDepartments, userDesignations, allDepartments, hasPermission } =
+    usePermissions();
+
+  type LeadDashboardPayload = {
+    lead?: {
+      events: Event[];
+      pendingApplications: Application[];
+      departmentMemberCounts: Record<string, number>;
+    };
+  };
+
+  const [data, setData] = useState<LeadDashboardPayload["lead"] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const leadDepartments = userDepartments.filter((ud) => ud.role === "lead");
   const leadDepartmentIds = leadDepartments.map((ud) => ud.departmentId);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [allEvents, pendingApps] = await Promise.all([
-        eventService.getAllEvents(),
-        applicationService.getPending(),
-      ]);
-
-      setEvents(allEvents);
-      setPendingApplications(pendingApps);
-
-      // Load member counts for lead departments
-      const memberCounts: Record<string, number> = {};
-      for (const deptId of leadDepartmentIds) {
-        try {
-          const members = await departmentService.getDepartmentMembers(deptId);
-          memberCounts[deptId] = members.length;
-        } catch {
-          memberCounts[deptId] = 0;
-        }
-      }
-      setDepartmentMembers(memberCounts);
-    } catch (err) {
-      console.error("Error loading lead dashboard:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [leadDepartmentIds]);
+  // `draft_events` and `manage_department_team` are department-scoped
+  // capabilities: the grant is stored as `capability:department:<id>` and only
+  // applies inside the department it was issued for. They must therefore be
+  // asked with a scope, and the answer is "any of my departments", not "my
+  // first department" — a lead may hold the role in one department and not in
+  // another. Asking without a scope resolves to false, which is why these
+  // checks previously appeared always-on and now need the loop.
+  const canDraftEvents = leadDepartmentIds.some((id) =>
+    hasPermission("draft_events", `department:${id}`),
+  );
+  const canManageTeam = leadDepartmentIds.some((id) =>
+    hasPermission("manage_department_team", `department:${id}`),
+  );
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    let cancelled = false;
+    const loadData = async () => {
+      try {
+        const response = await fetch("/api/dashboard", { credentials: "include" });
+        const payload = (await response.json()) as LeadDashboardPayload & { error?: string };
+        if (!response.ok || !payload.lead) throw new Error(payload.error || "Unable to load dashboard");
+        if (!cancelled) setData(payload.lead);
+      } catch (loadError) {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void loadData();
+    return () => { cancelled = true; };
+  }, []);
 
-  const myEvents = events.filter((e) => leadDepartmentIds.some(() => e.ownerId === user?.$id));
-  const draftEvents = events.filter((e) => e.status === "draft" && e.ownerId === user?.$id);
-  const reviewEvents = events.filter((e) => e.status === "review");
-  const publishedEvents = events.filter((e) => ["approved", "published", "active"].includes(e.status));
+  const events = data?.events ?? [];
+  const pendingApplications = data?.pendingApplications ?? [];
+  const departmentMembers = data?.departmentMemberCounts ?? {};
+  // The server already restricts this payload to the lead's own event pipeline.
+  const myEvents = events;
+  const draftEvents = events.filter((event) => event.status === "draft");
+  const reviewEvents = events.filter((event) => event.status === "review");
+  const publishedEvents = events.filter((event) =>
+    ["approved", "published", "active"].includes(event.status),
+  );
 
   const getDepartmentName = (deptId: string) => {
     return allDepartments.find((d) => d.$id === deptId)?.name || "Unknown";
@@ -94,22 +104,29 @@ export default function LeadDashboard() {
     );
   }
 
+  if (error || !data) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-12 text-center">
+        <h1 className="text-2xl font-semibold">Lead dashboard unavailable</h1>
+        <p className="text-zinc-500 mt-2">{error || "The server did not return a lead view."}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Lead Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Lead Dashboard</h1>
           <p className="text-zinc-400">
             Manage your departments and oversee event pipeline.
           </p>
         </div>
-        {hasPermission("draft_events") && (
+        {canDraftEvents && (
           <Link
-            href="/events/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:opacity-90 text-primary-foreground text-sm font-medium transition-opacity"
+            href="/admin/events/create"
           >
             <Plus className="w-4 h-4" />
             New Event
@@ -121,7 +138,9 @@ export default function LeadDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {leadDepartments.map((ud) => {
           const dept = allDepartments.find((d) => d.$id === ud.departmentId);
+
           if (!dept) return null;
+
           return (
             <div
               key={ud.$id}
@@ -140,28 +159,32 @@ export default function LeadDashboard() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{dept.name}</h3>
-                    <p className="text-xs text-zinc-500 capitalize">{dept.category}</p>
+                    <p className="text-xs text-zinc-500 capitalize">
+                      {dept.category}
+                    </p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-primary border border-border">
                   Lead
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
-                  <p className="text-2xl font-bold">{departmentMembers[ud.departmentId] || 0}</p>
+                  <p className="text-2xl font-bold">
+                    {departmentMembers[ud.departmentId] || 0}
+                  </p>
                   <p className="text-xs text-zinc-500">Members</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {events.filter((e) => e.ownerId === user?.$id).length}
+                    {events.length}
                   </p>
                   <p className="text-xs text-zinc-500">Events</p>
                 </div>
               </div>
               <Link
+                className="mt-4 flex items-center gap-1 text-sm text-primary hover:opacity-90 transition-colors"
                 href={`/admin/departments/${dept.slug}`}
-                className="mt-4 flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300 transition-colors"
               >
                 Manage Department <ChevronRight className="w-4 h-4" />
               </Link>
@@ -175,7 +198,10 @@ export default function LeadDashboard() {
         <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Event Pipeline</h2>
-            <Link href="/events" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+            <Link
+              className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
+              href="/events"
+            >
               View All <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -208,7 +234,9 @@ export default function LeadDashboard() {
           {/* Draft Events */}
           {draftEvents.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">Your Drafts</h3>
+              <h3 className="text-sm font-medium text-zinc-400 mb-2">
+                Your Drafts
+              </h3>
               {draftEvents.slice(0, 5).map((event) => (
                 <div
                   key={event.$id}
@@ -218,12 +246,21 @@ export default function LeadDashboard() {
                     <FileText className="w-4 h-4 text-zinc-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">{event.title}</h4>
+                    <h4 className="font-medium text-sm truncate">
+                      {event.title}
+                    </h4>
                     <p className="text-xs text-zinc-500 mt-0.5">
-                      {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} • {event.venue}
+                      {new Date(event.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      • {event.venue}
                     </p>
                   </div>
-                  <Link href={`/events/${event.$id}/edit`} className="text-zinc-500 hover:text-zinc-300">
+                  <Link
+                    className="text-zinc-500 hover:text-zinc-300"
+                    href={`/events/${event.$id}/edit`}
+                  >
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -234,7 +271,9 @@ export default function LeadDashboard() {
           {/* Pending Approvals */}
           {reviewEvents.length > 0 && (
             <div className="space-y-2 mt-6">
-              <h3 className="text-sm font-medium text-amber-400 mb-2">Pending Approvals</h3>
+              <h3 className="text-sm font-medium text-amber-400 mb-2">
+                Pending Approvals
+              </h3>
               {reviewEvents.slice(0, 5).map((event) => (
                 <div
                   key={event.$id}
@@ -244,12 +283,17 @@ export default function LeadDashboard() {
                     <AlertCircle className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">{event.title}</h4>
+                    <h4 className="font-medium text-sm truncate">
+                      {event.title}
+                    </h4>
                     <p className="text-xs text-zinc-500 mt-0.5">
                       Submitted by {event.organizerName}
                     </p>
                   </div>
-                  <Link href={`/events/${event.$id}`} className="text-amber-400 hover:text-amber-300">
+                  <Link
+                    className="text-amber-400 hover:text-amber-300"
+                    href={`/events/${event.$id}`}
+                  >
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -271,8 +315,11 @@ export default function LeadDashboard() {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Applications</h2>
-              {hasPermission("manage_department_team") && (
-                <Link href="/admin/applications" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1">
+              {canManageTeam && (
+                <Link
+                  className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
+                  href="/admin/membership"
+                >
                   Review <ChevronRight className="w-4 h-4" />
                 </Link>
               )}
@@ -280,12 +327,17 @@ export default function LeadDashboard() {
             {pendingApplications.length > 0 ? (
               <div className="space-y-3">
                 {pendingApplications.slice(0, 5).map((app) => (
-                  <div key={app.$id} className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                  <div
+                    key={app.$id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10"
+                  >
                     <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
                       <Users className="w-4 h-4 text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">New Application</p>
+                      <p className="text-sm font-medium truncate">
+                        New Application
+                      </p>
                       <p className="text-xs text-zinc-500">
                         {new Date(app.submittedAt).toLocaleDateString()}
                       </p>
@@ -306,22 +358,39 @@ export default function LeadDashboard() {
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {[
-                { label: "Create Event", href: "/events/new", icon: Plus, show: hasPermission("draft_events") },
-                { label: "Manage Team", href: "/admin/team", icon: Users, show: hasPermission("manage_department_team") },
-                { label: "Department Resources", href: "/resources", icon: FolderOpen, show: true },
-                { label: "View Reports", href: "/admin/reports", icon: LayoutDashboard, show: hasPermission("view_reports") },
+                {
+                  label: "Create Event",
+                  href: "/admin/events/create",
+                  icon: Plus,
+                  show: canDraftEvents,
+                },
+                {
+                  label: "Manage Team",
+                  href: "/admin/departments",
+                  icon: Users,
+                  show: canManageTeam,
+                },
+                {
+                  label: "Department Resources",
+                  href: "/resources",
+                  icon: FolderOpen,
+                  show: true,
+                },
               ]
                 .filter((a) => a.show)
                 .map((action) => {
                   const Icon = action.icon;
+
                   return (
                     <Link
                       key={action.href}
-                      href={action.href}
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
+                      href={action.href}
                     >
-                      <Icon className="w-4 h-4 text-zinc-500 group-hover:text-purple-400 transition-colors" />
-                      <span className="text-sm group-hover:text-white transition-colors">{action.label}</span>
+                      <Icon className="w-4 h-4 text-zinc-500 group-hover:text-primary transition-colors" />
+                      <span className="text-sm group-hover:text-white transition-colors">
+                        {action.label}
+                      </span>
                       <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 ml-auto transition-colors" />
                     </Link>
                   );

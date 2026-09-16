@@ -5,25 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { notificationService } from "@/lib/notifications";
 import type { Notification } from "@/lib/types";
+import { timeAgo } from "@/lib/format";
 import { toast } from "sonner";
-import { Button } from "@heroui/react";
-
-function timeAgo(date: string) {
-  const now = Date.now();
-  const then = new Date(date).getTime();
-  const diff = now - then;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-  });
-}
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -72,8 +55,8 @@ export function NotificationBell() {
     try {
       setLoading(true);
       const [recent, count] = await Promise.all([
-        notificationService.getUserNotifications(user.$id, 10),
-        notificationService.getUnreadCount(user.$id),
+        notificationService.getUserNotifications(10),
+        notificationService.getUnreadCount(),
       ]);
       setNotifications(recent);
       setUnreadCount(count);
@@ -125,6 +108,8 @@ export function NotificationBell() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg hover:bg-default-100 transition-colors"
         aria-label="Notifications"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
       >
         <svg
           className="w-5 h-5 text-default-600"
@@ -140,7 +125,11 @@ export function NotificationBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-danger rounded-full">
+          <span
+            aria-live="polite"
+            aria-label={`${unreadCount} unread notifications`}
+            className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-danger rounded-full"
+          >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -148,7 +137,11 @@ export function NotificationBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-background border border-default-200 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div
+          role="menu"
+          aria-label="Notifications"
+          className="absolute right-0 top-full mt-2 w-80 bg-background border border-default-200 rounded-xl shadow-xl z-50 overflow-hidden"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-default-200">
             <h3 className="text-sm font-semibold">Notifications</h3>
             {unreadCount > 0 && (
@@ -161,7 +154,8 @@ export function NotificationBell() {
           <div className="max-h-96 overflow-y-auto">
             {loading && notifications.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" aria-hidden="true" />
+                <span className="sr-only">Loading notifications</span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -190,7 +184,10 @@ export function NotificationBell() {
                             {notification.title}
                           </p>
                           {!notification.read && (
-                            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                            <>
+                              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                              <span className="sr-only">Unread</span>
+                            </>
                           )}
                         </div>
                         <p className="text-xs text-default-500 line-clamp-2">
