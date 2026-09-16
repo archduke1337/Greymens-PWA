@@ -1,0 +1,45 @@
+GREYMENS CLUB — PROPRIETARY SOFTWARE LICENCE
+
+Copyright © 2026 Greymens Club. All rights reserved.
+
+This software, including its source code, documentation, assets, scripts,
+configuration, and all associated materials (the "Software"), is the
+confidential and proprietary property of Greymens Club.
+
+1. NO OPEN-SOURCE LICENCE. The Software is NOT open source. No open-source
+   licence (including, without limitation, the MIT, Apache-2.0, GPL, LGPL,
+   AGPL, BSD, or Mozilla licences) applies to the Software, in whole or in
+   part, regardless of any tooling, file headers, or package metadata that
+   might suggest otherwise.
+
+2. ALL RIGHTS RESERVED. Except as expressly authorised in a signed written
+   agreement with Greymens Club, you may NOT:
+   (a) use, copy, modify, merge, publish, distribute, sublicense, or sell
+       copies of the Software;
+   (b) decompile, reverse-engineer, or disassemble the Software;
+   (c) use the Software, in whole or in part, to provide services to third
+       parties or to train machine-learning models;
+   (d) remove or alter any copyright, licence, or attribution notices.
+
+3. AUTHORISED USE. Contributors, maintainers, and members explicitly
+   authorised by Greymens Club may access, run, and modify the Software
+   solely for the purposes of developing, operating, and maintaining the
+   official Greymens Club application, and solely within systems controlled
+   by or on behalf of Greymens Club.
+
+4. CONFIDENTIALITY. Non-public parts of the Software (including API keys,
+   secrets, member data schemas, and internal documentation) are confidential
+   information. Do not disclose them, and never commit secrets to version
+   control (see `.env.example` for the list of required environment
+   variables).
+
+5. NO WARRANTY. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+   IN NO EVENT SHALL GREYMENS CLUB BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+   OTHER LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE.
+
+6. TERMINATION. Any breach of this licence terminates your rights under it
+   automatically. Sections 4 and 5 survive termination.
+
+For licensing enquiries, contact the Greymens Club administration.
