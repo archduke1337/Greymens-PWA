@@ -1,6 +1,6 @@
 // app/settings/page.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,21 @@ export default function SettingsPage() {
   const { user: authUser, loading, refreshUser } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
+  const timersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  // Success toasts auto-dismiss; every timer is tracked so unmounting the
+  // page never fires setState on a dead component.
+  const later = (fn: () => void, ms: number) => {
+    timersRef.current.push(setTimeout(fn, ms));
+  };
+
+  useEffect(
+    () => () => {
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+      timersRef.current = [];
+    },
+    [],
+  );
   const { isOpen: isPhoneModalOpen, open: onPhoneModalOpen, close: onPhoneModalClose } = useOverlayState();
   const { isOpen: isVerifyModalOpen, open: onVerifyModalOpen, close: onVerifyModalClose } = useOverlayState();
   
@@ -115,7 +130,7 @@ export default function SettingsPage() {
       setNewPassword("");
       setConfirmNewPassword("");
       
-      setTimeout(() => {
+      later(() => {
         setPasswordSuccess(false);
       }, 3000);
     } catch (err) {
@@ -134,7 +149,7 @@ export default function SettingsPage() {
       await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
       setVerificationSuccess(true);
       
-      setTimeout(() => {
+      later(() => {
         setVerificationSuccess(false);
       }, 5000);
     } catch (err) {
@@ -166,7 +181,7 @@ export default function SettingsPage() {
       // Open verification modal
       onVerifyModalOpen();
       
-      setTimeout(() => {
+      later(() => {
         setPhoneSuccess(false);
       }, 3000);
     } catch (err) {
@@ -202,7 +217,7 @@ export default function SettingsPage() {
       setPhoneVerifySuccess(true);
       setVerificationCode("");
 
-      setTimeout(() => {
+      later(() => {
         onVerifyModalClose();
         setPhoneVerifySuccess(false);
         // Phone will be shown as verified on next login

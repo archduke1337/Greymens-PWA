@@ -38,20 +38,25 @@ function VerifyEmailContent() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+    let redirectTimer: ReturnType<typeof setTimeout> | null = null;
     const verifyEmail = async () => {
       try {
         const userId = searchParams.get("userId");
         const secret = searchParams.get("secret");
 
         if (!userId || !secret) {
-          setStatus("error");
-          setErrorMessage("Missing verification parameters");
+          if (!cancelled) {
+            setStatus("error");
+            setErrorMessage("Missing verification parameters");
+          }
           return;
         }
 
         // Call Appwrite verification
         await account.updateEmailVerification({ userId, secret });
-        
+
+        if (cancelled) return;
         setStatus("success");
 
         try {
@@ -61,21 +66,26 @@ function VerifyEmailContent() {
         }
 
         // Redirect to profile after 3 seconds
-        setTimeout(() => {
-          router.push("/profile");
+        redirectTimer = setTimeout(() => {
+          if (!cancelled) router.push("/profile");
         }, 3000);
 
       } catch (error) {
+        if (cancelled) return;
         console.error("Verification error:", error);
         setStatus("error");
-        const errorMessage = error instanceof Error 
-          ? error.message 
+        const errorMessage = error instanceof Error
+          ? error.message
           : "Verification failed. The link may have expired.";
         setErrorMessage(errorMessage);
       }
     };
 
     verifyEmail();
+    return () => {
+      cancelled = true;
+      if (redirectTimer) clearTimeout(redirectTimer);
+    };
   }, [searchParams, router, refreshUser]);
 
   return (

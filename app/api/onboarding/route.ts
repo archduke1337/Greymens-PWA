@@ -218,6 +218,30 @@ export async function POST(request: NextRequest) {
 
     return ok({ success: true, profile, application }, 201);
   } catch (error) {
+    // Submit race: two concurrent taps can both pass the pre-check, and the
+    // loser hits the unique applications(userId) index. The caller HAS an
+    // application — return it instead of a 500 that reads as failure.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === 409
+    ) {
+      try {
+        const { databases: retryDb } = createAdminClient();
+        const existing = await retryDb.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.APPLICATIONS,
+          [
+            Query.equal("userId", [authenticated.user.$id]),
+            Query.limit(1),
+          ],
+        );
+        const row = existing.documents[0];
+        if (row) return ok({ success: true, application: row }, 200);
+      } catch {
+        // Fall through to the generic failure below.
+      }
+    }
     console.error("Onboarding submission error:", error);
     return fail("INTERNAL", "Failed to submit application", 500);
   }

@@ -65,10 +65,17 @@ export async function POST(request: NextRequest) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
 
+  // Hoisted (not block-scoped) so the duplicate-race handler in catch can
+  // re-query the winning row.
+  let eventId = "";
+
   try {
     // Step 1: validate payload.
-    const { eventId } = await request.json();
-    if (typeof eventId !== "string" || !eventId.trim()) {
+    const body = (await request.json().catch(() => null)) as {
+      eventId?: unknown;
+    } | null;
+    eventId = typeof body?.eventId === "string" ? body.eventId.trim() : "";
+    if (!eventId) {
       return fail("VALIDATION", "eventId is required", 400);
     }
 
@@ -158,6 +165,53 @@ export async function POST(request: NextRequest) {
 
     return ok({ registration, status, ticket }, 201);
   } catch (error) {
+    // Duplicate-guard race: a concurrent double-submit can pass the step-3
+    // check on both requests, and the loser hits the unique
+    // registrations(eventId+userId) index. That is not a server failure — the
+    // caller IS registered — so return the winning row instead of a 500 that
+    // would read as "registration failed, try again" and invite a third tap.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === 409
+    ) {
+      try {
+        const { databases: retryDb } = createAdminClient();
+        const existing = await retryDb.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.REGISTRATIONS,
+          [
+            Query.equal("eventId", [eventId]),
+            Query.equal("userId", [authenticated.user.$id]),
+            Query.limit(1),
+          ],
+        );
+        const row = existing.documents[0] as
+          | Record<string, unknown>
+          | undefined;
+        if (row) {
+          const tickets = await retryDb.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.TICKETS,
+            [
+              Query.equal("registrationId", [String(row.$id ?? "")]),
+              Query.limit(1),
+            ],
+          );
+          return ok(
+            {
+              registration: row,
+              status: String(row.status ?? "approved"),
+              ticket: tickets.documents[0] ?? null,
+              alreadyRegistered: true,
+            },
+            200,
+          );
+        }
+      } catch {
+        // Fall through to the generic failure below.
+      }
+    }
     console.error("Event registration error:", error);
     return fail("INTERNAL", "Failed to register for event", 500);
   }
@@ -250,7 +304,7 @@ export async function DELETE(request: NextRequest) {
           // Step 9: issue ticket for the promoted user (shared issuance).
           // Allocation failure skips the promotion but must not fail the
           // cancellation itself; the ticket can be issued from the admin queue.
-          try {
+  try {
             await createSignedTicket(databases, {
               userId: String(next.userId),
               eventId,

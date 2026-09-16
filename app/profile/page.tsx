@@ -137,6 +137,10 @@ export default function ProfilePage() {
 
   const [newSkill, setNewSkill] = useState("");
   const [newInterest, setNewInterest] = useState("");
+  // The server load replaces the whole form: without this guard, opening the
+  // page and typing before the fetch resolves would have the in-flight
+  // response wipe those edits (same class as the onboarding prefill race).
+  const formInitForRef = useRef<string | null>(null);
 
   const userDepartmentsResolved = userDepartments
     .map((ud) => allDepartments.find((d) => d.$id === ud.departmentId))
@@ -161,7 +165,10 @@ export default function ProfilePage() {
       setProfile(profileData);
       setMembership(payload?.membership ?? null);
       setTickets(payload?.tickets ?? []);
-      setEditForm(toEditForm(profileData, authUser.name || ""));
+      if (formInitForRef.current !== authUser.$id) {
+        formInitForRef.current = authUser.$id;
+        setEditForm(toEditForm(profileData, authUser.name || ""));
+      }
       setProfilePicture(getAvatarUrl(profileData?.avatar, authUser.name || "User"));
     } catch (err) {
       console.error("Failed to load profile:", err);

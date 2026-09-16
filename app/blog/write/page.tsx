@@ -70,7 +70,10 @@ export default function WriteBlogPage() {
       if (!response.ok || !payload?.url) {
         throw new Error(payload?.error || "Failed to upload image");
       }
-      setFormData({ ...formData, coverImage: payload.url });
+      // Functional update: the user may keep typing while the upload is in
+      // flight, and a stale formData spread would clobber those edits.
+      const coverUrl = payload.url;
+      setFormData((prev) => ({ ...prev, coverImage: coverUrl }));
       toast.success("Image uploaded successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
