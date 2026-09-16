@@ -205,6 +205,16 @@ export default function ApplicantDashboard() {
                 </p>
               </div>
             )}
+
+            {appStatus === "rejected" && (
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >
+                Reapply now
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
           </div>
         </div>
 
