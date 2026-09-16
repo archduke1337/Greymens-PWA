@@ -3,9 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { resourceService } from "@/lib/resources";
-import { departmentService } from "@/lib/departments";
-import { auditService } from "@/lib/audit";
 import type { Resource, Department } from "@/lib/types";
 import { toast } from "sonner";
 import {
@@ -73,12 +70,15 @@ export default function AdminResourcesPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [allResources, allDepts] = await Promise.all([
-        resourceService.getAll(),
-        departmentService.getAll(),
+      const [resourceResponse, departmentResponse] = await Promise.all([
+        fetch("/api/resources?all=true", { credentials: "include" }),
+        fetch("/api/departments", { credentials: "include" }),
       ]);
-      setResources(allResources);
-      setDepartments(allDepts);
+      if (!resourceResponse.ok || !departmentResponse.ok) throw new Error("Unable to load resource data");
+      const resourcePayload = (await resourceResponse.json()) as { resources?: Resource[] };
+      const departmentPayload = (await departmentResponse.json()) as { departments?: Department[] };
+      setResources(resourcePayload.resources ?? []);
+      setDepartments(departmentPayload.departments ?? []);
     } catch (error) {
       console.error("Error loading resources:", error);
       toast.error("Failed to load resources");
@@ -90,10 +90,6 @@ export default function AdminResourcesPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
-      return;
-    }
-    if (!authLoading && user && (user.prefs as Record<string, unknown>)?.role !== "admin") {
-      router.push("/unauthorized");
       return;
     }
     loadData();
@@ -118,24 +114,23 @@ export default function AdminResourcesPage() {
         isActive: true,
       };
 
-      if (editTarget?.$id) {
-        await resourceService.update(editTarget.$id, data);
-        toast.success("Resource updated");
-      } else {
-        await resourceService.create(data);
-        toast.success("Resource created");
-      }
-
-      await auditService.log({
-        actorId: user.$id,
-        actorName: user.name || "Admin",
-        actorRole: "admin",
-        action: editTarget ? "resource.update" : "resource.create",
-        entityType: "resource",
-        entityId: editTarget?.$id || "new",
-        details: { title: form.title },
-
+      const response = await fetch("/api/resources", {
+        method: editTarget?.$id ? "PATCH" : "POST",
+        headers: editTarget?.$id ? { "Content-Type": "application/json" } : undefined,
+        body: editTarget?.$id
+          ? JSON.stringify({ resourceId: editTarget.$id, ...data })
+          : (() => {
+              const formData = new FormData();
+              Object.entries(data).forEach(([key, value]) => {
+                if (Array.isArray(value)) formData.set(key, value.join(","));
+                else if (value !== undefined) formData.set(key, String(value));
+              });
+              return formData;
+            })(),
       });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to save resource");
+      toast.success(editTarget ? "Resource updated" : "Resource created");
 
       close();
       setEditTarget(null);
@@ -151,7 +146,12 @@ export default function AdminResourcesPage() {
     if (!resource.$id) return;
     if (!window.confirm(`Delete "${resource.title}"?`)) return;
     try {
-      await resourceService.delete(resource.$id);
+      const response = await fetch("/api/resources", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resourceId: resource.$id }),
+      });
+      if (!response.ok) throw new Error("Unable to delete resource");
       toast.success("Resource deleted");
       await loadData();
     } catch {
@@ -196,7 +196,7 @@ export default function AdminResourcesPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-purple-500" />
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
       </div>
     );
   }
@@ -205,7 +205,7 @@ export default function AdminResourcesPage() {
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="flex items-start justify-between mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Resource Management
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -271,8 +271,8 @@ export default function AdminResourcesPage() {
             return (
               <Card key={resource.$id} className="border-none shadow-md">
                 <CardContent className="p-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                    <TypeIcon className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <TypeIcon className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{resource.title}</h3>

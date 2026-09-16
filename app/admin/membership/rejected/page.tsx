@@ -3,10 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { Query } from "appwrite";
-import { applicationService } from "@/lib/applications";
-import { profileService } from "@/lib/profiles";
-import { departmentService } from "@/lib/departments";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Profile, Department } from "@/lib/types";
@@ -52,34 +48,27 @@ export default function AdminMembershipRejectedPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [rejectedApps, deptData] = await Promise.all([
-        applicationService.getAll([Query.equal("status", "rejected")]),
-        departmentService.getAll(),
-      ]);
+      const response = await fetch("/api/admin/membership?status=rejected", { cache: "no-store" });
+      const payload = await response.json().catch(() => null) as {
+        applications?: Application[];
+        profiles?: Profile[];
+        departments?: Department[];
+        error?: string;
+      } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to load rejected applications");
 
-      setDepartments(deptData);
+      setDepartments(payload?.departments ?? []);
 
-      const appData: RejectedApp[] = rejectedApps.map((app) => ({
-        application: app,
-        profile: null,
-      }));
-
-      const userIds = [...new Set(rejectedApps.map((a) => a.userId))];
-      const profilePromises = userIds.map((id) => profileService.getByUserId(id));
-      const profileResults = await Promise.all(profilePromises);
       const profileMap: Record<string, Profile> = {};
-      profileResults.forEach((p) => {
-        if (p) profileMap[p.userId] = p;
-      });
+      for (const profile of payload?.profiles ?? []) profileMap[profile.userId] = profile;
 
-      appData.forEach((a) => {
-        a.profile = profileMap[a.application.userId] || null;
-      });
-
-      setApplications(appData);
+      setApplications((payload?.applications ?? []).map((application) => ({
+        application,
+        profile: profileMap[application.userId] ?? null,
+      })));
     } catch (error) {
       console.error("Error loading rejected applications:", error);
-      toast.error("Failed to load rejected applications");
+      toast.error(getErrorMessage(error) || "Failed to load rejected applications");
     } finally {
       setLoading(false);
     }
@@ -114,7 +103,7 @@ export default function AdminMembershipRejectedPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-default-500">Loading rejected applications...</p>
         </div>
       </div>
@@ -135,7 +124,7 @@ export default function AdminMembershipRejectedPage() {
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Rejected Applications
             </h1>
           </div>

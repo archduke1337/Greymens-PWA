@@ -1,18 +1,21 @@
 // app/admin/users/page.tsx
 "use client";
+import type {
+  Profile,
+  Membership,
+  Department,
+  Designation,
+  Power,
+  UserDepartment,
+  UserDesignation,
+  UserPower,
+  AuditLog,
+} from "@/lib/types";
+
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { profileService } from "@/lib/profiles";
-import { membershipService } from "@/lib/memberships";
-import { departmentService } from "@/lib/departments";
-import { designationService } from "@/lib/designations";
-import { powerService } from "@/lib/powers";
-import { auditService } from "@/lib/audit";
-import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import {
-  SearchIcon,
   UsersIcon,
   ShieldCheckIcon,
   ShieldOffIcon,
@@ -23,18 +26,14 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   MailIcon,
-  PhoneIcon,
-  MapPinIcon,
   CalendarIcon,
   BriefcaseIcon,
   AwardIcon,
   ZapIcon,
   XIcon,
-  FilterIcon,
   EyeIcon,
   HistoryIcon,
   CheckCircleIcon,
-  XCircleIcon,
 } from "lucide-react";
 import {
   Button,
@@ -57,20 +56,13 @@ import {
   TableRow,
   useOverlayState,
 } from "@heroui/react";
-import type {
-  Profile,
-  Membership,
-  Department,
-  Designation,
-  Power,
-  UserDepartment,
-  UserDesignation,
-  UserPower,
-  AuditLog,
-  MembershipStatus,
-} from "@/lib/types";
 
-type StatusFilter = "all" | MembershipStatus;
+import { getErrorMessage } from "@/lib/errorHandler";
+import { auditService } from "@/lib/audit";
+import { useAuth } from "@/context/AuthContext";
+
+type StatusFilter = "all" | "active" | "inactive" | "banned" | "no_account";
+type ChipColor = "accent" | "danger" | "default" | "success" | "warning";
 
 interface EnrichedUser {
   profile: Profile;
@@ -78,8 +70,11 @@ interface EnrichedUser {
   departments: UserDepartment[];
   designations: UserDesignation[];
   powers: UserPower[];
-  applicationStatus: string;
-  membershipStatus: string;
+}
+
+/** Label used in confirmations. A raw 36-character account id is not readable. */
+function userLabel(user: EnrichedUser): string {
+  return user.profile.urn?.trim() || user.profile.userId.slice(0, 8);
 }
 
 export default function AdminUsersPage() {
@@ -120,53 +115,47 @@ export default function AdminUsersPage() {
     loadAllData();
   }, [user, authLoading, router]);
 
-  const loadAllData = async () => {
+  /**
+   * One request returns every account joined to its membership, departments,
+   * designations and powers, plus the reference catalogues used to render names.
+   *
+   * The browser previously read all profiles and then issued four further
+   * queries per profile, which is why the identity tables had to be readable by
+   * any signed-in account. The join now happens server-side behind
+   * `requireAdmin`.
+   */
+  const loadAllData = useCallback(async () => {
     try {
       setLoadingUsers(true);
-      const [profiles, departments, designations, powers] = await Promise.all([
-        profileService.getAll(),
-        departmentService.getAll(),
-        designationService.getAll(),
-        powerService.getAll(),
-      ]);
+      const response = await fetch("/api/admin/users?limit=500", {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        users?: EnrichedUser[];
+        departments?: Department[];
+        designations?: Designation[];
+        powers?: Power[];
+        error?: string;
+      } | null;
 
-      setAllDepartments(departments);
-      setAllDesignations(designations);
-      setAllPowers(powers);
+      if (!response.ok)
+        throw new Error(payload?.error || "Failed to load users");
 
-      const enriched: EnrichedUser[] = await Promise.all(
-        profiles.map(async (profile) => {
-          const [membership, userDepts, userDesigs, userPowers] =
-            await Promise.all([
-              membershipService.getByUserId(profile.userId),
-              departmentService.getUserDepartments(profile.userId),
-              designationService.getUserDesignations(profile.userId),
-              powerService.getUserPowers(profile.userId),
-            ]);
-
-          return {
-            profile,
-            membership,
-            departments: userDepts,
-            designations: userDesigs,
-            powers: userPowers,
-            applicationStatus: membership ? membership.status : "none",
-            membershipStatus: membership ? membership.status : "none",
-          };
-        })
-      );
-
-      setEnrichedUsers(enriched);
+      setAllDepartments(payload?.departments ?? []);
+      setAllDesignations(payload?.designations ?? []);
+      setAllPowers(payload?.powers ?? []);
+      setEnrichedUsers(payload?.users ?? []);
     } catch (error) {
       console.error("Error loading users:", error);
-      toast.error("Failed to load users");
+      toast.error(getErrorMessage(error) || "Failed to load users");
     } finally {
       setLoadingUsers(false);
     }
-  };
+  }, []);
 
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
+
     return enrichedUsers.filter((eu) => {
       const matchesSearch =
         !q ||
@@ -181,12 +170,9 @@ export default function AdminUsersPage() {
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "no_account" && !eu.membership) ||
-        (statusFilter === "member" &&
-          eu.membership?.status === "active") ||
-        (statusFilter === "inactive" &&
-          eu.membership?.status === "inactive") ||
-        (statusFilter === "banned" &&
-          eu.membership?.status === "banned");
+        (statusFilter === "active" && eu.membership?.status === "active") ||
+        (statusFilter === "inactive" && eu.membership?.status === "inactive") ||
+        (statusFilter === "banned" && eu.membership?.status === "banned");
 
       return matchesSearch && matchesStatus;
     });
@@ -195,25 +181,28 @@ export default function AdminUsersPage() {
   const stats = useMemo(() => {
     const total = enrichedUsers.length;
     const active = enrichedUsers.filter(
-      (eu) => eu.membership?.status === "active"
+      (eu) => eu.membership?.status === "active",
     ).length;
     const inactive = enrichedUsers.filter(
-      (eu) => eu.membership?.status === "inactive"
+      (eu) => eu.membership?.status === "inactive",
     ).length;
     const banned = enrichedUsers.filter(
-      (eu) => eu.membership?.status === "banned"
+      (eu) => eu.membership?.status === "banned",
     ).length;
+
     return { total, active, inactive, banned };
   }, [enrichedUsers]);
 
   const toggleRow = (userId: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
+
       if (next.has(userId)) {
         next.delete(userId);
       } else {
         next.add(userId);
       }
+
       return next;
     });
   };
@@ -233,21 +222,37 @@ export default function AdminUsersPage() {
     if (!selectedUser) return;
     setSaving(true);
     try {
-      await profileService.update(selectedUser.profile.userId, editForm);
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_profile",
+          userId: selectedUser.profile.userId,
+          // The whole form is sent; the server keeps only editable keys and
+          // rejects invalid values, so immutable fields cannot be written.
+          fields: editForm,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        user?: Profile;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(payload?.error || "Failed to update profile");
+
       toast.success("Profile updated successfully");
       setIsEditing(false);
-      await loadAllData();
-      const updatedProfile = await profileService.getByUserId(
-        selectedUser.profile.userId
-      );
-      if (updatedProfile) {
+      if (payload?.user) {
         setSelectedUser((prev) =>
-          prev ? { ...prev, profile: updatedProfile } : prev
+          prev ? { ...prev, profile: payload.user! } : prev,
         );
-        setEditForm({ ...updatedProfile });
+        setEditForm({ ...payload.user });
       }
+      await loadAllData();
     } catch (error) {
       const message = getErrorMessage(error);
+
       toast.error(message || "Failed to update profile");
     } finally {
       setSaving(false);
@@ -260,6 +265,7 @@ export default function AdminUsersPage() {
     openAudit();
     try {
       const logs = await auditService.getUserActivity(eu.profile.userId, 50);
+
       setAuditLogs(logs);
     } catch (error) {
       console.error("Error loading audit logs:", error);
@@ -270,144 +276,106 @@ export default function AdminUsersPage() {
     }
   };
 
+  /**
+   * Every account action goes through one server call.
+   *
+   * The audit entry is written by the server from the verified session, so the
+   * client no longer has any say in who an action is attributed to. The previous
+   * implementation also could not work at all: it wrote to the memberships table
+   * with the browser SDK, and that table grants no client write permission.
+   */
+  const applyUserAction = useCallback(
+    async (
+      eu: EnrichedUser,
+      action: string,
+      body: Record<string, unknown>,
+      successMessage: string,
+    ) => {
+      setActionLoading(`${eu.profile.userId}-${action}`);
+      try {
+        const response = await fetch("/api/admin/users", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, userId: eu.profile.userId, ...body }),
+        });
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok)
+          throw new Error(payload?.error || "The change could not be applied");
+
+        toast.success(successMessage);
+        await loadAllData();
+      } catch (error) {
+        toast.error(
+          getErrorMessage(error) || "The change could not be applied",
+        );
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [loadAllData],
+  );
+
   const handleBanUser = async (eu: EnrichedUser) => {
     if (
       !confirm(
-        `Are you sure you want to ban ${eu.profile.userId}? This action can be reversed later.`
+        `Ban ${userLabel(eu)}? Their access is revoked immediately. This can be reversed later.`,
       )
     )
       return;
-    setActionLoading(eu.profile.userId + "-ban");
-    try {
-      await membershipService.ban(eu.profile.userId);
-      await auditService.log({
-        actorId: user?.$id || "",
-        actorName: user?.name || "Admin",
-        actorRole: "admin",
-        action: "ban_user",
-        entityType: "membership",
-        entityId: eu.profile.userId,
-        details: { targetUserId: eu.profile.userId },
-      });
-      toast.success("User banned successfully");
-      await loadAllData();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message || "Failed to ban user");
-    } finally {
-      setActionLoading(null);
-    }
+    await applyUserAction(
+      eu,
+      "set_membership_status",
+      { status: "banned" },
+      "Membership banned",
+    );
   };
 
   const handleDeactivateUser = async (eu: EnrichedUser) => {
     if (
       !confirm(
-        `Are you sure you want to deactivate ${eu.profile.userId}?`
+        `Deactivate ${userLabel(eu)}? They keep their record but lose member access.`,
       )
     )
       return;
-    setActionLoading(eu.profile.userId + "-deactivate");
-    try {
-      await membershipService.deactivate(eu.profile.userId);
-      await auditService.log({
-        actorId: user?.$id || "",
-        actorName: user?.name || "Admin",
-        actorRole: "admin",
-        action: "deactivate_user",
-        entityType: "membership",
-        entityId: eu.profile.userId,
-        details: { targetUserId: eu.profile.userId },
-      });
-      toast.success("User deactivated successfully");
-      await loadAllData();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message || "Failed to deactivate user");
-    } finally {
-      setActionLoading(null);
-    }
+    await applyUserAction(
+      eu,
+      "set_membership_status",
+      { status: "inactive" },
+      "Membership deactivated",
+    );
   };
 
   const handleReactivateUser = async (eu: EnrichedUser) => {
     if (
-      !confirm(
-        `Are you sure you want to reactivate ${eu.profile.userId}?`
-      )
+      !confirm(`Reactivate ${userLabel(eu)}? Member access will be restored.`)
     )
       return;
-    setActionLoading(eu.profile.userId + "-reactivate");
-    try {
-      await membershipService.update(eu.profile.userId, {
-        status: "active",
-      });
-      await auditService.log({
-        actorId: user?.$id || "",
-        actorName: user?.name || "Admin",
-        actorRole: "admin",
-        action: "reactivate_user",
-        entityType: "membership",
-        entityId: eu.profile.userId,
-        details: { targetUserId: eu.profile.userId },
-      });
-      toast.success("User reactivated successfully");
-      await loadAllData();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message || "Failed to reactivate user");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handlePromoteRole = async (
-    eu: EnrichedUser,
-    newStatus: MembershipStatus
-  ) => {
-    if (
-      !confirm(
-        `Are you sure you want to promote ${eu.profile.userId} to ${newStatus}?`
-      )
-    )
-      return;
-    setActionLoading(eu.profile.userId + "-promote");
-    try {
-      await membershipService.update(eu.profile.userId, {
-        status: "active",
-      });
-      await auditService.log({
-        actorId: user?.$id || "",
-        actorName: user?.name || "Admin",
-        actorRole: "admin",
-        action: "promote_user",
-        entityType: "membership",
-        entityId: eu.profile.userId,
-        details: {
-          targetUserId: eu.profile.userId,
-          newStatus,
-        },
-      });
-      toast.success(`User promoted to ${newStatus}`);
-      await loadAllData();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message || "Failed to promote user");
-    } finally {
-      setActionLoading(null);
-    }
+    await applyUserAction(
+      eu,
+      "set_membership_status",
+      { status: "active" },
+      "Membership reactivated",
+    );
   };
 
   const getDepartmentName = (deptId: string) => {
     const dept = allDepartments.find((d) => d.$id === deptId);
+
     return dept?.name || deptId;
   };
 
   const getDesignationName = (desigId: string) => {
     const desig = allDesignations.find((d) => d.$id === desigId);
+
     return desig?.name || desigId;
   };
 
   const getPowerName = (powerId: string) => {
     const power = allPowers.find((p) => p.$id === powerId);
+
     return power?.displayName || power?.name || powerId;
   };
 
@@ -427,7 +395,7 @@ export default function AdminUsersPage() {
   };
 
   const getRoleColor = (
-    status: string
+    status: string,
   ): "success" | "warning" | "danger" | "default" | "accent" => {
     switch (status) {
       case "active":
@@ -456,14 +424,12 @@ export default function AdminUsersPage() {
     }
   };
 
-  const getDepartmentRoleColor = (
-    role: string
-  ): "accent" | "secondary" | "default" => {
+  const getDepartmentRoleColor = (role: string): ChipColor => {
     switch (role) {
       case "lead":
         return "accent";
       case "core_member":
-        return "secondary";
+        return "success";
       default:
         return "default";
     }
@@ -509,7 +475,7 @@ export default function AdminUsersPage() {
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             User Management
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -526,8 +492,8 @@ export default function AdminUsersPage() {
                 <p className="text-sm text-default-500">Total Users</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -584,8 +550,6 @@ export default function AdminUsersPage() {
                 placeholder="Search by name, URN, phone, branch, skills..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
-
-
               />
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -596,7 +560,7 @@ export default function AdminUsersPage() {
                   "inactive",
                   "banned",
                   "no_account",
-                ] as StatusFilter[]
+                ] satisfies StatusFilter[]
               ).map((status) => (
                 <Button
                   key={status}
@@ -606,11 +570,11 @@ export default function AdminUsersPage() {
                 >
                   {status === "all"
                     ? "All"
-                    : status === "member"
-                    ? "Active"
-                    : status === "no_account"
-                    ? "No Membership"
-                    : status.charAt(0).toUpperCase() + status.slice(1)}
+                    : status === "active"
+                      ? "Active"
+                      : status === "no_account"
+                        ? "No Membership"
+                        : status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>
               ))}
             </div>
@@ -628,9 +592,13 @@ export default function AdminUsersPage() {
               <TableHeader>
                 <TableColumn>USER</TableColumn>
                 <TableColumn className="hidden md:table-cell">URN</TableColumn>
-                <TableColumn className="hidden lg:table-cell">BRANCH</TableColumn>
+                <TableColumn className="hidden lg:table-cell">
+                  BRANCH
+                </TableColumn>
                 <TableColumn>STATUS</TableColumn>
-                <TableColumn className="hidden lg:table-cell">DEPARTMENTS</TableColumn>
+                <TableColumn className="hidden lg:table-cell">
+                  DEPARTMENTS
+                </TableColumn>
                 <TableColumn>ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
@@ -654,13 +622,14 @@ export default function AdminUsersPage() {
                         <div className="flex items-center gap-3">
                           {eu.profile.avatar ? (
                             <img
-                              src={eu.profile.avatar}
                               alt={eu.profile.userId}
                               className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              src={eu.profile.avatar}
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                              {eu.profile.userId?.charAt(0)?.toUpperCase() || "?"}
+                            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm flex-shrink-0">
+                              {eu.profile.userId?.charAt(0)?.toUpperCase() ||
+                                "?"}
                             </div>
                           )}
                           <div className="min-w-0">
@@ -687,15 +656,12 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          color={getRoleColor(
-                            eu.membership?.status || "none"
-                          )}                variant="primary"
-                          size="sm"
                           className="text-xs"
+                          color={getRoleColor(eu.membership?.status || "none")}
+                          size="sm"
+                          variant="primary"
                         >
-                          {getRoleLabel(
-                            eu.membership?.status || "none"
-                          )}
+                          {getRoleLabel(eu.membership?.status || "none")}
                         </Chip>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
@@ -707,21 +673,18 @@ export default function AdminUsersPage() {
                           ) : (
                             eu.departments.slice(0, 2).map((ud) => (
                               <Chip
-                                key={ud.$id}                  color={getDepartmentRoleColor(ud.role) as any}
-                  variant="soft"
-                                size="sm"
+                                key={ud.$id}
                                 className="text-xs"
+                                color={getDepartmentRoleColor(ud.role)}
+                                size="sm"
+                                variant="soft"
                               >
                                 {getDepartmentName(ud.departmentId)}
                               </Chip>
                             ))
                           )}
                           {eu.departments.length > 2 && (
-                            <Chip
-                              variant="soft"
-                              size="sm"
-                              className="text-xs"
-                            >
+                            <Chip className="text-xs" size="sm" variant="soft">
                               +{eu.departments.length - 2}
                             </Chip>
                           )}
@@ -730,25 +693,25 @@ export default function AdminUsersPage() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
+                            isIconOnly
                             size="sm"
                             variant="ghost"
-                            isIconOnly
                             onPress={() => handleViewProfile(eu)}
                           >
                             <EyeIcon className="w-4 h-4" />
                           </Button>
                           <Button
+                            isIconOnly
                             size="sm"
                             variant="ghost"
-                            isIconOnly
                             onPress={() => handleViewAudit(eu)}
                           >
                             <HistoryIcon className="w-4 h-4" />
                           </Button>
                           <Button
+                            isIconOnly
                             size="sm"
                             variant="ghost"
-                            isIconOnly
                             onPress={() => toggleRow(eu.profile.userId)}
                           >
                             {expandedRows.has(eu.profile.userId) ? (
@@ -784,13 +747,13 @@ export default function AdminUsersPage() {
               <ModalDialog>
                 <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                       User Profile
                     </h2>
                     <Button
+                      isIconOnly
                       size="sm"
                       variant="ghost"
-                      isIconOnly
                       onPress={() => {
                         close();
                         setIsEditing(false);
@@ -810,13 +773,15 @@ export default function AdminUsersPage() {
                     <div className="flex items-center gap-4 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
                       {selectedUser.profile.avatar ? (
                         <img
-                          src={selectedUser.profile.avatar}
                           alt={selectedUser.profile.userId}
                           className="w-16 h-16 rounded-full object-cover"
+                          src={selectedUser.profile.avatar}
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">
-                          {selectedUser.profile.userId?.charAt(0)?.toUpperCase() || "?"}
+                        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+                          {selectedUser.profile.userId
+                            ?.charAt(0)
+                            ?.toUpperCase() || "?"}
                         </div>
                       )}
                       <div className="flex-1">
@@ -829,17 +794,17 @@ export default function AdminUsersPage() {
                         <div className="flex gap-2 mt-2">
                           <Chip
                             color={getRoleColor(
-                              selectedUser.membership?.status || "none"
+                              selectedUser.membership?.status || "none",
                             )}
-                            variant="primary"
                             size="sm"
+                            variant="primary"
                           >
                             {getRoleLabel(
-                              selectedUser.membership?.status || "none"
+                              selectedUser.membership?.status || "none",
                             )}
                           </Chip>
                           {selectedUser.membership?.membershipNumber && (
-                            <Chip variant="soft" size="sm">
+                            <Chip size="sm" variant="soft">
                               {selectedUser.membership.membershipNumber}
                             </Chip>
                           )}
@@ -850,7 +815,7 @@ export default function AdminUsersPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3 p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm flex items-center gap-2">
-                          <MailIcon className="w-4 h-4 text-purple-600" />
+                          <MailIcon className="w-4 h-4 text-primary" />
                           Contact Information
                         </h3>
                         <div className="space-y-2 text-sm">
@@ -874,36 +839,28 @@ export default function AdminUsersPage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-default-500">Gender</span>
-                            <span>
-                              {selectedUser.profile.gender || "N/A"}
-                            </span>
+                            <span>{selectedUser.profile.gender || "N/A"}</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-3 p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm flex items-center gap-2">
-                          <BriefcaseIcon className="w-4 h-4 text-purple-600" />
+                          <BriefcaseIcon className="w-4 h-4 text-primary" />
                           Academic Information
                         </h3>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-default-500">Program</span>
-                            <span>
-                              {selectedUser.profile.program || "N/A"}
-                            </span>
+                            <span>{selectedUser.profile.program || "N/A"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-default-500">Branch</span>
-                            <span>
-                              {selectedUser.profile.branch || "N/A"}
-                            </span>
+                            <span>{selectedUser.profile.branch || "N/A"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-default-500">Year</span>
-                            <span>
-                              {selectedUser.profile.year || "N/A"}
-                            </span>
+                            <span>{selectedUser.profile.year || "N/A"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-default-500">Semester</span>
@@ -932,30 +889,30 @@ export default function AdminUsersPage() {
                         <div className="space-y-1 text-sm">
                           {selectedUser.profile.githubUrl && (
                             <a
+                              className="text-primary hover:underline block truncate"
                               href={selectedUser.profile.githubUrl}
-                              target="_blank"
                               rel="noopener noreferrer"
-                              className="text-purple-600 hover:underline block truncate"
+                              target="_blank"
                             >
                               {selectedUser.profile.githubUrl}
                             </a>
                           )}
                           {selectedUser.profile.linkedinUrl && (
                             <a
+                              className="text-primary hover:underline block truncate"
                               href={selectedUser.profile.linkedinUrl}
-                              target="_blank"
                               rel="noopener noreferrer"
-                              className="text-purple-600 hover:underline block truncate"
+                              target="_blank"
                             >
                               {selectedUser.profile.linkedinUrl}
                             </a>
                           )}
                           {selectedUser.profile.portfolioUrl && (
                             <a
+                              className="text-primary hover:underline block truncate"
                               href={selectedUser.profile.portfolioUrl}
-                              target="_blank"
                               rel="noopener noreferrer"
-                              className="text-purple-600 hover:underline block truncate"
+                              target="_blank"
                             >
                               {selectedUser.profile.portfolioUrl}
                             </a>
@@ -969,17 +926,11 @@ export default function AdminUsersPage() {
                         <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                           <h3 className="font-semibold text-sm mb-2">Skills</h3>
                           <div className="flex flex-wrap gap-2">
-                            {selectedUser.profile.skills.map(
-                              (skill, index) => (
-                                <Chip
-                                  key={index}
-                                  variant="soft"
-                                  size="sm"
-                                >
-                                  {skill}
-                                </Chip>
-                              )
-                            )}
+                            {selectedUser.profile.skills.map((skill, index) => (
+                              <Chip key={index} size="sm" variant="soft">
+                                {skill}
+                              </Chip>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -995,13 +946,13 @@ export default function AdminUsersPage() {
                               (interest, index) => (
                                 <Chip
                                   key={index}
-                                  variant="soft"
-                                  size="sm"
                                   color="accent"
+                                  size="sm"
+                                  variant="soft"
                                 >
                                   {interest}
                                 </Chip>
-                              )
+                              ),
                             )}
                           </div>
                         </div>
@@ -1010,7 +961,7 @@ export default function AdminUsersPage() {
                     {selectedUser.departments.length > 0 && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <BriefcaseIcon className="w-4 h-4 text-purple-600" />
+                          <BriefcaseIcon className="w-4 h-4 text-primary" />
                           Departments
                         </h3>
                         <div className="space-y-2">
@@ -1025,8 +976,8 @@ export default function AdminUsersPage() {
                               <div className="flex items-center gap-2">
                                 <Chip
                                   color={getDepartmentRoleColor(ud.role)}
-                                  variant="soft"
                                   size="sm"
+                                  variant="soft"
                                 >
                                   {getDepartmentRoleLabel(ud.role)}
                                 </Chip>
@@ -1043,7 +994,7 @@ export default function AdminUsersPage() {
                     {selectedUser.designations.length > 0 && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <AwardIcon className="w-4 h-4 text-purple-600" />
+                          <AwardIcon className="w-4 h-4 text-primary" />
                           Designations
                         </h3>
                         <div className="space-y-2">
@@ -1067,7 +1018,7 @@ export default function AdminUsersPage() {
                     {selectedUser.powers.length > 0 && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <ZapIcon className="w-4 h-4 text-purple-600" />
+                          <ZapIcon className="w-4 h-4 text-primary" />
                           Powers
                         </h3>
                         <div className="space-y-2">
@@ -1098,7 +1049,7 @@ export default function AdminUsersPage() {
                     {selectedUser.membership && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                          <ShieldCheckIcon className="w-4 h-4 text-purple-600" />
+                          <ShieldCheckIcon className="w-4 h-4 text-primary" />
                           Membership Details
                         </h3>
                         <div className="space-y-2 text-sm">
@@ -1114,22 +1065,18 @@ export default function AdminUsersPage() {
                             <span className="text-default-500">Status</span>
                             <Chip
                               color={getRoleColor(
-                                selectedUser.membership.status
+                                selectedUser.membership.status,
                               )}
-                              variant="primary"
                               size="sm"
+                              variant="primary"
                             >
                               {selectedUser.membership.status}
                             </Chip>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-default-500">
-                              Joined At
-                            </span>
+                            <span className="text-default-500">Joined At</span>
                             <span>
-                              {formatDate(
-                                selectedUser.membership.joinedAt
-                              )}
+                              {formatDate(selectedUser.membership.joinedAt)}
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -1146,20 +1093,16 @@ export default function AdminUsersPage() {
 
                     <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                       <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-purple-600" />
+                        <CalendarIcon className="w-4 h-4 text-primary" />
                         Preferences
                       </h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-default-500">Pronouns</span>
-                          <span>
-                            {selectedUser.profile.pronouns || "N/A"}
-                          </span>
+                          <span>{selectedUser.profile.pronouns || "N/A"}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-default-500">
-                            Availability
-                          </span>
+                          <span className="text-default-500">Availability</span>
                           <span>
                             {selectedUser.profile.availability || "N/A"}
                           </span>
@@ -1198,9 +1141,7 @@ export default function AdminUsersPage() {
 
                     {selectedUser.profile.whyJoin && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
-                        <h3 className="font-semibold text-sm mb-2">
-                          Why Join
-                        </h3>
+                        <h3 className="font-semibold text-sm mb-2">Why Join</h3>
                         <p className="text-sm text-default-600">
                           {selectedUser.profile.whyJoin}
                         </p>
@@ -1209,14 +1150,12 @@ export default function AdminUsersPage() {
 
                     <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                       <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                        <ClockIcon className="w-4 h-4 text-purple-600" />
+                        <ClockIcon className="w-4 h-4 text-primary" />
                         Record Info
                       </h3>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-default-500">
-                            Profile ID
-                          </span>
+                          <span className="text-default-500">Profile ID</span>
                           <span className="font-mono text-xs">
                             {selectedUser.profile.$id}
                           </span>
@@ -1224,19 +1163,13 @@ export default function AdminUsersPage() {
                         <div className="flex justify-between">
                           <span className="text-default-500">Created</span>
                           <span>
-                            {formatDateTime(
-                              selectedUser.profile.$createdAt
-                            )}
+                            {formatDateTime(selectedUser.profile.$createdAt)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-default-500">
-                            Last Updated
-                          </span>
+                          <span className="text-default-500">Last Updated</span>
                           <span>
-                            {formatDateTime(
-                              selectedUser.profile.$updatedAt
-                            )}
+                            {formatDateTime(selectedUser.profile.$updatedAt)}
                           </span>
                         </div>
                       </div>
@@ -1246,8 +1179,8 @@ export default function AdminUsersPage() {
 
                 <ModalFooter className="border-t pt-4 flex flex-wrap gap-2">
                   <Button
-                    variant="ghost"
                     size="sm"
+                    variant="ghost"
                     onPress={() => {
                       close();
                       setIsEditing(false);
@@ -1259,17 +1192,17 @@ export default function AdminUsersPage() {
                   {isEditing ? (
                     <>
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="ghost"
                         onPress={() => setIsEditing(false)}
                       >
                         Cancel
                       </Button>
                       <Button
-                        size="sm"
+                        className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                         isPending={saving}
+                        size="sm"
                         onPress={handleSaveProfile}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
                       >
                         Save Changes
                       </Button>
@@ -1300,31 +1233,25 @@ export default function AdminUsersPage() {
                       {selectedUser.membership?.status === "active" && (
                         <>
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            color="warning"
                             isPending={
                               actionLoading ===
                               selectedUser.profile.userId + "-deactivate"
                             }
-                            onPress={() =>
-                              handleDeactivateUser(selectedUser)
-                            }
+                            size="sm"
+                            variant="tertiary"
+                            onPress={() => handleDeactivateUser(selectedUser)}
                           >
                             <UserMinusIcon className="w-4 h-4 mr-1" />
                             Deactivate
                           </Button>
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            color="danger"
                             isPending={
                               actionLoading ===
                               selectedUser.profile.userId + "-ban"
                             }
-                            onPress={() =>
-                              handleBanUser(selectedUser)
-                            }
+                            size="sm"
+                            variant="danger-soft"
+                            onPress={() => handleBanUser(selectedUser)}
                           >
                             <ShieldOffIcon className="w-4 h-4 mr-1" />
                             Ban
@@ -1335,16 +1262,13 @@ export default function AdminUsersPage() {
                         selectedUser.membership?.status === "banned" ||
                         !selectedUser.membership) && (
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          color="success"
                           isPending={
                             actionLoading ===
                             selectedUser.profile.userId + "-reactivate"
                           }
-                          onPress={() =>
-                            handleReactivateUser(selectedUser)
-                          }
+                          size="sm"
+                          variant="primary"
+                          onPress={() => handleReactivateUser(selectedUser)}
                         >
                           <UserCheckIcon className="w-4 h-4 mr-1" />
                           Reactivate
@@ -1375,13 +1299,13 @@ export default function AdminUsersPage() {
               <ModalDialog>
                 <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                       Audit Trail
                     </h2>
                     <Button
+                      isIconOnly
                       size="sm"
                       variant="ghost"
-                      isIconOnly
                       onPress={() => {
                         closeAudit();
                         setAuditUser(null);
@@ -1419,19 +1343,19 @@ export default function AdminUsersPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <Chip
+                                  className="text-xs"
                                   color={
                                     log.action.includes("ban")
                                       ? "danger"
                                       : log.action.includes("deactivate")
-                                      ? "warning"
-                                      : log.action.includes("promote") ||
-                                        log.action.includes("reactivate")
-                                      ? "success"
-                                      : "default"
+                                        ? "warning"
+                                        : log.action.includes("promote") ||
+                                            log.action.includes("reactivate")
+                                          ? "success"
+                                          : "default"
                                   }
-                                  variant="soft"
                                   size="sm"
-                                  className="text-xs"
+                                  variant="soft"
                                 >
                                   {log.action.replace(/_/g, " ")}
                                 </Chip>
@@ -1462,8 +1386,8 @@ export default function AdminUsersPage() {
 
                 <ModalFooter className="border-t pt-4">
                   <Button
-                    variant="ghost"
                     size="sm"
+                    variant="ghost"
                     onPress={() => {
                       closeAudit();
                       setAuditUser(null);

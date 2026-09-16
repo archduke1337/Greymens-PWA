@@ -15,8 +15,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "lucide-react";
-import { departmentService } from "@/lib/departments";
-import { profileService } from "@/lib/profiles";
+
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
   Button,
@@ -40,7 +39,7 @@ import type { Department, UserDepartment, Profile } from "@/lib/types";
 
 const CATEGORY_COLORS: Record<string, string> = {
   technical: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  content: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  content: "bg-muted text-muted-foreground",
   operations: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 };
 
@@ -91,23 +90,19 @@ export default function AdminDepartmentsPage() {
 
   const loadDepartments = async () => {
     try {
-      const allDepts = await departmentService.getAll();
-      setDepartments(allDepts);
-
-      // Load member counts
-      const counts: Record<string, number> = {};
-      await Promise.all(
-        allDepts.map(async (dept) => {
-          if (dept.$id) {
-            const count = await departmentService.getMemberCount(dept.$id);
-            counts[dept.$id] = count;
-          }
-        })
-      );
-      setMemberCounts(counts);
+      const response = await fetch("/api/admin/departments", { credentials: "include" });
+      const payload = (await response.json()) as {
+        departments?: Department[];
+        memberCounts?: Record<string, number>;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(payload.error || "Failed to load departments");
+      setDepartments(payload.departments ?? []);
+      setMemberCounts(payload.memberCounts ?? {});
     } catch (error) {
-      console.error("Error loading departments:", error);
-      toast.error("Failed to load departments");
+      const message = getErrorMessage(error);
+      console.error("Error loading departments:", message);
+      toast.error(message || "Failed to load departments");
     } finally {
       setLoading(false);
     }
@@ -132,11 +127,20 @@ export default function AdminDepartmentsPage() {
 
       const payload = { ...formData, slug };
 
+      const response = await fetch("/api/admin/departments", {
+        method: editingDept ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(
+          editingDept ? { departmentId: editingDept.$id, ...payload } : payload,
+        ),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || "Failed to save department");
+
       if (editingDept) {
-        await departmentService.update(editingDept.$id!, payload);
         toast.success("Department updated successfully!");
       } else {
-        await departmentService.create(payload);
         toast.success("Department created successfully!");
       }
 
@@ -176,12 +180,18 @@ export default function AdminDepartmentsPage() {
     )
       return;
     try {
-      await departmentService.delete(deptId);
+      const response = await fetch(`/api/admin/departments?departmentId=${encodeURIComponent(deptId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || "Failed to delete department");
       toast.success("Department deleted successfully!");
       await loadDepartments();
     } catch (error) {
-      console.error("Error deleting department:", error);
-      toast.error("Failed to delete department");
+      const message = getErrorMessage(error);
+      console.error("Error deleting department:", message);
+      toast.error(message || "Failed to delete department");
     }
   };
 
@@ -196,17 +206,16 @@ export default function AdminDepartmentsPage() {
     if (!deptMembers[dept.$id!]) {
       setLoadingMembers(dept.$id!);
       try {
-        const members = await departmentService.getDepartmentMembers(dept.$id!);
-        const membersWithProfiles = await Promise.all(
-          members.map(async (m) => {
-            const profile = await profileService.getByUserId(m.userId);
-            return { ...m, profile };
-          })
-        );
-        setDeptMembers((prev) => ({ ...prev, [dept.$id!]: membersWithProfiles }));
+        const response = await fetch(`/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`, {
+          credentials: "include",
+        });
+        const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; error?: string };
+        if (!response.ok) throw new Error(payload.error || "Failed to load department members");
+        setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
       } catch (error) {
-        console.error("Error loading members:", error);
-        toast.error("Failed to load department members");
+        const message = getErrorMessage(error);
+        console.error("Error loading members:", message);
+        toast.error(message || "Failed to load department members");
       } finally {
         setLoadingMembers(null);
       }
@@ -246,7 +255,7 @@ export default function AdminDepartmentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Department Management
           </h1>
           <p className="text-default-500 mt-1 text-sm md:text-base">
@@ -255,7 +264,7 @@ export default function AdminDepartmentsPage() {
         </div>
         <Button
           onPress={open}
-          className="bg-gradient-to-r from-blue-600 to-purple-600"
+          className="bg-primary"
           size="lg"
         >
           <PlusIcon className="w-5 h-5" />
@@ -304,7 +313,7 @@ export default function AdminDepartmentsPage() {
                   {departments.filter((d) => d.category === "content").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <span className="text-xl">&#9998;</span>
               </div>
             </div>
@@ -494,7 +503,7 @@ export default function AdminDepartmentsPage() {
               {({ close: dialogClose }: { close: () => void }) => (
                 <form onSubmit={handleSubmit}>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">
                       {editingDept ? "Edit Department" : "Create Department"}
                     </h2>
                     <p className="text-sm text-default-500 font-normal">
@@ -636,7 +645,7 @@ export default function AdminDepartmentsPage() {
                     <Button
                       type="submit"
                       isPending={submitting}
-                      className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold"
+                      className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                     >
                       {editingDept ? "Update Department" : "Create Department"}
                     </Button>

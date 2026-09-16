@@ -11,7 +11,14 @@ import {
   CheckIcon,
   XIcon 
 } from "lucide-react";
-import { Sponsor, sponsorService, sponsorTiers } from "@/lib/sponsors";
+import type { Sponsor } from "@/lib/sponsors";
+const sponsorTiers = {
+  platinum: { color: "from-slate-300 to-slate-400", label: "Platinum Partner", size: "large", maxWidth: "200px" },
+  gold: { color: "from-yellow-300 to-yellow-500", label: "Gold Sponsor", size: "medium", maxWidth: "160px" },
+  silver: { color: "from-gray-300 to-gray-400", label: "Silver Sponsor", size: "medium", maxWidth: "140px" },
+  bronze: { color: "from-orange-400 to-orange-600", label: "Bronze Sponsor", size: "small", maxWidth: "120px" },
+  partner: { color: "from-blue-400 to-blue-600", label: "Community Partner", size: "small", maxWidth: "100px" },
+};
 import { getErrorMessage } from "@/lib/errorHandler";
 import { Button, Card, CardContent, CardHeader, Chip, Input, Switch, TextArea } from "@heroui/react";
 
@@ -43,8 +50,10 @@ export default function AdminSponsorsPage() {
 
   const loadSponsors = async () => {
     try {
-      const allSponsors = await sponsorService.getAllSponsors();
-      setSponsors(allSponsors);
+      const response = await fetch("/api/admin/sponsors", { credentials: "include" });
+      const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load sponsors");
+      setSponsors(payload.sponsors ?? []);
     } catch (error) {
       console.error("Error loading sponsors:", error);
       toast.error("Failed to load sponsors");
@@ -73,11 +82,23 @@ export default function AdminSponsorsPage() {
 
       if (editingSponsor) {
         // Update existing sponsor
-        await sponsorService.updateSponsor(editingSponsor.$id!, formData);
+        const response = await fetch("/api/admin/sponsors", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ sponsorId: editingSponsor.$id, ...formData }),
+        });
+        if (!response.ok) throw new Error("Unable to update sponsor");
         toast.success("Sponsor updated successfully!");
       } else {
         // Create new sponsor
-        await sponsorService.createSponsor(formData as any);
+        const response = await fetch("/api/admin/sponsors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        });
+        if (!response.ok) throw new Error("Unable to create sponsor");
         toast.success("Sponsor created successfully!");
       }
 
@@ -114,7 +135,11 @@ export default function AdminSponsorsPage() {
   const handleDelete = async (sponsorId: string) => {
     if (!confirm("Are you sure you want to delete this sponsor? This cannot be undone.")) return;
     try {
-      await sponsorService.deleteSponsor(sponsorId);
+      const response = await fetch(`/api/admin/sponsors?sponsorId=${encodeURIComponent(sponsorId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Unable to delete sponsor");
       toast.success("Sponsor deleted successfully!");
       await loadSponsors();
     } catch (error) {

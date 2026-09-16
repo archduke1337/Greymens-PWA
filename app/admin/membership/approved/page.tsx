@@ -3,11 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { Query } from "appwrite";
-import { applicationService } from "@/lib/applications";
-import { membershipService } from "@/lib/memberships";
-import { profileService } from "@/lib/profiles";
-import { departmentService } from "@/lib/departments";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Membership, Profile, Department } from "@/lib/types";
@@ -36,7 +31,7 @@ import {
 
 interface ApprovedMember {
   application: Application;
-  membership: Membership;
+  membership: Membership | undefined;
   profile: Profile | null;
 }
 
@@ -51,41 +46,33 @@ export default function AdminMembershipApprovedPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [approvedApps, allMemberships, deptData] = await Promise.all([
-        applicationService.getAll([Query.equal("status", "approved")]),
-        membershipService.getAll(),
-        departmentService.getAll(),
-      ]);
+      const response = await fetch("/api/admin/membership?status=approved", { cache: "no-store" });
+      const payload = await response.json().catch(() => null) as {
+        applications?: Application[];
+        profiles?: Profile[];
+        memberships?: Membership[];
+        departments?: Department[];
+        error?: string;
+      } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to load approved members");
 
-      setDepartments(deptData);
+      const approvedApps = payload?.applications ?? [];
+      setDepartments(payload?.departments ?? []);
 
       const membershipMap: Record<string, Membership> = {};
-      allMemberships.forEach((m) => {
-        membershipMap[m.applicationId] = m;
-      });
+      for (const membership of payload?.memberships ?? []) membershipMap[membership.applicationId] = membership;
 
-      const memberData: ApprovedMember[] = approvedApps.map((app) => ({
-        application: app,
-        membership: membershipMap[app.$id!],
-        profile: null,
-      }));
-
-      const userIds = [...new Set(approvedApps.map((a) => a.userId))];
-      const profilePromises = userIds.map((id) => profileService.getByUserId(id));
-      const profileResults = await Promise.all(profilePromises);
       const profileMap: Record<string, Profile> = {};
-      profileResults.forEach((p) => {
-        if (p) profileMap[p.userId] = p;
-      });
+      for (const profile of payload?.profiles ?? []) profileMap[profile.userId] = profile;
 
-      memberData.forEach((m) => {
-        m.profile = profileMap[m.application.userId] || null;
-      });
-
-      setMembers(memberData);
+      setMembers(approvedApps.map((application) => ({
+        application,
+        membership: membershipMap[application.$id ?? ""],
+        profile: profileMap[application.userId] ?? null,
+      })));
     } catch (error) {
       console.error("Error loading approved members:", error);
-      toast.error("Failed to load approved members");
+      toast.error(getErrorMessage(error) || "Failed to load approved members");
     } finally {
       setLoading(false);
     }
@@ -112,7 +99,7 @@ export default function AdminMembershipApprovedPage() {
     return (
       profile?.urn?.toLowerCase().includes(q) ||
       profile?.branch?.toLowerCase().includes(q) ||
-      m.membership.membershipNumber?.toLowerCase().includes(q) ||
+      m.membership?.membershipNumber?.toLowerCase().includes(q) ||
       m.application.userId.toLowerCase().includes(q)
     );
   });
@@ -121,7 +108,7 @@ export default function AdminMembershipApprovedPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-default-500">Loading approved members...</p>
         </div>
       </div>
@@ -142,7 +129,7 @@ export default function AdminMembershipApprovedPage() {
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Approved Members
             </h1>
           </div>
@@ -181,7 +168,7 @@ export default function AdminMembershipApprovedPage() {
               <div>
                 <p className="text-sm text-default-500">With Departments</p>
                 <p className="text-2xl font-bold">
-                  {members.filter((m) => m.membership.department).length}
+                  {members.filter((m) => m.membership?.department).length}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -197,11 +184,11 @@ export default function AdminMembershipApprovedPage() {
               <div>
                 <p className="text-sm text-default-500">Active</p>
                 <p className="text-2xl font-bold">
-                  {members.filter((m) => m.membership.status === "active").length}
+                  {members.filter((m) => m.membership?.status === "active").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <CheckCircleIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <CheckCircleIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -239,8 +226,20 @@ export default function AdminMembershipApprovedPage() {
                   </TableRow>
                 ) : (
                   filteredMembers.map((member) => {
-                    const deptName = member.membership.department
-                      ? departments.find((d) => d.$id === member.membership.department)?.name
+                    if (!member.membership) {
+                      return (
+                        <TableRow key={member.application.$id}>
+                          <TableCell>
+                            <span className="text-sm text-default-400">
+                              Membership missing for application {member.application.$id}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    const membership = member.membership;
+                    const deptName = membership.department
+                      ? departments.find((d) => d.$id === membership.department)?.name
                       : null;
                     const preferredDepts = getDepartmentNames(
                       member.application.preferredDepartments
@@ -270,7 +269,7 @@ export default function AdminMembershipApprovedPage() {
                               {/* Mobile-only membership # */}
                               <p className="text-xs text-default-400 md:hidden flex items-center gap-1">
                                 <HashIcon className="w-3 h-3" />
-                                {member.membership.membershipNumber || "N/A"}
+                                {membership.membershipNumber || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -280,7 +279,7 @@ export default function AdminMembershipApprovedPage() {
                           <div className="flex items-center gap-1">
                             <HashIcon className="w-3 h-3 text-default-400" />
                             <span className="text-sm font-mono">
-                              {member.membership.membershipNumber || "N/A"}
+                              {membership.membershipNumber || "N/A"}
                             </span>
                           </div>
                         </TableCell>
@@ -306,8 +305,8 @@ export default function AdminMembershipApprovedPage() {
                         <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-1 text-sm text-default-500">
                             <CalendarIcon className="w-3 h-3" />
-                            {member.membership.approvedAt
-                              ? new Date(member.membership.approvedAt).toLocaleDateString()
+                            {membership.approvedAt
+                              ? new Date(membership.approvedAt).toLocaleDateString()
                               : member.application.reviewedAt
                                 ? new Date(member.application.reviewedAt).toLocaleDateString()
                                 : "N/A"}
@@ -317,16 +316,16 @@ export default function AdminMembershipApprovedPage() {
                         <TableCell>
                           <Chip
                             color={
-                              member.membership.status === "active"
+                              membership.status === "active"
                                 ? "success"
-                                : member.membership.status === "banned"
+                                : membership.status === "banned"
                                   ? "danger"
                                   : "default"
                             }
                             variant="soft"
                             size="sm"
                           >
-                            {member.membership.status}
+                            {membership.status}
                           </Chip>
                         </TableCell>
                       </TableRow>

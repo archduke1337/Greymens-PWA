@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { eventTypeService } from "@/lib/eventTypes";
-import { eventService } from "@/lib/database";
 import { toast } from "sonner";
 import DynamicEventFields from "@/components/events/DynamicEventFields";
 import {
@@ -287,9 +286,14 @@ export default function AdminCreateEventPage() {
         isPremium: formData.isPremium,
       };
 
-      await eventService.createEvent(
-        eventData as Omit<import("@/lib/database").Event, "$id" | "$createdAt" | "$updatedAt">
-      );
+      const response = await fetch("/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(eventData),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to create event");
 
       toast.success("Event created successfully!");
       router.push("/admin/events");
@@ -312,7 +316,7 @@ export default function AdminCreateEventPage() {
   return (
     <div className="max-w-4xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           Create Event
         </h1>
         <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -437,7 +441,7 @@ export default function AdminCreateEventPage() {
                       <img
                         src={formData.image}
                         alt="Preview"
-                        className="w-full h-40 object-cover rounded-xl border-2 border-purple-200 dark:border-purple-800"
+                        className="w-full h-40 object-cover rounded-xl border-2 border-border"
                         onError={(e: any) => {
                           e.currentTarget.src =
                             "https://via.placeholder.com/400x200?text=Invalid+Image+URL";
@@ -612,7 +616,7 @@ export default function AdminCreateEventPage() {
                   </select>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -630,7 +634,7 @@ export default function AdminCreateEventPage() {
                       onChange={(e) => updateForm("isPremium", e.target.checked)}
                       className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
                     />
-                    <CrownIcon className="w-4 h-4 text-purple-600" />
+                    <CrownIcon className="w-4 h-4 text-primary" />
                     <span className="font-semibold text-sm">Premium</span>
                   </label>
                 </div>
@@ -1048,19 +1052,19 @@ export default function AdminCreateEventPage() {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4 text-purple-600" />
+                      <CalendarIcon className="w-4 h-4 text-primary" />
                       <span>{formData.date || "TBD"}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ClockIcon className="w-4 h-4 text-purple-600" />
+                      <ClockIcon className="w-4 h-4 text-primary" />
                       <span>{formData.time || "TBD"}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPinIcon className="w-4 h-4 text-purple-600" />
+                      <MapPinIcon className="w-4 h-4 text-primary" />
                       <span className="truncate">{formData.venue || "TBD"}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <UsersIcon className="w-4 h-4 text-purple-600" />
+                      <UsersIcon className="w-4 h-4 text-primary" />
                       <span>{formData.capacity} spots</span>
                     </div>
                   </div>
@@ -1176,7 +1180,7 @@ export default function AdminCreateEventPage() {
         {step < 5 ? (
           <Button
             onPress={nextStep}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
+            className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
           >
             Next
             <ChevronRightIcon className="w-4 h-4 ml-1" />
@@ -1185,7 +1189,7 @@ export default function AdminCreateEventPage() {
           <Button
             onPress={handleSubmit}
             isPending={submitting}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
+            className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
           >
             <CheckIcon className="w-4 h-4 mr-1" />
             Create Event

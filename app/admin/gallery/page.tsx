@@ -3,10 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { galleryService, type GalleryImage } from "@/lib/gallery";
-import { profileService } from "@/lib/profiles";
-import { auditService } from "@/lib/audit";
-import type { Profile } from "@/lib/types";
+import type { GalleryImage } from "@/lib/gallery";
 import { toast } from "sonner";
 import {
   Button,
@@ -40,7 +37,6 @@ export default function AdminGalleryPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("pending");
@@ -53,22 +49,16 @@ export default function AdminGalleryPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [allImages, countData] = await Promise.all([
-        galleryService.getAll(),
-        galleryService.getCounts(),
-      ]);
+      const response = await fetch("/api/admin/gallery", { credentials: "include" });
+      const payload = (await response.json()) as { images?: GalleryImage[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load gallery");
+      const allImages = payload.images ?? [];
       setImages(allImages);
-      setCounts(countData);
-
-      const uploaders = [...new Set(allImages.map((img) => img.uploadedBy))];
-      const profileResults = await Promise.all(
-        uploaders.map((id) => profileService.getByUserId(id))
-      );
-      const profileMap: Record<string, Profile> = {};
-      profileResults.forEach((p) => {
-        if (p) profileMap[p.userId] = p;
+      setCounts({
+        pending: allImages.filter((image) => image.status === "pending").length,
+        approved: allImages.filter((image) => image.status === "approved").length,
+        rejected: allImages.filter((image) => image.status === "rejected").length,
       });
-      setProfiles(profileMap);
     } catch (error) {
       console.error("Error loading gallery data:", error);
       toast.error("Failed to load gallery data");
@@ -82,10 +72,6 @@ export default function AdminGalleryPage() {
       router.push("/login");
       return;
     }
-    if (!authLoading && user && (user.prefs as Record<string, unknown>)?.role !== "admin") {
-      router.push("/unauthorized");
-      return;
-    }
     loadData();
   }, [user, authLoading, router, loadData]);
 
@@ -93,16 +79,13 @@ export default function AdminGalleryPage() {
     if (!user || !image.$id) return;
     setApprovingId(image.$id);
     try {
-      await galleryService.approve(image.$id, user.$id);
-      await auditService.log({
-        actorId: user.$id,
-        actorName: user.name || "Admin",
-        actorRole: "admin",
-        action: "gallery.approve",
-        entityType: "gallery",
-        entityId: image.$id,
-        details: { title: image.title },
+      const response = await fetch("/api/admin/gallery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageId: image.$id, action: "approve" }),
       });
+      if (!response.ok) throw new Error("Unable to approve image");
       toast.success("Image approved");
       await loadData();
     } catch {
@@ -116,16 +99,13 @@ export default function AdminGalleryPage() {
     if (!user || !rejectTarget?.$id || !rejectReason.trim()) return;
     setRejecting(true);
     try {
-      await galleryService.reject(rejectTarget.$id, rejectReason.trim());
-      await auditService.log({
-        actorId: user.$id,
-        actorName: user.name || "Admin",
-        actorRole: "admin",
-        action: "gallery.reject",
-        entityType: "gallery",
-        entityId: rejectTarget.$id,
-        details: { title: rejectTarget.title, reason: rejectReason.trim() },
+      const response = await fetch("/api/admin/gallery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageId: rejectTarget.$id, action: "reject", reason: rejectReason.trim() }),
       });
+      if (!response.ok) throw new Error("Unable to reject image");
       toast.success("Image rejected");
       close();
       setRejectTarget(null);
@@ -142,7 +122,11 @@ export default function AdminGalleryPage() {
     if (!image.$id) return;
     if (!window.confirm(`Delete "${image.title}"? This cannot be undone.`)) return;
     try {
-      await galleryService.delete(image.$id);
+      const response = await fetch(`/api/admin/gallery?imageId=${encodeURIComponent(image.$id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Unable to delete image");
       toast.success("Image deleted");
       await loadData();
     } catch {
@@ -162,7 +146,7 @@ export default function AdminGalleryPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-purple-500" />
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
       </div>
     );
   }
@@ -170,7 +154,7 @@ export default function AdminGalleryPage() {
   return (
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           Gallery Management
         </h1>
         <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -282,7 +266,7 @@ export default function AdminGalleryPage() {
                   {image.uploadedBy && (
                     <>
                       <span>•</span>
-                      <span>{profiles[image.uploadedBy]?.urn || image.uploadedBy.slice(0, 8)}</span>
+                      <span>{image.uploadedBy.slice(0, 8)}</span>
                     </>
                   )}
                 </div>

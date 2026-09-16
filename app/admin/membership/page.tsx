@@ -3,13 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { Query } from "appwrite";
-import { applicationService } from "@/lib/applications";
-import { membershipService } from "@/lib/memberships";
-import { profileService } from "@/lib/profiles";
-import { departmentService } from "@/lib/departments";
-import { notificationService } from "@/lib/notifications";
-import { auditService } from "@/lib/audit";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Profile, Department } from "@/lib/types";
@@ -74,36 +67,35 @@ export default function AdminMembershipPage() {
   const [processing, setProcessing] = useState(false);
   const { isOpen, open, close } = useOverlayState();
 
+  /**
+   * One request returns the applications, their applicants' profiles, the
+   * department catalogue and the queue counts.
+   *
+   * This previously read the applications table with the browser SDK and then
+   * issued one profile query per applicant.
+   */
   const loadData = useCallback(async () => {
     try {
-      const [pendingApps, approvedApps, rejectedApps, deptData] = await Promise.all([
-        applicationService.getPending(),
-        applicationService.getAll([Query.equal("status", "approved")]),
-        applicationService.getAll([Query.equal("status", "rejected")]),
-        departmentService.getAll(),
-      ]);
+      const response = await fetch("/api/admin/membership", { cache: "no-store" });
+      const payload = await response.json().catch(() => null) as {
+        applications?: Application[];
+        profiles?: Profile[];
+        departments?: Department[];
+        counts?: { pending: number; approved: number; rejected: number };
+        error?: string;
+      } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to load membership data");
 
-      setDepartments(deptData);
-      setCounts({
-        pending: pendingApps.length,
-        approved: approvedApps.length,
-        rejected: rejectedApps.length,
-      });
+      setApplications(payload?.applications ?? []);
+      setDepartments(payload?.departments ?? []);
+      setCounts(payload?.counts ?? { pending: 0, approved: 0, rejected: 0 });
 
-      const allApps = [...pendingApps, ...approvedApps, ...rejectedApps];
-      setApplications(allApps);
-
-      const userIds = [...new Set(allApps.map((a) => a.userId))];
-      const profilePromises = userIds.map((id) => profileService.getByUserId(id));
-      const profileResults = await Promise.all(profilePromises);
       const profileMap: Record<string, Profile> = {};
-      profileResults.forEach((p) => {
-        if (p) profileMap[p.userId] = p;
-      });
+      for (const profile of payload?.profiles ?? []) profileMap[profile.userId] = profile;
       setProfiles(profileMap);
     } catch (error) {
       console.error("Error loading membership data:", error);
-      toast.error("Failed to load membership data");
+      toast.error(getErrorMessage(error) || "Failed to load membership data");
     } finally {
       setLoading(false);
     }
@@ -134,8 +126,14 @@ export default function AdminMembershipPage() {
     open();
   };
 
+  /**
+   * Approving is the action that grants membership, so every part of it — the
+   * application transition, the membership record, the department assignments,
+   * the applicant's notification, and the audit entry — happens server-side in
+   * one call. The message shown reflects what the server actually did.
+   */
   const handleConfirmAction = async () => {
-    if (!actionTarget || !user) return;
+    if (!actionTarget?.$id) return;
 
     if (actionType === "reject" && !rejectReason.trim()) {
       toast.error("Please provide a rejection reason");
@@ -144,87 +142,33 @@ export default function AdminMembershipPage() {
 
     setProcessing(true);
     try {
+      const response = await fetch("/api/admin/membership", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          actionType === "approve"
+            ? { action: "approve", applicationId: actionTarget.$id }
+            : { action: "reject", applicationId: actionTarget.$id, reason: rejectReason.trim() }
+        ),
+      });
+      const payload = await response.json().catch(() => null) as {
+        assignedDepartments?: number;
+        membershipCreated?: boolean;
+        error?: string;
+      } | null;
+      if (!response.ok) throw new Error(payload?.error || "Action failed. Please try again.");
+
       if (actionType === "approve") {
-        await applicationService.approve(actionTarget.$id!, user.$id);
-
-        await membershipService.create({
-          userId: actionTarget.userId,
-          applicationId: actionTarget.$id!,
-          approvedBy: user.$id,
-          department: actionTarget.preferredDepartments?.[0],
+        const assigned = payload?.assignedDepartments ?? 0;
+        toast.success("Application approved.", {
+          description: [
+            payload?.membershipCreated ? "Membership created" : "Existing membership reactivated",
+            assigned > 0 ? `${assigned} department ${assigned === 1 ? "assignment" : "assignments"} added` : null,
+            "Applicant notified",
+          ].filter(Boolean).join(" \u00b7 "),
         });
-
-        if (actionTarget.preferredDepartments?.length) {
-          for (const deptId of actionTarget.preferredDepartments) {
-            await departmentService.assignUser(
-              actionTarget.userId,
-              deptId,
-              "member",
-              user.$id
-            );
-          }
-        }
-
-        const profile = profiles[actionTarget.userId];
-        const name = profile?.urn || user.name || "Member";
-        const welcomeLetter = notificationService.welcomeLetter({
-          name,
-          membershipId: `Generated on approval`,
-          department: actionTarget.preferredDepartments?.[0]
-            ? getDepartmentNames([actionTarget.preferredDepartments[0]])[0]
-            : undefined,
-        });
-
-        await notificationService.create({
-          userId: actionTarget.userId,
-          type: "membership_approved",
-          title: "Application Approved!",
-          body: `Congratulations! Your membership application has been approved. Welcome to MindMesh Club!`,
-          letter: welcomeLetter,
-        });
-
-        await auditService.log({
-          actorId: user.$id,
-          actorName: user.name || "Admin",
-          actorRole: "admin",
-          action: "approve_application",
-          entityType: "application",
-          entityId: actionTarget.$id!,
-          details: {
-            applicantId: actionTarget.userId,
-            departments: actionTarget.preferredDepartments,
-          },
-        });
-
-        toast.success("Application approved successfully!");
       } else {
-        await applicationService.reject(
-          actionTarget.$id!,
-          user.$id,
-          rejectReason.trim()
-        );
-
-        await notificationService.create({
-          userId: actionTarget.userId,
-          type: "membership_rejected",
-          title: "Application Not Approved",
-          body: `Your membership application was not approved at this time. Reason: ${rejectReason.trim()}`,
-        });
-
-        await auditService.log({
-          actorId: user.$id,
-          actorName: user.name || "Admin",
-          actorRole: "admin",
-          action: "reject_application",
-          entityType: "application",
-          entityId: actionTarget.$id!,
-          details: {
-            applicantId: actionTarget.userId,
-            reason: rejectReason.trim(),
-          },
-        });
-
-        toast.success("Application rejected.");
+        toast.success("Application rejected.", { description: "The applicant has been notified." });
       }
 
       close();
@@ -243,7 +187,7 @@ export default function AdminMembershipPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-default-500">Loading membership queue...</p>
         </div>
       </div>
@@ -256,7 +200,7 @@ export default function AdminMembershipPage() {
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       {/* Header */}
       <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           Membership Queue
         </h1>
         <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -507,7 +451,7 @@ export default function AdminMembershipPage() {
                   {counts.approved} approved members
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a href="/admin/membership/approved" className="text-purple-600 hover:underline">
+                  <a href="/admin/membership/approved" className="text-primary hover:underline">
                     View all approved members
                   </a>
                 </p>
@@ -521,7 +465,7 @@ export default function AdminMembershipPage() {
                   {counts.rejected} rejected applications
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a href="/admin/membership/rejected" className="text-purple-600 hover:underline">
+                  <a href="/admin/membership/rejected" className="text-primary hover:underline">
                     View all rejected applications
                   </a>
                 </p>

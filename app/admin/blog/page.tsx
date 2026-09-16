@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { blogService, Blog } from "@/lib/blog";
+import type { Blog } from "@/lib/blog-format";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
 import {
@@ -36,13 +37,31 @@ export default function AdminBlogsPage() {
 
   const loadBlogs = async () => {
     try {
-      const allBlogs = await blogService.getAllBlogs();
-      setBlogs(allBlogs);
+      const response = await fetch("/api/blogs?scope=all", { cache: "no-store" });
+      const payload = await response.json().catch(() => null) as { blogs?: Blog[]; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to load blogs");
+      setBlogs(payload?.blogs ?? []);
     } catch (error) {
       console.error("Error loading blogs:", error);
+      toast.error(getErrorMessage(error) || "Failed to load blogs");
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Review decisions are applied by the server, which re-checks the capability
+   * each action needs and records an audit entry. The browser cannot write to the
+   * blogs table, so these calls previously always failed.
+   */
+  const applyBlogAction = async (blogId: string, action: string, body: Record<string, unknown> = {}) => {
+    const response = await fetch("/api/blogs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blogId, action, ...body }),
+    });
+    const payload = await response.json().catch(() => null) as { error?: string } | null;
+    if (!response.ok) throw new Error(payload?.error || "The change could not be applied");
   };
 
   const filterBlogsByTab = () => {
@@ -66,15 +85,15 @@ export default function AdminBlogsPage() {
   };
 
   const handleApprove = async (blogId: string) => {
-    if (!confirm("Approve this blog for publishing?")) return;
+    if (!confirm("Approve this post? It becomes publicly readable immediately.")) return;
     setProcessingBlog(blogId);
     try {
-      await blogService.approveBlog(blogId);
-      toast.success("Blog approved successfully!");
+      await applyBlogAction(blogId, "approve");
+      toast.success("Post published");
       await loadBlogs();
     } catch (error) {
       console.error("Error approving blog:", error);
-      toast.error("Failed to approve blog");
+      toast.error(getErrorMessage(error) || "Failed to approve blog");
     } finally {
       setProcessingBlog(null);
     }
@@ -95,38 +114,47 @@ export default function AdminBlogsPage() {
 
     setProcessingBlog(rejectingBlog.$id!);
     try {
-      await blogService.rejectBlog(rejectingBlog.$id!, rejectionReason);
-      toast.success("Blog rejected");
+      await applyBlogAction(rejectingBlog.$id!, "reject", { reason: rejectionReason.trim() });
+      toast.success("Post rejected", { description: "The reason is visible to the author." });
       await loadBlogs();
       setRejectModalOpen(false);
     } catch (error) {
       console.error("Error rejecting blog:", error);
-      toast.error("Failed to reject blog");
+      toast.error(getErrorMessage(error) || "Failed to reject blog");
     } finally {
       setProcessingBlog(null);
     }
   };
 
   const handleDelete = async (blogId: string) => {
-    if (!confirm("Permanently delete this blog? This cannot be undone.")) return;
+    if (!confirm("Permanently delete this post? This cannot be undone.")) return;
+    setProcessingBlog(blogId);
     try {
-      await blogService.deleteBlog(blogId);
-      toast.success("Blog deleted successfully!");
+      const response = await fetch(`/api/blogs?blogId=${encodeURIComponent(blogId)}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to delete blog");
+      toast.success("Post deleted");
       await loadBlogs();
     } catch (error) {
       console.error("Error deleting blog:", error);
-      toast.error("Failed to delete blog");
+      toast.error(getErrorMessage(error) || "Failed to delete blog");
+    } finally {
+      setProcessingBlog(null);
     }
   };
 
   const toggleFeatured = async (blog: Blog) => {
+    if (!blog.$id) return;
+    setProcessingBlog(blog.$id);
     try {
-      await blogService.updateBlog(blog.$id!, { featured: !blog.featured });
-      toast.success(`Blog ${!blog.featured ? "featured" : "unfeatured"} successfully!`);
+      await applyBlogAction(blog.$id, blog.featured ? "unfeature" : "feature");
+      toast.success(blog.featured ? "Post unfeatured" : "Post featured");
       await loadBlogs();
     } catch (error) {
       console.error("Error toggling featured:", error);
-      toast.error("Failed to update blog");
+      toast.error(getErrorMessage(error) || "Failed to update blog");
+    } finally {
+      setProcessingBlog(null);
     }
   };
 

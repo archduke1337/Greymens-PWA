@@ -15,9 +15,6 @@ import {
   ShieldIcon,
   UsersIcon,
 } from "lucide-react";
-import { powerService } from "@/lib/powers";
-import { departmentService } from "@/lib/departments";
-import { profileService } from "@/lib/profiles";
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
   Button,
@@ -49,7 +46,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_COLORS: Record<string, string> = {
   membership: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  events: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  events: "bg-muted text-muted-foreground",
   tickets: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   content: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
   resources: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
@@ -101,10 +98,11 @@ export default function AdminPowersPage() {
 
   const loadData = async () => {
     try {
-      const [allPowers, allDepts] = await Promise.all([
-        powerService.getAll(),
-        departmentService.getAll(),
-      ]);
+      const response = await fetch("/api/admin/powers", { credentials: "include" });
+      const payload = (await response.json()) as { powers?: Power[]; departments?: Department[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load powers");
+      const allPowers = payload.powers ?? [];
+      const allDepts = payload.departments ?? [];
       setPowers(allPowers);
       setDepartments(allDepts);
 
@@ -139,7 +137,13 @@ export default function AdminPowersPage() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const results = await profileService.search(searchQuery);
+      const response = await fetch("/api/admin/users?limit=500", { credentials: "include" });
+      const payload = (await response.json()) as { users?: Array<{ profile: Profile }>; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to search users");
+      const query = searchQuery.trim().toLowerCase();
+      const results = (payload.users ?? []).map((entry) => entry.profile).filter((profile) =>
+        [profile.userId, profile.urn, profile.program, profile.branch].some((value) => String(value ?? "").toLowerCase().includes(query)),
+      );
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -153,13 +157,20 @@ export default function AdminPowersPage() {
     if (!selectedUser || !grantTarget || !user) return;
     setGranting(true);
     try {
-      await powerService.grant(
-        selectedUser.userId,
-        grantTarget.$id!,
-        user.$id,
-        grantScope.departmentId || undefined,
-        grantScope.expiresAt || undefined
-      );
+      const response = await fetch("/api/admin/powers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "grant",
+          userId: selectedUser.userId,
+          powerId: grantTarget.$id,
+          departmentId: grantScope.departmentId || null,
+          expiresAt: grantScope.expiresAt || null,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to grant power");
       toast.success(
         `Power "${grantTarget.displayName}" granted to ${selectedUser.urn || selectedUser.userId}!`
       );
@@ -179,14 +190,16 @@ export default function AdminPowersPage() {
     setLoadingHolders(true);
     openHolders();
     try {
-      const holdersData = await powerService.getPowerHolders(power.$id!);
-      const holdersWithProfiles = await Promise.all(
-        holdersData.map(async (h) => {
-          const profile = await profileService.getByUserId(h.userId);
-          return { ...h, profile };
-        })
-      );
-      setHolders(holdersWithProfiles);
+      const [powerResponse, usersResponse] = await Promise.all([
+        fetch("/api/admin/powers", { credentials: "include" }),
+        fetch("/api/admin/users?limit=500", { credentials: "include" }),
+      ]);
+      const powerPayload = (await powerResponse.json()) as { grants?: UserPower[]; error?: string };
+      const usersPayload = (await usersResponse.json()) as { users?: Array<{ profile: Profile }> };
+      if (!powerResponse.ok) throw new Error(powerPayload.error || "Unable to load power holders");
+      const profileByUser = new Map((usersPayload.users ?? []).map((entry) => [entry.profile.userId, entry.profile]));
+      const holdersData = (powerPayload.grants ?? []).filter((grant) => grant.powerId === power.$id);
+      setHolders(holdersData.map((holder) => ({ ...holder, profile: profileByUser.get(holder.userId) ?? null })));
     } catch (error) {
       console.error("Error loading holders:", error);
       toast.error("Failed to load power holders");
@@ -200,7 +213,13 @@ export default function AdminPowersPage() {
     if (!confirm("Are you sure you want to revoke this power?")) return;
     setRevokingUserId(userId);
     try {
-      await powerService.revoke(userId, holdersTarget.$id!);
+      const response = await fetch("/api/admin/powers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "revoke", userId, powerId: holdersTarget.$id }),
+      });
+      if (!response.ok) throw new Error("Unable to revoke power");
       toast.success("Power revoked successfully!");
       setHolders((prev) => prev.filter((h) => h.userId !== userId));
     } catch (error) {
@@ -231,7 +250,7 @@ export default function AdminPowersPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Power Management
           </h1>
           <p className="text-default-500 mt-1 text-sm md:text-base">
@@ -527,7 +546,7 @@ export default function AdminPowersPage() {
                     <Button
                       isPending={granting}
                       isDisabled={!selectedUser}
-                      className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold"
+                      className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                       onPress={handleGrant}
                     >
                       Grant Power

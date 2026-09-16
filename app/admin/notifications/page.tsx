@@ -3,9 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { notificationService } from "@/lib/notifications";
-import { profileService } from "@/lib/profiles";
-import type { Notification, Profile } from "@/lib/types";
+import type { Notification } from "@/lib/types";
 import { toast } from "sonner";
 import {
   Button,
@@ -35,7 +33,6 @@ export default function AdminNotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, open, close } = useOverlayState();
@@ -49,19 +46,10 @@ export default function AdminNotificationsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const allNotifs = await notificationService.getAll(200);
-      setNotifications(allNotifs);
-
-      // Load only profiles for recipients shown in the list
-      const recipientIds = [...new Set(allNotifs.map((n) => n.userId))].slice(0, 50);
-      const profileResults = await Promise.all(
-        recipientIds.map((id) => profileService.getByUserId(id).catch(() => null))
-      );
-      const profileMap: Record<string, Profile> = {};
-      profileResults.forEach((p) => {
-        if (p) profileMap[p.userId] = p;
-      });
-      setProfiles(profileMap);
+      const response = await fetch("/api/notifications?all=true&limit=200", { credentials: "include" });
+      const payload = (await response.json()) as { notifications?: Notification[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load notifications");
+      setNotifications(payload.notifications ?? []);
     } catch (error) {
       console.error("Error loading notifications:", error);
       toast.error("Failed to load notifications");
@@ -73,10 +61,6 @@ export default function AdminNotificationsPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
-      return;
-    }
-    if (!authLoading && user && (user.prefs as Record<string, unknown>)?.role !== "admin") {
-      router.push("/unauthorized");
       return;
     }
     loadData();
@@ -91,12 +75,19 @@ export default function AdminNotificationsPage() {
 
     setSending(true);
     try {
-      await notificationService.create({
-        userId: form.userId,
-        type: form.type,
-        title: form.title,
-        body: form.body,
+      const response = await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          userId: form.userId,
+          type: form.type,
+          title: form.title,
+          body: form.body,
+        }),
       });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to send notification");
 
       toast.success("Notification sent!");
       close();
@@ -127,7 +118,7 @@ export default function AdminNotificationsPage() {
       case "membership_rejected":
         return <CheckCircle className="w-4 h-4 text-red-500" />;
       case "promotion":
-        return <CheckCircle className="w-4 h-4 text-purple-500" />;
+        return <CheckCircle className="w-4 h-4 text-primary" />;
       default:
         return <Bell className="w-4 h-4 text-blue-500" />;
     }
@@ -136,7 +127,7 @@ export default function AdminNotificationsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-purple-500" />
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
       </div>
     );
   }
@@ -145,7 +136,7 @@ export default function AdminNotificationsPage() {
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="flex items-start justify-between mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Notification Management
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -186,14 +177,14 @@ export default function AdminNotificationsPage() {
           {filtered.map((notif) => (
             <Card key={notif.$id} className="border-none shadow-md">
               <CardContent className="p-4 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                   {getNotificationIcon(notif.type)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-sm">{notif.title}</h3>
                     {!notif.read && (
-                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span className="w-2 h-2 rounded-full bg-primary" />
                     )}
                   </div>
                   <p className="text-sm text-default-500 mt-1 line-clamp-2">{notif.body}</p>
@@ -203,7 +194,7 @@ export default function AdminNotificationsPage() {
                       {notif.$createdAt ? new Date(notif.$createdAt).toLocaleString() : "-"}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-default-100">{notif.type}</span>
-                    <span>To: {profiles[notif.userId]?.urn || notif.userId.slice(0, 8)}</span>
+                    <span>To: {notif.userId.slice(0, 8)}</span>
                   </div>
                 </div>
               </CardContent>

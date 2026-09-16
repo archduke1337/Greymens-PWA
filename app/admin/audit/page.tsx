@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { auditService } from "@/lib/audit";
+import { auditService, type AuditLogFilters } from "@/lib/audit";
 import { toast } from "sonner";
 import {
   SearchIcon,
@@ -32,6 +32,9 @@ import {
 import type { AuditLog } from "@/lib/types/index";
 
 const PAGE_SIZE = 25;
+
+// Mirror the Chip color union so an invalid color is a compile error.
+type ChipColor = "default" | "success" | "warning" | "danger" | "accent";
 
 const ACTION_TYPES = [
   { value: "", label: "All Actions" },
@@ -72,6 +75,7 @@ export default function AdminAuditPage() {
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [totalLogs, setTotalLogs] = useState(0);
+  const [last24h, setLast24h] = useState(0);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [page, setPage] = useState(0);
 
@@ -92,20 +96,24 @@ export default function AdminAuditPage() {
   const loadLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
-      const result = await auditService.getLogs({
-        action: actionFilter || undefined,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      });
+      const filters: AuditLogFilters = { page, limit: PAGE_SIZE };
+      if (actionFilter) filters.action = actionFilter;
+      if (entityFilter) filters.entityType = entityFilter;
+      // The date inputs are local days; the stored timestamp is UTC ISO-8601.
+      if (dateFrom) filters.from = new Date(`${dateFrom}T00:00:00.000`).toISOString();
+      if (dateTo) filters.to = new Date(`${dateTo}T23:59:59.999`).toISOString();
+
+      const result = await auditService.getLogs(filters);
       setLogs(result.logs);
       setTotalLogs(result.total);
+      setLast24h(result.stats.last24h);
     } catch (error) {
       console.error("Error loading audit logs:", error);
-      toast.error("Failed to load audit logs");
+      toast.error(error instanceof Error ? error.message : "Failed to load audit logs");
     } finally {
       setLoadingLogs(false);
     }
-  }, [actionFilter, page]);
+  }, [actionFilter, entityFilter, dateFrom, dateTo, page]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -113,36 +121,19 @@ export default function AdminAuditPage() {
     }
   }, [authLoading, user, loadLogs]);
 
+  // Action, entity and date filters are applied by the API, so they search the
+  // whole log rather than the loaded page. Free-text search narrows only the
+  // page that is on screen, which the summary states explicitly.
   const filteredLogs = useMemo(() => {
-    let result = logs;
-
-    if (entityFilter) {
-      result = result.filter((log) => log.entityType === entityFilter);
-    }
-
-    if (userSearch.trim()) {
-      const q = userSearch.toLowerCase().trim();
-      result = result.filter(
-        (log) =>
-          log.actorName.toLowerCase().includes(q) ||
-          log.actorId.toLowerCase().includes(q) ||
-          log.entityId.toLowerCase().includes(q)
-      );
-    }
-
-    if (dateFrom) {
-      const from = new Date(dateFrom);
-      result = result.filter((log) => new Date(log.timestamp) >= from);
-    }
-
-    if (dateTo) {
-      const to = new Date(dateTo);
-      to.setHours(23, 59, 59, 999);
-      result = result.filter((log) => new Date(log.timestamp) <= to);
-    }
-
-    return result;
-  }, [logs, entityFilter, userSearch, dateFrom, dateTo]);
+    if (!userSearch.trim()) return logs;
+    const q = userSearch.toLowerCase().trim();
+    return logs.filter(
+      (log) =>
+        log.actorName?.toLowerCase().includes(q) ||
+        log.actorId?.toLowerCase().includes(q) ||
+        log.entityId?.toLowerCase().includes(q)
+    );
+  }, [logs, userSearch]);
 
   const totalPages = Math.ceil(totalLogs / PAGE_SIZE);
 
@@ -165,7 +156,7 @@ export default function AdminAuditPage() {
     }
   };
 
-  const getActionColor = (action: string) => {
+  const getActionColor = (action: string): ChipColor => {
     if (action.includes("create") || action.includes("approve") || action.includes("reactivate"))
       return "success";
     if (action.includes("delete") || action.includes("ban") || action.includes("reject") || action.includes("deactivate"))
@@ -173,7 +164,7 @@ export default function AdminAuditPage() {
     if (action.includes("update") || action.includes("promote") || action.includes("assign"))
       return "warning";
     if (action.includes("grant") || action.includes("revoke"))
-      return "primary";
+      return "accent";
     return "default";
   };
 
@@ -192,24 +183,24 @@ export default function AdminAuditPage() {
     setPage(0);
   };
 
-  const hasActiveFilters = actionFilter || entityFilter || userSearch || dateFrom || dateTo;
+  const hasServerFilters = Boolean(actionFilter || entityFilter || dateFrom || dateTo);
+  const hasActiveFilters = Boolean(userSearch || hasServerFilters);
 
-  const stats = useMemo(() => {
-    const total = totalLogs;
-    const recent24h = logs.filter(
-      (log) =>
-        new Date(log.timestamp) >=
-        new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ).length;
-    const uniqueActors = new Set(logs.map((l) => l.actorId)).size;
-    const uniqueActions = new Set(logs.map((l) => l.action)).size;
-    return { total, recent24h, uniqueActors, uniqueActions };
-  }, [logs, totalLogs]);
+  const stats = useMemo(
+    () => ({
+      total: totalLogs,
+      recent24h: last24h,
+      uniqueActors: new Set(logs.map((log) => log.actorId)).size,
+      uniqueActions: new Set(logs.map((log) => log.action)).size,
+    }),
+    [logs, totalLogs, last24h]
+  );
 
   if (authLoading || loadingLogs) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div role="status" className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-hidden="true" />
+        <span className="sr-only">Loading audit log...</span>
       </div>
     );
   }
@@ -218,7 +209,7 @@ export default function AdminAuditPage() {
     <div className="max-w-7xl mx-auto py-6 md:py-8 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Audit Log
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -235,8 +226,8 @@ export default function AdminAuditPage() {
                 <p className="text-sm text-default-500">Total Logs</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <FileTextIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <FileTextIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -260,7 +251,7 @@ export default function AdminAuditPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-default-500">Unique Actors</p>
+                <p className="text-sm text-default-500">Actors on page</p>
                 <p className="text-2xl font-bold">{stats.uniqueActors}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -274,7 +265,7 @@ export default function AdminAuditPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-default-500">Action Types</p>
+                <p className="text-sm text-default-500">Action types on page</p>
                 <p className="text-2xl font-bold">{stats.uniqueActions}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
@@ -295,8 +286,9 @@ export default function AdminAuditPage() {
                   <div className="flex-1">
                     <Input
                       placeholder="Search by actor, user ID, or entity ID..."
+                      aria-label="Search audit log by actor, user ID, or entity ID"
                       value={userSearch}
-                      onChange={(e: any) => {
+                      onChange={(e) => {
                         setUserSearch(e.target.value);
                         setPage(0);
                       }}
@@ -306,6 +298,7 @@ export default function AdminAuditPage() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 <select
+                  aria-label="Filter by action"
                   value={actionFilter}
                   onChange={(e) => {
                     setActionFilter(e.target.value);
@@ -320,6 +313,7 @@ export default function AdminAuditPage() {
                   ))}
                 </select>
                 <select
+                  aria-label="Filter by entity type"
                   value={entityFilter}
                   onChange={(e) => {
                     setEntityFilter(e.target.value);
@@ -339,22 +333,24 @@ export default function AdminAuditPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1 flex gap-3">
                 <div className="flex-1">
-                  <label className="text-xs text-default-500 mb-1 block">From</label>
+                  <label htmlFor="audit-date-from" className="text-xs text-default-500 mb-1 block">From</label>
                   <Input
+                    id="audit-date-from"
                     type="date"
                     value={dateFrom}
-                    onChange={(e: any) => {
+                    onChange={(e) => {
                       setDateFrom(e.target.value);
                       setPage(0);
                     }}
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-default-500 mb-1 block">To</label>
+                  <label htmlFor="audit-date-to" className="text-xs text-default-500 mb-1 block">To</label>
                   <Input
+                    id="audit-date-to"
                     type="date"
                     value={dateTo}
-                    onChange={(e: any) => {
+                    onChange={(e) => {
                       setDateTo(e.target.value);
                       setPage(0);
                     }}
@@ -378,7 +374,8 @@ export default function AdminAuditPage() {
 
           <div className="mt-3 text-sm text-default-500">
             Showing {filteredLogs.length} of {totalLogs} logs
-            {hasActiveFilters && " (filtered)"}
+            {hasServerFilters && " · filters applied to the whole log"}
+            {userSearch.trim() && " · text search applies to this page"}
           </div>
         </CardContent>
       </Card>
@@ -421,7 +418,7 @@ export default function AdminAuditPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
                             {log.actorName?.charAt(0)?.toUpperCase() || "?"}
                           </div>
                           <div className="min-w-0">
@@ -436,7 +433,7 @@ export default function AdminAuditPage() {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          color={getActionColor(log.action) as any}
+                          color={getActionColor(log.action)}
                           variant="primary"
                           size="sm"
                           className="text-xs"

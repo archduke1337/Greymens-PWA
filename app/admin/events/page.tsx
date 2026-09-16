@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { eventService, Event } from "@/lib/database";
+import type { Event } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
@@ -52,8 +52,10 @@ export default function AdminEventsPage() {
 
   const loadEvents = async () => {
     try {
-      const allEvents = await eventService.getAllEvents();
-      setEvents(allEvents);
+      const response = await fetch("/api/admin/events", { credentials: "include" });
+      const payload = (await response.json()) as { events?: Event[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load events");
+      setEvents(payload.events ?? []);
     } catch (error) {
       console.error("Error loading events:", error);
     } finally {
@@ -99,11 +101,14 @@ export default function AdminEventsPage() {
     setSubmitting(true);
 
     try {
-      if (editingEvent) {
-        await eventService.updateEvent(editingEvent.$id!, formData);
-      } else {
-        await eventService.createEvent(formData as Omit<Event, '$id' | '$createdAt' | '$updatedAt'>);
-      }
+      const response = await fetch("/api/admin/events", {
+        method: editingEvent ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(editingEvent ? { action: "update", eventId: editingEvent.$id, ...formData } : formData),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to save event");
       
       await loadEvents();
       handleCloseModal();
@@ -127,7 +132,13 @@ export default function AdminEventsPage() {
     if (!confirm("Are you sure you want to delete this event? This cannot be undone.")) return;
     setDeletingId(eventId);
     try {
-      await eventService.deleteEvent(eventId);
+      const response = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ eventId }),
+      });
+      if (!response.ok) throw new Error("Unable to delete event");
       await loadEvents();
       toast.success("Event deleted successfully!");
     } catch (error) {
@@ -141,7 +152,15 @@ export default function AdminEventsPage() {
   const handleDeletePastEvents = async () => {
     if (!confirm("Delete ALL past events? This cannot be undone.")) return;
     try {
-      const count = await eventService.deletePastEvents();
+      const response = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ past: true }),
+      });
+      const payload = await response.json().catch(() => null) as { deleted?: number; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete past events");
+      const count = payload?.deleted ?? 0;
       await loadEvents();
       toast.success(`${count} past events deleted successfully!`);
     } catch (error) {
@@ -189,7 +208,7 @@ export default function AdminEventsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Event Management
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
@@ -207,7 +226,7 @@ export default function AdminEventsPage() {
             <span className="sm:hidden ml-2">Delete Past</span>
           </Button>
           <Button onPress={open}
-            className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600"
+            className="w-full sm:w-auto bg-primary"
             size="sm"
           >
             <PlusIcon className="w-4 h-4" />
@@ -225,8 +244,8 @@ export default function AdminEventsPage() {
                 <p className="text-sm text-default-500">Total Events</p>
                 <p className="text-2xl font-bold">{events.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <CalendarIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <CalendarIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -380,7 +399,7 @@ export default function AdminEventsPage() {
               {({close: dialogClose}: {close: () => void}) => (
                 <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1 border-b pb-4">
-              <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
                 {editingEvent ? "Edit Event" : "Create New Event"}
               </h2>
               <p className="text-sm text-default-500 font-normal">
@@ -432,7 +451,7 @@ export default function AdminEventsPage() {
                     {/* Image URL */}
                     <div className="space-y-3">
                       <label className="text-sm font-semibold flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4 text-purple-600" />
+                        <ImageIcon className="w-4 h-4 text-primary" />
                         Event Image URL *
                       </label>
                       <Input
@@ -446,7 +465,7 @@ export default function AdminEventsPage() {
                           <img 
                             src={formData.image} 
                             alt="Preview" 
-                            className="w-full h-48 object-cover rounded-xl border-2 border-purple-200 dark:border-purple-800"
+                            className="w-full h-48 object-cover rounded-xl border-2 border-border"
                             onError={(e: any) => {
                               e.currentTarget.src = "https://via.placeholder.com/400x300?text=Invalid+Image+URL";
                             }}
@@ -491,7 +510,7 @@ export default function AdminEventsPage() {
                       <option value="forum">Forum</option>
                     </select>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
                       <Switch
                         isSelected={formData.isFeatured}
                         onChange={(checked: any) => handleInputChange("isFeatured", checked)}
@@ -506,7 +525,7 @@ export default function AdminEventsPage() {
                         onChange={(checked: any) => handleInputChange("isPremium", checked)}
                       >
                         <div className="flex items-center gap-2">
-                          <CrownIcon className="w-4 h-4 text-purple-600" />
+                          <CrownIcon className="w-4 h-4 text-primary" />
                           <span className="font-semibold text-sm">Premium</span>
                         </div>
                       </Switch>
@@ -596,14 +615,14 @@ export default function AdminEventsPage() {
                       </div>
                     )}
 
-                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                      <p className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2">
+                    <div className="p-4 bg-muted rounded-xl">
+                      <p className="text-sm font-semibold text-muted-foreground mb-2">
                         💡 Pricing Tips
                       </p>
-                      <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1">
+                      <ul className="text-sm text-muted-foreground space-y-1">
                         <li>• Set price to $0 for free events</li>
                         <li>• Add discount price for early bird offers</li>
-                        <li>• Consider your target audience's budget</li>
+                        <li>• Consider your target audience&apos;s budget</li>
                         <li>• Capacity helps manage registrations</li>
                       </ul>
                     </div>
@@ -621,7 +640,7 @@ export default function AdminEventsPage() {
                     
                     <div className="space-y-3">
                       <label className="text-sm font-semibold flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4 text-purple-600" />
+                        <ImageIcon className="w-4 h-4 text-primary" />
                         Organizer Avatar URL *
                       </label>
                       <Input
@@ -635,7 +654,7 @@ export default function AdminEventsPage() {
                           <img 
                             src={formData.organizerAvatar} 
                             alt="Avatar preview" 
-                            className="w-12 h-12 rounded-full object-cover border-2 border-purple-200 dark:border-purple-800"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-border"
                             onError={(e: any) => {
                               e.currentTarget.src = "https://via.placeholder.com/100?text=Invalid";
                             }}
@@ -648,7 +667,7 @@ export default function AdminEventsPage() {
                     {/* Tags Section */}
                     <div className="space-y-3">
                       <label className="text-sm font-semibold flex items-center gap-2">
-                        <TagIcon className="w-4 h-4 text-purple-600" />
+                        <TagIcon className="w-4 h-4 text-primary" />
                         Event Tags
                       </label>
                       <div className="flex gap-2">
@@ -694,7 +713,7 @@ export default function AdminEventsPage() {
                         <li>• Use 3-5 relevant tags</li>
                         <li>• Include topics, skills, or themes</li>
                         <li>• Make tags searchable and specific</li>
-                        <li>• Examples: "Machine Learning", "Beginner Friendly"</li>
+                        <li>• Examples: &quot;Machine Learning&quot;, &quot;Beginner Friendly&quot;</li>
                       </ul>
                     </div>
                   </div>
@@ -712,7 +731,7 @@ export default function AdminEventsPage() {
               </Button>
               <Button type="submit" 
                 isPending={submitting}
-                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
+                className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
               >
                 {editingEvent ? "Update Event" : "Create Event"}
               </Button>

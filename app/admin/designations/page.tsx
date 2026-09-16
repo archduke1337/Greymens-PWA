@@ -15,8 +15,7 @@ import {
   SearchIcon,
   AwardIcon,
 } from "lucide-react";
-import { designationService } from "@/lib/designations";
-import { profileService } from "@/lib/profiles";
+
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
   Button,
@@ -100,11 +99,13 @@ export default function AdminDesignationsPage() {
 
   const loadDesignations = async () => {
     try {
-      const allDesigs = await designationService.getAll();
-      setDesignations(allDesigs);
+      const response = await fetch("/api/admin/designations", { credentials: "include" });
+      const payload = (await response.json()) as { designations?: Designation[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load designations");
+      setDesignations(payload.designations ?? []);
     } catch (error) {
       console.error("Error loading designations:", error);
-      toast.error("Failed to load designations");
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -128,11 +129,22 @@ export default function AdminDesignationsPage() {
 
       const payload = { ...formData, slug };
 
+      const response = await fetch("/api/admin/designations", {
+        method: editingDesig ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(
+          editingDesig
+            ? { designationId: editingDesig.$id, ...payload }
+            : payload,
+        ),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || "Failed to save designation");
+
       if (editingDesig) {
-        await designationService.update(editingDesig.$id!, payload);
         toast.success("Designation updated successfully!");
       } else {
-        await designationService.create(payload);
         toast.success("Designation created successfully!");
       }
 
@@ -172,12 +184,18 @@ export default function AdminDesignationsPage() {
     )
       return;
     try {
-      await designationService.delete(desigId);
+      const response = await fetch(`/api/admin/designations?designationId=${encodeURIComponent(desigId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error || "Failed to delete designation");
       toast.success("Designation deleted successfully!");
       await loadDesignations();
     } catch (error) {
-      console.error("Error deleting designation:", error);
-      toast.error("Failed to delete designation");
+      const message = getErrorMessage(error);
+      console.error("Error deleting designation:", message);
+      toast.error(message || "Failed to delete designation");
     }
   };
 
@@ -194,27 +212,40 @@ export default function AdminDesignationsPage() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const results = await profileService.search(searchQuery);
-      setSearchResults(results);
+      const response = await fetch(`/api/admin/members/search?q=${encodeURIComponent(searchQuery.trim())}`, {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as { profiles?: Profile[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Failed to search users");
+      setSearchResults(payload.profiles ?? []);
     } catch (error) {
-      console.error("Error searching users:", error);
-      toast.error("Failed to search users");
+      const message = getErrorMessage(error);
+      console.error("Error searching users:", message);
+      toast.error(message || "Failed to search users");
     } finally {
       setSearching(false);
     }
   };
 
   const handleAssign = async () => {
-    if (!selectedUser || !assignTarget || !user) return;
+    if (!selectedUser || !assignTarget) return;
     setAssigning(true);
     try {
-      await designationService.assign(
-        selectedUser.userId,
-        assignTarget.$id!,
-        user.$id
-      );
+      const response = await fetch("/api/admin/designations/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          userId: selectedUser.userId,
+          designationId: assignTarget.$id,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as { error?: string; alreadyAssigned?: boolean } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to assign designation");
       toast.success(
-        `Designation "${assignTarget.name}" assigned to ${selectedUser.urn || selectedUser.userId}!`
+        payload?.alreadyAssigned
+          ? `${selectedUser.urn || selectedUser.userId} already holds "${assignTarget.name}".`
+          : `Designation "${assignTarget.name}" assigned to ${selectedUser.urn || selectedUser.userId}!`
       );
       closeAssign();
       await loadDesignations();
@@ -233,17 +264,29 @@ export default function AdminDesignationsPage() {
     setLoadingHolders(true);
     openRevoke();
     try {
-      const holdersData = await designationService.getDesignationHolders(desig.$id!);
-      const holdersWithProfiles = await Promise.all(
-        holdersData.map(async (h) => {
-          const profile = await profileService.getByUserId(h.userId);
-          return { ...h, profile };
-        })
+      const [holdersResponse, profilesResponse] = await Promise.all([
+        fetch(`/api/admin/designations/assign?designationId=${encodeURIComponent(desig.$id!)}`, {
+          credentials: "include",
+        }),
+        fetch("/api/admin/users?limit=500", { credentials: "include" }),
+      ]);
+      const holdersPayload = (await holdersResponse.json()) as { holders?: UserDesignation[]; error?: string };
+      const profilesPayload = (await profilesResponse.json()) as { users?: Array<{ profile: Profile }> };
+      if (!holdersResponse.ok) throw new Error(holdersPayload.error || "Failed to load holders");
+
+      const profileByUser = new Map(
+        (profilesPayload.users ?? []).map((entry) => [entry.profile.userId, entry.profile]),
       );
-      setHolders(holdersWithProfiles);
+      setHolders(
+        (holdersPayload.holders ?? []).map((holder) => ({
+          ...holder,
+          profile: profileByUser.get(holder.userId) ?? null,
+        })),
+      );
     } catch (error) {
-      console.error("Error loading holders:", error);
-      toast.error("Failed to load designation holders");
+      const message = getErrorMessage(error);
+      console.error("Error loading holders:", message);
+      toast.error(message || "Failed to load designation holders");
     } finally {
       setLoadingHolders(false);
     }
@@ -254,13 +297,19 @@ export default function AdminDesignationsPage() {
     if (!confirm("Are you sure you want to revoke this designation?")) return;
     setRevokingUserId(userId);
     try {
-      await designationService.revoke(userId, revokeTarget.$id!, user.$id);
+      const response = await fetch(
+        `/api/admin/designations/assign?userId=${encodeURIComponent(userId)}&designationId=${encodeURIComponent(revokeTarget.$id!)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to revoke designation");
       toast.success("Designation revoked successfully!");
       setHolders((prev) => prev.filter((h) => h.userId !== userId));
       await loadDesignations();
     } catch (error) {
-      console.error("Error revoking designation:", error);
-      toast.error("Failed to revoke designation");
+      const message = getErrorMessage(error);
+      console.error("Error revoking designation:", message);
+      toast.error(message || "Failed to revoke designation");
     } finally {
       setRevokingUserId(null);
     }
@@ -299,7 +348,7 @@ export default function AdminDesignationsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-500 to-rose-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Designation Management
           </h1>
           <p className="text-default-500 mt-1 text-sm md:text-base">
@@ -308,7 +357,7 @@ export default function AdminDesignationsPage() {
         </div>
         <Button
           onPress={open}
-          className="bg-gradient-to-r from-amber-500 to-rose-500"
+          className="bg-primary"
           size="lg"
         >
           <PlusIcon className="w-5 h-5" />
@@ -478,7 +527,7 @@ export default function AdminDesignationsPage() {
               {({ close: dialogClose }: { close: () => void }) => (
                 <form onSubmit={handleSubmit}>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-amber-500 to-rose-500 bg-clip-text text-transparent">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">
                       {editingDesig ? "Edit Designation" : "Create Designation"}
                     </h2>
                     <p className="text-sm text-default-500 font-normal">
@@ -538,18 +587,30 @@ export default function AdminDesignationsPage() {
 
                       <div>
                         <label className="text-sm font-medium mb-1 block">Level</label>
+                        {/*
+                          * Levels run 1–9. Level 10 used to be the reserved
+                          * "everything" tier, which meant this field alone could
+                          * confer full access; seniority now stops at 9 and the
+                          * `admin`/`dev` tier comes only from a governance role.
+                          * The bounds are enforced again on the server — a number
+                          * input is a convenience, not a constraint.
+                          */}
                         <Input
                           type="number"
+                          min={1}
+                          max={9}
                           placeholder="1"
                           value={formData.level.toString()}
-                          onChange={(e: any) =>
-                            setFormData({
-                              ...formData,
-                              level: parseInt(e.target.value) || 1,
-                            })
-                          }
+                          onChange={(e: any) => {
+                            const parsed = parseInt(e.target.value, 10);
+                            const level = Number.isFinite(parsed) ? Math.min(9, Math.max(1, parsed)) : 1;
+                            setFormData({ ...formData, level });
+                          }}
                           required
                         />
+                        <p className="text-xs text-default-400 mt-1">
+                          1 is entry level, 9 is the most senior. Higher levels grant more oversight.
+                        </p>
                       </div>
                     </div>
 
@@ -630,7 +691,7 @@ export default function AdminDesignationsPage() {
                     <Button
                       type="submit"
                       isPending={submitting}
-                      className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-rose-500 text-white font-semibold"
+                      className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                     >
                       {editingDesig
                         ? "Update Designation"
@@ -749,7 +810,7 @@ export default function AdminDesignationsPage() {
                     <Button
                       isPending={assigning}
                       isDisabled={!selectedUser}
-                      className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-rose-500 text-white font-semibold"
+                      className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                       onPress={handleAssign}
                     >
                       Assign Designation

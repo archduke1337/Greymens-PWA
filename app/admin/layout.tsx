@@ -1,22 +1,132 @@
 "use client";
-import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/context/PermissionContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  UserCog,
+  Building2,
+  Award,
+  KeyRound,
+  Landmark,
+  FileText,
+  FolderOpen,
+  Image,
+  Rocket,
+  Handshake,
+  Bell,
+  ShieldCheck,
+  ScrollText,
+  ClipboardList,
+  ArrowLeft,
+} from "lucide-react";
 
+import { usePermissions } from "@/context/PermissionContext";
+import { useAuth } from "@/context/AuthContext";
+
+/**
+ * Every admin area that exists as a route, gated by capability (presentation only).
+ *
+ * Server enforces via requireCapability() — admin passes every check via "*"
+ * wildcard, so admin sees all sections. Non-admin office holders see only
+ * sections their offices grant. Hiding is not access control: each page fails
+ * closed on its first API request.
+ */
 const ADMIN_SECTIONS = [
-  { label: "Dashboard", href: "/admin", icon: "📊" },
-  { label: "Membership", href: "/admin/membership", icon: "👥" },
-  { label: "Events", href: "/admin/events", icon: "🎯" },
-  { label: "Users", href: "/admin/users", icon: "👤" },
-  { label: "Departments", href: "/admin/departments", icon: "🏢" },
-  { label: "Designations", href: "/admin/designations", icon: "🏅" },
-  { label: "Powers", href: "/admin/powers", icon: "⚡" },
-  { label: "Blogs", href: "/admin/blog", icon: "📝" },
-  { label: "Projects", href: "/admin/projects", icon: "🚀" },
-  { label: "Sponsors", href: "/admin/sponsors", icon: "🤝" },
-  { label: "Audit Log", href: "/admin/audit", icon: "📋" },
+  {
+    label: "Dashboard",
+    href: "/admin",
+    Icon: LayoutDashboard,
+    cap: "governance.manage",
+  },
+  {
+    label: "Membership",
+    href: "/admin/membership",
+    Icon: Users,
+    cap: "membership.view_applications",
+  },
+  {
+    label: "Events",
+    href: "/admin/events",
+    Icon: CalendarDays,
+    cap: "events.manage",
+  },
+  { label: "Users", href: "/admin/users", Icon: UserCog, cap: "users.view" },
+  {
+    label: "Departments",
+    href: "/admin/departments",
+    Icon: Building2,
+    cap: "departments.manage",
+  },
+  {
+    label: "Designations",
+    href: "/admin/designations",
+    Icon: Award,
+    cap: "designations.assign",
+  },
+  {
+    label: "Powers",
+    href: "/admin/powers",
+    Icon: KeyRound,
+    cap: "powers.manage",
+  },
+  {
+    label: "Offices",
+    href: "/admin/offices",
+    Icon: Landmark,
+    cap: "governance.manage_offices",
+  },
+  { label: "Blogs", href: "/admin/blog", Icon: FileText, cap: "blog.review" },
+  {
+    label: "Resources",
+    href: "/admin/resources",
+    Icon: FolderOpen,
+    cap: "resources.manage",
+  },
+  {
+    label: "Gallery",
+    href: "/admin/gallery",
+    Icon: Image,
+    cap: "gallery.manage",
+  },
+  {
+    label: "Projects",
+    href: "/admin/projects",
+    Icon: Rocket,
+    cap: "projects.manage",
+  },
+  {
+    label: "Sponsors",
+    href: "/admin/sponsors",
+    Icon: Handshake,
+    cap: "sponsors.manage",
+  },
+  {
+    label: "Notifications",
+    href: "/admin/notifications",
+    Icon: Bell,
+    cap: "notifications.send",
+  },
+  {
+    label: "Access",
+    href: "/admin/access",
+    Icon: ShieldCheck,
+    cap: "access.assign_roles",
+  },
+  {
+    label: "Governance",
+    href: "/admin/governance",
+    Icon: ScrollText,
+    cap: "governance.manage",
+  },
+  {
+    label: "Audit Log",
+    href: "/admin/audit",
+    Icon: ClipboardList,
+    cap: "audit.view",
+  },
 ];
 
 export default function AdminLayout({
@@ -25,54 +135,66 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  const { status } = usePermissions();
+  const { status, hasPermission, loading: permLoading } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [admitted, setAdmitted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !permLoading) {
       if (!user) {
         router.push("/login");
+
         return;
       }
 
-      // Check admin status via permission context or email fallback
-      if (status === "admin" || status === "dev") {
-        setIsAdmin(true);
+      // Option B admission: any capability granting at least one section, or
+      // admin tier (admin has "*" so hasPermission passes everything).
+      // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
+      const visible = ADMIN_SECTIONS.some((s) => hasPermission(s.cap));
+
+      if (status === "admin" || status === "dev" || visible) {
+        setAdmitted(true);
+
         return;
       }
 
-      // Fallback to API check
+      // Fall back to the server check for email-allowlisted administrators.
+      // The server resolves the identity from the session, not from this body.
       fetch("/api/admin-check", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
+        credentials: "include",
       })
         .then((res) => res.json())
         .then((data) => {
           if (!data.isAdmin) {
             router.push("/unauthorized");
           } else {
-            setIsAdmin(true);
+            setAdmitted(true);
           }
         })
         .catch(() => {
           router.push("/unauthorized");
         });
     }
-  }, [user, loading, router, status]);
+  }, [user, loading, permLoading, router, status, hasPermission]);
 
-  if (loading || isAdmin === null) {
+  if (loading || permLoading || admitted === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <div
+            aria-label="Verifying access"
+            className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary"
+            role="status"
+          />
           <p className="text-default-500">Verifying access...</p>
         </div>
       </div>
     );
   }
+
+  const visibleSections = ADMIN_SECTIONS.filter((s) => hasPermission(s.cap));
 
   return (
     <div className="flex min-h-screen">
@@ -83,36 +205,34 @@ export default function AdminLayout({
           <p className="text-sm text-muted-foreground">Club Management</p>
         </div>
         <nav className="space-y-1">
-          {ADMIN_SECTIONS.map((section) => (
+          {visibleSections.map((section) => (
             <Link
               key={section.href}
-              href={section.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 pathname === section.href
                   ? "bg-primary/10 text-primary font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
+              href={section.href}
             >
-              <span>{section.icon}</span>
+              <section.Icon aria-hidden className="w-4 h-4 shrink-0" />
               <span>{section.label}</span>
             </Link>
           ))}
         </nav>
         <div className="mt-6 pt-6 border-t border-border">
           <Link
-            href="/dashboard"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            href="/dashboard"
           >
-            <span>←</span>
+            <ArrowLeft aria-hidden className="w-4 h-4 shrink-0" />
             <span>Back to Dashboard</span>
           </Link>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
 }

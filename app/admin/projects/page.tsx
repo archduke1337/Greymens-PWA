@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { projectService, Project } from "@/lib/database";
+import type { Project } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
@@ -44,7 +44,7 @@ export default function AdminProjectsPage() {
 
   const statuses = [
     { key: "planning", label: "📋 Planning" },
-    { key: "in-progress", label: "🚧 In ProgressBar" },
+    { key: "in-progress", label: "🚧 In progress" },
     { key: "completed", label: "✅ Completed" },
   ];
 
@@ -62,8 +62,10 @@ export default function AdminProjectsPage() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const data = await projectService.getAllProjects();
-      setProjects(data);
+      const response = await fetch("/api/admin/projects", { credentials: "include" });
+      const payload = (await response.json()) as { projects?: Project[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load projects");
+      setProjects(payload.projects ?? []);
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast.error("Failed to fetch projects. Check console for details.");
@@ -187,10 +189,22 @@ export default function AdminProjectsPage() {
       };
 
       if (isEditing && selectedProject?.$id) {
-        await projectService.updateProject(selectedProject.$id, projectData);
+        const response = await fetch("/api/admin/projects", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ projectId: selectedProject.$id, ...projectData }),
+        });
+        if (!response.ok) throw new Error("Unable to update project");
         toast.success("Project updated successfully!");
       } else {
-        await projectService.createProject(projectData);
+        const response = await fetch("/api/admin/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(projectData),
+        });
+        if (!response.ok) throw new Error("Unable to create project");
         toast.success("Project created successfully!");
       }
 
@@ -210,7 +224,11 @@ export default function AdminProjectsPage() {
   const handleDelete = async (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
     try {
-      await projectService.deleteProject(projectId);
+      const response = await fetch(`/api/admin/projects?projectId=${encodeURIComponent(projectId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Unable to delete project");
       toast.success("Project deleted successfully!");
       fetchProjects();
     } catch (error) {
@@ -223,32 +241,17 @@ export default function AdminProjectsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed": return "success";
-      case "in-progress": return "primary";
+      case "in-progress": return "accent";
       case "planning": return "warning";
       default: return "default";
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "ai-ml": return "secondary";
-      case "blockchain": return "success";
-      case "mobile": return "primary";
-      case "web": return "warning";
-      case "iot": return "default";
-      case "quantum": return "danger";
-      default: return "default";
-    }
-  };
-
   return (
-    <div className="min-h-screen  p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-4 relative">
-          <div className="absolute top-0 left-1/3 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-10 right-1/3 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-pulse" />
-          
           <div className="relative z-10">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
               Project Management
@@ -260,10 +263,10 @@ export default function AdminProjectsPage() {
         </div>
 
         {/* Admin Tips Section */}
-        <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+        <Card className="border-none shadow-lg bg-card">
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -297,7 +300,7 @@ export default function AdminProjectsPage() {
                 </div>
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                  className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                   onPress={handleAdd}
                 >
                   New Project
@@ -306,13 +309,13 @@ export default function AdminProjectsPage() {
               <CardContent className="p-6">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16">
-                    <Loader2Icon className="w-12 h-12 animate-spin text-purple-500 mb-4" />
+                    <Loader2Icon className="w-12 h-12 animate-spin text-primary mb-4" />
                     <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
                   </div>
                 ) : projects.length === 0 ? (
                   <div className="text-center py-16">
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center">
-                      <FolderIcon className="w-12 h-12 text-purple-500" />
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
+                      <FolderIcon className="w-12 h-12 text-primary" />
                     </div>
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No projects yet</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
@@ -320,7 +323,7 @@ export default function AdminProjectsPage() {
                     </p>
                     <Button
                       size="lg"
-                      className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold"
+                      className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                       onPress={handleAdd}
                     >
                       Create First Project
@@ -350,12 +353,14 @@ export default function AdminProjectsPage() {
                                     src={project.image}
                                     alt={project.title}
                                     className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                                    onError={(e: any) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = "https://via.placeholder.com/150?text=No+Image";
+                                    onError={(event) => {
+                                      // Hide the broken image instead of swapping in a
+                                      // placeholder URL; the fallback block below the
+                                      // column already conveys "no image".
+                                      event.currentTarget.style.visibility = "hidden";
                                     }}
                                   />
-                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
                                     <ImageIcon className="w-3 h-3 text-white" />
                                   </div>
                                 </div>
@@ -368,19 +373,15 @@ export default function AdminProjectsPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Chip 
-                                size="sm" 
-                                variant="primary" 
-                                color={getCategoryColor(project.category) as any}
-                              >
+                              <Chip size="sm" variant="soft">
                                 {project.category.replace('-', ' ')}
                               </Chip>
                             </TableCell>
                             <TableCell>
                               <Chip
                                 size="sm"
-                                color={getStatusColor(project.status) as any}
-                                variant="primary"
+                                color={getStatusColor(project.status) as "success" | "accent" | "warning" | "default"}
+                                variant="soft"
                               >
                                 {project.status.replace('-', ' ')}
                               </Chip>
@@ -389,7 +390,7 @@ export default function AdminProjectsPage() {
                               <div className="flex items-center gap-3">
                                 <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 flex-1">
                                   <div
-                                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                    className="bg-primary h-2 rounded-full transition-all duration-300"
                                     style={{ width: `${project.progress}%` }}
                                   />
                                 </div>
@@ -414,7 +415,7 @@ export default function AdminProjectsPage() {
                                   isIconOnly
                                   size="sm"
                                   variant="ghost"
-                                  className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
+                                  className="text-gray-600 dark:text-gray-400 hover:opacity-90 hover:bg-muted transition-all"
                                   onPress={() => handleEdit(project)}
                                 >
                                   <Edit2Icon className="w-4 h-4" />
@@ -453,16 +454,16 @@ export default function AdminProjectsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{projects.length}</p>
                   </div>
-                  <FolderIcon className="w-8 h-8 text-purple-500" />
+                  <FolderIcon className="w-8 h-8 text-primary" />
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">In ProgressBar</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">In progress</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {projects.filter(p => p.status === 'in-progress').length}
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                     <Loader2Icon className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -473,7 +474,7 @@ export default function AdminProjectsPage() {
                       {projects.filter(p => p.status === 'completed').length}
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                     </svg>
@@ -501,7 +502,7 @@ export default function AdminProjectsPage() {
               <>
             <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                   {isEditing ? (
                     <Edit2Icon className="w-5 h-5 text-white" />
                   ) : (
@@ -575,7 +576,7 @@ export default function AdminProjectsPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
-                        ProgressBar: {formData.progress}%
+                        Progress: {formData.progress}%
                       </label>
                       <input
                         type="range"
@@ -662,7 +663,7 @@ export default function AdminProjectsPage() {
               </Button>
               <Button onPress={handleSave}
                 isPending={saving}
-                className="bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
               >
                 {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
               </Button>
