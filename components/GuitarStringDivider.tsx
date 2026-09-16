@@ -1,16 +1,26 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import gsap from "gsap";
 
 export default function GuitarStringDivider() {
   const stringRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const vibrationTimeline = useRef<gsap.core.Timeline | null>(null);
+  const gradientId = useId();
 
   useEffect(() => {
     const string = stringRef.current;
     const path = pathRef.current;
     if (!string || !path) return;
+
+    // Motion-sensitive visitors get a still string: no idle vibration, no
+    // pointer bending, no snap-back.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
 
     const initialPath = "M 50 100 Q 500 100 950 100";
 
@@ -37,8 +47,14 @@ export default function GuitarStringDivider() {
       vibrationTimeline.current = null;
     };
 
-    // 🖱 Interactive bending
-    const handleMouseMove = (e: MouseEvent) => {
+    // 🖱 Interactive bending (rAF-throttled so pointer storms don't jank).
+    let bending = false;
+    let lastEvent: MouseEvent | null = null;
+    const applyBend = () => {
+      bending = false;
+      if (!lastEvent) return;
+      const e = lastEvent;
+      lastEvent = null;
       stopVibration();
 
       const rect = string.getBoundingClientRect();
@@ -54,6 +70,13 @@ export default function GuitarStringDivider() {
         duration: 0.3,
         ease: "power3.out",
       });
+    };
+    const handleMouseMove = (e: MouseEvent) => {
+      lastEvent = e;
+      if (!bending) {
+        bending = true;
+        requestAnimationFrame(applyBend);
+      }
     };
 
     const handleMouseLeave = () => {
@@ -78,19 +101,15 @@ export default function GuitarStringDivider() {
   }, []);
 
   return (
-    <div className="relative w-full py-6 overflow-hidden">
-      <div
-        ref={stringRef}
-        id="string"
-        className="relative w-full h-24 cursor-pointer"
-      >
+    <div className="relative w-full py-6 overflow-hidden" aria-hidden="true">
+      <div ref={stringRef} className="relative w-full h-24">
         <svg
           className="w-full h-full"
           viewBox="0 0 1000 200"
           preserveAspectRatio="none"
         >
           <defs>
-            <linearGradient id="stringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#a855f7" />
               <stop offset="50%" stopColor="#ec4899" />
               <stop offset="100%" stopColor="#f97316" />
@@ -100,7 +119,7 @@ export default function GuitarStringDivider() {
           <path
             ref={pathRef}
             d="M 50 100 Q 500 100 950 100"
-            stroke="url(#stringGradient)"
+            stroke={`url(#${gradientId})`}
             strokeWidth="3"
             fill="none"
             strokeLinecap="round"

@@ -2,7 +2,7 @@
 import type { Event } from "@/lib/database";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Calendar,
   MapPin,
@@ -24,7 +24,6 @@ const formatDate = (dateString: string) => {
 export default function FeaturedSection() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,15 +58,13 @@ export default function FeaturedSection() {
     };
   }, []);
 
-  const handleCardClick = (eventId: string) => {
-    router.push(`/events/${eventId}`);
-  };
+  // (removed) cards are real links below; no click handler needed.
 
   if (loading) {
     return (
       <section className="py-20 relative overflow-hidden bg-background">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4" role="status" aria-label="Loading featured events">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent" />
             <p className="text-lg font-medium text-gray-600 dark:text-gray-400">
               Loading featured events...
@@ -106,21 +103,28 @@ export default function FeaturedSection() {
 
         {/* Events Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredEvents.map((event, index) => (
-            <div
+          {featuredEvents.map((event, index) => {
+            const remaining =
+              event.capacity && event.capacity > 0
+                ? Math.max(0, event.capacity - (event.registered ?? 0))
+                : null;
+            return (
+            <Link
               key={event.$id}
-              className="group cursor-pointer"
-              style={{
-                animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
-              }}
-              onClick={() => handleCardClick(event.$id!)}
+              href={`/events/${event.$id}`}
+              className="group motion-safe:animate-[fadeInUp_0.6s_ease-out_both] focus-visible:outline-2 focus-visible:outline-primary rounded-xl"
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="relative bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-border">
                 {/* Image Section */}
                 <div className="relative h-64 overflow-hidden">
                   <img
                     alt={event.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 motion-reduce:transform-none"
                     src={event.image}
                   />
 
@@ -189,9 +193,9 @@ export default function FeaturedSection() {
                       <span className="font-medium">
                         {event.registered} registered
                       </span>
-                      {event.capacity && (
+                      {remaining !== null && (
                         <span className="text-xs text-gray-500">
-                          • {event.capacity - event.registered} spots left
+                          • {remaining} {remaining === 1 ? "spot" : "spots"} left
                         </span>
                       )}
                     </div>
@@ -240,19 +244,20 @@ export default function FeaturedSection() {
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            </Link>
+            );
+          })}
         </div>
 
         {/* View All Button */}
         <div className="text-center mt-16">
-          <button
+          <Link
             className="group inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-lg transition-opacity hover:opacity-90"
-            onClick={() => router.push("/events")}
+            href="/events"
           >
             <span>Explore All Events</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </button>
+          </Link>
         </div>
       </div>
 

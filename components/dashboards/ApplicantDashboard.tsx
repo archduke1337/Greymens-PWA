@@ -54,14 +54,14 @@ const QUICK_LINKS = [
   {
     label: "Club Constitution",
     description: "Read our founding document",
-    href: "/docs/constitution",
+    href: "/constitution",
     icon: BookOpen,
     color: "text-primary",
   },
   {
-    label: "Learning Roadmaps",
-    description: "Explore department paths",
-    href: "/roadmaps",
+    label: "Learning Resources",
+    description: "Explore department resources",
+    href: "/resources",
     icon: Map,
     color: "text-blue-400",
   },
