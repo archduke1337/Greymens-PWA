@@ -1,44 +1,48 @@
 import { NextResponse } from "next/server";
+import { sendContactMessage } from "@/lib/contact-mailer";
+import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { TEXT_LIMITS, isEmailAddress, isRecord, readString } from "@/lib/validation";
+import { ok, fail, ApiError } from "@/lib/api";
 
-const EMAILJS_SERVICE_ID = process.env.EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE_ID = process.env.EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY;
+// This endpoint is unauthenticated and spends a metered third-party quota, so it
+// is rate limited per client address.
+const RATE_LIMIT = 3;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
-  try {
-    const { name, email, subject, message } = await request.json();
-
-    if (!name || !email || !subject || !message) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
-      return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
-    }
-
-    const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        template_params: {
-          from_name: name,
-          from_email: email,
-          subject,
-          message,
-          to_email: "hello@mindmesh.club",
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+  const address = getClientAddress(request);
+  const limited = consumeRateLimit(`send-email:${address}`, RATE_LIMIT, RATE_WINDOW_MS);
+  if (!limited.allowed) {
+    return NextResponse.json({ success: false, error: { code: "RATE_LIMITED", message: "Too many messages sent. Please try again shortly." } }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
   }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return fail("VALIDATION", "Invalid request body", 400);
+  }
+
+  if (!isRecord(body)) {
+    return fail("VALIDATION", "Invalid request body", 400);
+  }
+
+  const name = readString(body.name, TEXT_LIMITS.name);
+  const email = readString(body.email, TEXT_LIMITS.email);
+  const subject = readString(body.subject, TEXT_LIMITS.subject);
+  const message = readString(body.message, TEXT_LIMITS.message);
+
+  if (!name || !email || !subject || !message) {
+    return fail("VALIDATION", "Missing or invalid required fields", 400);
+  }
+  if (!isEmailAddress(email)) {
+    return fail("VALIDATION", "Enter a valid email address", 400);
+  }
+
+  const result = await sendContactMessage({ name, email, subject, message });
+  if (!result.ok) {
+    return fail((result.status === 400 ? "VALIDATION" : result.status === 401 ? "UNAUTHENTICATED" : result.status === 403 ? "FORBIDDEN" : result.status === 404 ? "NOT_FOUND" : result.status === 409 ? "CONFLICT" : result.status === 429 ? "RATE_LIMITED" : "INTERNAL"), result.error, result.status);
+  }
+
+  return ok({ success: true });
 }

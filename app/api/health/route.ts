@@ -1,77 +1,39 @@
+import { NextRequest, NextResponse } from "next/server";
+import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
+import { ok, fail } from "@/lib/api";
+
 /**
- * API Health Check Endpoint
- * Tests backend connectivity and service availability
+ * Liveness/readiness probe.
+ *
+ * Deliberately minimal: this endpoint is unauthenticated, so it must not
+ * disclose runtime versions, hostnames, project identifiers, or raw error
+ * text. It reports only whether the service is up and whether the backend
+ * dependency answers. Anything more is reconnaissance for an attacker.
  */
+export async function GET(request: NextRequest) {
+  const limit = consumeRateLimit(`health:${getClientAddress(request)}`, 60, 60_000);
+  if (!limit.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
-export async function GET() {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+
+  if (!endpoint || !projectId) {
+    return fail("DEGRADED", "Service degraded", 503);
+  }
+
   try {
-    const status = {
-      timestamp: new Date().toISOString(),
-      status: "operational",
-      services: {
-        frontend: "healthy",
-        appwrite: "checking",
-      },
-      checks: {
-        environment: true,
-        nodejs: process.version,
-        nextjs: "14.x",
-      },
-    };
-
-    // Check Appwrite connectivity
-    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-
-    if (!endpoint || !projectId) {
-      return Response.json(
-        {
-          ...status,
-          status: "degraded",
-          services: {
-            ...status.services,
-            appwrite: "unconfigured",
-          },
-          error: "Missing Appwrite environment variables",
-        },
-        { status: 503 }
-      );
-    }
-
-    try {
-      const appwriteCheck = await fetch(endpoint, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      });
-
-      status.services.appwrite =
-        appwriteCheck.ok || appwriteCheck.status < 500
-          ? "healthy"
-          : "degraded";
-
-      return Response.json(status, {
-        status: status.services.appwrite === "healthy" ? 200 : 503,
-      });
-    } catch (error) {
-      status.services.appwrite = "unreachable";
-      return Response.json(
-        {
-          ...status,
-          status: "degraded",
-          error: `Appwrite endpoint unreachable: ${String(error).substring(0, 100)}`,
-        },
-        { status: 503 }
-      );
-    }
-  } catch (error) {
-    return Response.json(
-      {
-        status: "error",
-        error: String(error),
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 }
-    );
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
+    const healthy = response.status < 500;
+    if (!healthy) return fail("DEGRADED", "Service degraded", 503);
+    return ok({ status: "operational" });
+  } catch {
+    return fail("DEGRADED", "Service degraded", 503);
   }
 }
