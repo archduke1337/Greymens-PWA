@@ -263,7 +263,8 @@ export default function OnboardingPage() {
           console.error("Department catalogue error:", error);
           setDeptError(true);
           setDeptLoading(false);
-          toast.error("Departments could not be loaded. Please try again.");
+          // No toast: the inline banner below already explains + offers retry.
+          // A second identical message only reads as a second failure.
         }
       });
 

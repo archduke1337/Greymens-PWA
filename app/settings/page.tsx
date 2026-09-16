@@ -65,6 +65,9 @@ export default function SettingsPage() {
   const [phoneResending, setPhoneResending] = useState(false);
   const [phoneVerifyError, setPhoneVerifyError] = useState("");
   const [phoneVerifySuccess, setPhoneVerifySuccess] = useState(false);
+  // Resend cooldowns: verification emails/SMS spend quota on every tap.
+  const [emailCooldown, setEmailCooldown] = useState(false);
+  const [smsCooldown, setSmsCooldown] = useState(false);
 
   // Preferences state. Seeded from the account preferences once the session is
   // known, so the switches reflect what is actually stored.
@@ -148,7 +151,10 @@ export default function SettingsPage() {
     try {
       await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
       setVerificationSuccess(true);
-      
+      // One email per tap is quota: brief cooldown before another may send.
+      setEmailCooldown(true);
+      later(() => setEmailCooldown(false), 60000);
+
       later(() => {
         setVerificationSuccess(false);
       }, 5000);
@@ -166,21 +172,32 @@ export default function SettingsPage() {
     setPhoneLoading(true);
 
     try {
-      // Phone number must be in E.164 format: +[country code][number]
-      // Example: +911234567890 for India
-      if (!phoneNumber.startsWith("+")) {
-        setPhoneError("Phone number must start with + and country code (e.g., +911234567890)");
+      // E.164: + followed by 7–15 digits. The server re-validates; this
+      // catches typos before a round trip.
+      const digits = phoneNumber.replace(/[\s()-]/g, "");
+      if (!/^\+\d{7,15}$/.test(digits)) {
+        setPhoneError("Enter a valid phone number with country code (e.g., +911234567890)");
         setPhoneLoading(false);
         return;
       }
 
-      await authService.updatePhone(phoneNumber, phonePassword);
+      await authService.updatePhone(digits, phonePassword);
       setPhoneSuccess(true);
+      setPhoneNumber("");
+      setPhonePassword("");
       onPhoneModalClose();
-      
+
+      // The session snapshot still carries the old phone: refresh so the
+      // status row below reflects reality without a reload.
+      try {
+        await refreshUser();
+      } catch {
+        // Non-blocking: the next login picks it up regardless.
+      }
+
       // Open verification modal
-      onVerifyModalOpen();
-      
+      openVerifyModal();
+
       later(() => {
         setPhoneSuccess(false);
       }, 3000);
@@ -191,6 +208,22 @@ export default function SettingsPage() {
     }
   };
 
+  // Opening a modal always starts from a clean form: stale values and errors
+  // from a previous open must not leak into the next one.
+  const openPhoneModal = () => {
+    setPhoneNumber("");
+    setPhonePassword("");
+    setPhoneError("");
+    onPhoneModalOpen();
+  };
+
+  const openVerifyModal = () => {
+    setVerificationCode("");
+    setPhoneVerifyError("");
+    setPhoneVerifySuccess(false);
+    onVerifyModalOpen();
+  };
+
   const handleSendPhoneVerification = async () => {
     setPhoneVerifyError("");
     setPhoneResending(true);
@@ -198,6 +231,8 @@ export default function SettingsPage() {
     try {
       await authService.createPhoneVerification();
       toast.success("Verification code sent to your phone!");
+      setSmsCooldown(true);
+      later(() => setSmsCooldown(false), 60000);
     } catch (err) {
       setPhoneVerifyError(errorMessage(err, "Failed to send verification code"));
     } finally {
@@ -216,6 +251,11 @@ export default function SettingsPage() {
       await authService.updatePhoneVerification(user.$id, verificationCode);
       setPhoneVerifySuccess(true);
       setVerificationCode("");
+      try {
+        await refreshUser();
+      } catch {
+        // Non-blocking: verified state appears on next login regardless.
+      }
 
       later(() => {
         onVerifyModalClose();
@@ -252,7 +292,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
 
       {/* Security Settings */}
@@ -270,6 +310,7 @@ export default function SettingsPage() {
                 <Input
                   id="settings-current-password"
                   type="password"
+                  autoComplete="current-password"
                   value={oldPassword}
                   onChange={(e: any) => setOldPassword(e.target.value)}
                   placeholder="Enter current password"
@@ -282,6 +323,7 @@ export default function SettingsPage() {
                 <Input
                   id="settings-new-password"
                   type="password"
+                  autoComplete="new-password"
                   value={newPassword}
                   onChange={(e: any) => setNewPassword(e.target.value)}
                   placeholder="Enter new password (min 8 characters)"
@@ -294,6 +336,7 @@ export default function SettingsPage() {
                 <Input
                   id="settings-confirm-password"
                   type="password"
+                  autoComplete="new-password"
                   value={confirmNewPassword}
                   onChange={(e: any) => setConfirmNewPassword(e.target.value)}
                   placeholder="Confirm new password"
@@ -303,11 +346,11 @@ export default function SettingsPage() {
               </div>
 
               {passwordError && (
-                <div className="text-danger text-sm">{passwordError}</div>
+                <div className="text-danger text-sm" role="alert">{passwordError}</div>
               )}
 
               {passwordSuccess && (
-                <div className="text-success text-sm">
+                <div className="text-success text-sm" role="status">
                   Password changed successfully!
                 </div>
               )}
@@ -326,7 +369,7 @@ export default function SettingsPage() {
           {/* Email Verification */}
           <div>
             <h3 className="text-lg font-medium mb-4">Email Verification</h3>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-default-500">
                   Status: {user.emailVerification ? (
@@ -343,19 +386,20 @@ export default function SettingsPage() {
                 <Button variant="primary"
                   size="sm"
                   isPending={verificationLoading}
+                  isDisabled={emailCooldown}
                   onPress={handleSendVerification}
                 >
-                  Send Verification Email
+                  {emailCooldown ? "Email sent — wait to resend" : "Send Verification Email"}
                 </Button>
               )}
             </div>
 
             {verificationError && (
-              <div className="text-danger text-sm mt-2">{verificationError}</div>
+              <div className="text-danger text-sm mt-2" role="alert">{verificationError}</div>
             )}
 
             {verificationSuccess && (
-              <div className="text-success text-sm mt-2">
+              <div className="text-success text-sm mt-2" role="status">
                 Verification email sent! Check your inbox.
               </div>
             )}
@@ -366,7 +410,7 @@ export default function SettingsPage() {
           {/* Phone Number */}
           <div>
             <h3 className="text-lg font-medium mb-4">Phone Number</h3>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-default-500">
                   Status: {user.phoneVerification ? (
@@ -381,26 +425,30 @@ export default function SettingsPage() {
                   {user.phone || "No phone number added"}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {user.phone && !user.phoneVerification && (
                   <Button variant="primary"
                     size="sm"
-                    onPress={onVerifyModalOpen}
+                    onPress={openVerifyModal}
                   >
                     Verify Phone
                   </Button>
                 )}
                 <Button variant="primary"
                   size="sm"
-                  onPress={onPhoneModalOpen}
+                  onPress={openPhoneModal}
                 >
                   {user.phone ? "Update" : "Add"} Phone
                 </Button>
               </div>
             </div>
 
+            {phoneError && (
+              <div className="text-danger text-sm mt-2" role="alert">{phoneError}</div>
+            )}
+
             {phoneSuccess && (
-              <div className="text-success text-sm mt-2">
+              <div className="text-success text-sm mt-2" role="status">
                 Phone number updated successfully!
               </div>
             )}
@@ -489,6 +537,9 @@ export default function SettingsPage() {
                 <label htmlFor="settings-phone-number" className="text-sm font-medium">Phone number</label>
                 <Input
                   id="settings-phone-number"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
                   placeholder="+911234567890"
                   value={phoneNumber}
                   onChange={(e: any) => setPhoneNumber(e.target.value)}
@@ -501,6 +552,7 @@ export default function SettingsPage() {
                 <Input
                   id="settings-phone-password"
                   type="password"
+                  autoComplete="current-password"
                   placeholder="Enter your password"
                   value={phonePassword}
                   onChange={(e: any) => setPhonePassword(e.target.value)}
@@ -509,7 +561,7 @@ export default function SettingsPage() {
                 />
               </div>
               {phoneError && (
-                <div className="text-danger text-sm">{phoneError}</div>
+                <div className="text-danger text-sm" role="alert">{phoneError}</div>
               )}
             </ModalBody>
             <ModalFooter>
@@ -545,6 +597,8 @@ export default function SettingsPage() {
                   required
                   maxLength={6}
                   disabled={phoneVerifyLoading}
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
                 />
               </div>
               {phoneVerifyError && (
@@ -560,11 +614,11 @@ export default function SettingsPage() {
                 variant="primary"
                 size="sm"
                 isPending={phoneResending}
-                isDisabled={phoneVerifyLoading}
+                isDisabled={phoneVerifyLoading || smsCooldown}
                 className="mt-2"
                 onPress={handleSendPhoneVerification}
               >
-                Resend Code
+                {smsCooldown ? "Code sent — wait to resend" : "Resend Code"}
               </Button>
             </ModalBody>
             <ModalFooter>
