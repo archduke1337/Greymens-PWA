@@ -1,6 +1,7 @@
 // lib/sponsors.ts
 import { ID, Query } from "appwrite";
 import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
+import { PUBLIC_FILE_PERMISSIONS } from "./storage";
 
 const { databaseId: DATABASE_ID, sponsorsCollectionId: SPONSORS_COLLECTION_ID, sponsorLogosBucketId: SPONSOR_LOGOS_BUCKET_ID } = APPWRITE_CONFIG;
 
@@ -214,7 +215,8 @@ export const sponsorService = {
       const response = await storage.createFile(
         SPONSOR_LOGOS_BUCKET_ID,
         ID.unique(),
-        file
+        file,
+        PUBLIC_FILE_PERMISSIONS
       );
       const fileUrl = storage.getFileView(SPONSOR_LOGOS_BUCKET_ID, response.$id);
       return fileUrl.toString();

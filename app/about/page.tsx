@@ -46,8 +46,6 @@ export default function AboutPage() {
     <div className="space-y-16 pb-16">
       {/* Hero Section */}
       <div className="text-center space-y-4 relative">
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-700" />
         
         <div className="relative z-10">
           <h1 className={title({ size: "lg" })}>
@@ -63,7 +61,7 @@ export default function AboutPage() {
       </div>
 
       {/* Story Section */}
-      <Card className="border-none bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+      <Card className="border-none bg-card">
         <CardContent className="p-8 md:p-12">
           <h2 className={title({ size: "sm" })}>Our Story</h2>
           <p className="text-default-600 mt-4 text-lg leading-relaxed">
@@ -79,6 +77,18 @@ export default function AboutPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {stats.map((stat) => (
+          <Card key={stat.label} className="border-none bg-card">
+            <CardContent className="p-6 text-center">
+              <p className="text-3xl font-bold">{stat.value}</p>
+              <p className="text-default-600 mt-1">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Values Grid */}
       <div>
@@ -107,7 +117,7 @@ export default function AboutPage() {
       </div>
 
       {/* Team Section */}
-      <Card className="border-none bg-gradient-to-br from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30">
+      <Card className="border-none bg-card">
         <CardContent className="p-8 text-center">
           <h2 className={title({ size: "sm", class: "mb-4" })}>Meet Our Team</h2>
           <p className="text-default-600 mb-6">

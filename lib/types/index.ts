@@ -7,6 +7,20 @@
 import type { Models } from "appwrite";
 
 // ============================================================
+// Appwrite user preferences
+// ============================================================
+
+/**
+ * Account-level preferences we rely on. Appwrite stores these as a free-form
+ * JSON object, so they must be modelled explicitly to stay type-safe.
+ */
+export type UserPreferences = Models.DefaultPreferences & {
+  profilePictureId?: string;
+};
+
+export type AppwriteUser = Models.User<UserPreferences>;
+
+// ============================================================
 // Extended User (runtime fields from Appwrite)
 // ============================================================
 
@@ -38,6 +52,7 @@ export type MembershipStatus =
   | "admin"
   | "dev"
   | "banned"
+  | "suspended"
   | "deactivated";
 
 // ============================================================
@@ -71,6 +86,7 @@ export interface Profile {
   availability?: "full" | "partial" | "event_only";
   profileVisibility?: "public" | "members_only" | "private";
   showOnAboutPage?: boolean;
+  profilePictureId?: string;
 }
 
 // ============================================================
@@ -218,6 +234,32 @@ export interface UserPower {
 }
 
 // ============================================================
+// Project
+// ============================================================
+
+export interface Project {
+  $id?: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+  title: string;
+  description: string;
+  image: string;
+  category: string;
+  status: string;
+  progress: number;
+  technologies: string[];
+  stars: number;
+  forks: number;
+  contributors: number;
+  duration: string;
+  isFeatured: boolean;
+  demoUrl: string;
+  repoUrl: string;
+  teamMembers: string[];
+  createdAt: string;
+}
+
+// ============================================================
 // Event
 // ============================================================
 
@@ -241,7 +283,7 @@ export interface Event {
   capacity: number;
   registered: number;
   price: number;
-  discountPrice?: number;
+  discountPrice?: number | null;
   organizerName: string;
   organizerAvatar?: string;
   ownerId: string;
@@ -610,9 +652,35 @@ export type Permission =
   | "manage_pr_content"
   | "manage_design_assets"
   | "system_developer_access"
+  // Operations that had no capability at all before, so every call site gated
+  // on one of these was either ungated or gated on an over-broad sibling
+  // (`edit_events` was doing duty for deletion, for example).
+  | "delete_events"
+  | "invalidate_tickets"
+  | "manage_user_accounts"
+  | "assign_designations"
+  | "grant_powers"
   // Meta permissions
   | "ALL_PERMISSIONS"
   | string; // allow custom permissions
+
+/**
+ * The global tier held in `user_roles` — the single server-owned source of the
+ * `admin` and `dev` statuses. Nothing else may grant `ALL_PERMISSIONS`.
+ */
+export type UserRoleName = "admin" | "dev";
+
+export interface UserRole {
+  $id?: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+  userId: string;
+  role: UserRoleName;
+  grantedBy: string;
+  grantedAt: string;
+  reason?: string;
+  isActive: boolean;
+}
 
 export interface PermissionCheck {
   hasPermission: (permission: string, scope?: string) => boolean;

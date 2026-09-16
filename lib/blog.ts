@@ -1,48 +1,38 @@
-// lib/blogs.ts
-import { ID, Query } from "appwrite";
-import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
+// lib/blog.ts
+import { Query } from "appwrite";
+import { databases, APPWRITE_CONFIG } from "./appwrite";
+import type { Blog } from "./blog-format";
 
-const { databaseId: DATABASE_ID, blogsCollectionId: BLOGS_COLLECTION_ID, blogImagesBucketId: BLOG_IMAGES_BUCKET_ID } = APPWRITE_CONFIG;
+// The Blog type, the category catalogue and the pure formatting helpers live in
+// lib/blog-format.ts so client components can use them without pulling in this
+// module. Re-exported here for existing call sites.
+export type { Blog } from "./blog-format";
+export { blogCategories, generateSlug, calculateReadTime } from "./blog-format";
 
-// Blog Interface
-export interface Blog {
-  $id?: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  coverImage: string;
-  category: string;
-  tags: string[];
-  authorId: string;
-  authorName: string;
-  authorEmail: string;
-  authorAvatar?: string;
-  status: "draft" | "pending" | "approved" | "rejected";
-  rejectionReason?: string;
-  publishedAt?: string;
-  views: number;
-  likes: number;
-  featured: boolean;
-  readTime: number; // in minutes
-  $createdAt?: string;
-  $updatedAt?: string;
-}
+const { databaseId: DATABASE_ID, blogsCollectionId: BLOGS_COLLECTION_ID } = APPWRITE_CONFIG;
 
-// Blog Service
+/**
+ * Public blog reads.
+ *
+ * Only reads remain here. The write methods (`createBlog`, `updateBlog`,
+ * `approveBlog`, `rejectBlog`, `deleteBlog`, `uploadBlogImage`,
+ * `incrementViews`) have all been removed: each one wrote to Appwrite from the
+ * browser, where the blogs table and the blog-images bucket grant no client
+ * write permission, so none of them could succeed. They now go through
+ * `/api/blogs`, `/api/blogs/image` and `/api/blogs/views`, which validate input
+ * and check the caller's capability.
+ *
+ * The two reads below stay because published posts are world-readable content —
+ * serving them straight from the table is the cheapest correct thing to do.
+ */
 export const blogService = {
-  // Get all approved blogs (public)
-  async getPublishedBlogs(limit: number = 50) {
+  async getPublishedBlogs(limit = 50): Promise<Blog[]> {
     try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("status", "approved"),
-          Query.orderDesc("publishedAt"),
-          Query.limit(limit),
-        ]
-      );
+      const response = await databases.listDocuments(DATABASE_ID, BLOGS_COLLECTION_ID, [
+        Query.equal("status", ["approved", "published"]),
+        Query.orderDesc("publishedAt"),
+        Query.limit(limit),
+      ]);
       return response.documents as unknown as Blog[];
     } catch (error) {
       console.error("Error fetching published blogs:", error);
@@ -50,256 +40,17 @@ export const blogService = {
     }
   },
 
-  // Get featured blogs
-  async getFeaturedBlogs(limit: number = 3) {
+  async getBlogBySlug(slug: string): Promise<Blog | undefined> {
     try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("status", "approved"),
-          Query.equal("featured", true),
-          Query.orderDesc("publishedAt"),
-          Query.limit(limit),
-        ]
-      );
-      return response.documents as unknown as Blog[];
-    } catch (error) {
-      console.error("Error fetching featured blogs:", error);
-      return [];
-    }
-  },
-
-  // Get blogs by category
-  async getBlogsByCategory(category: string, limit: number = 20) {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("status", "approved"),
-          Query.equal("category", category),
-          Query.orderDesc("publishedAt"),
-          Query.limit(limit),
-        ]
-      );
-      return response.documents as unknown as Blog[];
-    } catch (error) {
-      console.error("Error fetching blogs by category:", error);
-      return [];
-    }
-  },
-
-  // Get blog by slug
-  async getBlogBySlug(slug: string) {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("slug", slug),
-          Query.equal("status", "approved"),
-          Query.limit(1),
-        ]
-      );
-      return response.documents[0] as unknown as Blog;
+      const response = await databases.listDocuments(DATABASE_ID, BLOGS_COLLECTION_ID, [
+        Query.equal("slug", slug),
+        Query.equal("status", ["approved", "published"]),
+        Query.limit(1),
+      ]);
+      return response.documents[0] as unknown as Blog | undefined;
     } catch (error) {
       console.error("Error fetching blog by slug:", error);
       throw error;
     }
   },
-
-  // Get user's blogs
-  async getUserBlogs(userId: string) {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("authorId", userId),
-          Query.orderDesc("$createdAt"),
-        ]
-      );
-      return response.documents as unknown as Blog[];
-    } catch (error) {
-      console.error("Error fetching user blogs:", error);
-      return [];
-    }
-  },
-
-  // Get all blogs (admin only)
-  async getAllBlogs() {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [Query.orderDesc("$createdAt"), Query.limit(100)]
-      );
-      return response.documents as unknown as Blog[];
-    } catch (error) {
-      console.error("Error fetching all blogs:", error);
-      return [];
-    }
-  },
-
-  // Get pending blogs (admin only)
-  async getPendingBlogs() {
-    try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        [
-          Query.equal("status", "pending"),
-          Query.orderDesc("$createdAt"),
-        ]
-      );
-      return response.documents as unknown as Blog[];
-    } catch (error) {
-      console.error("Error fetching pending blogs:", error);
-      return [];
-    }
-  },
-
-  // Create blog (user submission)
-  async createBlog(blogData: Omit<Blog, "$id" | "$createdAt" | "$updatedAt">) {
-    try {
-      const response = await databases.createDocument(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        ID.unique(),
-        {
-          ...blogData,
-          status: "pending", // Always starts as pending
-          views: 0,
-          likes: 0,
-        }
-      );
-      return response as unknown as Blog;
-    } catch (error) {
-      console.error("Error creating blog:", error);
-      throw error;
-    }
-  },
-
-  // Update blog
-  async updateBlog(blogId: string, blogData: Partial<Blog>) {
-    try {
-      const response = await databases.updateDocument(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        blogId,
-        blogData
-      );
-      return response as unknown as Blog;
-    } catch (error) {
-      console.error("Error updating blog:", error);
-      throw error;
-    }
-  },
-
-  // Approve blog (admin only)
-  async approveBlog(blogId: string) {
-    try {
-      const response = await databases.updateDocument(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        blogId,
-        {
-          status: "approved",
-          publishedAt: new Date().toISOString(),
-        }
-      );
-      return response as unknown as Blog;
-    } catch (error) {
-      console.error("Error approving blog:", error);
-      throw error;
-    }
-  },
-
-  // Reject blog (admin only)
-  async rejectBlog(blogId: string, reason: string) {
-    try {
-      const response = await databases.updateDocument(
-        DATABASE_ID,
-        BLOGS_COLLECTION_ID,
-        blogId,
-        {
-          status: "rejected",
-          rejectionReason: reason,
-        }
-      );
-      return response as unknown as Blog;
-    } catch (error) {
-      console.error("Error rejecting blog:", error);
-      throw error;
-    }
-  },
-
-  // Delete blog
-  async deleteBlog(blogId: string) {
-    try {
-      await databases.deleteDocument(DATABASE_ID, BLOGS_COLLECTION_ID, blogId);
-      return true;
-    } catch (error) {
-      console.error("Error deleting blog:", error);
-      throw error;
-    }
-  },
-
-  // Increment views
-  async incrementViews(blogId: string, currentViews: number) {
-    try {
-      await databases.updateDocument(DATABASE_ID, BLOGS_COLLECTION_ID, blogId, {
-        views: currentViews + 1,
-      });
-    } catch (error) {
-      console.error("Error incrementing views:", error);
-    }
-  },
-
-  // Upload blog image
-  async uploadBlogImage(file: File) {
-    try {
-      const response = await storage.createFile(
-        BLOG_IMAGES_BUCKET_ID,
-        ID.unique(),
-        file
-      );
-      const fileUrl = storage.getFileView(BLOG_IMAGES_BUCKET_ID, response.$id);
-      return fileUrl.toString();
-    } catch (error) {
-      console.error("Error uploading blog image:", error);
-      throw error;
-    }
-  },
-
-  // Generate slug from title
-  generateSlug(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  },
-
-  // Calculate read time (words per minute)
-  calculateReadTime(content: string): number {
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/).length;
-    return Math.ceil(wordCount / wordsPerMinute);
-  },
 };
-
-// Blog Categories
-export const blogCategories = [
-  { value: "technology", label: "Technology" },
-  { value: "ai-ml", label: "AI & Machine Learning" },
-  { value: "web-dev", label: "Web Development" },
-  { value: "mobile-dev", label: "Mobile Development" },
-  { value: "data-science", label: "Data Science" },
-  { value: "cybersecurity", label: "Cybersecurity" },
-  { value: "design", label: "Design" },
-  { value: "career", label: "Career & Growth" },
-  { value: "tutorial", label: "Tutorial" },
-  { value: "news", label: "News & Updates" },
-  { value: "other", label: "Other" },
-];

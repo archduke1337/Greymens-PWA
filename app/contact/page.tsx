@@ -17,7 +17,9 @@ export default function ContactPage() {
     message: string;
   }>({ type: null, message: "" });
 
-  const handleSubmitWithEmailJS = async (e: React.FormEvent) => {
+  // Messages are delivered through the server route so the contact form never
+  // needs database or mail credentials in the browser.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus({ type: null, message: "" });
@@ -34,50 +36,10 @@ export default function ContactPage() {
         }),
       });
 
-      if (response.ok) {
-        setSubmitStatus({
-          type: "success",
-          message: "Message sent successfully! We'll get back to you soon.",
-        });
-        setFormData({ name: "", email: "", subject: "", message: "" });
-      } else {
-        throw new Error("Failed to send message");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Failed to send message");
       }
-    } catch {
-      setSubmitStatus({
-        type: "error",
-        message: "Failed to send message. Please try again or email us directly.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Method 2: Using Appwrite
-  const handleSubmitWithAppwrite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus({ type: null, message: "" });
-
-    try {
-      const { databases } = await import("@/lib/appwrite");
-      const { ID } = await import("appwrite");
-
-      // Create contact document in Appwrite
-      // Note: You need to set up a "contacts" collection in your Appwrite database
-      await databases.createDocument(
-        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "",
-        "contacts", // Your collection ID for contacts
-        ID.unique(),
-        {
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-          createdAt: new Date().toISOString(),
-          status: "unread",
-        }
-      );
 
       setSubmitStatus({
         type: "success",
@@ -85,17 +47,18 @@ export default function ContactPage() {
       });
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
-      console.error("Error:", error);
       setSubmitStatus({
         type: "error",
-        message: "Failed to send message. Please try again or email us directly.",
+        message:
+          error instanceof Error && error.message
+            ? error.message
+            : "Failed to send message. Please try again or email us directly.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = handleSubmitWithEmailJS; // Change to handleSubmitWithAppwrite if using Appwrite
 
   const contactMethods = [
     {
@@ -149,8 +112,6 @@ export default function ContactPage() {
     <div className="space-y-16 pb-16">
       {/* Hero Section */}
       <div className="text-center space-y-4 relative">
-        <div className="absolute top-0 left-1/3 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-10 right-1/3 w-72 h-72 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative z-10">
           <h1 className={title({ size: "lg" })}>
@@ -158,7 +119,8 @@ export default function ContactPage() {
             <span className={title({ color: "violet", size: "lg" })}>Touch</span>
           </h1>
           <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto" })}>
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            Have questions? We&apos;d love to hear from you. Send us a message and
+            we&apos;ll respond as soon as possible.
           </p>
         </div>
       </div>
@@ -169,7 +131,7 @@ export default function ContactPage() {
           <Card className="border-none shadow-xl">
             <CardHeader className="flex flex-col items-start px-8 pt-8 pb-0">
               <h2 className="text-2xl font-bold">Send us a Message</h2>
-              <p className="text-default-600 mt-2">Fill out the form below and we'll get back to you shortly</p>
+              <p className="text-default-600 mt-2">Fill out the form below and we&apos;ll get back to you shortly</p>
             </CardHeader>
             <CardContent className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -185,40 +147,56 @@ export default function ContactPage() {
                 )}
 
                 <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="contact-name" className="text-sm font-medium">Name</label>
+                    <Input
+                      id="contact-name"
+                      required
+                      placeholder="Enter your name"
+                      value={formData.name}
+                      onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="contact-email" className="text-sm font-medium">Email</label>
+                    <Input
+                      id="contact-email"
+                      required
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="contact-subject" className="text-sm font-medium">Subject</label>
                   <Input
+                    id="contact-subject"
                     required
-                    placeholder="Enter your name"
-                    value={formData.name}
-                    onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
-                    disabled={isSubmitting}
-                  />
-                  <Input
-                    required
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={(e: any) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="What is this about?"
+                    value={formData.subject}
+                    onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
                     disabled={isSubmitting}
                   />
                 </div>
-                <Input
-                  required
-                  placeholder="What is this about?"
-                  value={formData.subject}
-                  onChange={(e: any) => setFormData({ ...formData, subject: e.target.value })}
-                  disabled={isSubmitting}
-                />
-                <TextArea
-                  required
-                  placeholder="Tell us more..."
-                  value={formData.message}
-                  onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
-                  disabled={isSubmitting}
-                />
+                <div className="space-y-1">
+                  <label htmlFor="contact-message" className="text-sm font-medium">Message</label>
+                  <TextArea
+                    id="contact-message"
+                    required
+                    placeholder="Tell us more..."
+                    value={formData.message}
+                    onChange={(e: any) => setFormData({ ...formData, message: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
                 <Button
                   type="submit"
                   isPending={isSubmitting}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all"
+                  className="w-full bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
                 </Button>

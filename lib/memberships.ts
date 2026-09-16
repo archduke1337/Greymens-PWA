@@ -81,11 +81,8 @@ export const membershipService = {
     return { active: active.total, inactive: inactive.total, banned: banned.total };
   },
 
-  async ban(userId: string): Promise<Membership> {
-    return this.update(userId, { status: "banned" });
-  },
-
-  async deactivate(userId: string): Promise<Membership> {
-    return this.update(userId, { status: "inactive" });
-  },
+  // `ban` and `deactivate` were removed: both ran from the browser against a
+  // table that grants no client write, so neither could succeed. Status changes
+  // now go through PATCH /api/admin/users, which checks the caller is an
+  // administrator and records the change.
 };

@@ -1,112 +1,125 @@
-import { ID, Query } from "appwrite";
-import { databases, APPWRITE_CONFIG } from "./appwrite";
 import type { Notification, LetterData } from "./types";
+import { welcomeLetter, promotionLetter, designationLetter } from "./letters";
 
-const { databaseId: DATABASE_ID } = APPWRITE_CONFIG;
-const NOTIFICATIONS_COLLECTION = "notifications";
+export type { Notification, LetterData };
+
+// Letter templates live in a dependency-free module so server routes can use
+// them without importing this browser-oriented one. Re-exported here for the
+// existing call sites.
+export { welcomeLetter, promotionLetter, designationLetter };
+
+/**
+ * Notifications are read and written through `/api/notifications`.
+ *
+ * The browser cannot touch the `notifications` table directly: it holds one row
+ * per recipient, so a client-readable table would expose every member's inbox.
+ * The endpoint stamps the recipient from the session for member-facing reads and
+ * requires an authenticated administrator to send to somebody else.
+ */
+
+interface NotificationPage {
+  notifications: Notification[];
+  total: number;
+  unreadCount: number;
+}
+
+async function requestNotifications(query = ""): Promise<NotificationPage> {
+  const response = await fetch(`/api/notifications${query}`, { credentials: "include" });
+  const payload = (await response.json().catch(() => null)) as (Partial<NotificationPage> & { error?: string }) | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Failed to load notifications");
+  }
+
+  return {
+    notifications: payload?.notifications ?? [],
+    total: payload?.total ?? 0,
+    unreadCount: payload?.unreadCount ?? 0,
+  };
+}
 
 export const notificationService = {
+  /** Sends a notification to another account. Administrator only. */
   async create(data: {
     userId: string;
     type: string;
     title: string;
     body: string;
     letter?: LetterData;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   }): Promise<Notification> {
-    const response = await databases.createDocument(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      ID.unique(),
-      {
-        ...data,
-        letter: data.letter ? JSON.stringify(data.letter) : null,
-        data: data.data ? JSON.stringify(data.data) : null,
-        read: false,
-      }
-    );
-    return response as unknown as Notification;
+    const response = await fetch("/api/notifications", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const payload = (await response.json().catch(() => null)) as { notification?: Notification; error?: string } | null;
+
+    if (!response.ok || !payload?.notification) {
+      throw new Error(payload?.error || "Failed to send notification");
+    }
+
+    return payload.notification;
   },
 
+  /** Full feed, for the administrator console. */
   async getAll(limit = 200): Promise<Notification[]> {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      [Query.orderDesc("$createdAt"), Query.limit(limit)]
-    );
-    return response.documents as unknown as Notification[];
+    const { notifications } = await requestNotifications(`?all=true&limit=${limit}`);
+    return notifications;
   },
 
-  async getUserNotifications(userId: string, limit = 50): Promise<Notification[]> {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      [Query.equal("userId", userId), Query.orderDesc("$createdAt"), Query.limit(limit)]
-    );
-    return response.documents as unknown as Notification[];
+  /** The signed-in account's own notifications. */
+  async getUserNotifications(limit = 50): Promise<Notification[]> {
+    const { notifications } = await requestNotifications(`?limit=${limit}`);
+    return notifications;
+  },
+
+  async getUnreadCount(): Promise<number> {
+    const { unreadCount } = await requestNotifications("?limit=1");
+    return unreadCount;
   },
 
   async markAsRead(notificationId: string): Promise<void> {
-    await databases.updateDocument(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      notificationId,
-      { read: true, readAt: new Date().toISOString() }
-    );
-  },
-
-  async markAllAsRead(userId: string): Promise<void> {
-    const unread = await databases.listDocuments(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      [Query.equal("userId", userId), Query.equal("read", false)]
-    );
-    for (const doc of unread.documents) {
-      await databases.updateDocument(DATABASE_ID, NOTIFICATIONS_COLLECTION, doc.$id, {
-        read: true,
-        readAt: new Date().toISOString(),
-      });
+    const response = await fetch("/api/notifications", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: notificationId }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to mark notification as read");
     }
   },
 
-  async getUnreadCount(userId: string): Promise<number> {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      NOTIFICATIONS_COLLECTION,
-      [Query.equal("userId", userId), Query.equal("read", false), Query.limit(1)]
-    );
-    return response.total;
+  async markAllAsRead(): Promise<void> {
+    const response = await fetch("/api/notifications", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to mark notifications as read");
+    }
   },
 
   async delete(notificationId: string): Promise<void> {
-    await databases.deleteDocument(DATABASE_ID, NOTIFICATIONS_COLLECTION, notificationId);
+    const response = await fetch(`/api/notifications?id=${encodeURIComponent(notificationId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(payload?.error || "Failed to delete notification");
+    }
   },
 
-  // Letter template generators
-  welcomeLetter(data: { name: string; membershipId: string; department?: string }): LetterData {
-    return {
-      template: "welcome",
-      subject: "Welcome to Mind Mesh Club!",
-      body: `Dear ${data.name},\n\nCongratulations! Your membership application has been approved.\n\nMembership ID: ${data.membershipId}\n${data.department ? `Department: ${data.department}\n` : ""}Date of Approval: ${new Date().toLocaleDateString()}\n\nYou now have full access to:\n- Member-only events and workshops\n- Department-specific resources\n- Club community and team directory\n\nWelcome aboard!\n\nBest regards,\nMind Mesh Club Administration`,
-      metadata: { membershipId: data.membershipId, department: data.department },
-    };
-  },
-
-  promotionLetter(data: { name: string; oldRole: string; newDesignation: string; approvedBy: string }): LetterData {
-    return {
-      template: "promotion",
-      subject: `Promotion to ${data.newDesignation}`,
-      body: `Dear ${data.name},\n\nWe are pleased to inform you that you have been promoted to ${data.newDesignation}.\n\nPrevious Role: ${data.oldRole}\nNew Role: ${data.newDesignation}\nEffective Date: ${new Date().toLocaleDateString()}\nApproved by: ${data.approvedBy}\n\nCongratulations on this achievement!\n\nBest regards,\nMind Mesh Club Administration`,
-      metadata: { newDesignation: data.newDesignation, approvedBy: data.approvedBy },
-    };
-  },
-
-  designationLetter(data: { name: string; designation: string; assignedBy: string }): LetterData {
-    return {
-      template: "designation",
-      subject: `Designation Assigned: ${data.designation}`,
-      body: `Dear ${data.name},\n\nYou have been assigned the designation: ${data.designation}\n\nAssigned by: ${data.assignedBy}\nDate: ${new Date().toLocaleDateString()}\n\nBest regards,\nMind Mesh Club Administration`,
-      metadata: { designation: data.designation, assignedBy: data.assignedBy },
-    };
-  },
+  // Letter templates. Re-exported from lib/letters.ts so the server can render
+  // the same letters without importing this module.
+  welcomeLetter,
+  promotionLetter,
+  designationLetter,
 };

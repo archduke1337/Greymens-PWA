@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Badge, Button, Card, CardContent, CardHeader } from "@heroui/react";
 import {
   DatabaseIcon,
@@ -151,41 +152,41 @@ export default function DiagnosticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-foreground mb-2">
             System Diagnostics
           </h1>
-          <p className="text-slate-400">
+          <p className="text-default-500">
             Complete health check and connectivity status
           </p>
         </div>
 
         {loading ? (
-          <Card className="bg-slate-800 border-0">
+          <Card className="bg-card border">
             <CardContent className="py-12 text-center">
-              <div className="text-slate-400">Loading diagnostics...</div>
+              <div className="text-default-500">Loading diagnostics...</div>
             </CardContent>
           </Card>
         ) : diagnostics ? (
           <>
             {/* Environment Info */}
-            <Card className="mb-6 bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+            <Card className="mb-6 bg-card border">
+              <CardHeader className="bg-muted flex gap-2">
                 <ServerIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Environment</h2>
               </CardHeader>
               <CardContent className="py-6 grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-slate-400 text-sm">Node Environment</p>
-                  <p className="text-white font-mono">
+                  <p className="text-default-500 text-sm">Node Environment</p>
+                  <p className="text-foreground font-mono">
                     {diagnostics.environment.nodeEnv}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Env Variables</p>
+                  <p className="text-default-500 text-sm">Env Variables</p>
                   <Badge color={diagnostics.environment.hasEnvVars ? "success" : "danger"}>
                     {diagnostics.environment.hasEnvVars
                       ? "✓ Configured"
@@ -193,8 +194,8 @@ export default function DiagnosticsPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm">Timestamp</p>
-                  <p className="text-white text-sm">
+                  <p className="text-default-500 text-sm">Timestamp</p>
+                  <p className="text-foreground text-sm">
                     {new Date(diagnostics.timestamp).toLocaleString()}
                   </p>
                 </div>
@@ -202,8 +203,8 @@ export default function DiagnosticsPage() {
             </Card>
 
             {/* Services Status */}
-            <Card className="mb-6 bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+            <Card className="mb-6 bg-card border">
+              <CardHeader className="bg-muted flex gap-2">
                 <PlugIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Services</h2>
               </CardHeader>
@@ -211,27 +212,27 @@ export default function DiagnosticsPage() {
                 {diagnostics.services.map((service, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-4 p-4 bg-slate-700/30 rounded-lg border border-slate-600"
+                    className="flex items-start gap-4 p-4 bg-muted rounded-lg border"
                   >
                     <div className="mt-1">
                       {getStatusIcon(service.status)}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-white">{service.name}</h3>
+                        <h3 className="font-bold text-foreground">{service.name}</h3>
                         <Badge color={getStatusColor(service.status)} size="sm">
                           {service.status}
                         </Badge>
                       </div>
-                      <p className="text-slate-300 text-sm mb-2">
+                      <p className="text-default-600 text-sm mb-2">
                         {service.message}
                       </p>
                       {service.details && (
-                        <div className="grid grid-cols-1 gap-1 text-xs text-slate-400">
+                        <div className="grid grid-cols-1 gap-1 text-xs text-default-500">
                           {Object.entries(service.details).map(
                             ([key, value]) => (
                               <div key={key} className="flex gap-2">
-                                <span className="font-mono text-slate-500">
+                                <span className="font-mono text-default-400">
                                   {key}:
                                 </span>
                                 <span className="font-mono break-all">
@@ -249,29 +250,29 @@ export default function DiagnosticsPage() {
             </Card>
 
             {/* Quick Links */}
-            <Card className="bg-slate-800 border-0">
-              <CardHeader className="bg-slate-700/50 flex gap-2">
+            <Card className="bg-card border">
+              <CardHeader className="bg-muted flex gap-2">
                 <DatabaseIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </CardHeader>
               <CardContent className="py-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <a href="/connectivity-check">
+                  <Link href="/connectivity-check">
                     <Button variant="primary">
                       Connection Test
                     </Button>
-                  </a>
-                  <a href="/events">
+                  </Link>
+                  <Link href="/events">
                     <Button variant="primary">
                       Test Events Page
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
           </>
         ) : (
-          <Card className="bg-slate-800 border-0">
+          <Card className="bg-card border">
             <CardContent className="py-12 text-center text-red-400">
               Failed to load diagnostics
             </CardContent>

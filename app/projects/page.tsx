@@ -2,21 +2,16 @@
 
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { projectService, Project } from "@/lib/database";
-import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
+import type { Project } from "@/lib/types";
+import { Badge, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
 import {
   CodeIcon,
   UsersIcon,
   StarIcon,
-  HeartIcon,
-  ShareIcon,
-  EyeIcon,
   GitBranchIcon,
   CalendarIcon,
   RocketIcon,
-  SparklesIcon,
-  ZapIcon,
-  Loader2Icon
+  Loader2Icon,
 } from "lucide-react";
 
 const categories = [
@@ -29,33 +24,36 @@ const categories = [
   { key: "quantum", label: "Quantum" },
 ];
 
-const getStatusColor = (status: string) => {
+const getStatusChip = (status: string) => {
   switch (status) {
-    case "completed": return "success";
-    case "in-progress": return "accent";
-    case "planning": return "warning";
-    default: return "default";
+    case "completed":
+      return { color: "success" as const, variant: "soft" as const };
+    case "in-progress":
+      return { color: "accent" as const, variant: "soft" as const };
+    case "planning":
+      return { color: "warning" as const, variant: "soft" as const };
+    default:
+      return { color: "default" as const, variant: "soft" as const };
   }
-};
-
-const getAvatarUrl = (name: string, index: number) => {
-  return `https://i.pravatar.cc/300?img=${(index + 12) * 3}`;
 };
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savedProjects, setSavedProjects] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  // Fetch projects from Appwrite
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await projectService.getAllProjects();
-      setProjects(data);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
+      setError(null);
+      const response = await fetch("/api/projects");
+      const payload = (await response.json()) as { projects?: Project[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load projects");
+      setProjects(payload.projects ?? []);
+    } catch (caught) {
+      console.error("Error fetching projects:", caught);
+      setError(caught instanceof Error ? caught.message : "Unable to load projects");
     } finally {
       setLoading(false);
     }
@@ -65,290 +63,239 @@ export default function ProjectsPage() {
     fetchProjects();
   }, [fetchProjects]);
 
-  const categoriesWithCount = useMemo(() => categories.map(cat => ({
-    ...cat,
-    count: cat.key === "all" 
-      ? projects.length 
-      : projects.filter(p => p.category === cat.key).length
-  })), [projects]);
+  const categoriesWithCount = useMemo(
+    () =>
+      categories.map((cat) => ({
+        ...cat,
+        count:
+          cat.key === "all"
+            ? projects.length
+            : projects.filter((p) => p.category === cat.key).length,
+      })),
+    [projects],
+  );
 
-  const filteredProjects = useMemo(() => selectedCategory === "all" 
-    ? projects 
-    : projects.filter(project => project.category === selectedCategory),
-    [projects, selectedCategory]);
-
-  const toggleSaveProject = useCallback((projectId: string) => {
-    setSavedProjects(prev =>
-      prev.includes(projectId)
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
-  }, []);
+  const filteredProjects = useMemo(
+    () =>
+      selectedCategory === "all"
+        ? projects
+        : projects.filter((project) => project.category === selectedCategory),
+    [projects, selectedCategory],
+  );
 
   return (
     <div className="space-y-12 pb-20">
-      {/* Hero Section */}
-      <div className="text-center space-y-6 relative py-12">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 mb-6">
-          <RocketIcon className="w-5 h-5 text-purple-500" />
-          <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Innovative Projects
-          </span>
+      {/* Header */}
+      <div className="text-center space-y-4 py-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-default-100 border border-default-200">
+          <RocketIcon className="w-4 h-4 text-default-600" />
+          <span className="text-sm font-medium text-default-600">Member Projects</span>
         </div>
-        <div className="relative z-10">
-          <h1 className={title({ size: "lg" })}>
-            Explore{" "}
-            <span className={title({ color: "violet", size: "lg" })}>
-              Amazing Projects
-            </span>
-          </h1>
-          <p className={subtitle({ class: "mt-6 max-w-3xl mx-auto text-xl" })}>
-            Discover cutting-edge projects built by our community. From AI to blockchain, explore the future of technology.
-          </p>
-        </div>
+        <h1 className={title({ size: "lg" })}>What the club is building</h1>
+        <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto" })}>
+          Ongoing and completed projects from across the club&apos;s departments.
+        </p>
       </div>
 
-      {/* Category Filters */}
+      {/* Category filters */}
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {categoriesWithCount.map((category) => (
-            <Chip
-              key={category.key}                    variant={selectedCategory === category.key ? "primary" : "secondary"}
-              className={`cursor-pointer transition-all ${
-                selectedCategory === category.key 
-                  ? "bg-gradient-to-r from-purple-600 to-blue-500 text-white shadow-lg" 
-                  : "hover:shadow-md"
-              }`}
-              onClick={() => setSelectedCategory(category.key)}
-            >
-              {category.label}
-              <span className="ml-2 text-xs opacity-80">({category.count})</span>
-            </Chip>
-          ))}
+        <div className="flex flex-wrap gap-3 justify-center" role="group" aria-label="Filter projects by category">
+          {categoriesWithCount.map((category) => {
+            const isSelected = selectedCategory === category.key;
+            return (
+              <button
+                key={category.key}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => setSelectedCategory(category.key)}
+                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <Chip
+                  variant={isSelected ? "primary" : "soft"}
+                >
+                  {category.label}
+                  <span className="ml-2 opacity-70">{category.count}</span>
+                </Chip>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading state */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2Icon className="w-12 h-12 animate-spin text-purple-600" />
-          <p className="mt-4 text-default-600">Loading amazing projects...</p>
+        <div className="flex flex-col items-center justify-center py-20" role="status">
+          <Loader2Icon className="w-10 h-10 animate-spin text-default-400" aria-hidden="true" />
+          <p className="mt-4 text-default-500">Loading projects…</p>
         </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="text-center py-16 space-y-4">
+            <h2 className="text-xl font-semibold">Projects could not be loaded</h2>
+            <p className="text-default-500 max-w-md mx-auto">{error}</p>
+            <button
+              type="button"
+              onClick={fetchProjects}
+              className="text-sm font-medium underline underline-offset-4"
+            >
+              Try again
+            </button>
+          </CardContent>
+        </Card>
       ) : (
-        <>
-          {/* Projects Grid */}
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {filteredProjects.map((project) => (
-                <Card
-                  key={project.$id}
-                  className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-                 
-                 
-                >
-                  <CardContent className="p-0 overflow-hidden">
-                    {/* Project Image */}
-                    <div className="relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
+            {filteredProjects.map((project) => {
+              const statusChip = getStatusChip(project.status);
+              return (
+                <Card key={project.$id} className="group">
+                  <CardContent className="p-0 overflow-hidden rounded-[inherit]">
+                    {/* Project image */}
+                    <div className="relative bg-default-100">
                       <img
                         src={project.image}
                         alt={project.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        className="w-full h-48 object-cover"
                       />
-                      
-                      {/* Overlay Badges */}
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {project.isFeatured && (
-                          <Badge 
-                            variant="primary"
-                            className="font-bold"
-                          >
+                      {project.isFeatured && (
+                        <div className="absolute top-4 left-4">
+                          <Badge variant="primary">
                             <StarIcon className="w-3 h-3 mr-1" />
                             Featured
                           </Badge>
-                        )}
-                      </div>
-
-                      {/* Save Button */}
-                      <Button
-                        isIconOnly
-                        variant="primary"
-                        className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-                        size="sm"
-                      >
-                        <HeartIcon 
-                          className={`w-5 h-5 ${
-                            savedProjects.includes(project.$id!) 
-                              ? "text-red-500 fill-red-500" 
-                              : "text-default-600"
-                          }`} 
-                        />
-                      </Button>
-
-                      {/* Status Badge */}
+                        </div>
+                      )}
                       <div className="absolute bottom-4 right-4">
-                        <Chip
-                          color={getStatusColor(project.status) as "success" | "accent" | "warning" | "default"}
-                          variant="primary"
-                          size="sm"
-                        >
+                        <Chip color={statusChip.color} variant={statusChip.variant} size="sm">
                           {project.status.replace("-", " ")}
                         </Chip>
                       </div>
                     </div>
 
-                    {/* Project Content */}
+                    {/* Content */}
                     <div className="p-6 space-y-4">
-                      {/* Header */}
                       <div className="space-y-2">
-                        <h3 className="text-xl font-bold line-clamp-2 group-hover:text-purple-600 transition-colors">
-                          {project.title}
-                        </h3>
-                        
-                        <p className="text-default-600 text-sm line-clamp-2">
-                          {project.description}
-                        </p>
+                        <h3 className="text-xl font-bold line-clamp-2">{project.title}</h3>
+                        <p className="text-default-500 text-sm line-clamp-2">{project.description}</p>
                       </div>
 
-                      {/* ProgressBar Bar */}
+                      {/* Progress */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-default-600">ProgressBar</span>
+                          <span className="text-default-500">Progress</span>
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
-                        <ProgressBar 
-                          value={project.progress}
-                          size="sm"
-                        />
+                        <ProgressBar value={project.progress} size="sm" aria-label={`${project.title} progress`} />
                       </div>
 
                       {/* Stats */}
                       <div className="grid grid-cols-3 gap-4 text-center">
                         <div className="space-y-1">
                           <div className="flex items-center justify-center gap-1">
-                            <StarIcon className="w-4 h-4 text-yellow-500" />
+                            <StarIcon className="w-4 h-4 text-default-400" aria-hidden="true" />
                             <span className="font-bold text-sm">{project.stars}</span>
                           </div>
-                          <p className="text-xs text-default-500">Stars</p>
+                          <p className="text-xs text-default-400">Stars</p>
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center justify-center gap-1">
-                            <GitBranchIcon className="w-4 h-4 text-blue-500" />
+                            <GitBranchIcon className="w-4 h-4 text-default-400" aria-hidden="true" />
                             <span className="font-bold text-sm">{project.forks}</span>
                           </div>
-                          <p className="text-xs text-default-500">Forks</p>
+                          <p className="text-xs text-default-400">Forks</p>
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center justify-center gap-1">
-                            <UsersIcon className="w-4 h-4 text-green-500" />
+                            <UsersIcon className="w-4 h-4 text-default-400" aria-hidden="true" />
                             <span className="font-bold text-sm">{project.contributors}</span>
                           </div>
-                          <p className="text-xs text-default-500">Team</p>
+                          <p className="text-xs text-default-400">Team</p>
                         </div>
                       </div>
 
                       {/* Technologies */}
                       <div className="flex flex-wrap gap-1">
-                        {project.technologies.slice(0, 3).map((tech, index) => (
-                          <Chip
-                            key={index}
-                            size="sm"
-                            variant="primary"
-                            className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 text-xs"
-                          >
+                        {project.technologies.slice(0, 3).map((tech) => (
+                          <Chip key={tech} size="sm" variant="soft">
                             {tech}
                           </Chip>
                         ))}
                         {project.technologies.length > 3 && (
-                          <Chip
-                            size="sm"
-                            variant="primary"
-                            className="text-xs"
-                          >
+                          <Chip size="sm" variant="soft">
                             +{project.technologies.length - 3}
                           </Chip>
                         )}
                       </div>
 
-                      {/* Team and Duration */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex -space-x-2">
+                      {/* Team and duration */}
+                      <div className="flex items-center justify-between text-sm text-default-500">
+                        <span className="flex -space-x-2">
                           {project.teamMembers?.slice(0, 3).map((member, index) => (
-                            <Avatar
-                              key={index}
-                              className="border-2 border-white dark:border-gray-900 w-8 h-8"
+                            <span
+                              key={`${member}-${index}`}
+                              aria-hidden="true"
+                              className="w-8 h-8 rounded-full bg-default-200 border-2 border-background flex items-center justify-center text-xs font-bold text-default-600"
                             >
-                              <AvatarImage src={getAvatarUrl(member, index)} alt={member} />
-                              <AvatarFallback>{member?.charAt(0) || 'M'}</AvatarFallback>
-                            </Avatar>
+                              {member?.charAt(0).toUpperCase() || "M"}
+                            </span>
                           ))}
                           {project.teamMembers && project.teamMembers.length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-900">
+                            <span className="w-8 h-8 rounded-full bg-default-100 border-2 border-background flex items-center justify-center text-xs font-bold">
                               +{project.teamMembers.length - 3}
-                            </div>
+                            </span>
                           )}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-default-500">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{project.duration}</span>
-                        </div>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-4 h-4" aria-hidden="true" />
+                          {project.duration}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Footer with Actions */}
+                    {/* Actions */}
                     <CardFooter className="px-6 pb-6 pt-0">
                       <div className="flex gap-2 w-full">
-                        <Button
-                          isIconOnly
-                          variant="ghost"
-                          size="sm"
-                        >
-                          <ShareIcon className="w-4 h-4" />
-                        </Button>
-                        
                         {project.demoUrl && (
-                          <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
-                            <Button
-                              isIconOnly
-                              variant="ghost"
-                              size="sm"
-                            >
-                              <EyeIcon className="w-4 h-4" />
-                            </Button>
+                          <a
+                            href={project.demoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1"
+                          >
+                            <span className="block text-center text-sm font-medium underline underline-offset-4 py-2">
+                              Live demo
+                            </span>
                           </a>
                         )}
-
                         <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                          <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold">
-                            View Code
-                          </Button>
+                          <span className="block text-center text-sm font-medium underline underline-offset-4 py-2">
+                            View code
+                          </span>
                         </a>
                       </div>
                     </CardFooter>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredProjects.length === 0 && (
-              <Card className="border-none bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-                <CardContent className="text-center py-16">
-                  <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center">
-                    <CodeIcon className="w-12 h-12 text-purple-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">No projects found</h3>
-                  <p className="text-default-600 max-w-md mx-auto">
-                    No projects match your selected category. Try choosing a different category or check back later for new projects.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+              );
+            })}
           </div>
 
-         
-        </>
+          {/* Empty state */}
+          {filteredProjects.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-16 space-y-3">
+                <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-default-100 flex items-center justify-center">
+                  <CodeIcon className="w-10 h-10 text-default-400" aria-hidden="true" />
+                </div>
+                <h2 className="text-xl font-semibold">No projects here yet</h2>
+                <p className="text-default-500 max-w-md mx-auto">
+                  Nothing matches this category right now. Try another category, or check back soon.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,375 +1,172 @@
-"use client";
+import type { Metadata } from "next";
+import { Query } from "appwrite";
+import { createAdminClient } from "@/lib/appwrite";
+import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
+import { getAccountNames } from "@/lib/server-users";
+import { TeamDirectory, type TeamGroup } from "@/components/team/TeamDirectory";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Separator } from "@heroui/react";
+export const metadata: Metadata = {
+  title: "Leadership",
+  description: "TheGreyMen Club office bearers and their areas of responsibility.",
+};
 
-const coreTeam = [
-  {
-    name: "Alex Johnson",
-    role: "President & Founder",
-    avatar: "https://i.pravatar.cc/300?img=12",
-    linkedin: "https://linkedin.com/in/alexjohnson",
-    github: "https://github.com/alexjohnson",
-    bio: "Visionary leader with 8+ years in tech. Passionate about building communities that drive innovation.",
-    achievements: ["Forbes 30 Under 30", "TEDx Speaker"],
-  },
-  {
-    name: "Sarah Chen",
-    role: "Vice President",
-    avatar: "https://i.pravatar.cc/300?img=45",
-    linkedin: "https://linkedin.com/in/sarahchen",
-    github: "https://github.com/sarahchen",
-    bio: "Strategic thinker with MBA from Stanford. Expert in scaling communities and driving engagement.",
-    achievements: ["Top 100 Women in Tech", "Community Builder"],
-  },
-  {
-    name: "Marcus Williams",
-    role: "Technical Lead",
-    avatar: "https://i.pravatar.cc/300?img=33",
-    linkedin: "https://linkedin.com/in/marcuswilliams",
-    github: "https://github.com/marcuswilliams",
-    bio: "Full-stack engineer and open-source contributor. Building scalable solutions for tomorrow.",
-    achievements: ["GitHub Stars 50k+", "Tech Innovation Award"],
-  },
-  {
-    name: "Emily Rodriguez",
-    role: "Creative Director",
-    avatar: "https://i.pravatar.cc/300?img=47",
-    linkedin: "https://linkedin.com/in/emilyrodriguez",
-    github: "https://github.com/emilyrodriguez",
-    bio: "Award-winning designer with a keen eye for aesthetics. Creating experiences that inspire.",
-    achievements: ["Webby Award Winner", "Design Excellence"],
-  },
-  {
-    name: "David Kim",
-    role: "Operations Manager",
-    avatar: "https://i.pravatar.cc/300?img=68",
-    linkedin: "https://linkedin.com/in/davidkim",
-    github: "https://github.com/davidkim",
-    bio: "Operations expert with background in logistics. Making things run like clockwork.",
-    achievements: ["Excellence in Operations", "Process Optimizer"],
-  },
-  {
-    name: "Maya Patel",
-    role: "Community Manager",
-    avatar: "https://i.pravatar.cc/300?img=49",
-    linkedin: "https://linkedin.com/in/mayapatel",
-    github: "https://github.com/mayapatel",
-    bio: "Community advocate with heart. Connecting people and fostering meaningful relationships.",
-    achievements: ["Community Champion", "Engagement Expert"],
-  },
-];
+/**
+ * Leadership is read from the governance tables at request time.
+ *
+ * This page previously rendered a hardcoded list of invented people — names,
+ * biographies and awards (\"Forbes 30 Under 30\", \"TEDx Speaker\") that had no
+ * relationship to anyone in the club, alongside invented statistics. Presenting
+ * fabricated officers and achievements on a public site is a trust problem, not
+ * a placeholder. Everything below comes from `designations` and `user_designations`,
+ * so it reflects the club's actual structure.
+ *
+ * Rendered per request rather than at build time: the build must not depend on
+ * database availability or credentials.
+ */
+export const dynamic = "force-dynamic";
 
-export default function TeamPage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState<"left" | "right" | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+interface DesignationRow {
+  $id: string;
+  name: string;
+  slug: string;
+  level: number;
+  badgeIcon?: string;
+}
 
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+interface UserDesignationRow {
+  userId: string;
+  designationId: string;
+}
 
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (e.deltaY > 0) {
-          setCurrentIndex(prev => {
-            if (prev < coreTeam.length - 1) {
-              setDirection("right");
-              setTimeout(() => setDirection(null), 50);
-              return prev + 1;
-            }
-            return prev;
-          });
-        } else {
-          setCurrentIndex(prev => {
-            if (prev > 0) {
-              setDirection("left");
-              setTimeout(() => setDirection(null), 50);
-              return prev - 1;
-            }
-            return prev;
-          });
-        }
-      }, 100);
-    };
+interface ProfileRow {
+  userId: string;
+  avatar?: string;
+  bio?: string;
+  skills?: string[];
+  githubUrl?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
+  profileVisibility?: string;
+  showOnAboutPage?: boolean;
+}
 
-    const container = document.getElementById('team-card-container');
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false });
-    }
+/**
+ * A profile is public here only if its owner opted in. `profileVisibility` was
+ * stored by onboarding but never actually honoured by any read path, so a member
+ * who chose "private" was still exposed.
+ */
+function isPubliclyVisible(profile: ProfileRow): boolean {
+  if (profile.profileVisibility === "private") return false;
+  return profile.showOnAboutPage === true || profile.profileVisibility === "public";
+}
 
-    return () => {
-      if (container) {
-        container.removeEventListener('wheel', handleWheel);
-      }
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
+async function loadLeadership(): Promise<TeamGroup[]> {
+  const { databases } = createAdminClient();
+
+  // Level 4 and above are the club's officer and lead tiers; anything lower is a
+  // working designation and is not published as leadership.
+  const designations = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+    Query.equal("isActive", [true]),
+    Query.greaterThanEqual("level", 4),
+    Query.orderDesc("level"),
+    Query.limit(50),
+  ]);
+  if (designations.documents.length === 0) return [];
+
+  const designationRows = designations.documents as unknown as DesignationRow[];
+  const designationIds = designationRows.map((row) => row.$id);
+
+  const assignments = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+    Query.equal("designationId", designationIds),
+    Query.equal("isActive", [true]),
+    Query.limit(500),
+  ]);
+  const assignmentRows = assignments.documents as unknown as UserDesignationRow[];
+  if (assignmentRows.length === 0) return [];
+
+  const userIds = [...new Set(assignmentRows.map((row) => row.userId))];
+  const [profiles, names] = await Promise.all([
+    databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+      Query.equal("userId", userIds),
+      Query.limit(500),
+    ]),
+    getAccountNames(userIds),
+  ]);
+
+  const visibleProfiles = new Map(
+    (profiles.documents as unknown as ProfileRow[])
+      .filter(isPubliclyVisible)
+      .map((profile) => [profile.userId, profile])
+  );
+
+  return designationRows
+    .map((designation) => {
+      const members = assignmentRows
+        .filter((assignment) => assignment.designationId === designation.$id)
+        .map((assignment) => {
+          const profile = visibleProfiles.get(assignment.userId);
+          const name = names.get(assignment.userId);
+          if (!profile || !name) return null;
+          return {
+            userId: assignment.userId,
+            name,
+            avatar: profile.avatar,
+            bio: profile.bio,
+            skills: Array.isArray(profile.skills) ? profile.skills : [],
+            githubUrl: profile.githubUrl,
+            linkedinUrl: profile.linkedinUrl,
+            portfolioUrl: profile.portfolioUrl,
+          };
+        })
+        .filter((member): member is NonNullable<typeof member> => member !== null);
+
+      return {
+        designation: designation.name,
+        slug: designation.slug,
+        badgeIcon: designation.badgeIcon,
+        members,
+      };
+    })
+    .filter((group) => group.members.length > 0);
+}
+
+export default async function TeamPage() {
+  let groups: TeamGroup[] = [];
+  let failed = false;
+
+  try {
+    groups = await loadLeadership();
+  } catch (error) {
+    console.error("Leadership lookup error:", error);
+    failed = true;
+  }
 
   return (
-    <section className="flex flex-col items-center justify-center w-full min-h-screen relative overflow-hidden py-8 md:py-12">
-      {/* Subtle Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/30 via-pink-50/20 to-blue-50/30 dark:from-purple-950/5 dark:via-pink-950/5 dark:to-blue-950/5" />
-      </div>
+    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-14 space-y-12">
+      <header className="space-y-4 max-w-2xl">
+        <ChipLabel />
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Leadership</h1>
+        <p className="text-default-600">
+          The office bearers responsible for the club&apos;s governance, technical direction and
+          operations, as recorded in the club&apos;s designation register.
+        </p>
+      </header>
 
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="space-y-8 md:space-y-12">
-          {/* Header */}
-          <div className="text-center space-y-4">
-            <Chip variant="primary" size="md">
-              Our Leadership
-            </Chip>
-            
-            <div className="space-y-3">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
-                Meet Our Team
-              </h1>
-              <p className="text-sm md:text-base text-default-600 max-w-2xl mx-auto">
-                Passionate individuals dedicated to building an extraordinary community
-              </p>
-            </div>
-          </div>
+      {failed ? (
+        <p className="text-sm text-danger">
+          The leadership register could not be loaded. Please try again shortly.
+        </p>
+      ) : (
+        <TeamDirectory groups={groups} />
+      )}
+    </div>
+  );
+}
 
-          {/* Card Display */}
-          <div className="relative" id="team-card-container">
-            <div className="max-w-lg mx-auto">
-              {/* Card Stack */}
-              <div className="relative h-[480px] sm:h-[500px] perspective-1200">
-                {coreTeam.map((member, index) => {
-                  const position = index - currentIndex;
-                  const isActive = position === 0;
-                  const isVisible = Math.abs(position) <= 2;
-
-                  if (!isVisible) return null;
-
-                  const translateX = position * 8;
-                  const translateY = Math.abs(position) * 10;
-                  const scale = 1 - Math.abs(position) * 0.05;
-                  const opacity = 1 - Math.abs(position) * 0.4;
-                  const zIndex = 20 - Math.abs(position);
-                  const blur = Math.abs(position) * 1.5;
-
-                  return (
-                    <div
-                      key={member.name}
-                      className="absolute inset-0 transition-all duration-500 ease-out"
-                      style={{
-                        transform: `
-                          translateX(${direction === 'right' ? translateX - 20 : direction === 'left' ? translateX + 20 : translateX}px)
-                          translateY(${translateY}px)
-                          scale(${scale})
-                        `,
-                        opacity: direction ? (isActive ? 0.3 : opacity) : opacity,
-                        zIndex,
-                        filter: `brightness(${isActive ? 1 : 0.7}) blur(${blur}px)`,
-                        pointerEvents: isActive ? 'auto' : 'none',
-                      }}
-                    >
-                      <Card className="h-full border-none overflow-hidden">
-                        <CardContent className="p-6 md:p-8 relative overflow-hidden">
-                          <div className="relative z-10 space-y-5">
-                            {/* Avatar */}
-                            <div className="flex justify-center">
-                              <Avatar className="w-24 h-24 md:w-28 md:h-28"><AvatarImage src={member.avatar} alt={member.name} /><AvatarFallback>{member.name?.charAt(0) || 'T'}</AvatarFallback></Avatar>
-                            </div>
-
-                            {/* Name & Role */}
-                            <div className="text-center space-y-2">
-                              <h2 className="text-xl md:text-2xl font-bold">
-                                {member.name}
-                              </h2>
-                              <Chip variant="primary" size="sm" className="font-medium">
-                                {member.role}
-                              </Chip>
-                            </div>
-
-                            {/* Bio */}
-                            <p className="text-center text-default-600 text-sm md:text-base leading-relaxed">
-                              {member.bio}
-                            </p>
-
-                            <Separator />
-
-                            {/* Achievements */}
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {member.achievements.map((achievement) => (
-                                <Chip
-                                  key={achievement}
-                                  size="sm"
-                                  className="text-xs"
-                                >
-                                  {achievement}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
-
-                        <CardFooter className="flex flex-col gap-3 p-6 md:p-8 pt-0">
-                          {/* Social Links */}
-                          <div className="flex justify-center gap-2 w-full">
-                            <a
-                              href={member.linkedin}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="LinkedIn Profile"
-                            >
-                              <Button
-                                isIconOnly
-                                variant="primary"
-                                className="hover:scale-110 transition-transform"
-                                size="md"
-                              >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                </svg>
-                              </Button>
-                            </a>
-                            <a
-                              href={member.github}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="GitHub Profile"
-                            >
-                              <Button
-                                isIconOnly
-                                variant="primary"
-                                className="hover:scale-110 transition-transform"
-                                size="md"
-                              >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                </svg>
-                              </Button>
-                            </a>
-                          </div>
-
-                          {/* Connect Button */}
-                          <a
-                            href={member.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full"
-                          >
-                            <Button
-                              variant="primary"
-                              size="md"
-                              className="w-full font-medium"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                              </svg>
-                              Connect
-                            </Button>
-                          </a>
-                        </CardFooter>
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="text-center mt-4 mb-6">
-              <p className="text-xs md:text-sm text-default-500">
-                Scroll or use arrows to navigate
-              </p>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-center gap-4 md:gap-6">
-              <Button
-                isIconOnly
-                variant="primary"
-                isDisabled={currentIndex === 0}
-                size="sm"
-                className="hover:scale-110 transition-transform disabled:opacity-30"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Button>
-
-              {/* Progress Dots */}
-              <div className="flex items-center gap-2">
-                {coreTeam.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      if (index !== currentIndex) {
-                        setDirection(index > currentIndex ? "right" : "left");
-                        setTimeout(() => {
-                          setCurrentIndex(index);
-                          setDirection(null);
-                        }, 50);
-                      }
-                    }}
-                    className={`rounded-full transition-all duration-300 ${
-                      index === currentIndex
-                        ? 'h-2 w-10 bg-secondary'
-                        : 'h-2 w-2 bg-default-300 hover:bg-default-400'
-                    }`}
-                    aria-label={`View ${coreTeam[index].name}`}
-                  />
-                ))}
-              </div>
-
-              <Button
-                isIconOnly
-                variant="primary"
-                isDisabled={currentIndex === coreTeam.length - 1}
-                size="sm"
-                className="hover:scale-110 transition-transform disabled:opacity-30"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
-              </Button>
-            </div>
-
-            {/* Counter */}
-            <div className="text-center mt-4">
-              <p className="text-xs text-default-500">
-                <span className="text-sm font-semibold text-foreground">{currentIndex + 1}</span>
-                <span className="mx-1">/</span>
-                <span>{coreTeam.length}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-4xl mx-auto">
-            {[
-              { label: "Team Members", value: "6+" },
-              { label: "Years Experience", value: "40+" },
-              { label: "Events Organized", value: "150+" },
-              { label: "Community Size", value: "8K+" },
-            ].map((stat) => (
-              <Card key={stat.label} className="border-none">
-                <CardContent className="text-center p-4">
-                  <p className="text-2xl md:text-3xl font-bold text-secondary">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs md:text-sm text-default-600 mt-1">{stat.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .perspective-1200 {
-          perspective: 1200px;
-        }
-      `}</style>
-    </section>
+function ChipLabel() {
+  return (
+    <span className="inline-flex items-center rounded-full bg-default-100 px-3 py-1 text-xs font-medium text-default-600">
+      Governance
+    </span>
   );
 }

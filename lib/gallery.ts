@@ -1,9 +1,9 @@
 import { ID, Query } from "appwrite";
-import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
+import { databases, APPWRITE_CONFIG } from "./appwrite";
 import type { GalleryImage } from "./types";
 export type { GalleryImage };
 
-const { databaseId: DATABASE_ID, galleryCollectionId: GALLERY_COLLECTION_ID, galleryImagesBucketId: GALLERY_BUCKET_ID } = APPWRITE_CONFIG;
+const { databaseId: DATABASE_ID, galleryCollectionId: GALLERY_COLLECTION_ID } = APPWRITE_CONFIG;
 
 export const galleryService = {
   async getApproved(category?: string): Promise<GalleryImage[]> {
@@ -81,10 +81,9 @@ export const galleryService = {
     await databases.deleteDocument(DATABASE_ID, GALLERY_COLLECTION_ID, id);
   },
 
-  async uploadImage(file: File): Promise<string> {
-    const response = await storage.createFile(GALLERY_BUCKET_ID, ID.unique(), file);
-    return storage.getFileView(GALLERY_BUCKET_ID, response.$id).toString();
-  },
+  // `uploadImage` was removed deliberately. It called `storage.createFile` from
+  // the browser, which the provisioned bucket permissions reject, so it could
+  // only ever fail. Uploads go through POST /api/gallery instead.
 
   async getCounts(): Promise<{ pending: number; approved: number; rejected: number }> {
     const [pending, approved, rejected] = await Promise.all([

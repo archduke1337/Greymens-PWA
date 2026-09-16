@@ -1,5 +1,6 @@
 import { ID, Query } from "appwrite";
 import { databases, storage, APPWRITE_CONFIG } from "./appwrite";
+import { PUBLIC_FILE_PERMISSIONS } from "./storage";
 import type { Profile } from "./types";
 
 const { databaseId: DATABASE_ID } = APPWRITE_CONFIG;
@@ -54,7 +55,8 @@ export const profileService = {
     const response = await storage.createFile(
       APPWRITE_CONFIG.profilePicturesBucketId || APPWRITE_CONFIG.eventImagesBucketId,
       ID.unique(),
-      file
+      file,
+      PUBLIC_FILE_PERMISSIONS
     );
     return storage.getFileView(
       APPWRITE_CONFIG.profilePicturesBucketId || APPWRITE_CONFIG.eventImagesBucketId,

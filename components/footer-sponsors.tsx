@@ -1,23 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { sponsorService, Sponsor } from "@/lib/sponsors";
+import type { Sponsor } from "@/lib/sponsors";
 
 export function FooterSponsors() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
 
   useEffect(() => {
-    loadSponsors();
-  }, []);
+    const controller = new AbortController();
 
-  const loadSponsors = async () => {
-    try {
-      const featuredSponsors = await sponsorService.getFeaturedSponsors();
-      setSponsors(featuredSponsors.slice(0, 6)); // Show max 6 in footer
-    } catch (error) {
-      console.error("Error loading footer sponsors:", error);
-    }
-  };
+    void fetch("/api/sponsors", { signal: controller.signal })
+      .then(async (response) => {
+        const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
+        if (!response.ok) throw new Error(payload.error || "Unable to load sponsors");
+        setSponsors((payload.sponsors ?? []).slice(0, 6));
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        console.error("Error loading footer sponsors:", error);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   if (sponsors.length === 0) return null;
 

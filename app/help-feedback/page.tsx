@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from "sonner";
 import { Button, Card, CardContent, CardHeader, Chip, Input, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
@@ -33,10 +34,15 @@ export default function HelpFeedbackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error("Failed to submit");
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Failed to submit feedback");
+      }
       setSubmitted(true);
-    } catch {
-      alert("Failed to submit feedback. Please try again.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to submit feedback. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -93,44 +99,64 @@ export default function HelpFeedbackPage() {
         <CardContent className="px-6 pb-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label htmlFor="feedback-name" className="text-sm font-medium">Name</label>
+                <Input
+                  id="feedback-name"
+                  placeholder="Your name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="feedback-email" className="text-sm font-medium">Email</label>
+                <Input
+                  id="feedback-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="feedback-type" className="text-sm font-medium">Feedback type</label>
+              <select
+                id="feedback-type"
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as FeedbackType })}
+                className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+              >
+                {feedbackTypes.map((type) => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="feedback-subject" className="text-sm font-medium">Subject</label>
               <Input
-                placeholder="Your name"
-                value={formData.name}
-                onChange={(value: any) => setFormData({ ...formData, name: value })}
-                required
-              />
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(value: any) => setFormData({ ...formData, email: value })}
+                id="feedback-subject"
+                placeholder="Brief description of your feedback"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 required
               />
             </div>
 
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as FeedbackType })}
-              className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-            >
-              {feedbackTypes.map((type) => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-
-            <Input
-              placeholder="Brief description of your feedback"
-              value={formData.subject}
-              onChange={(value: any) => setFormData({ ...formData, subject: value })}
-              required
-            />
-
-            <TextArea
-              placeholder="Tell us more about your feedback..."
-              value={formData.message}
-              onChange={(value: any) => setFormData({ ...formData, message: value })}
-              required
-            />
+            <div className="space-y-1">
+              <label htmlFor="feedback-message" className="text-sm font-medium">Message</label>
+              <TextArea
+                id="feedback-message"
+                placeholder="Tell us more about your feedback..."
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                required
+              />
+            </div>
 
             <div className="flex justify-end">
               <Button

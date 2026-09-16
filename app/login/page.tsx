@@ -1,18 +1,49 @@
 // app/login/page.tsx
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@heroui/react";
 
-export default function LoginPage() {
+function getSafeNext(next: string | null): string {
+  if (!next) return "/";
+  if (!next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
+}
+
+function mapLoginError(err: unknown): string {
+  const message = err instanceof Error ? err.message.toLowerCase() : "";
+  if (
+    message.includes("invalid credential") ||
+    message.includes("invalid email") ||
+    message.includes("incorrect") ||
+    message.includes("unauthorized") ||
+    message.includes("user not found") ||
+    message.includes("no account")
+  ) {
+    return "Incorrect email or password";
+  }
+  if (
+    message.includes("network") ||
+    message.includes("failed to fetch") ||
+    message.includes("fetch failed") ||
+    message.includes("load failed")
+  ) {
+    return "Network error. Check your connection and retry.";
+  }
+  return "Something went wrong. Please try again.";
+}
+
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = getSafeNext(searchParams.get("next"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +52,10 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push("/");
+      router.push(next);
     } catch (err: any) {
-      setError(err.message || "Failed to login. Please check your credentials.");
+      console.error(err);
+      setError(mapLoginError(err));
     } finally {
       setLoading(false);
     }
@@ -33,7 +65,8 @@ export default function LoginPage() {
     try {
       loginWithGoogle();
     } catch (err: any) {
-      setError(err.message || "Failed to login with Google");
+      console.error(err);
+      setError(mapLoginError(err));
     }
   };
 
@@ -90,13 +123,21 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <div className="text-small text-center">
-            Don't have an account?{" "}
-            <Link href="/register">
+            Don&apos;t have an account?{" "}
+            <Link href={next !== "/" ? `/register?next=${encodeURIComponent(next)}` : "/register"}>
               Sign up
             </Link>
           </div>
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

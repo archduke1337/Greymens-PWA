@@ -1,6 +1,7 @@
 // app/settings/page.tsx
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -8,8 +9,16 @@ import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
 import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
 
+// Notification preference keys stored on the authenticated account.
+const EMAIL_NOTIFICATIONS_PREF = "emailNotifications";
+const PUSH_NOTIFICATIONS_PREF = "pushNotifications";
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
 export default function SettingsPage() {
-  const { user: authUser, loading, logout } = useAuth();
+  const { user: authUser, loading, refreshUser } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
   const router = useRouter();
   const { isOpen: isPhoneModalOpen, open: onPhoneModalOpen, close: onPhoneModalClose } = useOverlayState();
@@ -41,15 +50,45 @@ export default function SettingsPage() {
   const [phoneVerifyError, setPhoneVerifyError] = useState("");
   const [phoneVerifySuccess, setPhoneVerifySuccess] = useState(false);
 
-  // Preferences state
+  // Preferences state. Seeded from the account preferences once the session is
+  // known, so the switches reflect what is actually stored.
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [savingPreference, setSavingPreference] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    const prefs = (user.prefs ?? {}) as Record<string, unknown>;
+    setEmailNotifications(prefs[EMAIL_NOTIFICATIONS_PREF] !== false);
+    setPushNotifications(prefs[PUSH_NOTIFICATIONS_PREF] !== false);
+  }, [user]);
+
+  const updateNotificationPreference = async (key: string, value: boolean) => {
+    if (!user) return;
+    const previous = value === false;
+    setSavingPreference(key);
+    if (key === EMAIL_NOTIFICATIONS_PREF) setEmailNotifications(value);
+    else setPushNotifications(value);
+
+    try {
+      // Appwrite replaces preferences wholesale, so existing prefs must be kept.
+      await account.updatePrefs({ ...(user.prefs ?? {}), [key]: value });
+      await refreshUser();
+      toast.success("Notification preference saved");
+    } catch (err) {
+      if (key === EMAIL_NOTIFICATIONS_PREF) setEmailNotifications(previous);
+      else setPushNotifications(previous);
+      toast.error(errorMessage(err, "Failed to save notification preference"));
+    } finally {
+      setSavingPreference(null);
+    }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +117,8 @@ export default function SettingsPage() {
       setTimeout(() => {
         setPasswordSuccess(false);
       }, 3000);
-    } catch (err: any) {
-      setPasswordError(err.message || "Failed to change password");
+    } catch (err) {
+      setPasswordError(errorMessage(err, "Failed to change password"));
     } finally {
       setPasswordLoading(false);
     }
@@ -97,8 +136,8 @@ export default function SettingsPage() {
       setTimeout(() => {
         setVerificationSuccess(false);
       }, 5000);
-    } catch (err: any) {
-      setVerificationError(err.message || "Failed to send verification email");
+    } catch (err) {
+      setVerificationError(errorMessage(err, "Failed to send verification email"));
     } finally {
       setVerificationLoading(false);
     }
@@ -129,8 +168,8 @@ export default function SettingsPage() {
       setTimeout(() => {
         setPhoneSuccess(false);
       }, 3000);
-    } catch (err: any) {
-      setPhoneError(err.message || "Failed to add phone number");
+    } catch (err) {
+      setPhoneError(errorMessage(err, "Failed to add phone number"));
     } finally {
       setPhoneLoading(false);
     }
@@ -143,8 +182,8 @@ export default function SettingsPage() {
     try {
       await authService.createPhoneVerification();
       toast.success("Verification code sent to your phone!");
-    } catch (err: any) {
-      setPhoneVerifyError(err.message || "Failed to send verification code");
+    } catch (err) {
+      setPhoneVerifyError(errorMessage(err, "Failed to send verification code"));
     } finally {
       setPhoneVerifyLoading(false);
     }
@@ -166,26 +205,18 @@ export default function SettingsPage() {
         setPhoneVerifySuccess(true);
         // Phone will be shown as verified on next login
       }, 2000);
-    } catch (err: any) {
-      setPhoneVerifyError(err.message || "Invalid verification code");
+    } catch (err) {
+      setPhoneVerifyError(errorMessage(err, "Invalid verification code"));
     } finally {
       setPhoneVerifyLoading(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      toast.warning("Account deletion requires backend implementation. Please contact support.");
-    } catch {
-      toast.error("Failed to delete account");
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div role="status" className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
           <p className="mt-4 text-default-500">Loading settings...</p>
         </div>
       </div>
@@ -210,30 +241,42 @@ export default function SettingsPage() {
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <Input
-                type="password"
-                value={oldPassword}
-                onChange={(e: any) => setOldPassword(e.target.value)}
-                placeholder="Enter current password"
-                required
-                disabled={passwordLoading}
-              />
-              <Input
-                type="password"
-                value={newPassword}
-                onChange={(e: any) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 8 characters)"
-                required
-                disabled={passwordLoading}
-              />
-              <Input
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e: any) => setConfirmNewPassword(e.target.value)}
-                placeholder="Confirm new password"
-                required
-                disabled={passwordLoading}
-              />
+              <div className="space-y-1">
+                <label htmlFor="settings-current-password" className="text-sm font-medium">Current password</label>
+                <Input
+                  id="settings-current-password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e: any) => setOldPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-new-password" className="text-sm font-medium">New password</label>
+                <Input
+                  id="settings-new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e: any) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-confirm-password" className="text-sm font-medium">Confirm new password</label>
+                <Input
+                  id="settings-confirm-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e: any) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                  disabled={passwordLoading}
+                />
+              </div>
 
               {passwordError && (
                 <div className="text-danger text-sm">{passwordError}</div>
@@ -356,7 +399,11 @@ export default function SettingsPage() {
             </div>
             <Switch
               isSelected={emailNotifications}
-              onChange={setEmailNotifications}
+              isDisabled={savingPreference !== null}
+              aria-label="Email notifications"
+              onChange={(value: boolean) =>
+                updateNotificationPreference(EMAIL_NOTIFICATIONS_PREF, value)
+              }
             />
           </div>
 
@@ -371,7 +418,11 @@ export default function SettingsPage() {
             </div>
             <Switch
               isSelected={pushNotifications}
-              onChange={setPushNotifications}
+              isDisabled={savingPreference !== null}
+              aria-label="Push notifications"
+              onChange={(value: boolean) =>
+                updateNotificationPreference(PUSH_NOTIFICATIONS_PREF, value)
+              }
             />
           </div>
         </CardContent>
@@ -383,22 +434,21 @@ export default function SettingsPage() {
           <h2 className="text-xl font-semibold text-danger">Danger Zone</h2>
         </CardHeader>
         <CardContent className="gap-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <div>
-              <p className="font-medium">Delete Account</p>
+              <p className="font-medium">Request account deletion</p>
               <p className="text-sm text-default-500">
-                Permanently delete your account and all data
+                Membership and governance records are retained under the club charter, so
+                deletion is completed by an administrator. Requesting deletion starts that
+                process and does not remove anything immediately.
               </p>
             </div>
-            <Button variant="primary"
-              onPress={() => {
-                if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-                  handleDeleteAccount();
-                }
-              }}
+            <Link
+              href="/contact"
+              className="inline-flex items-center rounded-lg border border-danger px-4 py-2 text-sm font-medium text-danger hover:bg-danger-50 transition-colors"
             >
-              Delete Account
-            </Button>
+              Request deletion
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -411,27 +461,35 @@ export default function SettingsPage() {
               {user.phone ? "Update" : "Add"} Phone Number
             </ModalHeader>
             <ModalBody>
-              <Input
-                placeholder="+911234567890"
-                value={phoneNumber}
-                onChange={(e: any) => setPhoneNumber(e.target.value)}
-                required
-                disabled={phoneLoading}
-              />
-              <Input
-                type="password"
-                placeholder="Enter your password"
-                value={phonePassword}
-                onChange={(e: any) => setPhonePassword(e.target.value)}
-                required
-                disabled={phoneLoading}
-              />
+              <div className="space-y-1">
+                <label htmlFor="settings-phone-number" className="text-sm font-medium">Phone number</label>
+                <Input
+                  id="settings-phone-number"
+                  placeholder="+911234567890"
+                  value={phoneNumber}
+                  onChange={(e: any) => setPhoneNumber(e.target.value)}
+                  required
+                  disabled={phoneLoading}
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="settings-phone-password" className="text-sm font-medium">Password</label>
+                <Input
+                  id="settings-phone-password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={phonePassword}
+                  onChange={(e: any) => setPhonePassword(e.target.value)}
+                  required
+                  disabled={phoneLoading}
+                />
+              </div>
               {phoneError && (
                 <div className="text-danger text-sm">{phoneError}</div>
               )}
             </ModalBody>
             <ModalFooter>
-              <Button variant="primary" onPress={onPhoneModalClose}>
+              <Button type="button" variant="ghost" onPress={onPhoneModalClose}>
                 Cancel
               </Button>
               <Button type="submit" isPending={phoneLoading}>
@@ -453,14 +511,18 @@ export default function SettingsPage() {
               <p className="text-sm text-default-500 mb-4">
                 Enter the verification code sent to your phone number
               </p>
-              <Input
-                placeholder="Enter 6-digit code"
-                value={verificationCode}
-                onChange={(e: any) => setVerificationCode(e.target.value)}
-                required
-                maxLength={6}
-                disabled={phoneVerifyLoading}
-              />
+              <div className="space-y-1">
+                <label htmlFor="settings-verification-code" className="text-sm font-medium">Verification code</label>
+                <Input
+                  id="settings-verification-code"
+                  placeholder="Enter 6-digit code"
+                  value={verificationCode}
+                  onChange={(e: any) => setVerificationCode(e.target.value)}
+                  required
+                  maxLength={6}
+                  disabled={phoneVerifyLoading}
+                />
+              </div>
               {phoneVerifyError && (
                 <div className="text-danger text-sm">{phoneVerifyError}</div>
               )}
@@ -470,6 +532,7 @@ export default function SettingsPage() {
                 </div>
               )}
               <Button
+                type="button"
                 variant="primary"
                 size="sm"
                 isPending={phoneVerifyLoading}
@@ -480,7 +543,7 @@ export default function SettingsPage() {
               </Button>
             </ModalBody>
             <ModalFooter>
-              <Button variant="primary" onPress={onVerifyModalClose}>
+              <Button type="button" variant="ghost" onPress={onVerifyModalClose}>
                 Cancel
               </Button>
               <Button type="submit" isPending={phoneVerifyLoading}>

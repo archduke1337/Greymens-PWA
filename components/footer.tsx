@@ -16,7 +16,7 @@ export const Footer = () => {
           {/* Brand Column */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold tracking-tight text-foreground">
                 Mind Mesh
               </span>
             </div>

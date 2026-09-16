@@ -62,34 +62,10 @@ export const departmentService = {
     await databases.deleteDocument(DATABASE_ID, DEPARTMENTS_COLLECTION, id);
   },
 
-  // User-Department assignments
-  async assignUser(userId: string, departmentId: string, role: "member" | "core_member" | "lead", assignedBy: string): Promise<UserDepartment> {
-    const response = await databases.createDocument(
-      DATABASE_ID,
-      USER_DEPARTMENTS_COLLECTION,
-      ID.unique(),
-      {
-        userId,
-        departmentId,
-        role,
-        assignedBy,
-        assignedAt: new Date().toISOString(),
-        isActive: true,
-      }
-    );
-    return response as unknown as UserDepartment;
-  },
-
-  async removeUser(userId: string, departmentId: string): Promise<void> {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      USER_DEPARTMENTS_COLLECTION,
-      [Query.equal("userId", userId), Query.equal("departmentId", departmentId)]
-    );
-    for (const doc of response.documents) {
-      await databases.updateDocument(DATABASE_ID, USER_DEPARTMENTS_COLLECTION, doc.$id, { isActive: false });
-    }
-  },
+  // `assignUser` and `removeUser` were removed: both wrote from the browser to a
+  // table that grants no client write permission, so neither could succeed.
+  // Assignment now happens inside POST /api/admin/membership when an application
+  // is approved, which is idempotent and audited.
 
   async getUserDepartments(userId: string): Promise<UserDepartment[]> {
     const response = await databases.listDocuments(

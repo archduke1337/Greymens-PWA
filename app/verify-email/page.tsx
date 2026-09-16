@@ -3,15 +3,40 @@
 
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
+import { useAuth } from "@/context/AuthContext";
 import { Button, Card, CardContent, CardHeader } from "@heroui/react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const [resendError, setResendError] = useState("");
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendError("");
+    setResendSent(false);
+    try {
+      await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
+      setResendSent(true);
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      setResendError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to resend verification email. Please try again.",
+      );
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -30,6 +55,12 @@ function VerifyEmailContent() {
         
         setStatus("success");
 
+        try {
+          await refreshUser();
+        } catch {
+          // Non-blocking: profile redirect still applies.
+        }
+
         // Redirect to profile after 3 seconds
         setTimeout(() => {
           router.push("/profile");
@@ -46,7 +77,7 @@ function VerifyEmailContent() {
     };
 
     verifyEmail();
-  }, [searchParams, router]);
+  }, [searchParams, router, refreshUser]);
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -102,21 +133,36 @@ function VerifyEmailContent() {
               <p className="text-default-500 text-sm mt-2">
                 Please try requesting a new verification email from your settings page.
               </p>
-              <div className="flex gap-2 justify-center mt-4">
-                <a href="/settings">
+              {resendSent && (
+                <p className="text-success text-sm mt-2">
+                  Verification email resent! Check your inbox.
+                </p>
+              )}
+              {resendError && (
+                <p className="text-danger text-sm mt-2">{resendError}</p>
+              )}
+              <div className="flex gap-2 justify-center mt-4 flex-wrap">
+                <Button
+                  variant="primary"
+                  isPending={resendLoading}
+                  onPress={handleResend}
+                >
+                  Resend verification email
+                </Button>
+                <Link href="/settings">
                   <Button
                     variant="primary"
                   >
                     Go to Settings
                   </Button>
-                </a>
-                <a href="/">
+                </Link>
+                <Link href="/">
                   <Button
                     variant="ghost"
                   >
                     Go Home
                   </Button>
-                </a>
+                </Link>
               </div>
             </>
           )}
