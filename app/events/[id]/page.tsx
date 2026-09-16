@@ -5,9 +5,9 @@ import { title } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService, type Event as EventType } from "@/lib/database";
+import type { Event as EventType } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { sendRegistrationEmail } from "@/lib/emailService";
+import Link from "next/link";
 import {
   Calendar,
   MapPin,
@@ -23,8 +23,7 @@ import {
   Tag,
   CheckCircle,
   XCircle,
-  TrendingUp,
-  Mail
+  TrendingUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
@@ -41,18 +40,24 @@ export default function EventDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [ticketId, setTicketId] = useState<string>("");
-  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     loadEvent();
     checkSavedStatus();
-    checkRegistrationStatus();
   }, [eventId]);
+
+  // Registration state is re-checked whenever the signed-in account changes,
+  // because it is owned by the server rather than by this browser.
+  useEffect(() => {
+    void checkRegistrationStatus();
+  }, [user, eventId]);
 
   const loadEvent = async () => {
     try {
-      const eventData = await eventService.getEventById(eventId);
-      setEvent(eventData);
+      const response = await fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { credentials: "include" });
+      const payload = (await response.json()) as { event?: EventType; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load event");
+      setEvent(payload.event ?? null);
     } catch (error) {
       console.error("Error loading event:", error);
     } finally {
@@ -61,41 +66,63 @@ export default function EventDetailPage() {
   };
 
   const checkSavedStatus = () => {
-    const saved = localStorage.getItem("savedEvents");
-    if (saved) {
-      const savedEvents = JSON.parse(saved);
-      setIsSaved(savedEvents.includes(eventId));
+    try {
+      const saved = localStorage.getItem("savedEvents");
+      if (saved) {
+        const savedEvents = JSON.parse(saved);
+        setIsSaved(savedEvents.includes(eventId));
+      }
+    } catch {
+      localStorage.removeItem("savedEvents");
+      setIsSaved(false);
     }
   };
 
-  const checkRegistrationStatus = () => {
-    const registered = localStorage.getItem("registeredEvents");
-    if (registered) {
-      const registeredEvents = JSON.parse(registered);
-      setIsRegistered(registeredEvents.includes(eventId));
-      
-      // Check if we have ticket info
-      const ticketInfo = localStorage.getItem(`ticket_${eventId}`);
-      if (ticketInfo) {
-        const { ticketId: tid, emailSent: sent } = JSON.parse(ticketInfo);
-        setTicketId(tid);
-        setEmailSent(sent);
-      }
+  /**
+   * Read registration and ticket state from the server.
+   *
+   * This previously read a `registeredEvents` array and a `ticket_<eventId>`
+   * record out of `localStorage`. Both were entirely client-owned, so the page
+   * could claim a registration that did not exist, and the "ticket" it displayed
+   * held a locally generated ID that the door scanner would never recognise.
+   */
+  const checkRegistrationStatus = async () => {
+    if (!user) {
+      setIsRegistered(false);
+      setTicketId("");
+      return;
+    }
+    try {
+      const response = await fetch("/api/events/register", { cache: "no-store", credentials: "include" });
+      if (!response.ok) return;
+      const data = await response.json() as {
+        registrations?: Array<{ eventId: string }>;
+        tickets?: Array<{ eventId: string; ticketCode: string }>;
+      };
+      setIsRegistered((data.registrations ?? []).some((registration) => registration.eventId === eventId));
+      setTicketId((data.tickets ?? []).find((ticket) => ticket.eventId === eventId)?.ticketCode ?? "");
+    } catch (error) {
+      console.error("Error loading registration state:", error);
     }
   };
 
   const toggleSave = () => {
-    const saved = localStorage.getItem("savedEvents");
-    const savedEvents = saved ? JSON.parse(saved) : [];
-    
-    if (isSaved) {
-      const filtered = savedEvents.filter((id: string) => id !== eventId);
-      localStorage.setItem("savedEvents", JSON.stringify(filtered));
+    try {
+      const saved = localStorage.getItem("savedEvents");
+      const savedEvents = saved ? JSON.parse(saved) : [];
+      
+      if (isSaved) {
+        const filtered = savedEvents.filter((id: string) => id !== eventId);
+        localStorage.setItem("savedEvents", JSON.stringify(filtered));
+        setIsSaved(false);
+      } else {
+        savedEvents.push(eventId);
+        localStorage.setItem("savedEvents", JSON.stringify(savedEvents));
+        setIsSaved(true);
+      }
+    } catch {
+      localStorage.removeItem("savedEvents");
       setIsSaved(false);
-    } else {
-      savedEvents.push(eventId);
-      localStorage.setItem("savedEvents", JSON.stringify(savedEvents));
-      setIsSaved(true);
     }
   };
 
@@ -107,74 +134,61 @@ export default function EventDetailPage() {
     }
 
     if (isRegistered) {
-      const confirmed = window.confirm("Are you sure you want to unregister from this event?");
+      const confirmed = window.confirm("Are you sure you want to cancel your registration for this event?");
       if (!confirmed) return;
-      
-      const existing = localStorage.getItem("registeredEvents");
-      const existingEvents = existing ? JSON.parse(existing) : [];
-      const updated = existingEvents.filter((id: string) => id !== eventId);
-      localStorage.setItem("registeredEvents", JSON.stringify(updated));
-      localStorage.removeItem(`ticket_${eventId}`);
-      setIsRegistered(false);
-      setEmailSent(false);
-      setTicketId("");
-      toast.success("Successfully unregistered from event");
+
+      setRegistering(true);
+      try {
+        const response = await fetch("/api/events/register", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId }),
+        });
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        if (!response.ok) throw new Error(data.error || "Unable to cancel this registration");
+        setIsRegistered(false);
+        setTicketId("");
+        toast.success("Registration cancelled");
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      } finally {
+        setRegistering(false);
+      }
       return;
     }
 
     setRegistering(true);
     try {
-      // Register for event in database
-      await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
-      
-      // Send email with e-ticket
-      const emailResult = await sendRegistrationEmail(
-        user.email,
-        user.name,
-        {
-          title: event!.title,
-          date: event!.date,
-          time: event!.time,
-          venue: event!.venue,
-          location: event!.location,
-          image: event!.image,
-          organizerName: event!.organizerName,
-          price: event!.price,
-          discountPrice: event!.discountPrice,
-        }
-      );
+      const response = await fetch("/api/events/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId }),
+      });
+      const data = await response.json().catch(() => ({})) as {
+        error?: string;
+        status?: "approved" | "pending" | "waitlisted";
+        ticket?: { ticketCode?: string } | null;
+      };
+      if (!response.ok) throw new Error(data.error || "Unable to register for this event");
 
-      if (emailResult.success) {
-        setTicketId(emailResult.ticketId);
-        setEmailSent(true);
-        
-        // Save to localStorage
-        const registered = localStorage.getItem("registeredEvents");
-        const registeredEvents = registered ? JSON.parse(registered) : [];
-        registeredEvents.push(eventId);
-        localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
-        
-        // Save ticket info
-        localStorage.setItem(`ticket_${eventId}`, JSON.stringify({
-          ticketId: emailResult.ticketId,
-          emailSent: true
-        }));
-        
-        setIsRegistered(true);
-        
-        toast.success("Registration successful! Check your email for your e-ticket.");
-        await loadEvent();
+      setIsRegistered(true);
+      setTicketId(data.ticket?.ticketCode ?? "");
+
+      if (data.status === "waitlisted") {
+        toast.warning("Added to the waitlist", {
+          description: "This event is at capacity. We will contact you if a place opens up.",
+        });
+      } else if (data.status === "pending") {
+        toast.info("Registration submitted for approval");
       } else {
-        // Registration succeeded but email failed
-        const registered = localStorage.getItem("registeredEvents");
-        const registeredEvents = registered ? JSON.parse(registered) : [];
-        registeredEvents.push(eventId);
-        localStorage.setItem("registeredEvents", JSON.stringify(registeredEvents));
-        setIsRegistered(true);
-        
-        toast.warning("Registration successful! But we couldn't send your e-ticket email. Contact support for help.");
-        await loadEvent();
+        toast.success("Registration confirmed", {
+          description: data.ticket?.ticketCode
+            ? `Your ticket code is ${data.ticket.ticketCode}.`
+            : undefined,
+        });
       }
+
+      await loadEvent();
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Registration error:", message);
@@ -237,7 +251,7 @@ export default function EventDetailPage() {
         <div className="text-center">
           <XCircle className="w-16 h-16 text-danger mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Event Not Found</h2>
-          <p className="text-default-500 mb-6">The event you're looking for doesn't exist.</p>
+          <p className="text-default-500 mb-6">The event you&apos;re looking for doesn&apos;t exist.</p>
           <Button onPress={() => router.push("/events")}>
             Browse Events
           </Button>
@@ -252,6 +266,7 @@ export default function EventDetailPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         <Button
           variant="ghost"
+          onPress={() => router.push("/events")}
         >
           Back to Events
         </Button>
@@ -272,6 +287,8 @@ export default function EventDetailPage() {
             isIconOnly
             variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+            aria-label={isSaved ? "Unsave event" : "Save event"}
+            onPress={toggleSave}
           >
             <Heart 
               className={`w-5 h-5 ${
@@ -283,6 +300,8 @@ export default function EventDetailPage() {
             isIconOnly
             variant="primary"
             className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+            aria-label="Share event"
+            onPress={handleShare}
           >
             <Share className="w-5 h-5" />
           </Button>
@@ -356,8 +375,8 @@ export default function EventDetailPage() {
               <CardContent className="pt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-6 h-6 text-purple-600" />
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Date</p>
@@ -403,7 +422,7 @@ export default function EventDetailPage() {
               <Card className="border-none shadow-lg">
                 <CardHeader className="pb-0">
                   <div className="flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-purple-600" />
+                    <Tag className="w-5 h-5 text-primary" />
                     <h2 className="text-2xl font-bold">Topics</h2>
                   </div>
                 </CardHeader>
@@ -448,7 +467,7 @@ export default function EventDetailPage() {
 
           {/* Right Column - Registration Card */}
           <div className="lg:col-span-1">
-            <Card className="border-none shadow-2xl sticky top-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+            <Card className="border-none shadow-2xl sticky top-6 bg-card">
               <CardContent className="p-6 space-y-6">
                 {/* Price */}
                 <div>
@@ -519,6 +538,7 @@ export default function EventDetailPage() {
 
                 {/* Registration Button */}
                 <div className="space-y-3">                          <Button
+                            onPress={handleRegister}
                             variant={isRegistered ? "secondary" : "primary"}
                             className="w-full font-bold text-lg"
                             isPending={registering}
@@ -534,20 +554,25 @@ export default function EventDetailPage() {
                           <p className="font-semibold text-success text-sm">
                             Registration Confirmed!
                           </p>
-                          {emailSent && ticketId && (
+                          {ticketId ? (
                             <>
                               <p className="text-xs text-success-700 dark:text-success-300 mt-1">
-                                <Mail className="w-3 h-3 inline mr-1" />
-                                E-ticket sent to your email
+                                <Ticket className="w-3 h-3 inline mr-1" />
+                                Your ticket code
                               </p>
                               <p className="text-xs text-success-700 dark:text-success-300 mt-1 font-mono bg-success-100 dark:bg-success-900/30 p-2 rounded">
-                                🎫 {ticketId}
+                                {ticketId}
                               </p>
+                              <Link
+                                href={`/events/${eventId}/tickets`}
+                                className="text-xs text-success-700 dark:text-success-300 mt-1 inline-block underline underline-offset-2"
+                              >
+                                View and download your ticket
+                              </Link>
                             </>
-                          )}
-                          {isRegistered && !emailSent && (
+                          ) : (
                             <p className="text-xs text-success-700 dark:text-success-300 mt-1">
-                              Check your email for event details
+                              Your place is reserved. A ticket will be issued once the organiser confirms your registration.
                             </p>
                           )}
                         </div>
@@ -585,8 +610,8 @@ export default function EventDetailPage() {
                   </div>
                   {event.isPremium && (
                     <div className="flex items-center gap-3 text-sm">
-                      <Crown className="w-5 h-5 text-purple-600" />
-                      <span className="font-semibold text-purple-600">Premium perks included</span>
+                      <Crown className="w-5 h-5 text-primary" />
+                      <span className="font-semibold text-primary">Premium perks included</span>
                     </div>
                   )}
                 </div>

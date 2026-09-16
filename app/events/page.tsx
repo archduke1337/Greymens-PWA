@@ -5,9 +5,8 @@ import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { eventService, type Event as EventType } from "@/lib/database";
+import type { Event as EventType } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
-import { sendRegistrationEmail } from "@/lib/emailService";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -56,8 +55,10 @@ export default function EventsPage() {
 
   const loadEvents = useCallback(async () => {
     try {
-      const allEvents = await eventService.getUpcomingEvents();
-      setEvents(allEvents);
+      const response = await fetch("/api/events", { credentials: "include" });
+      const payload = (await response.json()) as { events?: EventType[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Unable to load events");
+      setEvents(payload.events ?? []);
     } catch (error) {
       console.error("Error loading events:", error);
     } finally {
@@ -66,17 +67,42 @@ export default function EventsPage() {
   }, []);
 
   const loadSavedEvents = useCallback(() => {
-    const saved = localStorage.getItem("savedEvents");
-    if (saved) setSavedEvents(JSON.parse(saved));
-    
-    const registered = localStorage.getItem("registeredEvents");
-    if (registered) setRegisteredEvents(JSON.parse(registered));
+    try {
+      const saved = localStorage.getItem("savedEvents");
+      if (saved) setSavedEvents(JSON.parse(saved));
+    } catch {
+      localStorage.removeItem("savedEvents");
+      setSavedEvents([]);
+    }
   }, []);
+
+  /**
+   * Registration state is server-owned.
+   *
+   * It used to be mirrored into `localStorage`, which meant the list could show
+   * a stale or entirely fabricated registration: the array was user-editable and
+   * had no relationship to the registration rows the door actually checks.
+   */
+  const loadRegistrations = useCallback(async () => {
+    if (!user) {
+      setRegisteredEvents([]);
+      return;
+    }
+    try {
+      const response = await fetch("/api/events/register", { cache: "no-store", credentials: "include" });
+      if (!response.ok) return;
+      const data = await response.json() as { registrations?: Array<{ eventId: string }> };
+      setRegisteredEvents((data.registrations ?? []).map((registration) => registration.eventId));
+    } catch (error) {
+      console.error("Error loading registrations:", error);
+    }
+  }, [user]);
 
   useEffect(() => {
     loadEvents();
     loadSavedEvents();
-  }, [loadEvents, loadSavedEvents]);
+    loadRegistrations();
+  }, [loadEvents, loadSavedEvents, loadRegistrations]);
 
   const filteredEvents = useMemo(() => events
     .filter(event =>
@@ -120,74 +146,54 @@ export default function EventsPage() {
       return;
     }
 
-    if (registeredEvents.includes(eventId)) {
-      if (!confirm("Are you sure you want to unregister from this event?")) return;
-      setRegisteredEvents(prev => {
-        const newRegistered = prev.filter(id => id !== eventId);
-        localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
-        return newRegistered;
-      });
-      localStorage.removeItem(`ticket_${eventId}`);
-      toast.success("Successfully unregistered from event");
-      return;
-    }
+    const isRegistered = registeredEvents.includes(eventId);
+    if (isRegistered && !confirm("Are you sure you want to cancel your registration for this event?")) return;
 
     setRegistering(eventId);
     try {
-      const event = events.find(e => e.$id === eventId);
-      if (!event) throw new Error("Event not found");
-
-      await eventService.registerForEvent(eventId, user.$id, user.name, user.email);
-      
-      const emailResult = await sendRegistrationEmail(
-        user.email,
-        user.name,
-        {
-          title: event.title,
-          date: event.date,
-          time: event.time,
-          venue: event.venue,
-          location: event.location,
-          image: event.image,
-          organizerName: event.organizerName,
-          price: event.price,
-          discountPrice: event.discountPrice,
-        }
-      );
-
-      const ticketData = {
-        ticketId: emailResult.ticketId || `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        eventId: event.$id,
-        eventTitle: event.title,
-        userName: user.name,
-        userEmail: user.email,
-        date: event.date,
-        time: event.time,
-        venue: event.venue,
-        location: event.location,
-        registeredAt: new Date().toISOString(),
-      };
-      
-      localStorage.setItem(`ticket_${eventId}`, JSON.stringify(ticketData));
-      
-      setRegisteredEvents(prev => {
-        const newRegistered = [...prev, eventId];
-        localStorage.setItem("registeredEvents", JSON.stringify(newRegistered));
-        return newRegistered;
-      });
-      
-      if (emailResult.success) {
-        toast.success(
-          `Registration successful! E-ticket sent to ${user.email}`,
-          { description: `Ticket ID: ${emailResult.ticketId}. Check your inbox (and spam folder).` }
-        );
+      if (isRegistered) {
+        const response = await fetch("/api/events/register", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId }),
+        });
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        if (!response.ok) throw new Error(data.error || "Unable to cancel this registration");
+        setRegisteredEvents(prev => prev.filter(id => id !== eventId));
+        toast.success("Registration cancelled");
       } else {
-        toast.warning(
-          "Registration successful (email issue)",
-          { description: `Ticket ID: ${ticketData.ticketId}. Your ticket is saved locally. Contact hello@mindmesh.club for help.` }
-        );
+        const event = events.find(e => e.$id === eventId);
+        if (!event) throw new Error("Event not found");
+
+        const response = await fetch("/api/events/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId }),
+        });
+        const data = await response.json().catch(() => ({})) as {
+          error?: string;
+          status?: "approved" | "pending" | "waitlisted";
+          ticket?: { ticketCode?: string } | null;
+        };
+        if (!response.ok) throw new Error(data.error || "Unable to register for this event");
+
+        setRegisteredEvents(prev => [...prev, eventId]);
+
+        if (data.status === "waitlisted") {
+          toast.warning("Added to the waitlist", {
+            description: `${event.title} is at capacity. We will contact you if a place opens up.`,
+          });
+        } else if (data.status === "pending") {
+          toast.info("Registration submitted for approval", { description: event.title });
+        } else {
+          toast.success(`Registered for ${event.title}`, {
+            description: data.ticket?.ticketCode
+              ? `Your ticket code is ${data.ticket.ticketCode}. Find it under “My Tickets”.`
+              : undefined,
+          });
+        }
       }
-      
+
       await loadEvents();
     } catch (error) {
       const message = getErrorMessage(error);
@@ -217,11 +223,9 @@ export default function EventsPage() {
     <div className="space-y-12 pb-20">
       {/* Hero Section */}
       <div className="text-center space-y-6 relative py-12">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-20 right-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 mb-6">
-          <SparklesIcon className="w-5 h-5 text-purple-500" />
-          <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-6">
+          <SparklesIcon className="w-5 h-5 text-primary" />
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             Upcoming Events
           </span>
         </div>
@@ -284,9 +288,9 @@ export default function EventsPage() {
             <Card
               key={event.$id}
               className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group cursor-pointer"
-             
-             
-             
+              onClick={() => handleEventClick(event.$id!)}
+              
+              
             >
               <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
@@ -316,6 +320,8 @@ export default function EventsPage() {
                     variant="primary"
                     className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
                     size="sm"
+                    aria-label={savedEvents.includes(event.$id!) ? "Unsave event" : "Save event"}
+                    onPress={(e: any) => toggleSaveEvent(e, event.$id!)}
                   >
                     <HeartIcon 
                       className={`w-4 h-4 ${
@@ -413,6 +419,8 @@ export default function EventsPage() {
                   <Button
                     variant={registeredEvents.includes(event.$id!) ? "secondary" : "primary"}
                     isPending={registering === event.$id}
+                    aria-label={registeredEvents.includes(event.$id!) ? "Cancel registration" : `Register for ${event.title}`}
+                    onPress={(e: any) => toggleRegisterEvent(e, event.$id!)}
                   >
                     {registeredEvents.includes(event.$id!) ? "Registered" : "Register"}
                   </Button>

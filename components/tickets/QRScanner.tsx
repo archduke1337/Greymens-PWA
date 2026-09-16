@@ -3,7 +3,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ticketService } from "@/lib/tickets";
 import type { Ticket } from "@/lib/types";
 import { toast } from "sonner";
 import {
@@ -20,7 +19,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { Button, Card, CardContent, Input, Badge } from "@heroui/react";
+import { Button, Card, CardContent, InputGroup, Badge } from "@heroui/react";
 
 interface QRScannerProps {
   eventId: string;
@@ -39,10 +38,15 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<{ detect: (source: HTMLCanvasElement) => Promise<Array<{ rawValue?: string }>> } | null>(null);
+  const detectingRef = useRef(false);
+  const lastValueRef = useRef<string>("");
+  const hintShownRef = useRef(false);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string>("");
   const [scanning, setScanning] = useState(false);
+  const [decodeHint, setDecodeHint] = useState<string>("");
   const [lastResult, setLastResult] = useState<ScanResult | null>(null);
   const [manualQuery, setManualQuery] = useState("");
   const [manualSearching, setManualSearching] = useState(false);
@@ -61,6 +65,11 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
     setScanning(false);
   }, []);
 
+  // scanFrame is declared below (needs refs + state settled); startCamera calls
+  // it through a ref to avoid use-before-declaration. scanFrame itself is
+  // stable ([] deps, refs only) so the ref never goes stale.
+  const scanFrameRef = useRef<() => void>(() => {});
+
   const startCamera = useCallback(async () => {
     setCameraError("");
     try {
@@ -78,7 +87,8 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
         await videoRef.current.play();
         setCameraActive(true);
         setScanning(true);
-        scanFrame();
+        lastValueRef.current = "";
+        scanFrameRef.current();
       }
     } catch (error) {
       console.error("Camera error:", error);
@@ -93,8 +103,10 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
     }
   }, []);
 
+  const processQrDataRef = useRef<(qrData: string) => Promise<void>>(async () => {});
+
   const scanFrame = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !scanning) return;
+    if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -104,16 +116,98 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Native decode path: cache one BarcodeDetector and reuse it each frame.
+      try {
+        const BarcodeDetectorCtor = (window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => { detect: (source: HTMLCanvasElement) => Promise<Array<{ rawValue?: string }>> } }).BarcodeDetector;
+        if (!BarcodeDetectorCtor) {
+          if (!hintShownRef.current) {
+            hintShownRef.current = true;
+            setDecodeHint("Camera preview only on this browser — paste the QR text below");
+          }
+        } else {
+          if (!detectorRef.current) {
+            detectorRef.current = new BarcodeDetectorCtor({ formats: ["qr_code"] });
+          }
+          const detector = detectorRef.current;
+          if (detector && !detectingRef.current) {
+            detectingRef.current = true;
+            detector.detect(canvas).then((codes) => {
+              const rawValue = codes?.[0]?.rawValue;
+              if (rawValue && rawValue !== lastValueRef.current) {
+                lastValueRef.current = rawValue;
+                void processQrDataRef.current(rawValue);
+              }
+            }).catch(() => {
+              // Per-frame decode failures are ignored; the loop keeps running.
+            }).finally(() => {
+              detectingRef.current = false;
+            });
+          }
+        }
+      } catch {
+        if (!hintShownRef.current) {
+          hintShownRef.current = true;
+          setDecodeHint("Camera preview only on this browser — paste the QR text below");
+        }
+      }
     }
 
     animationFrameRef.current = requestAnimationFrame(scanFrame);
-  }, [scanning]);
+  }, []);
+
+  useEffect(() => {
+    scanFrameRef.current = scanFrame;
+  }, [scanFrame]);
 
   useEffect(() => {
     return () => {
       stopCamera();
     };
   }, [stopCamera]);
+
+  /**
+   * All door operations go through /api/tickets/verify.
+   *
+   * The scanner previously read and wrote the tickets table directly from the
+   * browser. That table grants no client write, so check-in could never succeed,
+   * and it is readable by every signed-in account, so the manual-search path was
+   * pulling an entire event's attendee list into the browser to filter locally.
+   */
+  const lookupTicket = useCallback(async (query: string): Promise<{ ticket?: Ticket; error?: string }> => {
+    const trimmed = query.trim();
+    const attempts = trimmed.includes("@")
+      ? [`email=${encodeURIComponent(trimmed)}`]
+      : [`code=${encodeURIComponent(trimmed)}`, `qrData=${encodeURIComponent(trimmed)}`];
+
+    for (const params of attempts) {
+      const response = await fetch(`/api/tickets/verify?${params}`, { cache: "no-store" });
+      if (response.ok) {
+        const payload = await response.json().catch(() => null) as { ticket?: Ticket } | null;
+        if (payload?.ticket) return { ticket: payload.ticket };
+      } else if (response.status !== 404) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        return { error: payload?.error || "Search failed" };
+      }
+    }
+    return { error: "No ticket found matching that query" };
+  }, []);
+
+  const checkInTicket = useCallback(async (ticket: Ticket, method: "qr_scan" | "manual_search") => {
+    const response = await fetch("/api/tickets/verify", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticketId: ticket.$id, action: "checkIn", method, eventId }),
+    });
+    const payload = await response.json().catch(() => null) as { ticket?: Ticket; message?: string; error?: string } | null;
+    return {
+      ok: response.ok,
+      ticket: payload?.ticket ?? ticket,
+      message: response.ok
+        ? payload?.message || "Checked in"
+        : payload?.error || "Check-in failed",
+    };
+  }, [eventId]);
 
   const processQrData = useCallback(
     async (qrData: string) => {
@@ -125,9 +219,9 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
       setLastResult({ type: "warning", message: "Looking up ticket..." });
 
       try {
-        const ticket = await ticketService.getByQrData(qrData);
+        const { ticket, error } = await lookupTicket(qrData);
         if (!ticket) {
-          setLastResult({ type: "error", message: "No ticket found for this QR code" });
+          setLastResult({ type: "error", message: error || "No ticket found for this QR code" });
           return;
         }
 
@@ -140,12 +234,12 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
           return;
         }
 
-        const result = await ticketService.checkIn(ticket.$id!, user.$id, "qr_scan");
+        const result = await checkInTicket(ticket, "qr_scan");
 
-        if (result.success) {
-          setLastResult({ type: "success", message: result.message, ticket });
+        if (result.ok) {
+          setLastResult({ type: "success", message: result.message, ticket: result.ticket });
           toast.success(`Checked in: ${ticket.ticketCode}`);
-          onCheckIn?.(ticket);
+          onCheckIn?.(result.ticket);
         } else {
           setLastResult({ type: "error", message: result.message, ticket });
           toast.error(result.message);
@@ -156,12 +250,18 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
         toast.error("Failed to process ticket");
       }
     },
-    [user, eventId, onCheckIn]
+    [user, eventId, onCheckIn, lookupTicket, checkInTicket]
   );
+
+  // Keep the camera loop pointed at the latest processor without re-creating
+  // the rAF loop every render.
+  useEffect(() => {
+    processQrDataRef.current = processQrData;
+  }, [processQrData]);
 
   const handleManualSearch = async () => {
     if (!manualQuery.trim()) {
-      toast.error("Please enter a ticket code or user ID");
+      toast.error("Please enter a ticket code, QR payload, or attendee email");
       return;
     }
 
@@ -174,35 +274,22 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
     setLastResult(null);
 
     try {
-      const tickets = await ticketService.getByEvent(eventId);
-      const matchingTicket = tickets.find(
-        (t) =>
-          t.ticketCode.toLowerCase() === manualQuery.trim().toLowerCase() ||
-          t.userId.toLowerCase() === manualQuery.trim().toLowerCase() ||
-          t.qrData.toLowerCase() === manualQuery.trim().toLowerCase()
-      );
-
-      if (!matchingTicket) {
-        setLastResult({
-          type: "error",
-          message: "No ticket found matching that query",
-        });
-        setManualSearching(false);
+      // Resolved server-side, one ticket at a time, instead of downloading the
+      // whole door list to filter in the browser.
+      const { ticket, error } = await lookupTicket(manualQuery);
+      if (!ticket) {
+        setLastResult({ type: "error", message: error || "No ticket found matching that query" });
         return;
       }
 
-      const result = await ticketService.checkIn(
-        matchingTicket.$id!,
-        user.$id,
-        "manual_search"
-      );
+      const result = await checkInTicket(ticket, "manual_search");
 
-      if (result.success) {
-        setLastResult({ type: "success", message: result.message, ticket: matchingTicket });
-        toast.success(`Checked in: ${matchingTicket.ticketCode}`);
-        onCheckIn?.(matchingTicket);
+      if (result.ok) {
+        setLastResult({ type: "success", message: result.message, ticket: result.ticket });
+        toast.success(`Checked in: ${ticket.ticketCode}`);
+        onCheckIn?.(result.ticket);
       } else {
-        setLastResult({ type: "error", message: result.message, ticket: matchingTicket });
+        setLastResult({ type: "error", message: result.message, ticket });
         toast.error(result.message);
       }
     } catch (error) {
@@ -324,13 +411,22 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
             {/* Process QR Input */}
             {cameraActive && (
               <div className="px-4 pb-4">
+                {decodeHint && (
+                  <p role="note" className="text-xs text-default-500 mt-1 mb-2 text-center">
+                    {decodeHint}
+                  </p>
+                )}
                 <div className="flex gap-2">
-                  <Input
-                    placeholder="Paste scanned QR data here..."
-                    value={manualQuery}
-                    onChange={(e: any) => setManualQuery(e.target.value)}
-                    startContent={<QrCode className="w-4 h-4 text-default-400" />}
-                  />
+                  <InputGroup className="flex-1">
+                    <InputGroup.Prefix>
+                      <QrCode className="w-4 h-4 text-default-400" />
+                    </InputGroup.Prefix>
+                    <InputGroup.Input
+                      placeholder="Paste scanned QR data here..."
+                      value={manualQuery}
+                      onChange={(e: any) => setManualQuery(e.target.value)}
+                    />
+                  </InputGroup>
                   <Button
                     variant="primary"
                     onPress={() => {
@@ -357,19 +453,23 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
         <Card className="border-none shadow-lg">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <Search className="w-5 h-5 text-purple-600" />
+              <Search className="w-5 h-5 text-primary" />
               <h3 className="font-semibold">Manual Ticket Lookup</h3>
             </div>
 
-            <Input
-              placeholder="Enter ticket code, user ID, or QR data..."
-              value={manualQuery}
-              onChange={(e: any) => setManualQuery(e.target.value)}
-              onKeyDown={(e: any) => {
-                if (e.key === "Enter") handleManualSearch();
-              }}
-              startContent={<Search className="w-4 h-4 text-default-400" />}
-            />
+            <InputGroup>
+              <InputGroup.Prefix>
+                <Search className="w-4 h-4 text-default-400" />
+              </InputGroup.Prefix>
+              <InputGroup.Input
+                placeholder="Enter ticket code, user ID, or QR data..."
+                value={manualQuery}
+                onChange={(e: any) => setManualQuery(e.target.value)}
+                onKeyDown={(e: any) => {
+                  if (e.key === "Enter") handleManualSearch();
+                }}
+              />
+            </InputGroup>
 
             <Button
               variant="primary"
@@ -387,6 +487,8 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
       {/* Scan Result Feedback */}
       {lastResult && (
         <Card
+          role="status"
+          aria-live="polite"
           className={`border-none shadow-lg ${
             lastResult.type === "success"
               ? "bg-green-50 dark:bg-green-900/20"
@@ -462,6 +564,7 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
                 variant="ghost"
                 isIconOnly
                 size="sm"
+                aria-label="Dismiss result"
                 onPress={resetScanner}
               >
                 <X className="w-4 h-4" />

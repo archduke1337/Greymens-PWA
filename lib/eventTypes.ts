@@ -1,9 +1,18 @@
-import { ID, Query } from "appwrite";
+import { Query } from "appwrite";
 import { databases, APPWRITE_CONFIG } from "./appwrite";
-import type { EventType, EventField, RegistrationConfig, TicketConfig, WorkflowConfig } from "./types";
+import type { EventType } from "./types";
 
 const { databaseId: DATABASE_ID } = APPWRITE_CONFIG;
 const EVENT_TYPES_COLLECTION = "event_types";
+
+function safeParse(value: unknown, fallback: unknown) {
+  if (typeof value !== "string") return (value ?? fallback);
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
 
 export const eventTypeService = {
   async getAll(): Promise<EventType[]> {
@@ -14,10 +23,10 @@ export const eventTypeService = {
     );
     return response.documents.map(doc => ({
       ...doc,
-      fields: typeof doc.fields === "string" ? JSON.parse(doc.fields) : doc.fields,
-      registrationConfig: typeof doc.registrationConfig === "string" ? JSON.parse(doc.registrationConfig) : doc.registrationConfig,
-      ticketConfig: typeof doc.ticketConfig === "string" ? JSON.parse(doc.ticketConfig) : doc.ticketConfig,
-      workflowConfig: typeof doc.workflowConfig === "string" ? JSON.parse(doc.workflowConfig) : doc.workflowConfig,
+      fields: safeParse(doc.fields, []),
+      registrationConfig: safeParse(doc.registrationConfig, {}),
+      ticketConfig: safeParse(doc.ticketConfig, {}),
+      workflowConfig: safeParse(doc.workflowConfig, {}),
     })) as unknown as EventType[];
   },
 
@@ -26,10 +35,10 @@ export const eventTypeService = {
       const doc = await databases.getDocument(DATABASE_ID, EVENT_TYPES_COLLECTION, id);
       return {
         ...doc,
-        fields: typeof doc.fields === "string" ? JSON.parse(doc.fields) : doc.fields,
-        registrationConfig: typeof doc.registrationConfig === "string" ? JSON.parse(doc.registrationConfig) : doc.registrationConfig,
-        ticketConfig: typeof doc.ticketConfig === "string" ? JSON.parse(doc.ticketConfig) : doc.ticketConfig,
-        workflowConfig: typeof doc.workflowConfig === "string" ? JSON.parse(doc.workflowConfig) : doc.workflowConfig,
+        fields: safeParse(doc.fields, []),
+        registrationConfig: safeParse(doc.registrationConfig, {}),
+        ticketConfig: safeParse(doc.ticketConfig, {}),
+        workflowConfig: safeParse(doc.workflowConfig, {}),
       } as unknown as EventType;
     } catch {
       return null;
@@ -47,49 +56,25 @@ export const eventTypeService = {
       const doc = response.documents[0];
       return {
         ...doc,
-        fields: typeof doc.fields === "string" ? JSON.parse(doc.fields) : doc.fields,
-        registrationConfig: typeof doc.registrationConfig === "string" ? JSON.parse(doc.registrationConfig) : doc.registrationConfig,
-        ticketConfig: typeof doc.ticketConfig === "string" ? JSON.parse(doc.ticketConfig) : doc.ticketConfig,
-        workflowConfig: typeof doc.workflowConfig === "string" ? JSON.parse(doc.workflowConfig) : doc.workflowConfig,
+        fields: safeParse(doc.fields, []),
+        registrationConfig: safeParse(doc.registrationConfig, {}),
+        ticketConfig: safeParse(doc.ticketConfig, {}),
+        workflowConfig: safeParse(doc.workflowConfig, {}),
       } as unknown as EventType;
     } catch {
       return null;
     }
   },
 
-  async create(data: Omit<EventType, "$id" | "$createdAt" | "$updatedAt">): Promise<EventType> {
-    const response = await databases.createDocument(
-      DATABASE_ID,
-      EVENT_TYPES_COLLECTION,
-      ID.unique(),
-      {
-        ...data,
-        fields: JSON.stringify(data.fields),
-        registrationConfig: JSON.stringify(data.registrationConfig),
-        ticketConfig: JSON.stringify(data.ticketConfig),
-        workflowConfig: JSON.stringify(data.workflowConfig),
-      }
-    );
-    return response as unknown as EventType;
+  async create(_data: Omit<EventType, "$id" | "$createdAt" | "$updatedAt">): Promise<EventType> {
+    throw new Error("Use /api/admin/event-types (server-owned). Browser create is disabled.");
   },
 
-  async update(id: string, data: Partial<EventType>): Promise<EventType> {
-    const updateData: Record<string, any> = { ...data };
-    if (data.fields) updateData.fields = JSON.stringify(data.fields);
-    if (data.registrationConfig) updateData.registrationConfig = JSON.stringify(data.registrationConfig);
-    if (data.ticketConfig) updateData.ticketConfig = JSON.stringify(data.ticketConfig);
-    if (data.workflowConfig) updateData.workflowConfig = JSON.stringify(data.workflowConfig);
-
-    const response = await databases.updateDocument(
-      DATABASE_ID,
-      EVENT_TYPES_COLLECTION,
-      id,
-      updateData
-    );
-    return response as unknown as EventType;
+  async update(_id: string, _data: Partial<EventType>): Promise<EventType> {
+    throw new Error("Use /api/admin/event-types (server-owned). Browser update is disabled.");
   },
 
-  async delete(id: string): Promise<void> {
-    await databases.deleteDocument(DATABASE_ID, EVENT_TYPES_COLLECTION, id);
+  async delete(_id: string): Promise<void> {
+    throw new Error("Use server admin route. Browser delete is disabled.");
   },
 };

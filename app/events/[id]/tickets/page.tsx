@@ -4,9 +4,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ticketService } from "@/lib/tickets";
 import type { Ticket } from "@/lib/types";
-import { eventService, type Event } from "@/lib/database";
+import type { Event } from "@/lib/types";
+import TicketCard from "@/components/tickets/TicketCard";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import {
   Ticket as TicketIcon,
@@ -46,61 +47,119 @@ export default function EventTicketsPage() {
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [doorForbidden, setDoorForbidden] = useState(false);
+  const [ownTicket, setOwnTicket] = useState<Ticket | null>(null);
 
+  /**
+   * The door list comes from the server, which restricts it to the event owner,
+   * an administrator, or a ticket verifier. Reading the tickets table from the
+   * browser instead meant any signed-in member could enumerate an event's
+   * entire attendee list.
+   */
   const loadData = useCallback(async () => {
     try {
-      const [eventData, ticketsData] = await Promise.all([
-        eventService.getEventById(eventId),
-        ticketService.getByEvent(eventId),
-      ]);
-      setEvent(eventData);
-      setTickets(ticketsData);
+      const eventResponse = await fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { credentials: "include" });
+      const eventPayload = await eventResponse.json().catch(() => null) as { event?: Event; error?: string } | null;
+      if (!eventResponse.ok) throw new Error(eventPayload?.error || "Failed to load event");
+      setEvent(eventPayload?.event ?? null);
+
+      const ticketsResponse = await fetch(`/api/tickets/verify?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store" });
+      if (ticketsResponse.status === 403) {
+        // No door authority: fall back to the member view (caller's own ticket).
+        setDoorForbidden(true);
+        const registerResponse = await fetch("/api/events/register", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const registerPayload = await registerResponse.json().catch(() => null) as {
+          tickets?: Array<{ $id?: string; eventId: string; ticketCode: string; status: string; issuedAt?: string }>;
+          error?: string;
+        } | null;
+        if (!registerResponse.ok) {
+          throw new Error(registerPayload?.error || "Failed to load your ticket");
+        }
+        const mine = (registerPayload?.tickets ?? []).find((t) => t.eventId === eventId) ?? null;
+        setOwnTicket(
+          mine
+            ? {
+                $id: mine.$id,
+                eventId,
+                userId: user?.$id ?? "",
+                registrationId: "",
+                ticketCode: mine.ticketCode,
+                qrData: JSON.stringify({ ticketCode: mine.ticketCode, eventId }),
+                status: (mine.status as Ticket["status"]) ?? "issued",
+                issuedAt: mine.issuedAt,
+                entryCount: 0,
+                maxEntries: 1,
+              }
+            : null
+        );
+        setTickets([]);
+        return;
+      }
+      setDoorForbidden(false);
+
+      const payload = await ticketsResponse.json().catch(() => null) as { tickets?: Ticket[]; error?: string } | null;
+      if (!ticketsResponse.ok) {
+        throw new Error(payload?.error || "Failed to load tickets");
+      }
+      setTickets(payload?.tickets ?? []);
     } catch (error) {
       console.error("Error loading tickets:", error);
-      toast.error("Failed to load tickets");
+      toast.error(getErrorMessage(error) || "Failed to load tickets");
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, user?.$id]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleCheckIn = async (ticketId: string) => {
-    if (!user) {
-      toast.error("You must be logged in to check in tickets");
-      return;
-    }
+  const applyTicketAction = useCallback(async (
+    ticketId: string,
+    action: "checkIn" | "invalidate",
+    body: Record<string, unknown> = {}
+  ) => {
+    const response = await fetch("/api/tickets/verify", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticketId, action, method: "manual_search", ...body }),
+    });
+    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+    if (!response.ok) throw new Error(payload?.error || "The ticket could not be updated");
+    return payload;
+  }, []);
 
+  const handleCheckIn = async (ticketId: string) => {
     setCheckingIn(ticketId);
     try {
-      const result = await ticketService.checkIn(ticketId, user.$id, "manual_search");
-      if (result.success) {
-        toast.success(result.message);
-        await loadData();
-      } else {
-        toast.error(result.message);
-      }
+      const payload = await applyTicketAction(ticketId, "checkIn");
+      toast.success(payload?.message || "Checked in");
+      await loadData();
     } catch (error) {
       console.error("Check-in error:", error);
-      toast.error("Failed to check in ticket");
+      toast.error(getErrorMessage(error) || "Failed to check in ticket");
     } finally {
       setCheckingIn(null);
     }
   };
 
   const handleInvalidate = async (ticketId: string) => {
-    const confirmed = window.confirm("Are you sure you want to invalidate this ticket?");
+    const confirmed = window.confirm("Invalidate this ticket? It will no longer be accepted at the door.");
     if (!confirmed) return;
 
+    setCheckingIn(ticketId);
     try {
-      await ticketService.invalidate(ticketId, "Manually invalidated by admin");
+      await applyTicketAction(ticketId, "invalidate", { reason: "Invalidated from the event ticket list" });
       toast.success("Ticket invalidated");
       await loadData();
     } catch (error) {
       console.error("Invalidate error:", error);
-      toast.error("Failed to invalidate ticket");
+      toast.error(getErrorMessage(error) || "Failed to invalidate ticket");
+    } finally {
+      setCheckingIn(null);
     }
   };
 
@@ -187,6 +246,58 @@ export default function EventTicketsPage() {
     );
   }
 
+  // Member view: the caller's own ticket. The staff door list above stays
+  // reserved for door authority (admin / ticket_verifier / event owner).
+  if (doorForbidden) {
+    return (
+      <div className="max-w-xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <Button
+          variant="ghost"
+          onPress={() => router.push(`/events/${eventId}`)}
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Event
+        </Button>
+
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            Your Ticket
+          </h1>
+          <p className="text-default-500 mt-1">
+            {event.title} &mdash; {new Date(event.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          </p>
+        </div>
+
+        {ownTicket ? (
+          <TicketCard
+            ticket={ownTicket}
+            eventTitle={event.title}
+            eventDate={event.date}
+            eventTime={event.time}
+            eventVenue={event.venue}
+            eventLocation={event.location}
+          />
+        ) : (
+          <Card className="border-none shadow-md">
+            <CardContent className="p-12">
+              <div className="text-center">
+                <TicketIcon className="w-16 h-16 text-default-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Ticket Yet</h3>
+                <p className="text-default-500 mb-6">
+                  You don&apos;t have a ticket for this event yet.
+                </p>
+                <Button onPress={() => router.push(`/events/${eventId}`)}>
+                  View Event
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
       {/* Back Button */}
@@ -201,7 +312,7 @@ export default function EventTicketsPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           Ticket Management
         </h1>
         <p className="text-default-500 mt-1">
@@ -218,8 +329,8 @@ export default function EventTicketsPage() {
                 <p className="text-sm text-default-500">Total Issued</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <TicketIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <TicketIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>

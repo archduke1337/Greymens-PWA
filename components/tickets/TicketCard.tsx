@@ -15,7 +15,7 @@ import {
   Copy,
 } from "lucide-react";
 import { Button, Card, CardContent, Badge, Chip } from "@heroui/react";
-import type { Ticket as TicketType } from "@/lib/tickets";
+import type { Ticket as TicketType } from "@/lib/types";
 
 interface TicketCardProps {
   ticket: TicketType;
@@ -213,16 +213,16 @@ export default function TicketCard({
   return (
     <Card
       ref={cardRef}
-      className="border-none shadow-lg overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20"
+      className="border-none shadow-lg overflow-hidden bg-card"
     >
       <CardContent className="p-0">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-white text-center">
+        <div className="bg-primary p-4 text-primary-foreground text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Ticket className="w-5 h-5" />
             <span className="font-bold text-lg">MindMesh Club</span>
           </div>
-          <p className="text-white/80 text-sm">Official E-Ticket</p>
+          <p className="text-primary-foreground/80 text-sm">Official E-Ticket</p>
         </div>
 
         {/* Content */}
@@ -232,15 +232,15 @@ export default function TicketCard({
             <h3 className="text-xl font-bold mb-3">{eventTitle}</h3>
             <div className="flex flex-wrap justify-center gap-3 text-sm text-default-600">
               <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4 text-purple-500" />
+                <Calendar className="w-4 h-4 text-primary" />
                 <span>{new Date(eventDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4 text-purple-500" />
+                <Clock className="w-4 h-4 text-primary" />
                 <span>{eventTime}</span>
               </div>
               <div className="flex items-center gap-1">
-                <MapPin className="w-4 h-4 text-purple-500" />
+                <MapPin className="w-4 h-4 text-primary" />
                 <span>{eventVenue}{eventLocation ? `, ${eventLocation}` : ""}</span>
               </div>
             </div>
@@ -285,6 +285,7 @@ export default function TicketCard({
                 variant="ghost"
                 size="sm"
                 isIconOnly
+                aria-label="Copy ticket code"
                 onPress={handleCopyCode}
               >
                 <Copy className="w-4 h-4" />
@@ -314,7 +315,7 @@ export default function TicketCard({
           {(ticket.status === "issued" || ticket.status === "active") && (
             <Button
               variant="primary"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+              className="w-full bg-primary"
               onPress={handleDownload}
               isDisabled={generating || !qrDataUrl}
             >
