@@ -3,7 +3,6 @@
 
 import { Suspense } from "react";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { account } from "@/lib/appwrite";
 import { useAuth } from "@/context/AuthContext";
@@ -80,24 +79,24 @@ function VerifyEmailContent() {
   }, [searchParams, router, refreshUser]);
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-1 items-center">
           {status === "loading" && (
-            <>
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+            <div role="status" aria-label="Verifying your email" className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-hidden="true" />
               <h2 className="text-xl font-bold mt-4">Verifying Your Email</h2>
-            </>
+            </div>
           )}
           {status === "success" && (
             <>
-              <div className="text-success text-6xl">✓</div>
+              <div className="text-success text-6xl" aria-hidden="true">✓</div>
               <h2 className="text-xl font-bold mt-4 text-success">Email Verified!</h2>
             </>
           )}
           {status === "error" && (
             <>
-              <div className="text-danger text-6xl">✗</div>
+              <div className="text-danger text-6xl" aria-hidden="true">✗</div>
               <h2 className="text-xl font-bold mt-4 text-danger">Verification Failed</h2>
             </>
           )}
@@ -115,13 +114,12 @@ function VerifyEmailContent() {
               <p className="text-default-500">
                 Your email has been successfully verified! You will be redirected to your profile shortly.
               </p>
-              <a href="/profile">
-                <Button
-                  className="mt-4"
-                >
-                  Go to Profile
-                </Button>
-              </a>
+              <Button
+                className="mt-4"
+                onPress={() => router.push("/profile")}
+              >
+                Go to Profile
+              </Button>
             </>
           )}
           
@@ -149,20 +147,18 @@ function VerifyEmailContent() {
                 >
                   Resend verification email
                 </Button>
-                <Link href="/settings">
-                  <Button
-                    variant="primary"
-                  >
-                    Go to Settings
-                  </Button>
-                </Link>
-                <Link href="/">
-                  <Button
-                    variant="ghost"
-                  >
-                    Go Home
-                  </Button>
-                </Link>
+                <Button
+                  variant="primary"
+                  onPress={() => router.push("/settings")}
+                >
+                  Go to Settings
+                </Button>
+                <Button
+                  variant="ghost"
+                  onPress={() => router.push("/")}
+                >
+                  Go Home
+                </Button>
               </div>
             </>
           )}

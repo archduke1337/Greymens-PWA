@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircleIcon, XCircleIcon, AlertCircleIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Spinner } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader } from "@heroui/react";
 
 interface ConnectivityResult {
   status: "checking" | "success" | "error";
@@ -49,7 +49,10 @@ export default function ConnectivityCheckPage() {
         return;
       }
 
-      // Try to reach the Appwrite endpoint
+      // Reachability probe (not an auth check): only a 2xx counts as
+      // reachable. A 4xx from an unauthenticated root request proves the
+      // host answers but says nothing about the database — report it as
+      // unknown and point at /api/health for the real check.
       try {
         const response = await fetch(endpoint, {
           method: "GET",
@@ -58,19 +61,21 @@ export default function ConnectivityCheckPage() {
           },
         });
 
-        const databaseReachable = response.ok || response.status < 500;
+        const reachable = response.ok;
 
         setResult({
-          status: "success",
-          message: "Connection test completed",
+          status: reachable ? "success" : "error",
+          message: reachable
+            ? "Connection test completed"
+            : `Backend answered with status ${response.status} — run /api/health for the full check`,
           details: {
             endpoint,
             projectId: projectId.substring(0, 8) + "...",
-            appwriteReachable: true,
-            databaseReachable,
+            appwriteReachable: reachable,
+            databaseReachable: reachable,
             timestamp: new Date().toISOString(),
           },
-          errors: databaseReachable ? [] : ["Backend responded with error"],
+          errors: reachable ? [] : [`Endpoint returned status ${response.status}`],
         });
       } catch (error) {
         setResult({
@@ -116,34 +121,29 @@ export default function ConnectivityCheckPage() {
 
         <Card className="mb-6 border-0 bg-slate-800">
           <CardContent className="py-8">
-            {loading ? (
-              <div className="flex items-center justify-center gap-3">
-                <Spinner color="accent" />
-                <span className="text-slate-300">Testing connection...</span>
-              </div>
-            ) : (
-              <Button size="lg"
-                className="w-full"
-                onPress={checkConnectivity}
-                isPending={loading}
-              >
-                Run Connectivity Test
-              </Button>
-            )}
+            <Button size="lg"
+              className="w-full"
+              onPress={checkConnectivity}
+              isPending={loading}
+              isDisabled={loading}
+            >
+              {loading ? "Testing connection..." : "Run Connectivity Test"}
+            </Button>
           </CardContent>
         </Card>
 
+        <div aria-live="polite">
         {result && (
           <>
             <Card className="mb-6 border-0 bg-slate-800">
               <CardHeader className="flex gap-3 bg-slate-700/50">
                 <div className="flex items-center gap-2">
                   {result.status === "success" ? (
-                    <CheckCircleIcon className="w-6 h-6 text-green-500" />
+                    <CheckCircleIcon className="w-6 h-6 text-green-500" aria-hidden="true" />
                   ) : result.status === "error" ? (
-                    <XCircleIcon className="w-6 h-6 text-red-500" />
+                    <XCircleIcon className="w-6 h-6 text-red-500" aria-hidden="true" />
                   ) : (
-                    <AlertCircleIcon className="w-6 h-6 text-yellow-500" />
+                    <AlertCircleIcon className="w-6 h-6 text-yellow-500" aria-hidden="true" />
                   )}
                   <h2 className="text-xl font-bold text-white">
                     {result.message}
@@ -236,6 +236,7 @@ export default function ConnectivityCheckPage() {
             )}
           </>
         )}
+        </div>
 
         <Card className="mt-8 border-0 bg-slate-800/50">
           <CardHeader className="text-lg font-bold text-white">
