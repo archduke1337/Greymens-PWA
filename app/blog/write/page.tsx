@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Select, ListBoxItem, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -144,8 +144,21 @@ export default function WriteBlogPage() {
   };
 
   if (!user) {
-    return null;
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-4xl text-center" role="status" aria-label="Redirecting to login">
+        <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-default-500 mt-4">Sign in required — taking you to login...</p>
+      </div>
+    );
   }
+
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/blog");
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -154,7 +167,7 @@ export default function WriteBlogPage() {
         <Button
           variant="ghost"
           className="mb-4"
-          onPress={() => router.back()}
+          onPress={goBack}
         >
           Back
         </Button>
@@ -172,47 +185,72 @@ export default function WriteBlogPage() {
         <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
-            <Input
-              placeholder="Enter an engaging title..."
-              value={formData.title}
-              onChange={(e: any) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              required
-            />
+            <div>
+              <label htmlFor="blog-title" className="text-sm font-medium mb-1 block">
+                Title <span className="text-danger" aria-hidden="true">*</span>
+              </label>
+              <Input
+                id="blog-title"
+                placeholder="Enter an engaging title..."
+                value={formData.title}
+                onChange={(e: any) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+              />
+            </div>
 
             {/* Excerpt */}
-            <TextArea
-              placeholder="Brief summary of your blog..."
-              value={formData.excerpt}
-              onChange={(e: any) =>
-                setFormData({ ...formData, excerpt: e.target.value })
-              }
-              rows={3}
-            />
+            <div>
+              <label htmlFor="blog-excerpt" className="text-sm font-medium mb-1 block">
+                Excerpt
+              </label>
+              <TextArea
+                id="blog-excerpt"
+                placeholder="Brief summary of your blog..."
+                value={formData.excerpt}
+                onChange={(e: any) =>
+                  setFormData({ ...formData, excerpt: e.target.value })
+                }
+                rows={3}
+              />
+            </div>
 
             {/* Category */}
-            <select
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              required
-              className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-            >
-              <option value="">Select a category</option>
-              {blogCategories.map((cat) => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
+            <div>
+              <label htmlFor="blog-category" className="text-sm font-medium mb-1 block">
+                Category <span className="text-danger" aria-hidden="true">*</span>
+              </label>
+              <select
+                id="blog-category"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                required
+                className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+              >
+                <option value="">Select a category</option>
+                {blogCategories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
 
             {/* Tags */}
-            <Input
-              placeholder="react, javascript, tutorial (comma separated)"
-              value={formData.tags}
-              onChange={(e: any) =>
-                setFormData({ ...formData, tags: e.target.value })
-              }
-            />
+            <div>
+              <label htmlFor="blog-tags" className="text-sm font-medium mb-1 block">
+                Tags
+              </label>
+              <Input
+                id="blog-tags"
+                placeholder="react, javascript, tutorial (comma separated)"
+                value={formData.tags}
+                onChange={(e: any) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
+              />
+            </div>
 
             {/* Cover Image */}
             <div className="space-y-4">
@@ -233,15 +271,17 @@ export default function WriteBlogPage() {
                     aria-label="Upload cover image"
                     placeholder="Upload cover image"
                   />
-                  <label htmlFor="cover-image-upload" className="w-full block">
                   <Button
+                    type="button"
                     variant="primary"
                     isPending={uploadingImage}
                     className="w-full"
+                    onPress={() =>
+                      document.getElementById("cover-image-upload")?.click()
+                    }
                   >
                     {uploadingImage ? "Uploading..." : "Upload Image"}
                   </Button>
-                  </label>
                   <p className="text-xs text-default-500 mt-2">
                     Max 5MB (JPG, PNG, WebP)
                   </p>
@@ -275,15 +315,21 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Content */}
-            <TextArea
-              placeholder="Write your blog content here... (Markdown supported)"
-              value={formData.content}
-              onChange={(e: any) =>
-                setFormData({ ...formData, content: e.target.value })
-              }
-              required
-              rows={15}
-            />
+            <div>
+              <label htmlFor="blog-content" className="text-sm font-medium mb-1 block">
+                Content <span className="text-danger" aria-hidden="true">*</span>
+              </label>
+              <TextArea
+                id="blog-content"
+                placeholder="Write your blog content here... (Markdown supported)"
+                value={formData.content}
+                onChange={(e: any) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
+                required
+                rows={15}
+              />
+            </div>
 
             {/* Word Count */}
             <div className="text-sm text-default-500">
@@ -294,7 +340,8 @@ export default function WriteBlogPage() {
             {/* Submit Button */}
             <div className="flex gap-4 pt-4">
               <Button
-                variant="primary"
+                type="button"
+                variant="ghost"
                 className="flex-1"
                 onPress={() => router.push("/blog")}
               >

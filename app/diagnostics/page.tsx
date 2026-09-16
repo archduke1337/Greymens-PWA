@@ -6,8 +6,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Badge, Button, Card, CardContent, CardHeader } from "@heroui/react";
+import { useRouter } from "next/navigation";
+import { Button, Card, CardContent, CardHeader, Chip } from "@heroui/react";
 import {
   DatabaseIcon,
   ServerIcon,
@@ -39,23 +39,25 @@ interface DiagnosticsData {
 }
 
 export default function DiagnosticsPage() {
+  const router = useRouter();
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const collectDiagnostics = async () => {
+      const hasEnvVars =
+        !!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT &&
+        !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
       const data: DiagnosticsData = {
         timestamp: new Date().toISOString(),
         environment: {
           nodeEnv: process.env.NODE_ENV || "unknown",
-          hasEnvVars:
-            !!process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT &&
-            !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-          requiredVarsPresent: true,
+          hasEnvVars,
+          requiredVarsPresent: hasEnvVars,
         },
         services: [],
         buildInfo: {
-          nextVersion: "14.x",
+          nextVersion: "16.x",
           typescript: true,
         },
       };
@@ -88,18 +90,22 @@ export default function DiagnosticsPage() {
           },
         });
 
-        // Try to test Appwrite connectivity
+        // Reachability probe (not an auth check): only a 2xx from the
+        // endpoint root counts as reachable. Anything else — including 4xx,
+        // which an unauthenticated root request normally returns — is
+        // reported honestly instead of as "connected".
         try {
           const response = await fetch(endpoint, {
             method: "GET",
             headers: { Accept: "application/json" },
           });
+          const reachable = response.ok;
           data.services.push({
             name: "Appwrite Endpoint",
-            status: response.ok ? "connected" : "disconnected",
-            message: response.ok
+            status: reachable ? "connected" : "unknown",
+            message: reachable
               ? "Endpoint is reachable"
-              : `Endpoint returned status ${response.status}`,
+              : `Endpoint returned status ${response.status} (for a full check, use /api/health)`,
           });
         } catch (error) {
           data.services.push({
@@ -166,7 +172,7 @@ export default function DiagnosticsPage() {
 
         {loading ? (
           <Card className="bg-card border">
-            <CardContent className="py-12 text-center">
+            <CardContent className="py-12 text-center" role="status" aria-label="Loading diagnostics">
               <div className="text-default-500">Loading diagnostics...</div>
             </CardContent>
           </Card>
@@ -187,11 +193,11 @@ export default function DiagnosticsPage() {
                 </div>
                 <div>
                   <p className="text-default-500 text-sm">Env Variables</p>
-                  <Badge color={diagnostics.environment.hasEnvVars ? "success" : "danger"}>
+                  <Chip color={diagnostics.environment.hasEnvVars ? "success" : "danger"} variant="soft">
                     {diagnostics.environment.hasEnvVars
                       ? "✓ Configured"
                       : "✗ Missing"}
-                  </Badge>
+                  </Chip>
                 </div>
                 <div>
                   <p className="text-default-500 text-sm">Timestamp</p>
@@ -209,9 +215,9 @@ export default function DiagnosticsPage() {
                 <h2 className="text-xl font-bold">Services</h2>
               </CardHeader>
               <CardContent className="py-6 space-y-4">
-                {diagnostics.services.map((service, idx) => (
+                {diagnostics.services.map((service) => (
                   <div
-                    key={idx}
+                    key={service.name}
                     className="flex items-start gap-4 p-4 bg-muted rounded-lg border"
                   >
                     <div className="mt-1">
@@ -220,9 +226,9 @@ export default function DiagnosticsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-bold text-foreground">{service.name}</h3>
-                        <Badge color={getStatusColor(service.status)} size="sm">
+                        <Chip color={getStatusColor(service.status)} size="sm" variant="soft">
                           {service.status}
-                        </Badge>
+                        </Chip>
                       </div>
                       <p className="text-default-600 text-sm mb-2">
                         {service.message}
@@ -256,17 +262,13 @@ export default function DiagnosticsPage() {
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </CardHeader>
               <CardContent className="py-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <Link href="/connectivity-check">
-                    <Button variant="primary">
-                      Connection Test
-                    </Button>
-                  </Link>
-                  <Link href="/events">
-                    <Button variant="primary">
-                      Test Events Page
-                    </Button>
-                  </Link>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Button variant="primary" onPress={() => router.push("/connectivity-check")}>
+                    Connection Test
+                  </Button>
+                  <Button variant="primary" onPress={() => router.push("/events")}>
+                    Test Events Page
+                  </Button>
                 </div>
               </CardContent>
             </Card>

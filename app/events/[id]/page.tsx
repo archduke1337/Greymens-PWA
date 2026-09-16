@@ -26,7 +26,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarImage, AvatarFallback, Badge, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -379,20 +379,18 @@ export default function EventDetailPage() {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-wrap gap-2 mb-4">
               {event.isFeatured && (
-                <Badge variant="primary" className="font-bold">
+                <Chip color="accent" variant="primary" size="sm" className="font-bold">
                   <Star className="w-3 h-3 mr-1" />
                   Featured
-                </Badge>
+                </Chip>
               )}
               {event.isPremium && (
-                <Badge variant="primary" className="font-bold">
+                <Chip color="warning" variant="primary" size="sm" className="font-bold">
                   <Crown className="w-3 h-3 mr-1" />
                   Premium
-                </Badge>
+                </Chip>
               )}
-              <Badge variant="primary">
-                {event.category}
-              </Badge>
+              <Chip size="sm">{event.category}</Chip>
             </div>
             
             <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
@@ -555,9 +553,9 @@ export default function EventDetailPage() {
                     )}
                   </div>
                   {event.discountPrice && event.discountPrice < event.price && calculateDiscount(event.price, event.discountPrice) > 0 && (
-                    <Badge variant="primary" size="lg">
+                    <Chip color="success" variant="soft" size="lg">
                       Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
-                    </Badge>
+                    </Chip>
                   )}
                 </div>
 

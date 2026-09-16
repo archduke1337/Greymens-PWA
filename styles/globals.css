@@ -14,9 +14,110 @@
 /* HeroUI v3 styles */
 @import "@heroui/styles";
 
+/*
+ * v2-name compatibility bridge.
+ *
+ * The codebase was written against HeroUI v2 token names (primary, card,
+ * divider, muted-foreground, and numeric default/danger/success/warning
+ * steps). HeroUI v3 renamed the vocabulary (accent, surface, separator,
+ * muted, soft pairs) and ships no numeric ramps — so every one of those
+ * utilities silently generated nothing (verified against the built CSS:
+ * bg-primary, text-default-600, bg-card, … were absent from the bundle).
+ *
+ * Rather than rewriting ~700 call sites, this block aliases the old names
+ * onto live v3 tokens. Because every alias points at a theme-aware variable
+ * (not a fixed color), light and dark mode keep working, including with
+ * opacity modifiers (bg-primary/10) and state variants (hover:, dark:).
+ * New code should prefer the v3 names directly (accent, surface, muted,
+ * separator, danger-soft, …).
+ */
+@theme inline {
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-primary-50: var(--accent-soft);
+  --color-primary-100: var(--accent-soft);
+  --color-primary-600: var(--accent);
+  --color-primary-700: var(--accent);
+
+  --color-card: var(--surface);
+  --color-card-foreground: var(--surface-foreground);
+
+  --color-muted-foreground: var(--muted);
+  --color-divider: var(--separator);
+
+  --color-default-50: var(--surface);
+  --color-default-100: var(--surface-secondary);
+  --color-default-200: var(--surface-tertiary);
+  --color-default-300: var(--border);
+  --color-default-400: var(--muted);
+  --color-default-500: var(--muted);
+  --color-default-600: var(--foreground);
+  --color-default-700: var(--foreground);
+  --color-default-900: var(--foreground);
+
+  --color-danger-50: var(--danger-soft);
+  --color-danger-100: var(--danger-soft);
+  --color-danger-900: var(--danger);
+
+  --color-success-50: var(--success-soft);
+  --color-success-100: var(--success-soft);
+  --color-success-300: var(--success);
+  --color-success-700: var(--success);
+  --color-success-900: var(--success);
+
+  --color-warning-50: var(--warning-soft);
+  --color-warning-100: var(--warning-soft);
+  --color-warning-200: var(--warning);
+  --color-warning-300: var(--warning);
+  --color-warning-700: var(--warning);
+  --color-warning-800: var(--warning);
+  --color-warning-900: var(--warning);
+
+  --color-success-200: var(--success);
+  --color-success-800: var(--success);
+}
+
 /* Base styles */
 @layer base {
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/*
+ * Pending affordance for HeroUI buttons.
+ *
+ * v3 Buttons forward isPending to React Aria, which sets data-pending but
+ * renders no spinner — a pending button with static text looks merely
+ * disabled. This prefixes a CSS spinner to every pending text button
+ * (icon-only buttons are excluded: they already dim and have no room).
+ * Buttons that swap their own label ("Registering…") simply gain the
+ * spinner as well. Honors reduced-motion via a static ring.
+ */
+@layer components {
+  .button[data-pending="true"]:not(.button--icon-only)::before {
+    content: "";
+    display: inline-block;
+    flex: none;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    vertical-align: -0.125em;
+    border-radius: 9999px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: heroui-pending-spin 0.7s linear infinite;
+  }
+
+  @keyframes heroui-pending-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .button[data-pending="true"]:not(.button--icon-only)::before {
+      animation: none;
+    }
   }
 }

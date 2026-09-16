@@ -14,7 +14,7 @@ import {
   Ticket,
   Copy,
 } from "lucide-react";
-import { Button, Card, CardContent, Badge, Chip } from "@heroui/react";
+import { Button, Card, CardContent, Chip } from "@heroui/react";
 import type { Ticket as TicketType } from "@/lib/types";
 
 interface TicketCardProps {
@@ -187,24 +187,28 @@ export default function TicketCard({
     }
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(ticket.ticketCode);
-    toast.success("Ticket code copied!");
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(ticket.ticketCode);
+      toast.success("Ticket code copied!");
+    } catch {
+      toast.error("Could not copy — long-press the code to copy it manually");
+    }
   };
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "issued":
       case "active":
-        return { color: "primary" as const, label: "Valid" };
+        return { color: "accent" as const, label: "Valid" };
       case "checked_in":
-        return { color: "primary" as const, label: "Checked In" };
+        return { color: "success" as const, label: "Checked In" };
       case "invalidated":
-        return { color: "secondary" as const, label: "Invalidated" };
+        return { color: "danger" as const, label: "Invalidated" };
       case "completed":
-        return { color: "soft" as const, label: "Completed" };
+        return { color: "default" as const, label: "Completed" };
       default:
-        return { color: "secondary" as const, label: status };
+        return { color: "default" as const, label: status };
     }
   };
 
@@ -296,11 +300,11 @@ export default function TicketCard({
           {/* Status */}
           <div className="flex items-center justify-between">
             <span className="text-sm text-default-500">Status</span>
-            <Badge variant={statusConfig.color} size="lg">
+            <Chip color={statusConfig.color} size="lg" variant="soft">
               {ticket.status === "checked_in" && <CheckCircle className="w-3 h-3 mr-1" />}
               {ticket.status === "invalidated" && <XCircle className="w-3 h-3 mr-1" />}
               {statusConfig.label}
-            </Badge>
+            </Chip>
           </div>
 
           {/* Entry Count */}

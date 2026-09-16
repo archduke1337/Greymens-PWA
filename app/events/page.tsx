@@ -18,7 +18,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Badge, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar, Select, ListBoxItem} from "@heroui/react";
+import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar } from "@heroui/react";
 
 const categories = [
   { key: "all", label: "All Events" },
@@ -336,16 +336,16 @@ export default function EventsPage() {
 
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {event.isFeatured && (
-                      <Badge variant="primary" className="font-bold">
+                      <Chip color="accent" variant="primary" size="sm" className="font-bold">
                         <StarIcon className="w-3 h-3 mr-1" />
                         Featured
-                      </Badge>
+                      </Chip>
                     )}
                     {event.isPremium && (
-                      <Badge variant="primary" className="font-bold">
+                      <Chip color="warning" variant="primary" size="sm" className="font-bold">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
-                      </Badge>
+                      </Chip>
                     )}
                   </div>
 
@@ -368,9 +368,9 @@ export default function EventsPage() {
 
                   {event.discountPrice && event.discountPrice < event.price && calculateDiscount(event.price, event.discountPrice) > 0 && (
                     <div className="absolute bottom-4 left-4">
-                      <Badge variant="primary">
+                      <Chip color="success" variant="primary" size="sm">
                         {calculateDiscount(event.price, event.discountPrice)}% OFF
-                      </Badge>
+                      </Chip>
                     </div>
                   )}
                 </div>

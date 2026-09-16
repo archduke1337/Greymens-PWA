@@ -3,7 +3,7 @@
 import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Project } from "@/lib/types";
-import { Badge, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
+import { Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
 import {
   CodeIcon,
   UsersIcon,
@@ -133,13 +133,9 @@ export default function ProjectsPage() {
           <CardContent className="text-center py-16 space-y-4">
             <h2 className="text-xl font-semibold">Projects could not be loaded</h2>
             <p className="text-default-500 max-w-md mx-auto">{error}</p>
-            <button
-              type="button"
-              onClick={fetchProjects}
-              className="text-sm font-medium underline underline-offset-4"
-            >
+            <Button variant="primary" onPress={fetchProjects}>
               Try again
-            </button>
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -154,16 +150,19 @@ export default function ProjectsPage() {
                     <div className="relative bg-default-100">
                       <img
                         src={project.image}
-                        alt={project.title}
+                        alt=""
                         loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
                         className="w-full h-48 object-cover"
                       />
                       {project.isFeatured && (
                         <div className="absolute top-4 left-4">
-                          <Badge variant="primary">
+                          <Chip color="accent" variant="primary" size="sm">
                             <StarIcon className="w-3 h-3 mr-1" />
                             Featured
-                          </Badge>
+                          </Chip>
                         </div>
                       )}
                       <div className="absolute bottom-4 right-4">
@@ -268,11 +267,17 @@ export default function ProjectsPage() {
                             </span>
                           </a>
                         )}
-                        <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                          <span className="block text-center text-sm font-medium underline underline-offset-4 py-2">
-                            View code
+                        {project.repoUrl ? (
+                          <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" aria-label={`View code for ${project.title} (opens in new tab)`} className="flex-1">
+                            <span className="block text-center text-sm font-medium underline underline-offset-4 py-2">
+                              View code
+                            </span>
+                          </a>
+                        ) : (
+                          <span className="flex-1 block text-center text-sm text-default-400 py-2">
+                            Code not shared
                           </span>
-                        </a>
+                        )}
                       </div>
                     </CardFooter>
                   </CardContent>

@@ -32,7 +32,6 @@ import {
   CardContent,
   Chip,
   Input,
-  Badge,
 } from "@heroui/react";
 
 export default function EventTicketsPage() {
@@ -63,7 +62,7 @@ export default function EventTicketsPage() {
       if (!eventResponse.ok) throw new Error(eventPayload?.error || "Failed to load event");
       setEvent(eventPayload?.event ?? null);
 
-      const ticketsResponse = await fetch(`/api/tickets/verify?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store" });
+      const ticketsResponse = await fetch(`/api/tickets/verify?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store", credentials: "include" });
       if (ticketsResponse.status === 403) {
         // No door authority: fall back to the member view (caller's own ticket).
         setDoorForbidden(true);
@@ -124,6 +123,7 @@ export default function EventTicketsPage() {
   ) => {
     const response = await fetch("/api/tickets/verify", {
       method: "PATCH",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ticketId, action, method: "manual_search", ...body }),
     });
@@ -185,39 +185,26 @@ export default function EventTicketsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusChip = (status: string): { color: "accent" | "success" | "danger" | "default"; label: string } => {
     switch (status) {
       case "issued":
       case "active":
-        return "primary";
+        return { color: "accent", label: status === "issued" ? "Issued" : "Active" };
       case "checked_in":
-        return "primary";
+        return { color: "success", label: "Checked In" };
       case "invalidated":
-        return "secondary";
+        return { color: "danger", label: "Invalidated" };
       case "completed":
-        return "soft";
+        return { color: "default", label: "Completed" };
+      case "transferred":
+        return { color: "default", label: "Transferred" };
       default:
-        return "secondary";
+        return { color: "default", label: status };
     }
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "issued":
-        return "Issued";
-      case "active":
-        return "Active";
-      case "checked_in":
-        return "Checked In";
-      case "invalidated":
-        return "Invalidated";
-      case "completed":
-        return "Completed";
-      case "transferred":
-        return "Transferred";
-      default:
-        return status;
-    }
+    return getStatusChip(status).label;
   };
 
   if (loading) {
@@ -384,7 +371,11 @@ export default function EventTicketsPage() {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
+              <label htmlFor="ticket-search" className="sr-only">
+                Search tickets by code or attendee
+              </label>
               <Input
+                id="ticket-search"
                 placeholder="Search by ticket code or user ID..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
@@ -437,9 +428,9 @@ export default function EventTicketsPage() {
                   {/* Ticket Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <Badge variant={getStatusColor(ticket.status) as any} size="lg">
-                        {getStatusLabel(ticket.status)}
-                      </Badge>
+                      <Chip color={getStatusChip(ticket.status).color} size="lg" variant="soft">
+                        {getStatusChip(ticket.status).label}
+                      </Chip>
                       <span className="text-sm font-mono text-default-500">
                         {ticket.ticketCode}
                       </span>
@@ -447,12 +438,12 @@ export default function EventTicketsPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-2 text-default-600">
-                        <User className="w-4 h-4 text-default-400 flex-shrink-0" />
-                        <span className="truncate">User: {ticket.userId}</span>
+                        <User className="w-4 h-4 text-default-400 flex-shrink-0" aria-hidden="true" />
+                        <span className="truncate" title={ticket.userId}>Attendee: {ticket.userId.slice(0, 8)}…</span>
                       </div>
                       <div className="flex items-center gap-2 text-default-600">
-                        <Hash className="w-4 h-4 text-default-400 flex-shrink-0" />
-                        <span className="truncate">QR: {ticket.qrData}</span>
+                        <Hash className="w-4 h-4 text-default-400 flex-shrink-0" aria-hidden="true" />
+                        <span className="truncate font-mono" title={ticket.ticketCode}>{ticket.ticketCode}</span>
                       </div>
                       {ticket.issuedAt && (
                         <div className="flex items-center gap-2 text-default-600">

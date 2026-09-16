@@ -19,7 +19,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { Button, Card, CardContent, InputGroup, Badge } from "@heroui/react";
+import { Button, Card, CardContent, Chip, InputGroup } from "@heroui/react";
 
 interface QRScannerProps {
   eventId: string;
@@ -543,18 +543,19 @@ export default function QRScanner({ eventId, onCheckIn }: QRScannerProps) {
                       <span className="truncate">{lastResult.ticket.userId}</span>
                     </div>
                     <div className="mt-2">
-                      <Badge
-                        variant={
+                      <Chip
+                        color={
                           lastResult.ticket.status === "checked_in"
-                            ? "primary"
+                            ? "success"
                             : lastResult.ticket.status === "invalidated"
-                              ? "secondary"
-                              : "primary"
+                              ? "danger"
+                              : "accent"
                         }
+                        variant="soft"
                         size="sm"
                       >
                         {lastResult.ticket.status}
-                      </Badge>
+                      </Chip>
                     </div>
                   </div>
                 )}
