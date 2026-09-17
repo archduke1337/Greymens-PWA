@@ -12,6 +12,7 @@ import {
 } from "@/lib/profile-fields";
 import { ok, fail, ApiError } from "@/lib/api";
 import { isRecord } from "@/lib/validation";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
@@ -20,6 +21,10 @@ const MEMBERSHIP_STATUSES = new Set([
   "inactive",
   "banned",
   "suspended",
+  // "deactivated" is a real restriction state (RESTRICTED_STATUSES, dashboard
+  // and filters model it) but was unsettable — every deactivation had to go
+  // through "inactive", which grants nothing restriction-wise.
+  "deactivated",
 ]);
 
 function boundedInt(
@@ -221,6 +226,15 @@ export async function PATCH(request: NextRequest) {
 
   if (!userId)
     return fail("VALIDATION", "userId is required", 400);
+
+  // Tier grants and bans are single-writer sensitive: throttle per actor.
+  // Note on granularity: set_governance_role shares the users.update gate.
+  // users.manage_roles exists in the vocabulary but no office or template
+  // grants it, so splitting the gate today would only add confusion — only
+  // "*" holders reach this switch at all.
+  if (!consumeRateLimit(`admin-users:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     switch (action) {

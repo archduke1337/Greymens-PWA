@@ -241,7 +241,13 @@ async function resolveMembershipStatusInner(userId: string): Promise<string> {
   let base = profiles.documents.length > 0 ? "account" : "no_account";
 
   if (membershipStatus === "active" || applicationStatus === "approved") {
-    base = "member";
+    // An explicit inactive membership outranks an approved application: the
+    // membership row is the live switch, the application row is history.
+    // Without this, "Deactivate" in the console changed nothing for anyone
+    // whose application still said approved.
+    if (membershipStatus !== "inactive") {
+      base = "member";
+    }
   } else if (
     applicationStatus === "pending" ||
     applicationStatus === "reapplied" ||
@@ -285,7 +291,19 @@ async function resolveMembershipStatusInner(userId: string): Promise<string> {
 }
 
 export async function isAdminUser(user: AppwriteUser): Promise<boolean> {
-  if (isBootstrapAdmin(user.email)) return true;
+  // Restriction outranks the bootstrap escape hatch: banning a bootstrap
+  // email must actually revoke it on every path that consults isAdminUser
+  // (ticket door, dashboard payload), not just the capability engine.
+  // DB-unreachable still falls through to bootstrap (setup must work before
+  // any row exists); a resolved restriction always wins.
+  if (isBootstrapAdmin(user.email)) {
+    try {
+      if (RESTRICTED_STATUSES.has(await resolveMembershipStatus(user.$id))) return false;
+    } catch {
+      // Ignore: resolve failed, bootstrap still counts.
+    }
+    return true;
+  }
 
   try {
     return ADMIN_STATUSES.has(await resolveMembershipStatus(user.$id));
@@ -312,14 +330,17 @@ export async function requireAdmin(request: NextRequest): Promise<AuthResult> {
 export async function getMembershipStatus(user: AppwriteUser): Promise<string> {
   // A bootstrap administrator must resolve to `admin` for the client too, or
   // the console would be reachable by direct URL while every admin control in
-  // the navigation stayed hidden.
-  if (isBootstrapAdmin(user.email)) return "admin";
-
+  // the navigation stayed hidden. Restriction still outranks bootstrap: a
+  // banned bootstrap email resolves to its restriction, not admin.
+  let resolved: string | null = null;
   try {
-    return await resolveMembershipStatus(user.$id);
+    resolved = await resolveMembershipStatus(user.$id);
   } catch {
-    return "account";
+    resolved = null;
   }
+  if (resolved !== null && RESTRICTED_STATUSES.has(resolved)) return resolved;
+  if (isBootstrapAdmin(user.email)) return "admin";
+  return resolved ?? "account";
 }
 
 export function isMemberStatus(status: string): boolean {

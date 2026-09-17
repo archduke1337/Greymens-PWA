@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/server-audit";
 import { getAccountNames } from "@/lib/server-users";
 import { welcomeLetter } from "@/lib/letters";
 import { isRecord } from "@/lib/validation";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail, ApiError } from "@/lib/api";
 
 const APPLICATION_STATUSES = new Set(["pending", "approved", "rejected", "reapplied"]);
@@ -119,6 +120,11 @@ export async function POST(request: NextRequest) {
   if (!(await hasServerCapability(authenticated.user.$id, required))) {
     return fail("FORBIDDEN", "Forbidden", 403);
   }
+  // Approval fans out to membership + departments + notification writes:
+  // throttle per actor so a stuck client cannot duplicate the fan-out.
+  if (!consumeRateLimit(`membership-review:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, MAX_REASON_LENGTH) : "";
   if (action === "reject" && !reason) {
@@ -133,8 +139,17 @@ export async function POST(request: NextRequest) {
     const currentStatus = String(application.status ?? "");
 
     // State-machine guard: only pending/reapplied transition.
+    // alreadyApproved still falls through to the membership check below: a
+    // creation blip can leave approved-app/no-membership limbo, and a no-op
+    // here would make it unrepairable (re-approve no-ops, onboarding 409s).
     if (action === "approve" && currentStatus === "approved") {
-      return ok({ application, alreadyApproved: true });
+      const repairCheck = await databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
+        Query.equal("userId", [applicantId]),
+        Query.limit(1),
+      ]);
+      if (repairCheck.documents.length > 0) {
+        return ok({ application, alreadyApproved: true });
+      }
     }
     if (action === "reject" && currentStatus === "rejected") {
       return ok({ application, alreadyRejected: true });
@@ -157,6 +172,8 @@ export async function POST(request: NextRequest) {
 
       // Reject-after-approve must deactivate membership, otherwise user remains member.
       let departmentsRevoked = 0;
+      let powersRevoked = 0;
+      let designationsRevoked = 0;
       if (currentStatus === "approved") {
         const mems = await databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
           Query.equal("userId", [applicantId]),
@@ -178,8 +195,29 @@ export async function POST(request: NextRequest) {
             isActive: false,
           }).then(() => { departmentsRevoked += 1; }).catch(() => null),
         ));
-        // NOTE: user_powers / user_designations are left intact — those are
-        // explicit grants and need provenance tracking before auto-revocation.
+        // Powers and designations are explicit grants, but a rejected
+        // ex-member must not keep them: revocation is recorded in the audit
+        // entry below, which preserves the provenance.
+        const [powerRows, desigRows] = await Promise.all([
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
+            Query.equal("userId", [applicantId]),
+            Query.equal("isActive", [true]),
+            Query.limit(500),
+          ]).catch(() => ({ documents: [] as unknown[] })),
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+            Query.equal("userId", [applicantId]),
+            Query.equal("isActive", [true]),
+            Query.limit(500),
+          ]).catch(() => ({ documents: [] as unknown[] })),
+        ]);
+        await Promise.all([
+          ...(powerRows as { documents: Array<{ $id: string }> }).documents.map((row) =>
+            databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_POWERS, row.$id, { isActive: false })
+              .then(() => { powersRevoked += 1; }).catch(() => null)),
+          ...(desigRows as { documents: Array<{ $id: string }> }).documents.map((row) =>
+            databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, row.$id, { isActive: false })
+              .then(() => { designationsRevoked += 1; }).catch(() => null)),
+        ]);
       }
 
       await databases.createDocument(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, ID.unique(), {
@@ -197,7 +235,7 @@ export async function POST(request: NextRequest) {
         action: "reject_application",
         entityType: "application",
         entityId: applicationId,
-        details: { applicantId, reason, departmentsRevoked },
+        details: { applicantId, reason, departmentsRevoked, powersRevoked, designationsRevoked },
       });
 
       return ok({ application: updated });

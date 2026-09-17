@@ -3,9 +3,10 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
-import { CAPABILITIES, getAccessSummary, isCapability, requireCapability, hasServerCapability } from "@/lib/access-control";
+import { CAPABILITIES, getAccessSummary, getEffectiveCapabilities, isCapability, requireCapability, hasServerCapability } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail, ApiError } from "@/lib/api";
 
 const MAX_TEXT = 2000;
@@ -18,6 +19,18 @@ function validFutureDate(value: string): boolean {
   if (!value) return true;
   const d = new Date(value);
   return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
+}
+
+/**
+ * No-grant-beyond-hold: a role manager can only deal capabilities they hold
+ * themselves (admins hold "*" and bypass). Without this, any holder of
+ * access.assign_roles can mint themselves a superset role — self-escalation
+ * through the front door.
+ */
+async function unheldCapabilities(actorId: string, caps: string[]): Promise<string[]> {
+  const held = await getEffectiveCapabilities(actorId);
+  if (held.has("*")) return [];
+  return caps.filter((cap) => !held.has(cap));
 }
 
 export async function GET(request: NextRequest) {
@@ -50,6 +63,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "access.assign_roles");
   if (!authenticated.user) return authenticated.response;
+  if (!consumeRateLimit(`access-mutate:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = await request.json() as Record<string, unknown>;
     const action = text(body.action, 40);
@@ -67,6 +83,10 @@ export async function POST(request: NextRequest) {
       const capabilities = rawCaps.filter(isCapability);
       if (!name || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || capabilities.length === 0) {
         return fail("VALIDATION", "Name, valid slug, and at least one capability are required", 400);
+      }
+      const unheld = await unheldCapabilities(authenticated.user.$id, capabilities);
+      if (unheld.length > 0) {
+        return fail("FORBIDDEN", `Cannot grant capabilities you do not hold: ${unheld.slice(0, 5).join(", ")}`, 403);
       }
       const role = await databases.createDocument(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, ID.unique(), {
         name, slug, description, capabilities, teamId: text(body.teamId, 100) || undefined,
@@ -92,6 +112,11 @@ export async function POST(request: NextRequest) {
       }
       const role = await databases.getDocument(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, roleId);
       if (role.isActive !== true) return fail("CONFLICT", "Role is inactive", 409);
+      const templateCaps = Array.isArray(role.capabilities) ? role.capabilities.filter((c): c is string => typeof c === "string") : [];
+      const unheldAssign = await unheldCapabilities(authenticated.user.$id, templateCaps);
+      if (unheldAssign.length > 0) {
+        return fail("FORBIDDEN", `Cannot assign a role with capabilities you do not hold: ${unheldAssign.slice(0, 5).join(", ")}`, 403);
+      }
       // Duplicate guard: avoid stacking N active rows.
       const dupes = await databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [
         Query.equal("userId", [userId]),
@@ -120,6 +145,9 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const authenticated = await requireCapability(request, "access.assign_roles");
   if (!authenticated.user) return authenticated.response;
+  if (!consumeRateLimit(`access-mutate:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = await request.json() as Record<string, unknown>;
     const assignmentId = text(body.assignmentId, 100);
@@ -132,9 +160,9 @@ export async function PATCH(request: NextRequest) {
       }
       const assignment = await databases.updateDocument(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, assignmentId, {
         isActive: body.isActive === true,
-        expiresAt: expiresRaw || null,
+        expiresAt: expiresRaw || undefined,
       });
-      await recordAudit({ request, actor: authenticated.user, action: assignment.isActive ? "access.role_updated" : "access.role_revoked", entityType: "role_assignment", entityId: assignmentId, details: { expiresAt: expiresRaw || null, isActive: assignment.isActive } });
+      await recordAudit({ request, actor: authenticated.user, action: assignment.isActive ? "access.role_updated" : "access.role_revoked", entityType: "role_assignment", entityId: assignmentId, details: { expiresAt: expiresRaw || undefined, isActive: assignment.isActive } });
       return ok({ assignment });
     }
     if (roleId) {
@@ -145,6 +173,10 @@ export async function PATCH(request: NextRequest) {
       }
       const capabilities = rawCaps.filter(isCapability);
       if (!capabilities.length) return fail("VALIDATION", "At least one capability is required", 400);
+      const unheldRewrite = await unheldCapabilities(authenticated.user.$id, capabilities);
+      if (unheldRewrite.length > 0) {
+        return fail("FORBIDDEN", `Cannot grant capabilities you do not hold: ${unheldRewrite.slice(0, 5).join(", ")}`, 403);
+      }
       const role = await databases.updateDocument(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, roleId, {
         capabilities, isActive: body.isActive !== false,
       });

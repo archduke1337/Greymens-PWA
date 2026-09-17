@@ -127,10 +127,14 @@ export async function getEffectiveCapabilities(
 
   const capabilities = new Set<string>();
 
-  // Charter offices grant capabilities (Option B). Active assignment only;
-  // term enforcement lives in offices route (active/ended/vacant).
+  // Charter offices grant capabilities (Option B). Active assignment only,
+  // and the term must not have ended: time alone revokes charter powers, no
+  // human needed. Only well-formed past dates count — a garbage termEnd must
+  // never silently strip (or extend) authority; fix the row instead.
   for (const o of offices.documents) {
     const officeId = String(o.officeId ?? "");
+    const termEnd = typeof o.termEnd === "string" ? o.termEnd : "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(termEnd) && termEnd < new Date().toISOString().slice(0, 10)) continue;
     const caps = OFFICE_CAPABILITIES[officeId] ?? [];
 
     caps.forEach((c) => capabilities.add(c));
