@@ -1,6 +1,7 @@
 "use client";
 
 import type { Application, Department } from "@/lib/types";
+import MyPowersCard from "@/components/dashboards/MyPowersCard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -235,6 +236,8 @@ export default function AdminDashboard() {
           );
         })}
       </div>
+
+      <MyPowersCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Membership Queue Quick View */}
