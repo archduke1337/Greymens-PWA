@@ -92,17 +92,52 @@ export async function POST(request: NextRequest) {
       Query.equal("userId", [authenticated.user.$id]),
       Query.limit(1),
     ]);
-    if (existing.documents.length > 0) {
+    const existingRow = existing.documents[0] as Record<string, unknown> | undefined;
+    const existingStatus = existingRow ? String(existingRow.status ?? "") : "";
+    if (existingRow && existingStatus === "approved") {
+      // Self-heal: a ticket-mint blip can leave approved-without-ticket.
+      // Retry mints the missing ticket instead of 409ing a paying user.
+      const issued = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
+        Query.equal("registrationId", [String(existingRow.$id ?? "")]),
+        Query.limit(1),
+      ]);
+      if (issued.documents.length === 0) {
+        const ticket = await createSignedTicket(databases, {
+          userId: authenticated.user.$id,
+          eventId,
+          registrationId: String(existingRow.$id ?? ""),
+        });
+        return ok({ registration: existingRow, status: "approved", ticket, recovered: true }, 200);
+      }
+      return fail("CONFLICT", "Already registered", 409);
+    }
+    if (existingRow && existingStatus === "pending") {
+      return fail("CONFLICT", "Registration is awaiting approval", 409);
+    }
+    if (existingRow && existingStatus === "waitlisted") {
+      return fail("CONFLICT", "You are on the waitlist for this event", 409);
+    }
+    // A rejected row is not a registration — the applicant resubmits through
+    // the normal flow below by reviving the same row (no duplicate stack).
+    const reviveRow = existingRow && existingStatus === "rejected" ? existingRow : null;
+    if (existingRow && !reviveRow) {
       return fail("CONFLICT", "Already registered", 409);
     }
 
     // Step 4: load event.
     const event = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
-    // Step 5: reject registration when the event date is past.
+    // Step 5: reject registration when the event date is past — datetime,
+    // not just day, so a 9am event stops accepting at 9pm the same day.
     const eventDay = typeof event.date === "string" ? event.date.slice(0, 10) : "";
     const today = new Date().toISOString().slice(0, 10);
     if (eventDay && eventDay < today) {
       return fail("CONFLICT", "Event has ended", 409);
+    }
+    if (eventDay === today && typeof event.time === "string" && /^\d{2}:\d{2}/.test(event.time)) {
+      const start = new Date(`${eventDay}T${event.time.slice(0, 5)}:00`);
+      if (!Number.isNaN(start.getTime()) && start.getTime() <= Date.now()) {
+        return fail("CONFLICT", "Event has already started", 409);
+      }
     }
     // Step 6: event must be open for registration.
     if (event.status !== "published" && event.status !== "active") {
@@ -123,30 +158,47 @@ export async function POST(request: NextRequest) {
     if (event.audience === "exclusive") status = "pending";
     else if (capacity > 0 && registered >= capacity) status = "waitlisted";
 
-    // Step 9: create registration row.
-    const registration = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.REGISTRATIONS,
-      ID.unique(),
-      {
-        eventId,
-        userId: authenticated.user.$id,
+    // Step 9: create registration row (or revive a rejected one in place —
+    // the unique index forbids a second row for the pair).
+    const registration = reviveRow
+      ? await databases.updateDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, String(reviveRow.$id ?? ""), {
         registeredAt: new Date().toISOString(),
         status,
-      }
-    );
+      })
+      : await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.REGISTRATIONS,
+        ID.unique(),
+        {
+          eventId,
+          userId: authenticated.user.$id,
+          registeredAt: new Date().toISOString(),
+          status,
+        }
+      );
 
     // Step 10: approve path — issue ticket + bump counter (unchanged).
     let ticket = null;
     if (status === "approved") {
       try {
-        ticket = await createSignedTicket(databases, {
-          userId: authenticated.user.$id,
-          eventId,
-          registrationId: registration.$id,
-        });
+        // Skip when a ticket already exists (revived rows, retries): minting
+        // twice for one registration is how duplicates happen.
+        const already = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
+          Query.equal("registrationId", [registration.$id]),
+          Query.limit(1),
+        ]);
+        ticket = already.documents[0] ?? null;
+        if (!ticket) {
+          ticket = await createSignedTicket(databases, {
+            userId: authenticated.user.$id,
+            eventId,
+            registrationId: registration.$id,
+          });
+        }
       } catch {
-        return fail("INTERNAL", "Could not allocate ticket. Please retry.", 503);
+        // The registration row is committed; a retry through this same
+        // endpoint self-heals by minting the missing ticket (step 3).
+        return fail("INTERNAL", "Registered, but the ticket could not be issued. Please retry — no new registration is created.", 503);
       }
 
       await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, {
@@ -221,6 +273,13 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
   if (!authenticated.user) return authenticated.response;
 
+  // Cancel/re-register cycling farms waitlist promotion and spams promotees:
+  // same budget as registering.
+  const limited = consumeRateLimit(`event-register:${authenticated.user.$id}`, 20, 10 * 60 * 1000);
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
+
   try {
     // Step 1: validate payload. The id travels on the query string — some
     // proxies and CDNs drop DELETE bodies — with a JSON-body fallback for
@@ -274,6 +333,7 @@ export async function DELETE(request: NextRequest) {
       databases.updateDocument(DATABASE_ID, COLLECTIONS.TICKETS, ticket.$id, {
         status: "invalidated",
         invalidatedAt: new Date().toISOString(),
+        invalidatedBy: authenticated.user.$id,
         invalidatedReason: "Registration cancelled",
       })
     ));
@@ -302,14 +362,24 @@ export async function DELETE(request: NextRequest) {
             status: "approved",
           });
           // Step 9: issue ticket for the promoted user (shared issuance).
-          // Allocation failure skips the promotion but must not fail the
-          // cancellation itself; the ticket can be issued from the admin queue.
+          // Allocation failure reverts to waitlisted — an approved-without-
+          // ticket row is invisible to every remediation flow, so never
+          // leave one behind. The admin queue can approve waitlisted rows.
   try {
-            await createSignedTicket(databases, {
-              userId: String(next.userId),
-              eventId,
-              registrationId: next.$id,
-            });
+            // Guard against double promotion: two concurrent cancels can pick
+            // the same oldest row. An existing ticket means someone already
+            // promoted it — skip minting instead of duplicating.
+            const minted = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
+              Query.equal("registrationId", [next.$id]),
+              Query.limit(1),
+            ]);
+            if (minted.documents.length === 0) {
+              await createSignedTicket(databases, {
+                userId: String(next.userId),
+                eventId,
+                registrationId: next.$id,
+              });
+            }
             await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, {
               registered: nextRegistered + 1,
             });
@@ -325,6 +395,9 @@ export async function DELETE(request: NextRequest) {
             });
           } catch (promotionError) {
             console.error("Waitlist promotion ticket error:", promotionError);
+            await databases.updateDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, next.$id, {
+              status: "waitlisted",
+            }).catch(() => null);
           }
         }
       }

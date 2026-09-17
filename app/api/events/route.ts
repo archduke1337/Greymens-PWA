@@ -3,7 +3,8 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getMembershipStatus, isAdminUser, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
-import { ok, fail, ApiError } from "@/lib/api";
+import { recordAudit } from "@/lib/server-audit";
+import { ok, fail, isConflict } from "@/lib/api";
 
 const AUDIENCES = new Set(["public", "member_only", "exclusive"]);
 const STATUSES = new Set(["draft", "review"]);
@@ -30,14 +31,16 @@ export async function GET(request: NextRequest) {
     const eventId = request.nextUrl.searchParams.get("eventId")?.trim();
     if (eventId) {
       const event = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
-      if (!["published", "active", "approved"].includes(String(event.status))) {
+      // Only registration-open states are public. "approved" is an internal
+      // pipeline state: serving it advertises events nobody can register for.
+      if (!["published", "active"].includes(String(event.status))) {
         return fail("NOT_FOUND", "Event not found", 404);
       }
       return ok({ event });
     }
 
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
-      Query.equal("status", ["published", "active", "approved"]),
+      Query.equal("status", ["published", "active"]),
       Query.orderAsc("date"),
       Query.limit(100),
     ]);
@@ -79,12 +82,35 @@ export async function POST(request: NextRequest) {
     const validationError = validateEvent(payload);
     if (validationError) return fail("VALIDATION", validationError, 400);
     const { databases } = createServerDatabases();
-    const event = await databases.createDocument(DATABASE_ID, COLLECTIONS.EVENTS, ID.unique(), {
-      ...payload,
-      status: payload.status === "review" ? "review" : "draft",
-      ownerId: authenticated.user.$id,
-      organizerName: text(body.organizerName, 255) || authenticated.user.name,
-      registered: 0,
+    let event;
+    try {
+      event = await databases.createDocument(DATABASE_ID, COLLECTIONS.EVENTS, ID.unique(), {
+        ...payload,
+        status: payload.status === "review" ? "review" : "draft",
+        ownerId: authenticated.user.$id,
+        organizerName: text(body.organizerName, 255) || authenticated.user.name,
+        registered: 0,
+      });
+    } catch (error) {
+      // Lost the idx_slug race (same title, same millisecond): retry once
+      // with a suffixed slug instead of 500ing the slower tap.
+      if (!isConflict(error)) throw error;
+      event = await databases.createDocument(DATABASE_ID, COLLECTIONS.EVENTS, ID.unique(), {
+        ...payload,
+        slug: `${String(payload.slug).slice(0, 240)}-${Date.now().toString(36)}`,
+        status: payload.status === "review" ? "review" : "draft",
+        ownerId: authenticated.user.$id,
+        organizerName: text(body.organizerName, 255) || authenticated.user.name,
+        registered: 0,
+      });
+    }
+    await recordAudit({
+      request,
+      actor: authenticated.user,
+      action: "event.create",
+      entityType: "event",
+      entityId: event.$id,
+      details: { title: String(payload.title ?? "") },
     });
     return ok({ event }, 201);
   } catch (error) {
@@ -112,6 +138,14 @@ export async function PATCH(request: NextRequest) {
       return fail("FORBIDDEN", "You do not own this event", 403);
     }
     const event = await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, data);
+    await recordAudit({
+      request,
+      actor: authenticated.user,
+      action: "event.update",
+      entityType: "event",
+      entityId: eventId,
+      details: { fields: Object.keys(data) },
+    });
     return ok({ event });
   } catch (error) {
     console.error("Event update error:", error);
