@@ -45,6 +45,7 @@ export interface AuditLogPage {
   logs: AuditLog[];
   total: number;
   stats: { total: number; last24h: number };
+  actorAvatars: Record<string, string>;
 }
 
 async function fetchAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
@@ -70,6 +71,7 @@ async function fetchAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
     logs: payload?.logs ?? [],
     total: payload?.total ?? 0,
     stats: payload?.stats ?? { total: 0, last24h: 0 },
+    actorAvatars: payload?.actorAvatars ?? {},
   };
 }
 

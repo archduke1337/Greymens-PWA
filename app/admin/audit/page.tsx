@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { auditService, type AuditLogFilters } from "@/lib/audit";
+import MemberAvatar from "@/components/MemberAvatar";
 import { toast } from "sonner";
 import {
   SearchIcon,
@@ -137,6 +138,7 @@ export default function AdminAuditPage() {
   const router = useRouter();
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [actorAvatars, setActorAvatars] = useState<Record<string, string>>({});
   const [totalLogs, setTotalLogs] = useState(0);
   const [last24h, setLast24h] = useState(0);
   const [loadingLogs, setLoadingLogs] = useState(true);
@@ -168,6 +170,7 @@ export default function AdminAuditPage() {
 
       const result = await auditService.getLogs(filters);
       setLogs(result.logs);
+      setActorAvatars(result.actorAvatars ?? {});
       setTotalLogs(result.total);
       setLast24h(result.stats.last24h);
     } catch (error) {
@@ -502,9 +505,11 @@ export default function AdminAuditPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
-                            {log.actorName?.charAt(0)?.toUpperCase() || "?"}
-                          </div>
+                          <MemberAvatar
+                            src={log.actorId ? actorAvatars[log.actorId] : undefined}
+                            name={log.actorName}
+                            className="w-7 h-7 text-xs font-bold flex-shrink-0 bg-primary text-primary-foreground"
+                          />
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate max-w-[120px]">
                               {log.actorName}

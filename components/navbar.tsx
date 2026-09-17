@@ -41,7 +41,10 @@ const ACCOUNT_ITEMS = [
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
-  const { status, hasCapability } = usePermissions();
+  const { status, hasCapability, profile } = usePermissions();
+  // Uploaded picture wins; the generated initial-avatar is only a fallback
+  // for accounts that never uploaded one.
+  const avatarSrc = profile?.avatar || (user?.name ? getAvatarUrl(user.name) : undefined);
   const router = useRouter();
 
   const isAdmin = status === "admin" || status === "dev";
@@ -146,7 +149,7 @@ export const Navbar = () => {
                   className="rounded-full"
                 >
                   <Avatar className="transition-transform border-2 border-default-300 w-8 h-8">
-                    <AvatarImage src={getAvatarUrl(user.name)} alt={user.name} />
+                    <AvatarImage src={avatarSrc} alt={user.name} />
                     <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                 </Dropdown.Trigger>
@@ -154,7 +157,7 @@ export const Navbar = () => {
                   <div className="px-3 pt-3 pb-2">
                     <div className="flex items-center gap-2.5">
                       <Avatar size="sm">
-                        <AvatarImage src={getAvatarUrl(user.name)} alt="" />
+                        <AvatarImage src={avatarSrc} alt="" />
                         <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col gap-0 min-w-0">

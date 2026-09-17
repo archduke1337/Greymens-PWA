@@ -10,6 +10,33 @@ import { ok, fail } from "@/lib/api";
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
 
+/**
+ * Avatar lookup for the actors on the current page: one bounded profiles
+ * query so the audit table can show uploaded pictures instead of initials.
+ * Best-effort — a lookup failure returns an empty map, never fails the log.
+ */
+async function actorAvatarMap(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+  logs: Array<Record<string, unknown>>,
+): Promise<Record<string, string>> {
+  const actorIds = [...new Set(logs.map((log) => String(log.actorId ?? "")).filter(Boolean))];
+  if (actorIds.length === 0) return {};
+  try {
+    const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+      Query.equal("userId", actorIds.slice(0, 100)),
+      Query.limit(100),
+    ]);
+    const map: Record<string, string> = {};
+    for (const profile of profiles.documents as Array<Record<string, unknown>>) {
+      const avatar = String(profile.avatar ?? "");
+      if (avatar) map[String(profile.userId ?? "")] = avatar;
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "audit.view");
   if (!authenticated.user) return authenticated.response;
@@ -64,6 +91,7 @@ export async function GET(request: NextRequest) {
       stats: { total: response.total, last24h: last24h.total },
       page,
       limit,
+      actorAvatars: await actorAvatarMap(databases, response.documents),
     });
   } catch (error) {
     console.error("Audit log lookup error:", error);

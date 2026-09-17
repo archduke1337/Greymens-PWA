@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { getErrorMessage } from "@/lib/errorHandler";
+import MemberAvatar from "@/components/MemberAvatar";
 import {
   Button,
   Card,
@@ -587,10 +588,11 @@ export default function AdminDepartmentsPage() {
                               className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-default-200"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-default-200 flex items-center justify-center text-xs font-bold">
-                                  {member.profile?.urn?.charAt(0) ||
-                                    member.userId.charAt(0).toUpperCase()}
-                                </div>
+                                <MemberAvatar
+                                  src={member.profile?.avatar}
+                                  name={memberNames[member.userId] || member.profile?.urn || member.userId}
+                                  className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                                />
                                 <div>
                                   <p className="text-sm font-medium">
                                     {memberNames[member.userId] || member.profile?.urn || member.userId}
