@@ -75,6 +75,7 @@ export default function AdminPowersPage() {
 
   // Grouped powers by category
   const [groupedPowers, setGroupedPowers] = useState<Record<string, Power[]>>({});
+  const [catalogueQuery, setCatalogueQuery] = useState("");
 
   // Grant modal
   const { isOpen: isGrantOpen, open: openGrant, close: closeGrant } = useOverlayState();
@@ -91,6 +92,7 @@ export default function AdminPowersPage() {
   const { isOpen: isHoldersOpen, open: openHolders, close: closeHolders } = useOverlayState();
   const [holdersTarget, setHoldersTarget] = useState<Power | null>(null);
   const [holders, setHolders] = useState<(UserPower & { profile?: Profile | null })[]>([]);
+  const [holderNames, setHolderNames] = useState<Record<string, string>>({});
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
 
@@ -234,9 +236,11 @@ export default function AdminPowersPage() {
         fetch("/api/admin/users?limit=500", { credentials: "include" }),
       ]);
       const powerPayload = (await powerResponse.json().catch(() => null)) as { grants?: UserPower[]; error?: string } | null;
-      const usersPayload = (await usersResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; error?: string } | null;
+      const usersPayload = (await usersResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
       if (!powerResponse.ok) throw new Error(powerPayload?.error || "Unable to load power holders");
       const profileByUser = new Map((usersPayload?.users ?? []).map((entry) => [entry.profile.userId, entry.profile]));
+      const holderNames = usersPayload?.accountNames ?? {};
+      setHolderNames(holderNames);
       const holdersData = (powerPayload?.grants ?? []).filter((grant) => grant.powerId === power.$id);
       setHolders(holdersData.map((holder) => ({ ...holder, profile: profileByUser.get(holder.userId) ?? null })));
     } catch (error) {
@@ -363,6 +367,16 @@ export default function AdminPowersPage() {
       </div>
 
       {/* Powers Grouped by Category */}
+      <Card className="border-none shadow-md mb-2">
+        <CardContent className="p-4">
+          <Input
+            placeholder="Filter powers by name or capability..."
+            aria-label="Filter powers by name or capability"
+            value={catalogueQuery}
+            onChange={(e: any) => setCatalogueQuery(e.target.value)}
+          />
+        </CardContent>
+      </Card>
       <div className="space-y-8">
         {Object.keys(groupedPowers).length === 0 ? (
           <Card>
@@ -371,19 +385,28 @@ export default function AdminPowersPage() {
             </CardContent>
           </Card>
         ) : (
-          Object.entries(groupedPowers).map(([category, categoryPowers]) => (
+          Object.entries(groupedPowers).map(([category, categoryPowers]) => {
+            const q = catalogueQuery.trim().toLowerCase();
+            const visible = q
+              ? categoryPowers.filter((power) =>
+                [power.displayName, power.name, power.description, category]
+                  .some((value) => String(value ?? "").toLowerCase().includes(q)),
+              )
+              : categoryPowers;
+            if (visible.length === 0) return null;
+            return (
             <div key={category}>
               <div className="flex items-center gap-3 mb-4">
                 <h2 className="text-xl font-bold capitalize">
                   {CATEGORY_LABELS[category] || category}
                 </h2>
                 <Chip size="sm" className={CATEGORY_COLORS[category]}>
-                  {categoryPowers.length} powers
+                  {visible.length} powers
                 </Chip>
               </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categoryPowers.map((power) => (
+                {visible.map((power) => (
                   <Card
                     key={power.$id}
                     className="border-none shadow-md hover:shadow-lg transition-shadow"
@@ -437,7 +460,8 @@ export default function AdminPowersPage() {
                 ))}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -663,12 +687,12 @@ export default function AdminPowersPage() {
                             <div className="flex items-center gap-3 flex-1 min-w-0">
                               <MemberAvatar
                                 src={holder.profile?.avatar}
-                                name={holder.profile?.urn || holder.userId}
+                                name={holderNames[holder.userId] || holder.profile?.urn || holder.userId}
                                 className="w-8 h-8 text-xs font-bold flex-shrink-0"
                               />
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate">
-                                  {holder.profile?.urn || holder.userId}
+                                  {holderNames[holder.userId] || holder.profile?.urn || holder.userId}
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-default-400">
                                   <span>
