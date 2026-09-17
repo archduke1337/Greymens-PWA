@@ -12,6 +12,7 @@ Welcome to the Greymens Club application wiki. Start here.
 | [[Database]] | What tables exist, what do the setup/seed scripts do, and how do I migrate? |
 | [[Workflows]] | What are the membership, event, ticket, and publishing flows end to end? |
 | [[Operations]] | How do builds, deploys, and day-2 tasks (grant-admin, audits) work? |
+| [[Decisions]] | What did we decide and why? Accepted ADRs. |
 
 ## Source of truth
 
