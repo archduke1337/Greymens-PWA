@@ -19,6 +19,7 @@ import {
   Bell,
   ShieldCheck,
   ScrollText,
+  Shapes,
   ClipboardList,
   ArrowLeft,
 } from "lucide-react";
@@ -54,6 +55,12 @@ export const ADMIN_SECTIONS = [
     label: "Events",
     href: "/admin/events",
     Icon: CalendarDays,
+    cap: "events.manage",
+  },
+  {
+    label: "Event Types",
+    href: "/admin/event-types",
+    Icon: Shapes,
     cap: "events.manage",
   },
   { label: "Users", href: "/admin/users", Icon: UserCog, cap: "users.view" },

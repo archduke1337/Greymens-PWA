@@ -146,6 +146,15 @@ export async function DELETE(request: NextRequest) {
     const eventTypeId = new URL(request.url).searchParams.get("eventTypeId")?.trim();
     if (!eventTypeId) return fail("VALIDATION", "eventTypeId is required", 400);
     const { databases } = createServerDatabases();
+    // Deleting a type that events reference would orphan their eventTypeId —
+    // deactivate instead, and say so.
+    const inUse = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
+      Query.equal("eventTypeId", [eventTypeId]),
+      Query.limit(1),
+    ]);
+    if (inUse.total > 0) {
+      return fail("CONFLICT", `Cannot delete: ${inUse.total} event(s) use this type. Deactivate it instead.`, 409, { events: inUse.total });
+    }
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, eventTypeId);
     await recordAudit({
       request,
