@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import {
   hasPermission as checkPermission,
@@ -31,6 +31,7 @@ interface PermissionContextType {
   allDepartments: Department[];
   allDesignations: Designation[];
   allPowers: Power[];
+  capabilities: string[];
   hasPermission: (permission: string, scope?: string) => boolean;
   hasAnyPermission: (permissions: string[], scope?: string) => boolean;
   hasAllPermissions: (permissions: string[], scope?: string) => boolean;
@@ -126,10 +127,14 @@ const PermissionContext = createContext<PermissionContextType>({
 export const usePermissions = () => useContext(PermissionContext);
 
 export function PermissionProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [payload, setPayload] = useState<PermissionsPayload>(EMPTY_PAYLOAD);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Single-shot 401 recovery per sign-in: without the guard, a dead session
+  // would refresh-then-retry in a loop on every loadUserData call.
+  const recoveredRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   /**
    * One authenticated request replaces nine direct database reads.
@@ -145,23 +150,16 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
       setPayload(EMPTY_PAYLOAD);
       setError(null);
       setLoading(false);
+      lastUserIdRef.current = null;
       return;
     }
+    // New sign-in resets the single-shot recovery budget.
+    if (lastUserIdRef.current !== user.$id) {
+      lastUserIdRef.current = user.$id;
+      recoveredRef.current = false;
+    }
 
-    try {
-      const response = await fetch("/api/permissions", { cache: "no-store" });
-      if (!response.ok) {
-        // 401/403 means the session is dead or the account was just
-        // restricted: holding the previous privileged UI would lie to the
-        // user, so downgrade. Any other failure (5xx, network) preserves the
-        // last-good payload instead of downgrading to a wrong tier.
-        if (response.status === 401 || response.status === 403) {
-          setPayload(EMPTY_PAYLOAD);
-        }
-        setError(`Unable to load permissions (status ${response.status})`);
-        return;
-      }
-      const data = await response.json() as Record<string, unknown>;
+    const applyPayload = (data: Record<string, unknown>) => {
       setPayload({
         status: toMembershipStatus(data.status),
         profile: (data.profile as Profile | null) ?? null,
@@ -176,6 +174,38 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
         capabilities: asArray<string>(data.capabilities),
       });
       setError(null);
+    };
+
+    try {
+      const response = await fetch("/api/permissions", { cache: "no-store" });
+      if (!response.ok) {
+        // 401 can mean a rotated/expired session rather than a dead one: the
+        // auth layer may still be able to re-sync (cookie refresh), so try
+        // that exactly once before downgrading. Without this, a stale session
+        // silently strips every capability and every gated page bounces the
+        // user with no explanation. 403 is a real restriction verdict — a
+        // refresh cannot change it, so downgrade immediately.
+        if (response.status === 401 && !recoveredRef.current) {
+          recoveredRef.current = true;
+          try {
+            await refreshUser();
+          } catch {
+            // Session truly dead: fall through to downgrade below.
+          }
+          const retry = await fetch("/api/permissions", { cache: "no-store" });
+          if (retry.ok) {
+            applyPayload((await retry.json()) as Record<string, unknown>);
+            return;
+          }
+        }
+        if (response.status === 401 || response.status === 403) {
+          setPayload(EMPTY_PAYLOAD);
+        }
+        setError(`Unable to load permissions (status ${response.status})`);
+        return;
+      }
+      const data = await response.json() as Record<string, unknown>;
+      applyPayload(data);
     } catch (error) {
       console.error("Error loading permissions:", error);
       // Preserve the last-good payload instead of downgrading to a wrong tier.
@@ -183,7 +213,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, refreshUser]);
 
   useEffect(() => {
     loadUserData();

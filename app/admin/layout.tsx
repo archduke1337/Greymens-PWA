@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -154,16 +154,17 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  const { status, hasCapability, loading: permLoading } = usePermissions();
+  const { status, hasCapability, loading: permLoading, error: permError, refresh: refreshPermissions } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
   const [admitted, setAdmitted] = useState<boolean | null>(null);
   const [bootstrapOnly, setBootstrapOnly] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState(false);
+  // The bootstrap admin-check fires at most once per sign-in: without the
+  // guard, every permission refresh would re-fire it and bounce the shell.
+  const adminCheckDoneRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Settle once: recomputing on every permission-context refresh would
-    // re-fire the admin-check fallback and bounce the shell.
-    if (admitted !== null) return;
     if (!loading && !permLoading) {
       if (!user) {
         router.push("/login");
@@ -187,9 +188,22 @@ export default function AdminLayout({
 
       if (status === "admin" || status === "dev" || visible || canProposeEvents) {
         setAdmitted(true);
+        setVerifyFailed(false);
 
         return;
       }
+
+      // A failed permissions fetch is UNKNOWN, not denied: bouncing to
+      // /unauthorized on a 500/network blip locks out legitimate managers
+      // with no explanation and no recovery. Show the retry panel instead.
+      if (permError) {
+        setVerifyFailed(true);
+
+        return;
+      }
+
+      if (adminCheckDoneRef.current === user.$id) return;
+      adminCheckDoneRef.current = user.$id;
 
       // Fall back to the server check for email-allowlisted administrators.
       // The server resolves the identity from the session, not from this body.
@@ -203,19 +217,19 @@ export default function AdminLayout({
         .then((res) => res.json())
         .then((data) => {
           if (!data.isAdmin) {
-            router.push("/unauthorized");
+            router.push(`/unauthorized?from=${encodeURIComponent(pathname)}`);
           } else {
             setBootstrapOnly(true);
             setAdmitted(true);
           }
         })
         .catch(() => {
-          router.push("/unauthorized");
+          router.push(`/unauthorized?from=${encodeURIComponent(pathname)}`);
         });
     }
-  }, [user, loading, permLoading, router, status, hasCapability, admitted]);
+  }, [user, loading, permLoading, permError, router, pathname, status, hasCapability, admitted]);
 
-  if (loading || permLoading || admitted === null) {
+  if (loading || permLoading || (admitted === null && !verifyFailed)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
@@ -225,6 +239,39 @@ export default function AdminLayout({
             role="status"
           />
           <p className="text-default-500">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verifyFailed && admitted !== true) {
+    return (
+      <div className="flex items-center justify-center min-h-screen px-4">
+        <div className="text-center space-y-4 max-w-md">
+          <h1 className="text-xl font-bold">Couldn&apos;t verify access</h1>
+          <p className="text-default-500 text-sm">
+            {permError || "The permissions check failed."} Nothing was denied —
+            the console simply couldn&apos;t confirm your access. Retrying is
+            safe.
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Link
+              href="/dashboard"
+              className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-default-100 transition-colors"
+            >
+              Back to Dashboard
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setVerifyFailed(false);
+                void refreshPermissions();
+              }}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Check again
+            </button>
+          </div>
         </div>
       </div>
     );

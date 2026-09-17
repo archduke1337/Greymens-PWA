@@ -40,10 +40,13 @@ export default function HeadDashboard() {
   const [data, setData] = useState<HeadDashboardPayload["head"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const loadData = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const response = await fetch("/api/dashboard", { credentials: "include" });
         const payload = (await response.json()) as HeadDashboardPayload & { error?: string };
@@ -57,7 +60,7 @@ export default function HeadDashboard() {
     };
     void loadData();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryKey]);
 
   const events = data?.events ?? [];
   const departments = data?.departments ?? [];
@@ -130,9 +133,23 @@ export default function HeadDashboard() {
 
   if (error || !data) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-12 text-center">
+      <div className="max-w-6xl mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-2xl font-semibold">Operations dashboard unavailable</h1>
         <p className="text-muted mt-2">{error || "The server did not return an operations view."}</p>
+        <p className="text-muted text-sm">
+          If this keeps happening, sign out and back in — a stale session is
+          the most common cause. Otherwise contact an administrator with your
+          membership number.
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={() => setRetryKey((key) => key + 1)}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

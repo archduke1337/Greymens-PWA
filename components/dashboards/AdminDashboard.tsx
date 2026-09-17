@@ -40,11 +40,14 @@ export default function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardPayload["admin"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadData = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const response = await fetch("/api/dashboard", { credentials: "include" });
         const payload = (await response.json()) as AdminDashboardPayload & { error?: string };
@@ -61,7 +64,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
 
   const membershipStats = {
     active: data?.stats.activeMembers ?? 0,
@@ -173,9 +176,22 @@ export default function AdminDashboard() {
 
   if (error || !data) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-12 text-center">
+      <div className="max-w-6xl mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-2xl font-semibold">Admin dashboard unavailable</h1>
         <p className="text-muted mt-2">{error || "The server did not return an admin view."}</p>
+        <p className="text-muted text-sm">
+          If this keeps happening, sign out and back in — a stale session is
+          the most common cause.
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={() => setRetryKey((key) => key + 1)}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
