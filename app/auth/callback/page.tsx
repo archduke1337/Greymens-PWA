@@ -19,7 +19,17 @@ export default function AuthCallbackPage() {
         const currentUser = await refreshUser().catch(() => null);
         if (cancelled) return;
         if (currentUser) {
-          router.push("/");
+          // Password logins carry ?next=; OAuth left the site, so the login
+          // page stashed the destination beforehand. Same-origin only.
+          let next = "/";
+          try {
+            const stored = sessionStorage.getItem("post_auth_next");
+            sessionStorage.removeItem("post_auth_next");
+            if (stored && stored.startsWith("/") && !stored.startsWith("//")) next = stored;
+          } catch {
+            // Storage unavailable: fall back to "/".
+          }
+          router.push(next);
           return;
         }
         if (attempt < 2) {

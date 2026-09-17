@@ -30,16 +30,16 @@ function stripReserved<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
-export function ok<T extends Record<string, unknown>>(data: T, status = 200): NextResponse {
+export function ok<T extends Record<string, unknown>>(data: T, status = 200, headers?: Record<string, string>): NextResponse {
   const safe = stripReserved(data);
 
-  return NextResponse.json({ success: true, data: safe, ...safe }, { status });
+  return NextResponse.json({ success: true, data: safe, ...safe }, { status, headers });
 }
 
-export function fail(code: string, message: string, status: number, extra?: Record<string, unknown>): NextResponse {
+export function fail(code: string, message: string, status: number, extra?: Record<string, unknown>, headers?: Record<string, string>): NextResponse {
   const safe = extra ? stripReserved(extra) : {};
 
-  return NextResponse.json({ success: false, error: { code, message }, ...safe }, { status });
+  return NextResponse.json({ success: false, error: { code, message }, ...safe }, { status, headers });
 }
 
 export const ApiError = {  unauthorized: () => fail("UNAUTHENTICATED", "Unauthorized", 401),

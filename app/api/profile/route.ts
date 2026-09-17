@@ -163,6 +163,14 @@ export async function POST(request: NextRequest) {
       await storage.deleteFile(PROFILE_IMAGE_BUCKET_ID, previousFileId).catch(() => undefined);
     }
 
+    await recordAudit({
+      request,
+      actor: authenticated.user,
+      action: "profile.avatar",
+      entityType: "profile",
+      entityId: profile.$id,
+      details: {},
+    });
     return ok({ profile, avatar }, 201);
   } catch (error) {
     console.error("Profile image upload error:", error);

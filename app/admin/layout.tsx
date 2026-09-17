@@ -179,7 +179,13 @@ export default function AdminLayout({
       // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
       const visible = ADMIN_SECTIONS.some((s) => sectionMatches(hasCapability, s.cap));
 
-      if (status === "admin" || status === "dev" || visible) {
+      // Event proposers hold events.create without any section capability
+      // (community/technical/security leads). They are admitted for the event
+      // creation flow only; the sidebar renders whatever sections they hold,
+      // possibly none — the dashboard and create page degrade accordingly.
+      const canProposeEvents = hasCapability("events.create");
+
+      if (status === "admin" || status === "dev" || visible || canProposeEvents) {
         setAdmitted(true);
 
         return;

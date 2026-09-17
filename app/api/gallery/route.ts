@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createAdminClient } from "@/lib/appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
 import { hasPower } from "@/lib/access-control";
+import { recordAudit } from "@/lib/server-audit";
 import { PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isHttpUrl } from "@/lib/validation";
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     60 * 60 * 1000
   );
   if (!limit.allowed) {
-    return NextResponse.json({ success: false, error: { code: "RATE_LIMITED", message: "Upload limit reached. Please try again later." } }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+    return fail("RATE_LIMITED", "Upload limit reached. Please try again later.", 429, undefined, { "Retry-After": String(limit.retryAfter) });
   }
 
   try {
@@ -140,6 +141,14 @@ export async function POST(request: NextRequest) {
       ...(canModerate ? { approvedBy: authenticated.user.$id, approvedAt: now } : {}),
     });
 
+    await recordAudit({
+      request,
+      actor: authenticated.user,
+      action: "gallery.upload",
+      entityType: "gallery_image",
+      entityId: image.$id,
+      details: { title, status: canModerate ? "approved" : "pending" },
+    });
     return ok({ image }, 201);
   } catch (error) {
     console.error("Gallery upload error:", error);

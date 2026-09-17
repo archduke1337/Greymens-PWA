@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { sendContactMessage } from "@/lib/contact-mailer";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { TEXT_LIMITS, isEmailAddress, isRecord, readOptionalString, readString } from "@/lib/validation";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const address = getClientAddress(request);
   const limited = consumeRateLimit(`feedback:${address}`, RATE_LIMIT, RATE_WINDOW_MS);
   if (!limited.allowed) {
-    return NextResponse.json({ success: false, error: { code: "RATE_LIMITED", message: "Too many submissions. Please try again shortly." } }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
+    return fail("RATE_LIMITED", "Too many submissions. Please try again shortly.", 429, undefined, { "Retry-After": String(limited.retryAfter) });
   }
 
   let body: unknown;
@@ -53,7 +53,9 @@ export async function POST(request: Request) {
   // it without any template change.
   const result = await sendContactMessage({
     name,
-    email: email || "not-provided@greymens.club",
+    // Anonymous feedback carries no sender: record that honestly instead of
+    // forging a same-domain address the club never owns in this context.
+    email: email || "anonymous (no address given)",
     subject: `[${typeLabel}] ${subject}`,
     message,
   });

@@ -28,8 +28,8 @@ const protectedRoutes = [
   "/notifications",
   "/security",
   "/resources",
+  "/blog/write",
 ];
-const authRoutes = ["/login", "/register"];
 
 /**
  * Match a path against a route prefix on segment boundaries, so that e.g.
@@ -56,22 +56,28 @@ export function proxy(request: NextRequest) {
         cookie.name === "a_session_legacy",
     );
 
-  // Redirect logged-in users away from auth pages
-  if (authRoutes.some((route) => matchesRoute(pathname, route)) && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // Redirect logged-in users away from auth pages — REMOVED (login-loop fix).
+  // The old block bounced any request bearing a session cookie to /dashboard,
+  // but a forged/expired cookie passes that check while every API rejects it:
+  // the dashboard client bounced back to /login, which bounced forward again.
+  // The login/register pages now redirect from verified context state instead
+  // (see LoginForm/RegisterForm), which cannot loop: no user, no redirect.
 
   // Cookie presence is only a cheap pre-filter: it decides whether to send the
   // visitor to the login page. Real authorization lives in the API routes
   // (requireCapability) and is re-checked by the admin layout, so
   // this must never be treated as the access-control boundary.
-  if (
-    protectedRoutes.some((route) => matchesRoute(pathname, route)) &&
-    !hasSession
-  ) {
+  // Door/attendee shells need a session before they render: the events list
+  // and detail pages stay public, only the tickets suffix is pre-filtered.
+  const needsSession =
+    protectedRoutes.some((route) => matchesRoute(pathname, route)) ||
+    (pathname.startsWith("/events/") && pathname.endsWith("/tickets"));
+  if (needsSession && !hasSession) {
     const loginUrl = new URL("/login", request.url);
 
-    loginUrl.searchParams.set("redirect", pathname);
+    // The auth pages read `next` (safe-same-origin only). The old `redirect`
+    // key had zero readers, so every forced login landed on "/" afterward.
+    loginUrl.searchParams.set("next", pathname);
 
     return NextResponse.redirect(loginUrl);
   }
@@ -91,6 +97,8 @@ export const config = {
     "/notifications/:path*",
     "/security/:path*",
     "/resources/:path*",
+    "/blog/write",
+    "/events/:path*/tickets",
     "/login",
     "/register",
   ],

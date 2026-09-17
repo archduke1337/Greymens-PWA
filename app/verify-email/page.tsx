@@ -17,14 +17,25 @@ function VerifyEmailContent() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
   const [resendError, setResendError] = useState("");
+  // Resend cooldown: error-state users could otherwise hammer the button and
+  // burn metered email quota. Matches the settings-page pattern (60s).
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleResend = async () => {
+    if (resendCooldown > 0) return;
     setResendLoading(true);
     setResendError("");
     setResendSent(false);
     try {
       await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
       setResendSent(true);
+      setResendCooldown(60);
     } catch (error) {
       console.error("Resend verification error:", error);
       setResendError(
@@ -153,9 +164,10 @@ function VerifyEmailContent() {
                 <Button
                   variant="primary"
                   isPending={resendLoading}
+                  isDisabled={resendCooldown > 0}
                   onPress={handleResend}
                 >
-                  Resend verification email
+                  {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : "Resend verification email"}
                 </Button>
                 <Button
                   variant="primary"

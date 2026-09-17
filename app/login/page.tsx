@@ -41,10 +41,17 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
+
+  // Already authenticated (verified context state, not a cookie that may be
+  // forged): leave the auth page. This replaces the old proxy bounce, which
+  // looped on stale cookies because it could not tell valid from forged.
+  useEffect(() => {
+    if (user) router.push(next);
+  }, [user, router, next]);
 
   useEffect(() => {
     if (searchParams.get("error") === "oauth_failed") {
@@ -61,8 +68,11 @@ function LoginForm() {
       await login(email, password);
       router.push(next);
     } catch (err: any) {
-      console.error(err);
-      setError(mapLoginError(err));
+      // Log the mapped message, never the raw error: auth errors can carry
+      // the attempted identifier into console/log tooling.
+      const mapped = mapLoginError(err);
+      console.error("Login failed:", mapped);
+      setError(mapped);
     } finally {
       setLoading(false);
     }
@@ -72,10 +82,23 @@ function LoginForm() {
     setError("");
     setGoogleLoading(true);
     try {
+      // OAuth leaves the site: stash the destination for the callback page,
+      // which the password flow receives as a query param instead.
+      try {
+        sessionStorage.setItem("post_auth_next", next);
+      } catch {
+        // Storage unavailable: callback falls back to "/".
+      }
       await loginWithGoogle();
     } catch (err: any) {
-      console.error(err);
-      setError(mapLoginError(err));
+      try {
+        sessionStorage.removeItem("post_auth_next");
+      } catch {
+        // Ignore storage errors on the failure path too.
+      }
+      const mapped = mapLoginError(err);
+      console.error("Google login failed:", mapped);
+      setError(mapped);
       setGoogleLoading(false);
     }
   };
@@ -91,6 +114,7 @@ function LoginForm() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               placeholder="Enter your email"
+              aria-label="Email address"
               type="email"
               value={email}
               onChange={(e: any) => setEmail(e.target.value)}
@@ -99,6 +123,7 @@ function LoginForm() {
             />
             <Input
               placeholder="Enter your password"
+              aria-label="Password"
               type="password"
               value={password}
               onChange={(e: any) => setPassword(e.target.value)}

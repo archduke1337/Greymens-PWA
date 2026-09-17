@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import type { Event as EventType } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
@@ -60,7 +61,9 @@ const registrationProgress = (event: { capacity?: number | null; registered?: nu
 
 export default function EventsPage() {
   const { user } = useAuth();
+  const { hasCapability } = usePermissions();
   const router = useRouter();
+  const canProposeEvents = hasCapability("events.create");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("date");
@@ -267,6 +270,13 @@ export default function EventsPage() {
           <p className={subtitle({ class: "mt-6 max-w-3xl mx-auto text-xl" })}>
             Join our community events, workshops, and conferences to learn, network, and grow together
           </p>
+          {canProposeEvents && (
+            <div className="mt-6">
+              <Button variant="primary" onPress={() => router.push("/admin/events/create")}>
+                Propose an event
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -278,6 +288,7 @@ export default function EventsPage() {
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
                   placeholder="Search events, topics, or locations..."
+                  aria-label="Search events, topics, or locations"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 />

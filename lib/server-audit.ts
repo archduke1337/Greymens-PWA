@@ -19,10 +19,16 @@ function serializeDetails(details: Record<string, unknown>): string {
   const trimmed: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(details)) {
-    trimmed[key] =
-      typeof value === "string" && value.length > MAX_DETAIL_STRING
-        ? `${value.slice(0, MAX_DETAIL_STRING)}…(truncated)`
+    // Redact email-shaped values centrally: audit details flow from dozens of
+    // call sites and per-site redaction never happens (see wiki drift note).
+    const redacted =
+      typeof value === "string" && value.includes("@")
+        ? value.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[redacted]")
         : value;
+    trimmed[key] =
+      typeof redacted === "string" && redacted.length > MAX_DETAIL_STRING
+        ? `${redacted.slice(0, MAX_DETAIL_STRING)}…(truncated)`
+        : redacted;
   }
   const serialized = JSON.stringify(trimmed);
 

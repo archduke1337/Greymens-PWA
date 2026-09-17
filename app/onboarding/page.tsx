@@ -32,6 +32,7 @@ interface OnboardingForm {
   experience: string;
   whyJoin: string;
   availability: string;
+  profileVisibility: string;
   githubUrl: string;
   linkedinUrl: string;
   portfolioUrl: string;
@@ -58,6 +59,7 @@ const EMPTY_FORM: OnboardingForm = {
   experience: "",
   whyJoin: "",
   availability: "full",
+  profileVisibility: "members_only",
   githubUrl: "",
   linkedinUrl: "",
   portfolioUrl: "",
@@ -145,7 +147,7 @@ function readDraft(userId: string): {
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { status, application, profile, loading: permLoading } = usePermissions();
+  const { status, application, profile, loading: permLoading, refresh } = usePermissions();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -206,6 +208,7 @@ export default function OnboardingPage() {
         experience: profile?.experience ?? next.experience,
         whyJoin: profile?.whyJoin ?? next.whyJoin,
         availability: profile?.availability ?? next.availability,
+        profileVisibility: profile?.profileVisibility ?? next.profileVisibility,
         githubUrl: profile?.githubUrl ?? next.githubUrl,
         linkedinUrl: profile?.linkedinUrl ?? next.linkedinUrl,
         portfolioUrl: profile?.portfolioUrl ?? next.portfolioUrl,
@@ -418,7 +421,7 @@ export default function OnboardingPage() {
             portfolioUrl: formData.portfolioUrl,
             instagramUrl: formData.instagramUrl,
             bio: formData.bio,
-            profileVisibility: "members_only",
+            profileVisibility: formData.profileVisibility,
           },
           application: {
             oathAccepted: formData.oathAccepted,
@@ -443,6 +446,13 @@ export default function OnboardingPage() {
         window.localStorage.removeItem(draftKey(user.$id));
       } catch {
         // Ignore storage failures on the success path.
+      }
+      // Refresh permissions before leaving: without this the dashboard renders
+      // the stale pre-submit snapshot (e.g. "rejected — reapply") until reload.
+      try {
+        await refresh();
+      } catch {
+        // Non-blocking: navigation still applies.
       }
       router.push("/dashboard");
     } catch (error) {
@@ -804,6 +814,35 @@ export default function OnboardingPage() {
                   </Select.Popover>
                 </Select>
               </div>
+              <div>
+                <Select
+                  fullWidth
+                  value={formData.profileVisibility}
+                  onChange={(value) => updateField("profileVisibility", String(value ?? "members_only"))}
+                >
+                  <Label>Who can see your profile</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="members_only" textValue="Members only">
+                        Members only
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="public" textValue="Public">
+                        Public
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="private" textValue="Private">
+                        Private
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
             </>
           )}
 
@@ -956,7 +995,8 @@ export default function OnboardingPage() {
           >
             <p className="text-sm">
               No departments are open for applications right now. Please check
-              back later — your progress on this device stays as entered.
+              back later or contact a club administrator — your progress on
+              this device stays as entered.
             </p>
           </div>
         )}

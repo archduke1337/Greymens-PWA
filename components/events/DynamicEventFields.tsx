@@ -362,7 +362,7 @@ function ArrayField({
             }
           }}
         />
-        <Button type="button" variant="primary" onPress={addItem} isIconOnly>
+        <Button type="button" variant="primary" onPress={addItem} isIconOnly aria-label="Add item">
           <PlusIcon className="w-4 h-4" />
         </Button>
       </div>

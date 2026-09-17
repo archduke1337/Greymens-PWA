@@ -73,18 +73,25 @@ export async function GET(request: NextRequest) {
       ...new Set(
         registrations.documents.map((registration) =>
           String(registration.eventId),
-        ),
+        ).filter(Boolean),
       ),
     ];
-    const eventDocuments = await Promise.all(
-      eventIds.map((eventId) =>
-        databases
-          .getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId)
-          .catch(() => null),
-      ),
-    );
+    // Bounded-concurrency lookups, not one round-trip per registration fired
+    // all at once: this is the most-hit authenticated endpoint and histories
+    // only grow. ($id-equality queries have no precedent in this codebase, so
+    // per-ID reads in small batches instead of one clever query.)
+    const eventDocuments: Array<Record<string, unknown> | null> = [];
+    for (let index = 0; index < eventIds.length; index += 10) {
+      const page = eventIds.slice(index, index + 10);
+      const rows = await Promise.all(
+        page.map((eventId) =>
+          databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId).catch(() => null),
+        ),
+      );
+      eventDocuments.push(...(rows as Array<Record<string, unknown> | null>));
+    }
     const eventsById = new Map(
-      eventDocuments.filter(Boolean).map((event) => [event!.$id, event]),
+      eventDocuments.filter(Boolean).map((event) => [String(event!.$id), event]),
     );
     const myEvents = registrations.documents
       .map((registration) => ({

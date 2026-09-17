@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { sendContactMessage } from "@/lib/contact-mailer";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { TEXT_LIMITS, isEmailAddress, isRecord, readString } from "@/lib/validation";
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const address = getClientAddress(request);
   const limited = consumeRateLimit(`send-email:${address}`, RATE_LIMIT, RATE_WINDOW_MS);
   if (!limited.allowed) {
-    return NextResponse.json({ success: false, error: { code: "RATE_LIMITED", message: "Too many messages sent. Please try again shortly." } }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
+    return fail("RATE_LIMITED", "Too many messages sent. Please try again shortly.", 429, undefined, { "Retry-After": String(limited.retryAfter) });
   }
 
   let body: unknown;

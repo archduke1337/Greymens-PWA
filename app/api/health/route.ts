@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { Query } from "node-appwrite";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { createServerTablesClient } from "@/lib/appwrite-server";
@@ -68,10 +68,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!checks.backendReachable || !checks.databaseReadable) {
-    return NextResponse.json(
-      { success: false, error: { code: "DEGRADED", message: "Service degraded" }, checks },
-      { status: 503 },
-    );
+    return fail("DEGRADED", "Service degraded", 503, { checks });
   }
   return ok({ status: "operational", checks });
 }

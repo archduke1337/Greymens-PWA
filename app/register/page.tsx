@@ -1,6 +1,6 @@
 // app/register/page.tsx
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
@@ -41,10 +41,15 @@ function RegisterForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
+
+  // Already authenticated: leave (see login page — proxy no longer bounces).
+  useEffect(() => {
+    if (user) router.push(next);
+  }, [user, router, next]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,8 +71,9 @@ function RegisterForm() {
       await register(email, password, name);
       router.push(next);
     } catch (err: any) {
-      console.error(err);
-      setError(mapRegisterError(err));
+      const mapped = mapRegisterError(err);
+      console.error("Registration failed:", mapped);
+      setError(mapped);
     } finally {
       setLoading(false);
     }
@@ -77,10 +83,21 @@ function RegisterForm() {
     setError("");
     setGoogleLoading(true);
     try {
+      try {
+        sessionStorage.setItem("post_auth_next", next);
+      } catch {
+        // Storage unavailable: callback falls back to "/".
+      }
       await loginWithGoogle();
     } catch (err: any) {
-      console.error(err);
-      setError(mapRegisterError(err));
+      try {
+        sessionStorage.removeItem("post_auth_next");
+      } catch {
+        // Ignore storage errors on the failure path too.
+      }
+      const mapped = mapRegisterError(err);
+      console.error("Google signup failed:", mapped);
+      setError(mapped);
       setGoogleLoading(false);
     }
   };
@@ -96,6 +113,7 @@ function RegisterForm() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               placeholder="Enter your name"
+              aria-label="Full name"
               type="text"
               value={name}
               onChange={(e: any) => setName(e.target.value)}
@@ -104,6 +122,7 @@ function RegisterForm() {
             />
             <Input
               placeholder="Enter your email"
+              aria-label="Email address"
               type="email"
               value={email}
               onChange={(e: any) => setEmail(e.target.value)}
@@ -112,6 +131,7 @@ function RegisterForm() {
             />
             <Input
               placeholder="Create a password (min 8 characters)"
+              aria-label="Password"
               type="password"
               value={password}
               onChange={(e: any) => setPassword(e.target.value)}
@@ -120,6 +140,7 @@ function RegisterForm() {
             />
             <Input
               placeholder="Confirm your password"
+              aria-label="Confirm password"
               type="password"
               value={confirmPassword}
               onChange={(e: any) => setConfirmPassword(e.target.value)}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
 import { eventTypeService } from "@/lib/eventTypes";
 import { toast } from "sonner";
@@ -99,6 +100,7 @@ const defaultWorkflowConfig: WorkflowConfig = {
 
 export default function AdminCreateEventPage() {
   const { user, loading: authLoading } = useAuth();
+  const { hasCapability } = usePermissions();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -271,6 +273,13 @@ export default function AdminCreateEventPage() {
 
     setSubmitting(true);
     try {
+      // The self-service endpoint requires slug + eventTypeId (the admin one
+      // derives/defaults them), so always send both.
+      const slug = formData.slug.trim() || formData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 255);
       const eventData = {
         title: formData.title,
         description: formData.description,
@@ -289,9 +298,18 @@ export default function AdminCreateEventPage() {
         tags: formData.tags,
         isFeatured: formData.isFeatured,
         isPremium: formData.isPremium,
+        slug,
+        eventTypeId: formData.eventTypeId,
+        audience: formData.audience,
+        status: formData.status,
       };
 
-      const response = await fetch("/api/admin/events", {
+      // Endpoint follows entitlement: full event managers use the admin
+      // endpoint; leads holding only events.create use the self-service one
+      // (which forces draft/review and derives ownership from the session).
+      // Without this, the lead-tier create capability was API-only with no UI.
+      const managesEvents = hasCapability("events.manage");
+      const response = await fetch(managesEvents ? "/api/admin/events" : "/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -300,8 +318,8 @@ export default function AdminCreateEventPage() {
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "Unable to create event");
 
-      toast.success("Event created successfully!");
-      router.push("/admin/events");
+      toast.success(managesEvents ? "Event created successfully!" : "Event proposal submitted for review!");
+      router.push(managesEvents ? "/admin/events" : "/events");
     } catch (error) {
       console.error("Error creating event:", error);
       toast.error("Failed to create event");

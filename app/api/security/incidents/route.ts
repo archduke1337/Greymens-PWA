@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireAuthenticatedUser } from "@/lib/server-auth";
+import { RESTRICTED_STATUSES, getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
   const limited = consumeRateLimit(`security-incident:${authenticated.user.$id}`, 10, 60 * 60 * 1000);
   if (!limited.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
+  }
+  // Same bar as activity requests: restricted accounts cannot file.
+  const reporterStatus = await getMembershipStatus(authenticated.user);
+  if (RESTRICTED_STATUSES.has(reporterStatus)) {
+    return fail("FORBIDDEN", "Forbidden", 403);
   }
   try {
     const body = await request.json() as Record<string, unknown>;

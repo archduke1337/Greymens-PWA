@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       Query.limit(limit),
     ];
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROJECTS, queries);
-    return NextResponse.json({ success: true, data: {projects: response.documents, total: response.total}, projects: response.documents, total: response.total }, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
+    // ok() spreads the payload top-level too, so this keeps the exact
+    // { success, data, projects, total } shape clients already read.
+    return ok({ projects: response.documents, total: response.total }, 200, { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" });
   } catch (error) {
     console.error("Public project lookup error:", error);
     return fail("INTERNAL", "Unable to load projects", 500);

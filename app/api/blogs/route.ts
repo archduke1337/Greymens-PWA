@@ -141,6 +141,14 @@ export async function POST(request: NextRequest) {
       readTime,
     });
 
+    await recordAudit({
+      request,
+      actor: authenticated.user,
+      action: "blog.create",
+      entityType: "blog",
+      entityId: blog.$id,
+      details: { title },
+    });
     return ok({ blog }, 201);
   } catch (error) {
     console.error("Blog submission error:", error);

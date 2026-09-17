@@ -35,18 +35,26 @@ export async function getAccountNames(userIds: string[]): Promise<Map<string, st
   if (unique.length === 0) return new Map();
 
   const users = createUsersClient();
-  const entries = await Promise.all(
-    unique.map(async (userId) => {
-      try {
-        const user = await users.get({ userId });
-        return [userId, user.name || user.email.split("@")[0]] as const;
-      } catch {
-        return null;
-      }
-    })
-  );
-
-  return new Map(entries.filter((entry): entry is readonly [string, string] => entry !== null));
+  // Bounded concurrency in chunks: a 500-row admin dump must not open 500
+  // simultaneous user lookups.
+  const out = new Map<string, string>();
+  for (let index = 0; index < unique.length; index += 20) {
+    const page = unique.slice(index, index + 20);
+    const entries = await Promise.all(
+      page.map(async (userId) => {
+        try {
+          const user = await users.get({ userId });
+          return [userId, user.name || user.email.split("@")[0]] as const;
+        } catch {
+          return null;
+        }
+      })
+    );
+    for (const entry of entries) {
+      if (entry !== null) out.set(entry[0], entry[1]);
+    }
+  }
+  return out;
 }
 
 /** Resolve an account ID from an email address, or `null` when there is no match. */

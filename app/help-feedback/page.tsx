@@ -99,7 +99,7 @@ export default function HelpFeedbackPage() {
         <CardHeader className="px-6 pt-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Send us a message</h2>
-            <p className="text-sm text-default-500">Fill out the form below and we&apos;ll respond within 24 hours.</p>
+            <p className="text-sm text-default-500">Fill out the form below and the team will review it. Messages are read by volunteers — there is no guaranteed response time.</p>
           </div>
         </CardHeader>
         <CardContent className="px-6 pb-6">
