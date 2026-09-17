@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { LayoutDashboard, LifeBuoy, LogOut, Settings, ShieldCheck, User } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
-import { ADMIN_SECTIONS } from "@/app/admin/layout";
+import { ADMIN_SECTIONS, sectionMatches } from "@/app/admin/layout";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -50,7 +50,7 @@ export const Navbar = () => {
   // Bootstrap ADMIN_EMAILS admins without a governance row are the exception:
   // they reach the console via direct URL until grant-admin runs.
   const seesAdminConsole =
-    isAdmin || ADMIN_SECTIONS.some((section) => hasCapability(section.cap));
+    isAdmin || ADMIN_SECTIONS.some((section) => sectionMatches(hasCapability, section.cap));
   const isLoggedIn = !!user;
   const statusLabel = STATUS_LABELS[status];
 

@@ -8,7 +8,6 @@ import {
   CalendarDays,
   UserCog,
   Building2,
-  Award,
   KeyRound,
   Landmark,
   FileText,
@@ -38,8 +37,21 @@ import { useAuth } from "@/context/AuthContext";
  * Exported for the navbar so the console link uses the same section list
  * instead of a second, drifting copy of "who counts as admin".
  */
-export const ADMIN_SECTIONS = [
-  {
+/**
+ * Section visibility against the new-vocabulary capability check. Most
+ * sections need one capability; merged consoles (Positions) need any of
+ * several — a single-cap check would hide them from half their managers.
+ */
+export function sectionMatches(
+  hasCapability: (capability: string) => boolean,
+  cap: string | string[],
+): boolean {
+  return Array.isArray(cap)
+    ? cap.some((entry) => hasCapability(entry))
+    : hasCapability(cap);
+}
+
+export const ADMIN_SECTIONS = [  {
     label: "Dashboard",
     href: "/admin",
     Icon: LayoutDashboard,
@@ -71,22 +83,19 @@ export const ADMIN_SECTIONS = [
     cap: "departments.manage",
   },
   {
-    label: "Designations",
-    href: "/admin/designations",
-    Icon: Award,
-    cap: "designations.assign",
+    // Offices and designations merged into one console: visible when the
+    // caller holds either capability. A single cap here would hide the page
+    // from half its entitled managers.
+    label: "Positions",
+    href: "/admin/positions",
+    Icon: Landmark,
+    cap: ["governance.manage_offices", "designations.assign"],
   },
   {
     label: "Powers",
     href: "/admin/powers",
     Icon: KeyRound,
     cap: "powers.manage",
-  },
-  {
-    label: "Offices",
-    href: "/admin/offices",
-    Icon: Landmark,
-    cap: "governance.manage_offices",
   },
   { label: "Blogs", href: "/admin/blog", Icon: FileText, cap: "blog.review" },
   {
@@ -168,7 +177,7 @@ export default function AdminLayout({
       // holders kept valid grants but were bounced here because the legacy
       // check knew none of the section capabilities.
       // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
-      const visible = ADMIN_SECTIONS.some((s) => hasCapability(s.cap));
+      const visible = ADMIN_SECTIONS.some((s) => sectionMatches(hasCapability, s.cap));
 
       if (status === "admin" || status === "dev" || visible) {
         setAdmitted(true);
@@ -215,7 +224,7 @@ export default function AdminLayout({
     );
   }
 
-  const visibleSections = ADMIN_SECTIONS.filter((s) => hasCapability(s.cap));
+  const visibleSections = ADMIN_SECTIONS.filter((s) => sectionMatches(hasCapability, s.cap));
 
   return (
     <div className="flex min-h-screen">

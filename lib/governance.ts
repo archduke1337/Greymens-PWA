@@ -296,19 +296,15 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     auditAction: "power.grant / power.revoke",
   },
   {
-    href: "/admin/designations",
-    label: "Designations",
-    office: "president",
-    capabilities: ["designations.assign"],
-    auditAction: "designation.create",
-  },
-  {
-    href: "/admin/offices",
-    label: "Office holders",
+    // Offices and designations share one console: a single entry, since the
+    // page itself splits tabs by capability. Offices grant capabilities,
+    // designations grant none — see the Positions page copy.
+    href: "/admin/positions",
+    label: "Positions (offices + designations)",
     office: "general_secretary",
-    capabilities: ["governance.manage_offices"],
-    form: "assign office + term",
-    auditAction: "office.assign",
+    capabilities: ["governance.manage_offices", "designations.assign"],
+    form: "assign office + term / assign designation",
+    auditAction: "office.assign / designation.assign",
   },
   {
     href: "/admin/governance",

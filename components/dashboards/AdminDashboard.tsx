@@ -139,10 +139,10 @@ export default function AdminDashboard() {
       description: "Configure departments",
     },
     {
-      label: "Designation Management",
-      href: "/admin/designations",
+      label: "Position Management",
+      href: "/admin/positions",
       icon: Shield,
-      description: "Manage designations",
+      description: "Manage offices and designations",
     },
     {
       label: "Audit Logs",
