@@ -217,6 +217,7 @@ export async function DELETE(request: NextRequest) {
         ]);
         if (regs.total > 0 || tix.total > 0) { skipped += 1; continue; }
         await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, event.$id);
+        await recordAudit({ request, actor: authenticated.user, action: "event.delete", entityType: "event", entityId: event.$id, details: { bulkPast: true } });
         deleted += 1;
       }
       return ok({ deleted, skipped });
@@ -236,6 +237,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
+    await recordAudit({ request, actor: authenticated.user, action: "event.delete", entityType: "event", entityId: eventId });
     return ok({ success: true });
   } catch (error) {
     console.error("Admin event delete error:", error);

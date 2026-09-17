@@ -18,6 +18,17 @@ export default function AdminEventsPage() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [lifecycleId, setLifecycleId] = useState<string | null>(null);
+
+  const STATUS_COLORS: Record<Event["status"], "default" | "accent" | "success" | "warning" | "danger"> = {
+    draft: "default",
+    review: "warning",
+    approved: "accent",
+    published: "success",
+    active: "success",
+    completed: "default",
+    cancelled: "danger",
+  };
 
   // Form state
   const [formData, setFormData] = useState<Partial<Event>>({
@@ -128,6 +139,40 @@ export default function AdminEventsPage() {
     open();
   };
 
+  const handleLifecycle = async (eventId: string, action: "approve" | "publish" | "reject") => {
+    if (action === "reject") {
+      const reason = window.prompt("Reason for rejection (shown to the organizer)?", "");
+      if (reason === null) return; // prompt cancelled — abort, do not reject
+      return void handleLifecycleConfirm(eventId, action, reason.trim() || undefined);
+    }
+    const label = action === "approve" ? "Approve this event?" : "Publish this event? It will become publicly visible.";
+    if (!confirm(label)) return;
+    return void handleLifecycleConfirm(eventId, action);
+  };
+
+  const handleLifecycleConfirm = async (eventId: string, action: "approve" | "publish" | "reject", reason?: string) => {
+    setLifecycleId(eventId);
+    try {
+      const response = await fetch("/api/admin/events", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(reason !== undefined ? { action, eventId, reason } : { action, eventId }),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || `Unable to ${action} event`);
+      await loadEvents();
+      toast.success(
+        action === "approve" ? "Event approved." : action === "publish" ? "Event published." : "Event rejected.",
+      );
+    } catch (error) {
+      console.error(`Error ${action} event:`, error);
+      toast.error(getErrorMessage(error) || `Failed to ${action} event`);
+    } finally {
+      setLifecycleId(null);
+    }
+  };
+
   const handleDelete = async (eventId: string) => {
     if (!confirm("Are you sure you want to delete this event? This cannot be undone.")) return;
     setDeletingId(eventId);
@@ -138,7 +183,10 @@ export default function AdminEventsPage() {
         credentials: "include",
         body: JSON.stringify({ eventId }),
       });
-      if (!response.ok) throw new Error("Unable to delete event");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      // 409 carries registration/ticket counts — surface them so the admin
+      // knows why deletion is blocked instead of a generic failure.
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete event");
       await loadEvents();
       toast.success("Event deleted successfully!");
     } catch (error) {
@@ -356,7 +404,7 @@ export default function AdminEventsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        color={event.status === "active" ? "success" : "default"}
+                        color={STATUS_COLORS[event.status] ?? "default"}
                         variant="primary"
                         size="sm"
                         className="text-xs"
@@ -366,6 +414,36 @@ export default function AdminEventsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 md:gap-2">
+                        {(event.status === "draft" || event.status === "review") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isPending={lifecycleId === event.$id}
+                            onPress={() => handleLifecycle(event.$id!, "approve")}
+                          >
+                            Approve
+                          </Button>
+                        )}
+                        {event.status === "approved" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isPending={lifecycleId === event.$id}
+                            onPress={() => handleLifecycle(event.$id!, "publish")}
+                          >
+                            Publish
+                          </Button>
+                        )}
+                        {event.status !== "cancelled" && event.status !== "completed" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isPending={lifecycleId === event.$id}
+                            onPress={() => handleLifecycle(event.$id!, "reject")}
+                          >
+                            {event.status === "published" || event.status === "active" ? "Cancel" : "Reject"}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
