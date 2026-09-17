@@ -233,18 +233,18 @@ export async function PATCH(request: NextRequest) {
     if (!callerIsAdmin && !callerOwnsEvent && !callerIsVerifier) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }
-    // Do not admit tickets for cancelled/draft events.
-    try {
-      const eventDoc = eventIdForScope
-        ? await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventIdForScope).catch(() => null)
-        : null;
-      const eventStatus = eventDoc ? String((eventDoc as Record<string, unknown>).status ?? "") : "";
-      if (eventDoc && !["published", "active", "approved"].includes(eventStatus)) {
-        return fail("CONFLICT", `Event is not open for check-in (status: ${eventStatus || "unknown"})`, 409);
-      }
-    } catch {
-      // Fail open on event lookup error to avoid blocking door on transient DB issue;
-      // ticket state machine below still enforces validity.
+    // Do not admit tickets for cancelled/draft events. Fail CLOSED on
+    // lookup error: the old fail-open admitted check-ins for cancelled
+    // events whenever the database hiccuped at the door.
+    const eventDoc = eventIdForScope
+      ? await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventIdForScope).catch(() => null)
+      : null;
+    if (eventIdForScope && !eventDoc) {
+      return fail("INTERNAL", "Event status unknown. Please retry.", 503);
+    }
+    const eventStatus = eventDoc ? String((eventDoc as Record<string, unknown>).status ?? "") : "";
+    if (eventDoc && !["published", "active", "approved"].includes(eventStatus)) {
+      return fail("CONFLICT", `Event is not open for check-in (status: ${eventStatus || "unknown"})`, 409);
     }
     const now = new Date().toISOString();
     // Forensic method derives from proof, not the client hint alone: `qr_scan`
@@ -265,19 +265,44 @@ export async function PATCH(request: NextRequest) {
 
     if (action === "checkIn") {
       // Multi-entry tickets: allow re-check-in while status is issued/active
-      // and entries remain. 409 only when all entries are consumed.
-      const entryCount = Number(ticket.entryCount) || 0;
+      // and entries remain.
       const maxEntries = Number(ticket.maxEntries) || 1;
-      if (entryCount >= maxEntries) {
-        return fail("CONFLICT", entryCount > 0 && maxEntries <= 1
-          ? "This ticket has already been checked in"
-          : "Maximum entries reached", 409);
-      }
       if (ticket.status !== "issued" && ticket.status !== "active") {
         return fail("CONFLICT", `Ticket cannot be checked in from ${ticket.status} state`, 409);
       }
-      const newEntryCount = entryCount + 1;
-      const newStatus = newEntryCount >= maxEntries ? "checked_in" : "active";
+      // Atomic bounded admission: the increment serializes concurrent scans
+      // and each caller observes its own post-increment count, so exactly the
+      // first maxEntries callers are admitted. Over-limit callers revert the
+      // increment and 409 — the old read-then-write admitted twice when two
+      // door devices scanned together.
+      let admittedCount = 0;
+      try {
+        const after = await databases.incrementDocumentAttribute(
+          DATABASE_ID,
+          COLLECTIONS.TICKETS,
+          ticketId,
+          "entryCount",
+          1,
+        );
+        admittedCount = Number((after as unknown as Record<string, unknown>).entryCount) || 0;
+      } catch {
+        return fail("INTERNAL", "Could not record entry. Please retry.", 503);
+      }
+      if (admittedCount > maxEntries || admittedCount <= 0) {
+        // Revert best-effort: a stuck counter fails closed (fewer admissions),
+        // never open. The holder retries and takes a fresh count.
+        await databases.decrementDocumentAttribute(
+          DATABASE_ID,
+          COLLECTIONS.TICKETS,
+          ticketId,
+          "entryCount",
+          1,
+        ).catch(() => null);
+        return fail("CONFLICT", maxEntries <= 1
+          ? "This ticket has already been checked in"
+          : "Maximum entries reached", 409);
+      }
+      const newStatus = admittedCount >= maxEntries ? "checked_in" : "active";
 
       const updated = await databases.updateDocument(
         DATABASE_ID,
@@ -287,7 +312,7 @@ export async function PATCH(request: NextRequest) {
           status: newStatus,
           checkedInAt: now,
           checkedInBy: authenticated.user.$id,
-          entryCount: newEntryCount,
+          entryCount: admittedCount,
         },
       );
 

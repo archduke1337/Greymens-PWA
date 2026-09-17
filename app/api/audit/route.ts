@@ -1,92 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { ID, Query } from "appwrite";
+import { NextRequest } from "next/server";
+import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
+import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
-import { isRecord, readOptionalString, readString } from "@/lib/validation";
-import { ok, fail, ApiError } from "@/lib/api";
+import { readOptionalString } from "@/lib/validation";
+import { ok, fail } from "@/lib/api";
 
-const MAX_DETAILS_LENGTH = 5000;
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
-
-// Audit writes are frequent (one per mutation) but should never be unbounded.
-const WRITE_RATE_LIMIT = 120;
-const WRITE_RATE_WINDOW_MS = 10 * 60 * 1000;
-
-export async function POST(request: NextRequest) {
-  const authenticated = await requireAuthenticatedUser(request);
-  if (!authenticated.user) return authenticated.response;
-
-  // Restricted + Sybil guard: banned/suspended/deactivated cannot write forensics.
-  const writerStatus = await getMembershipStatus(authenticated.user);
-  if (["banned", "suspended", "deactivated"].includes(writerStatus)) {
-    return fail("FORBIDDEN", "Forbidden", 403);
-  }
-
-  const limited = consumeRateLimit(`audit:${authenticated.user.$id}`, WRITE_RATE_LIMIT, WRITE_RATE_WINDOW_MS);
-  if (!limited.allowed) {
-    return NextResponse.json({ success: false, error: { code: "RATE_LIMITED", message: "Too many audit writes. Please try again shortly." } }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return fail("VALIDATION", "Invalid request body", 400);
-  }
-
-  if (!isRecord(body)) {
-    return fail("VALIDATION", "Invalid request body", 400);
-  }
-
-  const action = readString(body.action, 100);
-  const entityType = readString(body.entityType, 50);
-  const entityId = readString(body.entityId, 36);
-
-  if (!action || !entityType || !entityId) {
-    return fail("VALIDATION", "action, entityType, and entityId are required", 400);
-  }
-
-  let details: string | null = null;
-  if (body.details !== undefined && body.details !== null) {
-    if (!isRecord(body.details)) {
-      return fail("VALIDATION", "Invalid details", 400);
-    }
-    const serialized = JSON.stringify(body.details);
-    if (serialized.length > MAX_DETAILS_LENGTH) {
-      return fail("VALIDATION", "Audit details are too large", 400);
-    }
-    details = serialized;
-  }
-
-  try {
-    const { databases } = createServerDatabases();
-    // Actor identity is taken from the verified session and the stored profile,
-    // never from the request body, so a client cannot attribute an action to
-    // somebody else.
-    const actorRole = await getMembershipStatus(authenticated.user);
-    const created = await databases.createDocument(DATABASE_ID, COLLECTIONS.AUDIT_LOGS, ID.unique(), {
-      actorId: authenticated.user.$id,
-      actorName: authenticated.user.name || "Unknown",
-      actorRole,
-      action,
-      entityType,
-      entityId,
-      details,
-      ipAddress: getClientAddress(request).slice(0, 45),
-      userAgent: (request.headers.get("user-agent") || "").slice(0, 500),
-      timestamp: new Date().toISOString(),
-    });
-
-    return ok({ log: created }, 201);
-  } catch (error) {
-    console.error("Audit write error:", error);
-    return fail("INTERNAL", "Unable to record audit entry", 500);
-  }
-}
 
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "audit.view");

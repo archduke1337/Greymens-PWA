@@ -1,11 +1,15 @@
 import type { AuditLog } from "./types";
 
 /**
- * Audit records are written and read through `/api/audit`.
+ * Audit records are written server-side only (`recordAudit` in
+ * lib/server-audit.ts writes direct to the table) and read through
+ * `/api/audit` GET.
  *
- * They cannot be written from the browser SDK: the `audit_logs` table grants no
- * client permissions, and the actor identity must come from the verified
- * session rather than from client-supplied fields.
+ * They cannot be written from the browser SDK or any HTTP endpoint: the
+ * `audit_logs` table grants no client permissions, and a previous
+ * client-writable POST accepted arbitrary action/entity/details from any
+ * account — letting the audited forge the forensic trail. It was removed;
+ * actor identity always comes from the verified session.
  */
 
 export interface AuditLogInput {
@@ -70,40 +74,6 @@ async function fetchAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
 }
 
 export const auditService = {
-  /**
-   * Records an audit entry.
-   *
-   * Resolves to false when the entry could not be recorded. It deliberately does
-   * not throw: the action being audited has already succeeded, so a failed audit
-   * write must not be reported to the operator as a failed action. Failures are
-   * logged for the server and, where it matters, surfaced by the caller.
-   */
-  async log(data: AuditLogInput): Promise<boolean> {
-    try {
-      const response = await fetch("/api/audit", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: data.action,
-          entityType: data.entityType,
-          entityId: data.entityId,
-          details: data.details,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Failed to record audit entry:", data.action, response.status);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Failed to record audit entry:", data.action, error);
-      return false;
-    }
-  },
-
   async getLogs(filters?: AuditLogFilters): Promise<AuditLogPage> {
     return fetchAuditLogs(filters ?? {});
   },

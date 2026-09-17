@@ -71,7 +71,7 @@ export default function EventTicketsPage() {
           cache: "no-store",
         });
         const registerPayload = await registerResponse.json().catch(() => null) as {
-          tickets?: Array<{ $id?: string; eventId: string; ticketCode: string; status: string; issuedAt?: string }>;
+          tickets?: Array<{ $id?: string; eventId: string; ticketCode: string; qrData?: string | null; status: string; issuedAt?: string }>;
           error?: string;
         } | null;
         if (!registerResponse.ok) {
@@ -86,7 +86,11 @@ export default function EventTicketsPage() {
                 userId: user?.$id ?? "",
                 registrationId: "",
                 ticketCode: mine.ticketCode,
-                qrData: JSON.stringify({ ticketCode: mine.ticketCode, eventId }),
+                // Prefer the server-signed payload: an unsigned QR is a
+                // copyable blob the door downgrades to manual_search. The
+                // fabricated fallback only covers legacy rows issued before
+                // signing reached this endpoint.
+                qrData: mine.qrData || JSON.stringify({ ticketCode: mine.ticketCode, eventId }),
                 status: (mine.status as Ticket["status"]) ?? "issued",
                 issuedAt: mine.issuedAt,
                 entryCount: 0,

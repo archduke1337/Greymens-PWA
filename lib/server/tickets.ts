@@ -9,18 +9,27 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 /**
  * Signed ticket QR payloads (HMAC-SHA256).
  * qrData = JSON { ticketCode, eventId, sig } where sig covers ticketCode.eventId.
- * Secret: TICKET_HMAC_SECRET, fallback APPWRITE_API_KEY (server-only, never NEXT_PUBLIC).
+ *
+ * Secret: TICKET_HMAC_SECRET only. An earlier revision fell back to
+ * APPWRITE_API_KEY, collapsing key separation (a leaked signing key would be
+ * the master API key and vice versa). Signing fails closed without the
+ * dedicated secret; verification still accepts the old fallback so tickets
+ * issued before the split keep scanning, and every re-issue migrates forward.
  * Legacy unsigned { ticketCode, eventId } still verifies via ticketCode lookup
- * (migration window) but new issues are always signed — issuing without any
- * secret throws instead of emitting a forgeable "unsigned" payload.
+ * (migration window) but new issues are always signed.
  */
 
-function secret(): string {
-  return process.env.TICKET_HMAC_SECRET || process.env.APPWRITE_API_KEY || "";
+function signingSecret(): string {
+  return process.env.TICKET_HMAC_SECRET || "";
+}
+
+function verificationSecrets(): string[] {
+  const secrets = [process.env.TICKET_HMAC_SECRET || "", process.env.APPWRITE_API_KEY || ""];
+  return secrets.filter((secret) => secret.length > 0);
 }
 
 export function signTicket(ticketCode: string, eventId: string): string {
-  const s = secret();
+  const s = signingSecret();
   // Fail closed: an "unsigned" ticket is forgeable by anyone who can guess a
   // code, so a missing secret must break issuance loudly, not silently.
   if (!s) throw new Error("Ticket signing secret is not configured");
@@ -37,15 +46,19 @@ export function parseQrData(raw: string): { ticketCode: string; eventId: string;
     if (!ticketCode || !eventId) return null;
     const sig = typeof o.sig === "string" ? o.sig : "";
     if (!sig) return { ticketCode, eventId, signed: false };
-    const s = secret();
-    // A signed payload that cannot be verified (no secret configured) must be
-    // rejected, not downgraded to the unsigned path.
-    if (!s) return null;
-    const expected = createHmac("sha256", s).update(`${ticketCode}.${eventId}`).digest("hex").slice(0, 32);
-    const a = Buffer.from(sig);
-    const b = Buffer.from(expected);
-    const ok = a.length === b.length && timingSafeEqual(a, b);
-    return ok ? { ticketCode, eventId, signed: true } : null;
+    // Accept signatures from the dedicated secret or the legacy API-key
+    // fallback (pre-split tickets). A signed payload matching neither is
+    // forged — reject, never downgrade to the unsigned path.
+    const data = `${ticketCode}.${eventId}`;
+    for (const s of verificationSecrets()) {
+      const expected = createHmac("sha256", s).update(data).digest("hex").slice(0, 32);
+      const a = Buffer.from(sig);
+      const b = Buffer.from(expected);
+      if (a.length === b.length && timingSafeEqual(a, b)) {
+        return { ticketCode, eventId, signed: true };
+      }
+    }
+    return null;
   } catch {
     return null;
   }

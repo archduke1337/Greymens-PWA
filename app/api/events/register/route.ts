@@ -46,6 +46,10 @@ export async function GET(request: NextRequest) {
         $id: ticket.$id,
         eventId: ticket.eventId,
         ticketCode: ticket.ticketCode,
+        // Signed payload for the member's QR: without it the client fabricates
+        // an unsigned blob the door can only log as manual_search. Scoped to
+        // the owner's own rows by the query above.
+        qrData: typeof ticket.qrData === "string" ? ticket.qrData : null,
         status: ticket.status,
         issuedAt: ticket.issuedAt,
       })),
