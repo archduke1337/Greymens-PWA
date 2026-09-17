@@ -5,7 +5,7 @@ import type { Project } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, Slider, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -331,10 +331,12 @@ export default function AdminProjectsPage() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <Table 
-                      aria-label="Projects table" 
-                      className="min-w-full"
-                    >
+                    <Table>
+                      <TableScrollContainer>
+                        <TableContent
+                          aria-label="Projects table"
+                          className="min-w-full"
+                        >
                       <TableHeader>
                         <TableColumn className="text-sm">PROJECT</TableColumn>
                         <TableColumn className="text-sm">CATEGORY</TableColumn>
@@ -434,6 +436,8 @@ export default function AdminProjectsPage() {
                           </TableRow>
                         ))}
                       </TableBody>
+                        </TableContent>
+                      </TableScrollContainer>
                     </Table>
                   </div>
                 )}
@@ -551,41 +555,67 @@ export default function AdminProjectsPage() {
                 />
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <select
+                  <Select
+                    fullWidth
+                    aria-label="Project category"
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                    onChange={(value) => setFormData({ ...formData, category: String(value ?? "") })}
                   >
-                    {categories.map((cat) => (
-                      <option key={cat.key} value={cat.key}>{cat.label}</option>
-                    ))}
-                  </select>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {categories.map((cat) => (
+                          <ListBox.Item key={cat.key} id={cat.key} textValue={cat.label}>
+                            {cat.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
 
-                  <select
+                  <Select
+                    fullWidth
+                    aria-label="Project status"
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                    onChange={(value) => setFormData({ ...formData, status: String(value ?? "") })}
                   >
-                    {statuses.map((status) => (
-                      <option key={status.key} value={status.key}>{status.label}</option>
-                    ))}
-                  </select>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {statuses.map((status) => (
+                          <ListBox.Item key={status.key} id={status.key} textValue={status.label}>
+                            {status.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
-                      <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">
-                        Progress: {formData.progress}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
+                      <Slider
                         value={formData.progress}
-                        onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                      />
+                        minValue={0}
+                        maxValue={100}
+                        onChange={(value) => setFormData({ ...formData, progress: typeof value === "number" ? value : value[0] ?? 0 })}
+                      >
+                        <Label>Progress: {formData.progress}%</Label>
+                        <Slider.Output />
+                        <Slider.Track>
+                          <Slider.Fill />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
                     </div>
                     <Input
                       type="number"
@@ -649,7 +679,12 @@ export default function AdminProjectsPage() {
                   isSelected={formData.isFeatured}
                   onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
                 >
-                  Feature this project on the homepage
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb />
+                    </Switch.Control>
+                    Feature this project on the homepage
+                  </Switch.Content>
                 </Switch>
               </div>
             </ModalBody>
