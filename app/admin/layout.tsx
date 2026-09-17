@@ -138,7 +138,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  const { status, hasPermission, loading: permLoading } = usePermissions();
+  const { status, hasCapability, loading: permLoading } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
   const [admitted, setAdmitted] = useState<boolean | null>(null);
@@ -155,10 +155,13 @@ export default function AdminLayout({
         return;
       }
 
-      // Option B admission: any capability granting at least one section, or
-      // admin tier (admin has "*" so hasPermission passes everything).
+      // Option B admission: any server-resolved capability granting at least
+      // one section, or admin tier ("*" covers everything). This must use
+      // hasCapability (new vocabulary), not hasPermission (legacy): office
+      // holders kept valid grants but were bounced here because the legacy
+      // check knew none of the section capabilities.
       // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
-      const visible = ADMIN_SECTIONS.some((s) => hasPermission(s.cap));
+      const visible = ADMIN_SECTIONS.some((s) => hasCapability(s.cap));
 
       if (status === "admin" || status === "dev" || visible) {
         setAdmitted(true);
@@ -188,7 +191,7 @@ export default function AdminLayout({
           router.push("/unauthorized");
         });
     }
-  }, [user, loading, permLoading, router, status, hasPermission, admitted]);
+  }, [user, loading, permLoading, router, status, hasCapability, admitted]);
 
   if (loading || permLoading || admitted === null) {
     return (
@@ -205,7 +208,7 @@ export default function AdminLayout({
     );
   }
 
-  const visibleSections = ADMIN_SECTIONS.filter((s) => hasPermission(s.cap));
+  const visibleSections = ADMIN_SECTIONS.filter((s) => hasCapability(s.cap));
 
   return (
     <div className="flex min-h-screen">

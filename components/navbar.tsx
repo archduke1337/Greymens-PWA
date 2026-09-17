@@ -41,7 +41,7 @@ const ACCOUNT_ITEMS = [
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
-  const { status, hasPermission } = usePermissions();
+  const { status, hasCapability } = usePermissions();
   const router = useRouter();
 
   const isAdmin = status === "admin" || status === "dev";
@@ -50,7 +50,7 @@ export const Navbar = () => {
   // Bootstrap ADMIN_EMAILS admins without a governance row are the exception:
   // they reach the console via direct URL until grant-admin runs.
   const seesAdminConsole =
-    isAdmin || ADMIN_SECTIONS.some((section) => hasPermission(section.cap));
+    isAdmin || ADMIN_SECTIONS.some((section) => hasCapability(section.cap));
   const isLoggedIn = !!user;
   const statusLabel = STATUS_LABELS[status];
 

@@ -34,6 +34,14 @@ interface PermissionContextType {
   hasPermission: (permission: string, scope?: string) => boolean;
   hasAnyPermission: (permissions: string[], scope?: string) => boolean;
   hasAllPermissions: (permissions: string[], scope?: string) => boolean;
+  /**
+   * New-vocabulary capability check against the server-resolved set from
+   * GET /api/permissions (`capabilities: string[]`, `"*"` for admin/dev).
+   * Use this — not hasPermission — for anything the server gates with
+   * requireCapability, or office holders will be bounced despite valid
+   * grants: hasPermission only knows the legacy permission vocabulary.
+   */
+  hasCapability: (capability: string) => boolean;
   isRole: (role: MembershipStatus) => boolean;
   isRoleOrAbove: (role: MembershipStatus) => boolean;
   loading: boolean;
@@ -84,6 +92,7 @@ interface PermissionsPayload {
   allDepartments: Department[];
   allDesignations: Designation[];
   allPowers: Power[];
+  capabilities: string[];
 }
 
 const EMPTY_PAYLOAD: PermissionsPayload = {
@@ -97,6 +106,7 @@ const EMPTY_PAYLOAD: PermissionsPayload = {
   allDepartments: [],
   allDesignations: [],
   allPowers: [],
+  capabilities: [],
 };
 
 const PermissionContext = createContext<PermissionContextType>({
@@ -105,6 +115,7 @@ const PermissionContext = createContext<PermissionContextType>({
   hasPermission: () => false,
   hasAnyPermission: () => false,
   hasAllPermissions: () => false,
+  hasCapability: () => false,
   isRole: () => false,
   isRoleOrAbove: () => false,
   loading: true,
@@ -162,6 +173,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
         allDepartments: asArray<Department>(data.allDepartments),
         allDesignations: asArray<Designation>(data.allDesignations),
         allPowers: asArray<Power>(data.allPowers),
+        capabilities: asArray<string>(data.capabilities),
       });
       setError(null);
     } catch (error) {
@@ -210,6 +222,14 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     [userContext]
   );
 
+  const hasCapability = useCallback(
+    (capability: string) => {
+      const set = payload.capabilities;
+      return set.includes("*") || set.includes(capability);
+    },
+    [payload.capabilities]
+  );
+
   const isRole = useCallback((role: MembershipStatus) => payload.status === role, [payload.status]);
 
   const isRoleOrAbove = useCallback(
@@ -224,13 +244,14 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
       hasPermission,
       hasAnyPermission,
       hasAllPermissions,
+      hasCapability,
       isRole,
       isRoleOrAbove,
       loading,
       error,
       refresh: loadUserData,
     }),
-    [payload, hasPermission, hasAnyPermission, hasAllPermissions, isRole, isRoleOrAbove, loading, error, loadUserData]
+    [payload, hasPermission, hasAnyPermission, hasAllPermissions, hasCapability, isRole, isRoleOrAbove, loading, error, loadUserData]
   );
 
   return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;
