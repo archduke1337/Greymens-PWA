@@ -209,10 +209,16 @@ export async function POST(request: NextRequest) {
     const type = text(form.get("type"), 50) || "document";
     const url = text(form.get("url"), 500);
     const tags = text(form.get("tags"), 1000).split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 20);
+    const departmentId = text(form.get("departmentId"), 36);
     const file = form.get("file");
     if (!title) return fail("VALIDATION", "Title is required", 400);
     if (!ALLOWED_CATEGORIES.has(category) || !ALLOWED_RESOURCE_TYPES.has(type)) {
       return fail("VALIDATION", "Invalid resource category or type", 400);
+    }
+    // A department-layer resource without a department is visible nowhere it
+    // should be and everywhere it shouldn't — require the scope at create.
+    if (category === "department" && !departmentId) {
+      return fail("VALIDATION", "A department is required for department resources", 400);
     }
     if (!url && !(file instanceof File)) return fail("VALIDATION", "A URL or file is required", 400);
     if (url) {
@@ -244,6 +250,7 @@ export async function POST(request: NextRequest) {
       type,
       url: fileUrl,
       fileId,
+      departmentId: category === "department" ? departmentId : null,
       uploadedBy: authenticated.user.$id,
       uploadedByName: authenticated.user.name,
       tags,
@@ -256,7 +263,7 @@ export async function POST(request: NextRequest) {
       action: "resource.create",
       entityType: "resource",
       entityId: resource.$id,
-      details: { title, category, type },
+      details: { title, category, type, departmentId: category === "department" ? departmentId : null },
     });
     return ok({ resource }, 201);
   } catch (error) {

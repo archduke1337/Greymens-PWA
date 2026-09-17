@@ -3,6 +3,7 @@ import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
+import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -16,7 +17,14 @@ export async function GET(request: NextRequest) {
       Query.orderDesc("$createdAt"),
       Query.limit(100),
     ]);
-    return ok({ images: response.documents, total: response.total });
+    // Uploader names live on the auth record — best-effort so a lookup
+    // failure never fails the review queue.
+    const uploaderIds = [...new Set(response.documents.map((doc) => String(doc.uploadedBy ?? "")).filter(Boolean))];
+    const accountNames = await getAccountNames(uploaderIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+    return ok({ images: response.documents, total: response.total, accountNames });
   } catch (error) {
     console.error("Admin gallery list error:", error);
     return fail("INTERNAL", "Unable to load gallery", 500);

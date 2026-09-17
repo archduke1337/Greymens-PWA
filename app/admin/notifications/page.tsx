@@ -28,6 +28,7 @@ import {
   Send,
   Search,
   CheckCircle,
+  XCircle,
   Clock,
   Loader2,
 } from "lucide-react";
@@ -36,6 +37,9 @@ export default function AdminNotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
+  const [members, setMembers] = useState<Array<{ userId: string; name: string; urn?: string }>>([]);
+  const [membersAvailable, setMembersAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, open, close } = useOverlayState();
@@ -50,14 +54,41 @@ export default function AdminNotificationsPage() {
   const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/notifications?all=true&limit=200", { credentials: "include" });
-      const payload = (await response.json()) as { notifications?: Notification[]; error?: string };
+      const payload = (await response.json()) as { notifications?: Notification[]; accountNames?: Record<string, string>; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load notifications");
       setNotifications(payload.notifications ?? []);
+      setRecipientNames(payload.accountNames ?? {});
     } catch (error) {
       console.error("Error loading notifications:", error);
       toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadMembers = useCallback(async () => {
+    // Recipient picker directory. Best-effort: without users.view the admin
+    // pastes a user ID instead of being blocked.
+    try {
+      const response = await fetch("/api/admin/users?limit=200", { credentials: "include" });
+      if (!response.ok) throw new Error("member directory unavailable");
+      const data = await response.json() as {
+        users?: Array<{ profile?: { userId?: string; urn?: string }; membership?: { status?: string } | null }>;
+        accountNames?: Record<string, string>;
+      };
+      const options = (data.users ?? [])
+        .map((entry): { userId: string; name: string; urn?: string } | null => {
+          const userId = String(entry.profile?.userId ?? "");
+          if (!userId || entry.membership?.status !== "active") return null;
+          return { userId, name: data.accountNames?.[userId] || userId, urn: entry.profile?.urn };
+        })
+        .filter((option): option is { userId: string; name: string; urn?: string } => option !== null)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setMembers(options);
+      setMembersAvailable(true);
+    } catch {
+      setMembers([]);
+      setMembersAvailable(false);
     }
   }, []);
 
@@ -67,12 +98,13 @@ export default function AdminNotificationsPage() {
       return;
     }
     loadData();
-  }, [user, authLoading, router, loadData]);
+    if (!authLoading && user) void loadMembers();
+  }, [user, authLoading, router, loadData, loadMembers]);
 
   const handleSend = async () => {
     if (!user) return;
-    if (!form.userId || !form.title || !form.body) {
-      toast.error("All fields are required");
+    if (!form.userId.trim() || !form.title.trim() || !form.body.trim()) {
+      toast.error("Recipient, title, and body are all required");
       return;
     }
 
@@ -83,22 +115,22 @@ export default function AdminNotificationsPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          userId: form.userId,
+          userId: form.userId.trim(),
           type: form.type,
-          title: form.title,
-          body: form.body,
+          title: form.title.trim(),
+          body: form.body.trim(),
         }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "Unable to send notification");
 
-      toast.success("Notification sent!");
+      toast.success(`Notification sent to ${recipientNames[form.userId.trim()] || "member"}`);
       close();
       setForm({ userId: "", title: "", body: "", type: "admin_announcement" });
       await loadData();
     } catch (error) {
       console.error("Error sending notification:", error);
-      toast.error("Failed to send notification");
+      toast.error(error instanceof Error ? error.message : "Failed to send notification");
     } finally {
       setSending(false);
     }
@@ -119,7 +151,7 @@ export default function AdminNotificationsPage() {
       case "membership_approved":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case "membership_rejected":
-        return <CheckCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       case "promotion":
         return <CheckCircle className="w-4 h-4 text-primary" />;
       default:
@@ -197,7 +229,7 @@ export default function AdminNotificationsPage() {
                       {notif.$createdAt ? new Date(notif.$createdAt).toLocaleString() : "-"}
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-default-100">{notif.type}</span>
-                    <span>To: {notif.userId.slice(0, 8)}</span>
+                    <span>To: {recipientNames[notif.userId] || notif.userId}</span>
                   </div>
                 </div>
               </CardContent>
@@ -214,14 +246,40 @@ export default function AdminNotificationsPage() {
               <ModalHeader>Send Notification</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Recipient User ID</label>
-                    <Input
-                      placeholder="Enter the user's ID"
-                      value={form.userId}
-                      onChange={(e: any) => setForm((p) => ({ ...p, userId: e.target.value }))}
-                    />
-                  </div>
+                  {membersAvailable ? (
+                    <div>
+                      <Select
+                        fullWidth
+                        value={form.userId === "" ? null : form.userId}
+                        onChange={(value) => setForm((p) => ({ ...p, userId: String(value ?? "") }))}
+                      >
+                        <Label>Recipient</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {members.map((member) => (
+                              <ListBox.Item key={member.userId} id={member.userId} textValue={member.name}>
+                                {member.name}{member.urn ? ` · ${member.urn}` : ""}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Recipient User ID</label>
+                      <Input
+                        placeholder="Member directory unavailable — enter the user's ID"
+                        value={form.userId}
+                        onChange={(e: any) => setForm((p) => ({ ...p, userId: e.target.value }))}
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium mb-1 block">Title</label>
                     <Input

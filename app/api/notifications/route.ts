@@ -4,6 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
+import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { isRecord, readOptionalString, readString } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -61,7 +62,14 @@ export async function GET(request: NextRequest) {
         Query.orderDesc("createdAt"),
         Query.limit(limit),
       ]);
-      return ok({ notifications: response.documents, total: response.total, unreadCount: 0 });
+      // Recipient names live on the auth record — best-effort so a lookup
+      // failure never fails the admin feed.
+      const recipientIds = [...new Set(response.documents.map((doc) => String(doc.userId ?? "")).filter(Boolean))];
+      const accountNames = await getAccountNames(recipientIds).then(
+        (names) => Object.fromEntries(names) as Record<string, string>,
+        () => ({}) as Record<string, string>,
+      );
+      return ok({ notifications: response.documents, total: response.total, unreadCount: 0, accountNames });
     }
 
     const [response, unread] = await Promise.all([

@@ -61,6 +61,8 @@ export default function AdminResourcesPage() {
   const [layerFilter, setLayerFilter] = useState<string>("all");
   const { isOpen, open, close } = useOverlayState();
   const [editTarget, setEditTarget] = useState<Resource | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -100,26 +102,33 @@ export default function AdminResourcesPage() {
 
   const handleSave = async () => {
     if (!user) return;
-    if (!form.title) {
+    if (!form.title.trim()) {
       toast.error("Title is required");
       return;
     }
+    if (form.layer === "department" && !form.departmentId) {
+      toast.error("Choose the department this resource belongs to");
+      return;
+    }
+    setSaving(true);
     try {
       const data = {
-        title: form.title,
+        title: form.title.trim(),
         description: form.description,
         type: form.type,
         url: form.url || undefined,
         layer: form.layer,
         departmentId: form.layer === "department" ? form.departmentId || undefined : undefined,
         tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-        uploadedBy: user.$id,
         isActive: true,
       };
 
       const response = await fetch("/api/resources", {
         method: editTarget?.$id ? "PATCH" : "POST",
+        // PATCH sends JSON; POST sends FormData, so the browser must set the
+        // multipart boundary itself — a manual Content-Type would corrupt it.
         headers: editTarget?.$id ? { "Content-Type": "application/json" } : undefined,
+        credentials: "include",
         body: editTarget?.$id
           ? JSON.stringify({ resourceId: editTarget.$id, ...data })
           : (() => {
@@ -141,24 +150,31 @@ export default function AdminResourcesPage() {
       await loadData();
     } catch (error) {
       console.error("Error saving resource:", error);
-      toast.error("Failed to save resource");
+      toast.error(error instanceof Error ? error.message : "Failed to save resource");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (resource: Resource) => {
     if (!resource.$id) return;
     if (!window.confirm(`Delete "${resource.title}"?`)) return;
+    setDeletingId(resource.$id);
     try {
       const response = await fetch("/api/resources", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ resourceId: resource.$id }),
       });
-      if (!response.ok) throw new Error("Unable to delete resource");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete resource");
       toast.success("Resource deleted");
       await loadData();
-    } catch {
-      toast.error("Failed to delete resource");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete resource");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -285,6 +301,11 @@ export default function AdminResourcesPage() {
                     <div className="flex items-center gap-2 mt-1">
                       <Chip size="sm" variant="soft">{resource.type}</Chip>
                       <Chip size="sm" variant="soft" color="accent">{resource.layer}</Chip>
+                      {resource.layer === "department" && resource.departmentId && (
+                        <Chip size="sm" variant="soft">
+                          {departments.find((d) => d.$id === resource.departmentId)?.name || "Unknown department"}
+                        </Chip>
+                      )}
                       {resource.tags?.slice(0, 3).map((tag) => (
                         <Chip key={tag} size="sm" variant="soft" color="accent">{tag}</Chip>
                       ))}
@@ -294,7 +315,7 @@ export default function AdminResourcesPage() {
                     <Button size="sm" variant="ghost" onPress={() => openEdit(resource)} isIconOnly>
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="danger-soft" onPress={() => handleDelete(resource)} isIconOnly>
+                    <Button size="sm" variant="danger-soft" onPress={() => handleDelete(resource)} isPending={deletingId === resource.$id} isIconOnly>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -426,6 +447,7 @@ export default function AdminResourcesPage() {
                 <Button variant="ghost" onPress={close}>Cancel</Button>                    <Button
                     variant="primary"
                     onPress={handleSave}
+                    isPending={saving}
                   >
                   {editTarget ? "Update" : "Create"}
                 </Button>

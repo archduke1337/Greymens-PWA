@@ -45,15 +45,18 @@ export default function AdminGalleryPage() {
   const [rejectTarget, setRejectTarget] = useState<GalleryImage | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState(false);
+  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/gallery", { credentials: "include" });
-      const payload = (await response.json()) as { images?: GalleryImage[]; error?: string };
+      const payload = (await response.json()) as { images?: GalleryImage[]; accountNames?: Record<string, string>; error?: string };
       if (!response.ok) throw new Error(payload.error || "Unable to load gallery");
       const allImages = payload.images ?? [];
       setImages(allImages);
+      setUploaderNames(payload.accountNames ?? {});
       setCounts({
         pending: allImages.filter((image) => image.status === "pending").length,
         approved: allImages.filter((image) => image.status === "approved").length,
@@ -85,11 +88,12 @@ export default function AdminGalleryPage() {
         credentials: "include",
         body: JSON.stringify({ imageId: image.$id, action: "approve" }),
       });
-      if (!response.ok) throw new Error("Unable to approve image");
-      toast.success("Image approved");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to approve image");
+      toast.success(image.status === "rejected" ? "Image re-approved" : "Image approved");
       await loadData();
-    } catch {
-      toast.error("Failed to approve image");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to approve image");
     } finally {
       setApprovingId(null);
     }
@@ -105,14 +109,15 @@ export default function AdminGalleryPage() {
         credentials: "include",
         body: JSON.stringify({ imageId: rejectTarget.$id, action: "reject", reason: rejectReason.trim() }),
       });
-      if (!response.ok) throw new Error("Unable to reject image");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to reject image");
       toast.success("Image rejected");
       close();
       setRejectTarget(null);
       setRejectReason("");
       await loadData();
-    } catch {
-      toast.error("Failed to reject image");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to reject image");
     } finally {
       setRejecting(false);
     }
@@ -121,16 +126,20 @@ export default function AdminGalleryPage() {
   const handleDelete = async (image: GalleryImage) => {
     if (!image.$id) return;
     if (!window.confirm(`Delete "${image.title}"? This cannot be undone.`)) return;
+    setDeletingId(image.$id);
     try {
       const response = await fetch(`/api/admin/gallery?imageId=${encodeURIComponent(image.$id)}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Unable to delete image");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete image");
       toast.success("Image deleted");
       await loadData();
-    } catch {
-      toast.error("Failed to delete image");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete image");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -266,7 +275,7 @@ export default function AdminGalleryPage() {
                   {image.uploadedBy && (
                     <>
                       <span>•</span>
-                      <span>{image.uploadedBy.slice(0, 8)}</span>
+                      <span>By {uploaderNames[image.uploadedBy] || image.uploadedBy}</span>
                     </>
                   )}
                 </div>
@@ -281,31 +290,32 @@ export default function AdminGalleryPage() {
                 )}
               </CardContent>
               <div className="px-4 pb-4 flex gap-2">
+                {image.status !== "approved" && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onPress={() => handleApprove(image)}
+                    isPending={approvingId === image.$id}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {image.status === "rejected" ? "Re-approve" : "Approve"}
+                  </Button>
+                )}
                 {image.status === "pending" && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onPress={() => handleApprove(image)}
-                      isPending={approvingId === image.$id}
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onPress={() => { setRejectTarget(image); open(); }}
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Reject
-                    </Button>
-                  </>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onPress={() => { setRejectTarget(image); open(); }}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject
+                  </Button>
                 )}
                 <Button
                   size="sm"
                   variant="danger-soft"
                   onPress={() => handleDelete(image)}
+                  isPending={deletingId === image.$id}
                   isIconOnly
                 >
                   <Trash2 className="w-4 h-4" />
