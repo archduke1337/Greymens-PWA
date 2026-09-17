@@ -22,6 +22,8 @@ import {
   CardContent,
   Chip,
   Input,
+  Label,
+  ListBox,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -29,6 +31,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Select,
   useOverlayState,
 } from "@heroui/react";
 import type { Power, UserPower, Department, Profile } from "@/lib/types";
@@ -495,26 +498,33 @@ export default function AdminPowersPage() {
                     {/* Scope Options */}
                     {grantTarget?.scope === "department" && (
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">
-                          Department Scope (optional)
-                        </label>
-                        <select
-                          value={grantScope.departmentId || ""}
-                          onChange={(e) =>
+                        <Select
+                          fullWidth
+                          placeholder="Select department (optional)"
+                          value={grantScope.departmentId || null}
+                          onChange={(value) =>
                             setGrantScope({
                               ...grantScope,
-                              departmentId: e.target.value || undefined,
+                              departmentId: String(value ?? "") || undefined,
                             })
                           }
-                          className="w-full px-3 py-2.5 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                         >
-                          <option value="">Select department (optional)</option>
-                          {departments.map((dept) => (
-                            <option key={dept.$id} value={dept.$id}>
-                              {dept.name}
-                            </option>
-                          ))}
-                        </select>
+                          <Label>Department Scope (optional)</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {departments.map((dept) => (
+                                <ListBox.Item key={dept.$id} id={dept.$id} textValue={dept.name}>
+                                  {dept.name}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
                       </div>
                     )}
 

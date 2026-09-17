@@ -22,11 +22,13 @@ import {
   CardContent,
   Chip,
   Input,
+  ListBox,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader,
+  TableHeader, TableContent, TableScrollContainer,
   TableRow,
 } from "@heroui/react";
 import type { AuditLog } from "@/lib/types/index";
@@ -297,36 +299,54 @@ export default function AdminAuditPage() {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <select
+                <Select
+                  className="min-w-[160px]"
                   aria-label="Filter by action"
-                  value={actionFilter}
-                  onChange={(e) => {
-                    setActionFilter(e.target.value);
+                  value={actionFilter === "" ? "all" : actionFilter}
+                  onChange={(value) => {
+                    setActionFilter(value === "all" ? "" : String(value ?? ""));
                     setPage(0);
                   }}
-                  className="px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none min-w-[160px]"
                 >
-                  {ACTION_TYPES.map((a) => (
-                    <option key={a.value} value={a.value}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-                <select
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {ACTION_TYPES.map((a) => (
+                        <ListBox.Item key={a.value === "" ? "all" : a.value} id={a.value === "" ? "all" : a.value} textValue={a.label}>
+                          {a.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+                <Select
+                  className="min-w-[140px]"
                   aria-label="Filter by entity type"
-                  value={entityFilter}
-                  onChange={(e) => {
-                    setEntityFilter(e.target.value);
+                  value={entityFilter === "" ? "all" : entityFilter}
+                  onChange={(value) => {
+                    setEntityFilter(value === "all" ? "" : String(value ?? ""));
                     setPage(0);
                   }}
-                  className="px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none min-w-[140px]"
                 >
-                  {ENTITY_TYPES.map((e) => (
-                    <option key={e.value} value={e.value}>
-                      {e.label}
-                    </option>
-                  ))}
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {ENTITY_TYPES.map((e) => (
+                        <ListBox.Item key={e.value === "" ? "all" : e.value} id={e.value === "" ? "all" : e.value} textValue={e.label}>
+                          {e.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
             </div>
 
@@ -383,7 +403,9 @@ export default function AdminAuditPage() {
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table aria-label="Audit log table" className="min-w-full">
+            <Table>
+              <TableScrollContainer>
+                <TableContent aria-label="Audit log table" className="min-w-full">
               <TableHeader>
                 <TableColumn>Timestamp</TableColumn>
                 <TableColumn>Actor</TableColumn>
@@ -478,6 +500,8 @@ export default function AdminAuditPage() {
                   ))
                 )}
               </TableBody>
+                </TableContent>
+              </TableScrollContainer>
             </Table>
           </div>
 

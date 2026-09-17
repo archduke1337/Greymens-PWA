@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Label, TextArea, TextField } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import { ArrowLeft, Loader2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -64,9 +64,9 @@ export default function OfficesAdminPage() {
       <div className="flex items-center gap-4"><Button variant="secondary" onPress={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button><div><h1 className="text-3xl font-bold">Constitutional offices</h1><p className="text-[var(--muted)]">Assign offices separately from membership status, with explicit terms and succession records.</p></div></div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <Card><CardHeader className="flex-row items-center gap-3"><Settings className="h-5 w-5 text-[var(--accent)]" /><h2 className="text-xl font-bold">Assign office</h2></CardHeader><CardContent><form className="space-y-4" onSubmit={assignOffice}>
-          <div><Label>Office</Label><select className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={form.officeId} onChange={(event) => setForm({ ...form, officeId: event.target.value as typeof form.officeId })}>{GOVERNANCE_OFFICES.map((office) => <option key={office.id} value={office.id}>{office.title}</option>)}</select></div>
+          <div><Select fullWidth value={form.officeId} onChange={(value) => setForm({ ...form, officeId: String(value ?? form.officeId) as typeof form.officeId })}><Label>Office</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{GOVERNANCE_OFFICES.map((office) => (<ListBox.Item key={office.id} id={office.id} textValue={office.title}>{office.title}<ListBox.ItemIndicator /></ListBox.Item>))}</ListBox></Select.Popover></Select></div>
           <TextField variant="secondary"><Label>Appwrite user ID</Label><Input value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })} required /></TextField>
-          <div><Label>Selection method</Label><select className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={form.selectionMethod} onChange={(event) => setForm({ ...form, selectionMethod: event.target.value })}><option value="election">Election</option><option value="appointment">Appointment</option><option value="interim">Interim succession</option></select></div>
+          <div><Select fullWidth value={form.selectionMethod} onChange={(value) => setForm({ ...form, selectionMethod: String(value ?? "appointment") })}><Label>Selection method</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox><ListBox.Item id="election" textValue="Election">Election<ListBox.ItemIndicator /></ListBox.Item><ListBox.Item id="appointment" textValue="Appointment">Appointment<ListBox.ItemIndicator /></ListBox.Item><ListBox.Item id="interim" textValue="Interim succession">Interim succession<ListBox.ItemIndicator /></ListBox.Item></ListBox></Select.Popover></Select></div>
           <div className="grid grid-cols-2 gap-3"><TextField variant="secondary"><Label>Term starts</Label><Input type="date" value={form.termStart} onChange={(event) => setForm({ ...form, termStart: event.target.value })} required /></TextField><TextField variant="secondary"><Label>Term ends</Label><Input type="date" value={form.termEnd} onChange={(event) => setForm({ ...form, termEnd: event.target.value })} /></TextField></div>
           <div><Label>Notes</Label><TextArea className="mt-1 min-h-20" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></div>
           <Button type="submit" variant="primary" isPending={saving}>Assign office</Button>

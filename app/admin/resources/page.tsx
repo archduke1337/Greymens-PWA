@@ -11,6 +11,9 @@ import {
   CardContent,
   Chip,
   Input,
+  Label,
+  ListBox,
+  Select,
   TextArea,
   Modal,
   ModalBackdrop,
@@ -329,43 +332,76 @@ export default function AdminResourcesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Type</label>
-                      <select
+                      <Select
+                        fullWidth
                         value={form.type}
-                        onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as Resource["type"] }))}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                        onChange={(value) => setForm((p) => ({ ...p, type: String(value ?? form.type) as Resource["type"] }))}
                       >
-                        {RESOURCE_TYPES.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
+                        <Label>Type</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {RESOURCE_TYPES.map((t) => (
+                              <ListBox.Item key={t.value} id={t.value} textValue={t.label}>
+                                {t.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Layer</label>
-                      <select
+                      <Select
+                        fullWidth
                         value={form.layer}
-                        onChange={(e) => setForm((p) => ({ ...p, layer: e.target.value as Resource["layer"] }))}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                        onChange={(value) => setForm((p) => ({ ...p, layer: String(value ?? form.layer) as Resource["layer"] }))}
                       >
-                        {LAYERS.map((l) => (
-                          <option key={l.value} value={l.value}>{l.label}</option>
-                        ))}
-                      </select>
+                        <Label>Layer</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {LAYERS.map((l) => (
+                              <ListBox.Item key={l.value} id={l.value} textValue={l.label}>
+                                {l.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
                   </div>
                   {form.layer === "department" && (
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Department</label>
-                      <select
-                        value={form.departmentId}
-                        onChange={(e) => setForm((p) => ({ ...p, departmentId: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                      <Select
+                        fullWidth
+                        placeholder="Select department"
+                        value={form.departmentId === "" ? null : form.departmentId}
+                        onChange={(value) => setForm((p) => ({ ...p, departmentId: String(value ?? "") }))}
                       >
-                        <option value="">Select department</option>
-                        {departments.map((d) => (
-                          <option key={d.$id} value={d.$id}>{d.name}</option>
-                        ))}
-                      </select>
+                        <Label>Department</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {departments.map((d) => (
+                              <ListBox.Item key={d.$id} id={d.$id} textValue={d.name}>
+                                {d.name}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
                   )}
                   <div>

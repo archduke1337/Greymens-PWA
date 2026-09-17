@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Card, Input, TextArea, Chip } from "@heroui/react";
+import { Button, Card, Checkbox, Input, Label, ListBox, Select, TextArea, Chip } from "@heroui/react";
 import { CAPABILITIES } from "@/lib/capabilities";
 
 type Role = { $id: string; name: string; slug: string; description?: string; capabilities: string[]; isActive: boolean };
@@ -78,15 +78,69 @@ export default function AccessCenterPage() {
           <label className="block text-sm font-medium">Slug<Input placeholder="editorial-lead" value={role.slug} onChange={(event) => setRole({ ...role, slug: event.target.value })} /></label>
           <label className="block text-sm font-medium">Description<TextArea value={role.description} onChange={(event) => setRole({ ...role, description: event.target.value })} /></label>
           <fieldset className="space-y-2"><legend className="font-medium">Capabilities</legend><div className="grid gap-2 sm:grid-cols-2">
-            {CAPABILITIES.map((capability) => <label key={capability} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={role.capabilities.includes(capability)} onChange={() => toggleCapability(capability)} />{capability}</label>)}
+            {CAPABILITIES.map((capability) => (
+              <Checkbox
+                key={capability}
+                isSelected={role.capabilities.includes(capability)}
+                onChange={() => toggleCapability(capability)}
+              >
+                <Checkbox.Content>
+                  <Checkbox.Control>
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <span className="text-sm">{capability}</span>
+                </Checkbox.Content>
+              </Checkbox>
+            ))}
           </div></fieldset>
           <Button onPress={() => submit("create_role")} isDisabled={!role.name || !role.slug || role.capabilities.length === 0}>Create role</Button>
         </Card>
         <Card className="p-6 space-y-4">
           <h2 className="text-xl font-semibold">Assign role to member</h2>
           <label className="block text-sm font-medium">Member user ID<Input value={assignment.userId} onChange={(event) => setAssignment({ ...assignment, userId: event.target.value })} /></label>
-          <label className="block text-sm font-medium">Role<select className="mt-1 w-full rounded-lg border p-2" value={assignment.roleId} onChange={(event) => setAssignment({ ...assignment, roleId: event.target.value })}><option value="">Select a role</option>{roles.filter((item) => item.isActive).map((item) => <option key={item.$id} value={item.$id}>{item.name}</option>)}</select></label>
-          <label className="block text-sm font-medium">Scope<select className="mt-1 w-full rounded-lg border p-2" value={assignment.scopeType} onChange={(event) => setAssignment({ ...assignment, scopeType: event.target.value })}>{["global", "department", "team", "project"].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <Select
+            fullWidth
+            placeholder="Select a role"
+            value={assignment.roleId === "" ? null : assignment.roleId}
+            onChange={(value) => setAssignment({ ...assignment, roleId: String(value ?? "") })}
+          >
+            <Label>Role</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {roles.filter((item) => item.isActive).map((item) => (
+                  <ListBox.Item key={item.$id} id={item.$id} textValue={item.name}>
+                    {item.name}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
+          <Select
+            fullWidth
+            value={assignment.scopeType}
+            onChange={(value) => setAssignment({ ...assignment, scopeType: String(value ?? "global") })}
+          >
+            <Label>Scope</Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {["global", "department", "team", "project"].map((item) => (
+                  <ListBox.Item key={item} id={item} textValue={item}>
+                    {item}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
           <label className="block text-sm font-medium">Scope ID (optional)<Input value={assignment.scopeId} onChange={(event) => setAssignment({ ...assignment, scopeId: event.target.value })} /></label>
           <label className="block text-sm font-medium">Expires (optional)<Input type="datetime-local" value={assignment.expiresAt} onChange={(event) => setAssignment({ ...assignment, expiresAt: event.target.value ? new Date(event.target.value).toISOString() : "" })} /></label>
           <Button onPress={() => submit("assign_role")} isDisabled={!assignment.userId || !assignment.roleId}>Assign role</Button>

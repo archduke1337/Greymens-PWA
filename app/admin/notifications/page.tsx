@@ -10,6 +10,9 @@ import {
   Card,
   CardContent,
   Input,
+  Label,
+  ListBox,
+  Select,
   TextArea,
   Modal,
   ModalBackdrop,
@@ -237,18 +240,33 @@ export default function AdminNotificationsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Type</label>
-                    <select
+                    <Select
+                      fullWidth
                       value={form.type}
-                      onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                      onChange={(value) => setForm((p) => ({ ...p, type: String(value ?? "general") }))}
                     >
-                      <option value="admin_announcement">Admin Announcement</option>
-                      <option value="system_update">System Update</option>
-                      <option value="event_update">Event Update</option>
-                      <option value="event_reminder">Event Reminder</option>
-                      <option value="general">General</option>
-                    </select>
+                      <Label>Type</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {[
+                            { value: "admin_announcement", label: "Admin Announcement" },
+                            { value: "system_update", label: "System Update" },
+                            { value: "event_update", label: "Event Update" },
+                            { value: "event_reminder", label: "Event Reminder" },
+                            { value: "general", label: "General" },
+                          ].map((type) => (
+                            <ListBox.Item key={type.value} id={type.value} textValue={type.label}>
+                              {type.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
                   </div>
                 </div>
               </ModalBody>
