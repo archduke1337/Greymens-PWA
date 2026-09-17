@@ -8,7 +8,6 @@ import {
   CalendarDays,
   UserCog,
   Building2,
-  KeyRound,
   Landmark,
   FileText,
   FolderOpen,
@@ -91,12 +90,6 @@ export const ADMIN_SECTIONS = [  {
     Icon: Landmark,
     cap: ["governance.manage_offices", "designations.assign"],
   },
-  {
-    label: "Powers",
-    href: "/admin/powers",
-    Icon: KeyRound,
-    cap: "powers.manage",
-  },
   { label: "Blogs", href: "/admin/blog", Icon: FileText, cap: "blog.review" },
   {
     label: "Resources",
@@ -129,10 +122,12 @@ export const ADMIN_SECTIONS = [  {
     cap: "notifications.send",
   },
   {
-    label: "Access",
+    // Roles and powers merged into one console: visible when the caller holds
+    // either capability (each tab is filtered again inside the page).
+    label: "Access & Powers",
     href: "/admin/access",
     Icon: ShieldCheck,
-    cap: "access.assign_roles",
+    cap: ["access.assign_roles", "powers.manage"],
   },
   {
     label: "Governance",

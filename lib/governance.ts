@@ -280,20 +280,15 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     auditAction: "notification.send",
   },
   {
+    // Roles and operational powers share one console ("Access & Powers"): a
+    // single entry, since the page itself splits tabs by capability. Roles
+    // bundle capabilities on a scope; powers are fixed grants.
     href: "/admin/access",
-    label: "Roles & assignments",
+    label: "Access & powers (roles + operational powers)",
     office: "president",
-    capabilities: ["access.assign_roles"],
-    form: "create_role / assign_role + scope + expiry",
-    auditAction: "access.role_assigned",
-  },
-  {
-    href: "/admin/powers",
-    label: "Operational powers",
-    office: "president",
-    capabilities: ["powers.manage"],
-    form: "grant / revoke (id+name)",
-    auditAction: "power.grant / power.revoke",
+    capabilities: ["access.assign_roles", "powers.manage"],
+    form: "create_role / assign_role + scope + expiry · grant / revoke power",
+    auditAction: "access.role_assigned / power.grant / power.revoke",
   },
   {
     // Offices and designations share one console: a single entry, since the
