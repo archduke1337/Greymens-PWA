@@ -11,6 +11,8 @@ export default function AccessCenterPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
+  const [members, setMembers] = useState<Array<{ userId: string; name: string; urn?: string }>>([]);
+  const [membersAvailable, setMembersAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<"create_role" | "assign_role" | null>(null);
   const [message, setMessage] = useState("");
@@ -29,8 +31,41 @@ export default function AccessCenterPage() {
 
   useEffect(() => { load().catch(() => setMessage("Unable to load access data")).finally(() => setLoading(false)); }, []);
 
+  useEffect(() => {
+    // Member directory for the assignee picker. Best-effort: without
+    // users.view the admin pastes a user ID instead of being blocked.
+    fetch("/api/admin/users?limit=200", { credentials: "include" })
+      .then((response) => {
+        if (!response.ok) throw new Error("member directory unavailable");
+        return response.json() as Promise<{
+          users?: Array<{ profile?: { userId?: string; urn?: string }; membership?: { status?: string } | null }>;
+          accountNames?: Record<string, string>;
+        }>;
+      })
+      .then((data) => {
+        const options = (data.users ?? [])
+          .map((entry): { userId: string; name: string; urn?: string } | null => {
+            const userId = String(entry.profile?.userId ?? "");
+            if (!userId || entry.membership?.status !== "active") return null;
+            return { userId, name: data.accountNames?.[userId] || userId, urn: entry.profile?.urn };
+          })
+          .filter((option): option is { userId: string; name: string; urn?: string } => option !== null)
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setMembers(options);
+        setMembersAvailable(true);
+      })
+      .catch(() => {
+        setMembers([]);
+        setMembersAvailable(false);
+      });
+  }, []);
+
   const submit = async (action: "create_role" | "assign_role") => {
     setMessage("");
+    if (action === "assign_role" && !assignment.userId.trim()) {
+      setMessage(membersAvailable ? "Select a member first." : "Enter the member's user ID.");
+      return;
+    }
     setSubmitting(action);
     try {
       const response = await fetch("/api/access", {
@@ -106,7 +141,31 @@ export default function AccessCenterPage() {
         </Card>
         <Card className="p-6 space-y-4">
           <h2 className="text-xl font-semibold">Assign role to member</h2>
-          <label className="block text-sm font-medium">Member user ID<Input value={assignment.userId} onChange={(event) => setAssignment({ ...assignment, userId: event.target.value })} /></label>
+          {membersAvailable ? (
+            <Select
+              fullWidth
+              value={assignment.userId === "" ? null : assignment.userId}
+              onChange={(value) => setAssignment({ ...assignment, userId: String(value ?? "") })}
+            >
+              <Label>Member</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {members.map((member) => (
+                    <ListBox.Item key={member.userId} id={member.userId} textValue={member.name}>
+                      {member.name}{member.urn ? ` · ${member.urn}` : ""}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
+          ) : (
+            <label className="block text-sm font-medium">Member user ID<Input placeholder="Directory unavailable — paste user ID" value={assignment.userId} onChange={(event) => setAssignment({ ...assignment, userId: event.target.value })} /></label>
+          )}
           <Select
             fullWidth
             placeholder="Select a role"
