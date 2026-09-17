@@ -964,7 +964,8 @@ export default function AdminUsersPage() {
 
                     {(selectedUser.profile.githubUrl ||
                       selectedUser.profile.linkedinUrl ||
-                      selectedUser.profile.portfolioUrl) && (
+                      selectedUser.profile.portfolioUrl ||
+                      selectedUser.profile.instagramUrl) && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2">Links</h3>
                         <div className="space-y-1 text-sm">
@@ -996,6 +997,16 @@ export default function AdminUsersPage() {
                               target="_blank"
                             >
                               {selectedUser.profile.portfolioUrl}
+                            </a>
+                          )}
+                          {selectedUser.profile.instagramUrl && (
+                            <a
+                              className="text-primary hover:underline block truncate"
+                              href={selectedUser.profile.instagramUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              {selectedUser.profile.instagramUrl}
                             </a>
                           )}
                         </div>

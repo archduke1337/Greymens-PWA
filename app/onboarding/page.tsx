@@ -35,6 +35,7 @@ interface OnboardingForm {
   githubUrl: string;
   linkedinUrl: string;
   portfolioUrl: string;
+  instagramUrl: string;
   bio: string;
   oathAccepted: boolean;
   termsAccepted: boolean;
@@ -60,6 +61,7 @@ const EMPTY_FORM: OnboardingForm = {
   githubUrl: "",
   linkedinUrl: "",
   portfolioUrl: "",
+  instagramUrl: "",
   bio: "",
   oathAccepted: false,
   termsAccepted: false,
@@ -207,6 +209,7 @@ export default function OnboardingPage() {
         githubUrl: profile?.githubUrl ?? next.githubUrl,
         linkedinUrl: profile?.linkedinUrl ?? next.linkedinUrl,
         portfolioUrl: profile?.portfolioUrl ?? next.portfolioUrl,
+        instagramUrl: profile?.instagramUrl ?? next.instagramUrl,
         bio: profile?.bio ?? next.bio,
         preferredDepartments:
           application?.preferredDepartments ?? next.preferredDepartments,
@@ -413,6 +416,7 @@ export default function OnboardingPage() {
             githubUrl: formData.githubUrl,
             linkedinUrl: formData.linkedinUrl,
             portfolioUrl: formData.portfolioUrl,
+            instagramUrl: formData.instagramUrl,
             bio: formData.bio,
             profileVisibility: "members_only",
           },
@@ -847,6 +851,17 @@ export default function OnboardingPage() {
                   value={formData.portfolioUrl}
                   onChange={(e) => updateField("portfolioUrl", e.target.value)}
                   placeholder="https://yourportfolio.com"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-instagram">Instagram URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Input
+                  id="onboarding-instagram"
+                  type="url"
+                  fullWidth
+                  value={formData.instagramUrl}
+                  onChange={(e) => updateField("instagramUrl", e.target.value)}
+                  placeholder="https://instagram.com/username"
                 />
               </div>
             </>
