@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import type { Event, Notification, Registration, Resource } from "@/lib/types";
+import { Button, Tabs } from "@heroui/react";
 /** The caller's own issued tickets, as returned by /api/events/register. */
 type MemberTicket = {
   $id: string;
@@ -151,12 +152,9 @@ export default function MemberDashboard() {
       <div className="max-w-6xl mx-auto px-4 py-16 text-center space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Couldn&apos;t load your dashboard</h1>
         <p className="text-zinc-400">{loadError}</p>
-        <button
-          onClick={reload}
-          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-        >
+        <Button onPress={reload}>
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -202,21 +200,25 @@ export default function MemberDashboard() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-lg bg-zinc-800/50 mb-4">
-            {(["upcoming", "past"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 px-3 text-sm rounded-md transition-colors ${
-                  activeTab === tab
-                    ? "bg-zinc-700 text-white"
-                    : "text-zinc-400 hover:text-zinc-300"
-                }`}
-              >
-                {tab === "upcoming" ? `Upcoming (${upcomingRegistrations.length})` : `Past (${pastEvents.length})`}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(key as "upcoming" | "past")}
+            aria-label="My events"
+            className="mb-4"
+          >
+            <Tabs.ListContainer>
+              <Tabs.List>
+                <Tabs.Tab id="upcoming">
+                  Upcoming ({upcomingRegistrations.length})
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="past">
+                  Past ({pastEvents.length})
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
+          </Tabs>
 
           {activeTab === "upcoming" ? (
             upcomingRegistrations.length > 0 ? (

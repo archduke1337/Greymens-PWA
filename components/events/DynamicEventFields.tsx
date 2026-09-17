@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { EventField } from "@/lib/types/index";
-import { Input, Chip, Button } from "@heroui/react";
+import { Input, Chip, Button, Checkbox, Label, ListBox, Select, TextArea } from "@heroui/react";
 import { PlusIcon, XIcon } from "lucide-react";
 
 interface DynamicEventFieldsProps {
@@ -76,16 +76,17 @@ function FieldRenderer({
     case "textarea":
       return (
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold">
+          <Label htmlFor={`dynamic-field-${field.name}`}>
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          <textarea
+          </Label>
+          <TextArea
+            id={`dynamic-field-${field.name}`}
+            fullWidth
             placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            value={currentValue}
+            value={typeof currentValue === "string" ? currentValue : ""}
             onChange={(e) => onChange(e.target.value)}
             rows={4}
-            className={`${inputClasses} resize-y`}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -110,24 +111,31 @@ function FieldRenderer({
     case "select":
       return (
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold">
-            {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          <select
-            value={currentValue}
-            onChange={(e) => onChange(e.target.value)}
-            className={`${inputClasses}`}
+          <Select
+            fullWidth
+            placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`}
+            value={typeof currentValue === "string" && currentValue !== "" ? currentValue : null}
+            onChange={(value) => onChange(String(value ?? ""))}
           >
-            <option value="">
-              {field.placeholder || `Select ${field.label.toLowerCase()}`}
-            </option>
-            {field.options?.map((opt: string) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+            <Label>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {field.options?.map((opt: string) => (
+                  <ListBox.Item key={opt} id={opt} textValue={opt}>
+                    {opt}
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
       );
@@ -140,18 +148,20 @@ function FieldRenderer({
     case "boolean":
       return (
         <div className="space-y-1.5">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!currentValue}
-              onChange={(e) => onChange(e.target.checked)}
-              className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm font-semibold">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </span>
-          </label>
+          <Checkbox
+            isSelected={!!currentValue}
+            onChange={(selected: boolean) => onChange(selected)}
+          >
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <span className="text-sm font-semibold">
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </span>
+            </Checkbox.Content>
+          </Checkbox>
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
       );
@@ -191,11 +201,13 @@ function FieldRenderer({
     case "json":
       return (
         <div className="space-y-1.5">
-          <label className="text-sm font-semibold">
+          <Label htmlFor={`dynamic-field-${field.name}`}>
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          <textarea
+          </Label>
+          <TextArea
+            id={`dynamic-field-${field.name}`}
+            fullWidth
             placeholder={field.placeholder || '{ "key": "value" }'}
             value={
               typeof currentValue === "string"
@@ -211,7 +223,7 @@ function FieldRenderer({
               }
             }}
             rows={6}
-            className={`${inputClasses} font-mono resize-y`}
+            className="font-mono"
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>

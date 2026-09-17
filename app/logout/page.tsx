@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from "@heroui/react";
 
 /**
  * Sign-out confirmation.
@@ -83,20 +84,20 @@ export default function LogoutPage() {
               <p className="text-danger">Logout failed. Please try again.</p>
             )}
             <div className="flex gap-3 justify-center">
-              <button
+              <Button
                 type="button"
-                onClick={() => router.back()}
-                className="px-4 py-2 rounded-lg border hover:bg-default-100 transition-colors"
+                variant="secondary"
+                onPress={() => router.back()}
               >
                 Stay signed in
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                onClick={handleLogout}
-                className="px-4 py-2 rounded-lg bg-danger text-white hover:opacity-90 transition-opacity"
+                variant="danger"
+                onPress={handleLogout}
               >
                 Sign out
-              </button>
+              </Button>
             </div>
           </>
         )}
