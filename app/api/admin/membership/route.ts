@@ -64,12 +64,20 @@ export async function GET(request: NextRequest) {
         ])
       : [empty, empty];
 
+    // Account names live on the auth record, not on any table. Resolve them
+    // best-effort: a lookup failure must never fail the whole queue.
+    const accountNames = await getAccountNames(userIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+
     return ok({
       applications: applications.documents,
       profiles: profiles.documents,
       memberships: memberships.documents,
       departments: departments.documents,
       counts,
+      accountNames,
     });
   } catch (error) {
     console.error("Membership lookup error:", error);

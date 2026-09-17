@@ -5,6 +5,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
+import { getAccountNames } from "@/lib/server-users";
 import {
   validateGovernanceRole,
   validateProfilePatch,
@@ -156,6 +157,13 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Names live on the auth record. Best-effort: a lookup failure must not
+    // fail the whole user list.
+    const accountNames = await getAccountNames(userIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+
     return ok({
       users,
       departments: departments.documents,
@@ -164,6 +172,7 @@ export async function GET(request: NextRequest) {
       total: profiles.total,
       limit,
       offset,
+      accountNames,
     });
   } catch (error) {
     console.error("Admin user list error:", error);
