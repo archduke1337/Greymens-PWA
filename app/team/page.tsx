@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAccountNames } from "@/lib/server-users";
 import { TeamDirectory, type TeamGroup } from "@/components/team/TeamDirectory";
@@ -61,7 +61,7 @@ function isPubliclyVisible(profile: ProfileRow): boolean {
 }
 
 async function loadLeadership(): Promise<TeamGroup[]> {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
 
   // Level 4 and above are the club's officer and lead tiers; anything lower is a
   // working designation and is not published as leadership.

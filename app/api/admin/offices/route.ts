@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "governance.manage_offices");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [Query.orderDesc("termStart"), Query.limit(100)]);
     return ok({ assignments: response.documents, total: response.total });
   } catch (error) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (termEnd && new Date(termEnd) <= new Date(termStart)) return fail("VALIDATION", "Term end must follow term start", 400);
     const nameMap = await getAccountNames([userId]);
     if (!nameMap.has(userId)) return fail("NOT_FOUND", "User not found", 404);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const active = await databases.listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [Query.equal("officeId", [officeId]), Query.equal("status", ["active"]), Query.limit(1)]);
     if (active.documents.length > 0) return fail("CONFLICT", "That office already has an active assignment", 409);
     const assignment = await databases.createDocument(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, ID.unique(), {
@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest) {
     const assignmentId = typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
     const status = typeof body.status === "string" ? body.status.trim() : "";
     if (!assignmentId || !STATUSES.has(status)) return fail("VALIDATION", "Invalid assignment update", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const assignment = await databases.updateDocument(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, assignmentId, {
       status,
       ...(typeof body.notes === "string" ? { notes: body.notes.trim().slice(0, 2000) } : {}),

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       return fail("VALIDATION", "departmentId is required", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const members = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
       Query.equal("departmentId", [departmentId]),
       Query.equal("isActive", [true]),
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     const department = await databases.getDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, departmentId).catch(() => null);
     if (!department) {
@@ -159,7 +159,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const active = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
       Query.equal("userId", [userId]),
       Query.equal("departmentId", [departmentId]),

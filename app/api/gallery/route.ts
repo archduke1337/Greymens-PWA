@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ID, Query } from "appwrite";
 import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
 import { hasPower } from "@/lib/access-control";
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (scope === "mine") {
       const authenticated = await requireAuthenticatedUser(request);
       if (!authenticated.user) return authenticated.response;
-      const { databases } = createAdminClient();
+      const { databases } = createServerDatabases();
       const category = request.nextUrl.searchParams.get("category")?.trim();
       const queries = [
         Query.equal("uploadedBy", [authenticated.user.$id]),
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.GALLERY, queries);
       return ok({ images: response.documents });
     }
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const category = request.nextUrl.searchParams.get("category")?.trim();
     const queries = [
       Query.equal("status", ["approved"]),
@@ -102,7 +103,8 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .slice(0, 20);
 
-    const { storage, databases } = createAdminClient();
+    const { storage } = createAdminClient();
+    const { databases } = createServerDatabases();
     let imageUrl = "";
 
     const file = form.get("file");

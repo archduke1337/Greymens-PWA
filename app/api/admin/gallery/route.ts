@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.GALLERY, [
       Query.orderDesc("$createdAt"),
       Query.limit(100),
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest) {
       return fail("VALIDATION", "A rejection reason is required", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const data = action === "approve"
       ? { status: "approved", approvedBy: authenticated.user.$id, approvedAt: new Date().toISOString() }
       : { status: "rejected", rejectionReason: String(body.reason).slice(0, 2000) };
@@ -65,7 +65,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const imageId = new URL(request.url).searchParams.get("imageId")?.trim();
     if (!imageId) return fail("VALIDATION", "imageId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.GALLERY, imageId);
     await recordAudit({
       request,

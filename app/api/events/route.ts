@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getMembershipStatus, isAdminUser, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { ok, fail, ApiError } from "@/lib/api";
@@ -26,7 +26,7 @@ function pickEditableEventFields(body: Record<string, unknown>) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const eventId = request.nextUrl.searchParams.get("eventId")?.trim();
     if (eventId) {
       const event = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     };
     const validationError = validateEvent(payload);
     if (validationError) return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const event = await databases.createDocument(DATABASE_ID, COLLECTIONS.EVENTS, ID.unique(), {
       ...payload,
       status: payload.status === "review" ? "review" : "draft",
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json() as Record<string, unknown>;
     const eventId = typeof body.eventId === "string" ? body.eventId.trim() : "";
     if (!eventId) return fail("VALIDATION", "eventId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const current = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
     const rawData = pickEditableEventFields(body);
     const data = { ...rawData, slug: text(rawData.slug, 255) || current.slug };

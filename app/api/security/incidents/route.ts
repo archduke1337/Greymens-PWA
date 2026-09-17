@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "security.manage_incidents");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.INCIDENT_REPORTS, [Query.orderDesc("createdAt"), Query.limit(100)]);
     return ok({ incidents: response.documents, total: response.total });
   } catch (error) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Title, description, affected resource, and valid severity are required", 400);
     }
     const now = new Date().toISOString();
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const incident = await databases.createDocument(DATABASE_ID, COLLECTIONS.INCIDENT_REPORTS, ID.unique(), {
       reportedBy: authenticated.user.$id,
       title,
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest) {
     const data: Record<string, unknown> = { status, updatedAt: new Date().toISOString() };
     if (typeof body.resolution === "string") data.resolution = body.resolution.trim().slice(0, 65535);
     if (typeof body.assignedTo === "string") data.assignedTo = body.assignedTo.trim().slice(0, 36);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const incident = await databases.updateDocument(DATABASE_ID, COLLECTIONS.INCIDENT_REPORTS, incidentId, data);
     await recordAudit({
       request,

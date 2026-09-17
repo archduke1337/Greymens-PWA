@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
 import { hasPower } from "@/lib/access-control";
@@ -38,7 +38,7 @@ async function canVerify(request: NextRequest) {
 
 /** True when the caller owns the event, which entitles them to its door list. */
 async function ownsEvent(eventId: string, userId: string): Promise<boolean> {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
 
   try {
     const event = await databases.getDocument(
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       return fail("VALIDATION", "code, email, qrData, or eventId is required", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     if (eventId) {
       const permitted =
@@ -206,7 +206,7 @@ export async function PATCH(request: NextRequest) {
       return fail("VALIDATION", "Invalid ticket action", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const ticket = await databases.getDocument(
       DATABASE_ID,
       COLLECTIONS.TICKETS,

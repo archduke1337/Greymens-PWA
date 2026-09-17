@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { ok, fail, ApiError } from "@/lib/api";
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const queries = [Query.limit(limit), Query.offset(offset)];
     if (query) queries.push(Query.startsWith("urn", query));
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, queries);
 
     // Fall back to a userId prefix when a URN search finds nothing, so pasting

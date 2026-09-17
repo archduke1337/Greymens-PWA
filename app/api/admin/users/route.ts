@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const limit = boundedInt(params.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
     const offset = boundedInt(params.get("offset"), 0, 10_000);
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const [profiles, departments, designations, powers] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
         Query.orderDesc("$createdAt"),
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
 }
 
 async function findProfile(userId: string) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   const response = await databases.listDocuments(
     DATABASE_ID,
     COLLECTIONS.PROFILES,
@@ -281,7 +281,7 @@ export async function PATCH(request: NextRequest) {
           return fail("CONFLICT", "You cannot revoke your own governance role", 409);
         }
 
-        const { databases } = createAdminClient();
+        const { databases } = createServerDatabases();
         const now = new Date().toISOString();
 
         if (role) {
@@ -349,7 +349,7 @@ export async function PATCH(request: NextRequest) {
           return fail("VALIDATION", "Invalid membership status", 400);
         }
 
-        const { databases } = createAdminClient();
+        const { databases } = createServerDatabases();
         const memberships = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.MEMBERSHIPS,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { Query } from "appwrite";
 import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
       Query.equal("userId", [authenticated.user.$id]),
       Query.limit(1),

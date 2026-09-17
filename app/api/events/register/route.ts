@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { ID, Query } from "appwrite";
 import { getMembershipStatus, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const [registrations, tickets] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
         Query.equal("userId", [authenticated.user.$id]),
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Step 3: duplicate guard (unique idx_event_user is the backstop).
     const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
       Query.equal("eventId", [eventId]),
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
       (error as { code?: unknown }).code === 409
     ) {
       try {
-        const { databases: retryDb } = createAdminClient();
+        const { databases: retryDb } = createServerDatabases();
         const existing = await retryDb.listDocuments(
           DATABASE_ID,
           COLLECTIONS.REGISTRATIONS,
@@ -242,7 +242,7 @@ export async function DELETE(request: NextRequest) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Step 3: load caller's registration.
     const registrations = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
       Query.equal("eventId", [eventId]),

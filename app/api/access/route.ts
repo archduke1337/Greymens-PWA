@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { CAPABILITIES, getAccessSummary, isCapability, requireCapability, hasServerCapability } from "@/lib/access-control";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const isAdmin = await hasServerCapability(authenticated.user.$id, "access.assign_roles");
     if (!isAdmin) return ok(summary);
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const [roles, assignments] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.orderAsc("name"), Query.limit(100)]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [Query.orderDesc("assignedAt"), Query.limit(200)]),
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as Record<string, unknown>;
     const action = text(body.action, 40);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     if (action === "create_role") {
       const name = text(body.name, 100);
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json() as Record<string, unknown>;
     const assignmentId = text(body.assignmentId, 100);
     const roleId = text(body.roleId, 100);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     if (assignmentId) {
       const expiresRaw = text(body.expiresAt, 40);
       if (expiresRaw && !validFutureDate(expiresRaw)) {

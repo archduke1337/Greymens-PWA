@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "events.manage");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENT_TYPES, [Query.orderAsc("displayOrder"), Query.limit(100)]);
     return ok({ eventTypes: response.documents, total: response.total });
   } catch (error) {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (validationError) {
       return fail("VALIDATION", validationError, 400);
     }
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const eventType = await databases.createDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, ID.unique(), { isActive: true, displayOrder: 0, ...fields });
     await recordAudit({
       request,
@@ -122,7 +122,7 @@ export async function PATCH(request: NextRequest) {
     if (validationError) {
       return fail("VALIDATION", validationError, 400);
     }
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const eventType = await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, eventTypeId, data);
     await recordAudit({
       request,
@@ -145,7 +145,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const eventTypeId = new URL(request.url).searchParams.get("eventTypeId")?.trim();
     if (!eventTypeId) return fail("VALIDATION", "eventTypeId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, eventTypeId);
     await recordAudit({
       request,

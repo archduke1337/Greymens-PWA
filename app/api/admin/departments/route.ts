@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "departments.manage");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const [response, assignments] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [Query.orderAsc("displayOrder"), Query.limit(100)]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [Query.equal("isActive", [true]), Query.limit(500)]),
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     const fields = pickDepartmentFields(body);
     const validationError = validate(fields);
     if (validationError) return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const department = await databases.createDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, ID.unique(), { ...fields, isActive: true });
     await recordAudit({
       request,
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
     // partial typo cannot silently blank a required column server-side.
     const validationError = validate(data);
     if (validationError) return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const department = await databases.updateDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, departmentId, data);
     await recordAudit({
       request,
@@ -141,7 +141,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const departmentId = new URL(request.url).searchParams.get("departmentId")?.trim();
     if (!departmentId) return fail("VALIDATION", "departmentId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const department = await databases.updateDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, departmentId, { isActive: false });
     await recordAudit({
       request,

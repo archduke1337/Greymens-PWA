@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const [powers, grants, departments] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.POWERS, [Query.orderAsc("category"), Query.limit(200)]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [Query.equal("isActive", [true]), Query.limit(500)]),
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "userId, powerId, and a grant/revoke action are required", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const power = await databases.getDocument(DATABASE_ID, COLLECTIONS.POWERS, powerId).catch(() => null);
     if (!power) return fail("NOT_FOUND", "Power does not exist", 404);
 

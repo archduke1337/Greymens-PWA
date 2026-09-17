@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { createSignedTicket } from "@/lib/server/tickets";
@@ -8,7 +8,7 @@ import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, ApiError } from "@/lib/api";
 
 async function issueTicket(
-  databases: ReturnType<typeof createAdminClient>["databases"],
+  databases: ReturnType<typeof createServerDatabases>["databases"],
   registration: Record<string, unknown>,
 ) {
   const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const eventId = new URL(request.url).searchParams.get("eventId")?.trim();
     if (!eventId) return fail("VALIDATION", "eventId is required", 400);
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
       Query.equal("eventId", [eventId]),
       Query.orderDesc("registeredAt"),
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
       return fail("VALIDATION", "Invalid registration action", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const registration = await databases.getDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, registrationId);
     if (registration.status !== "pending") {
       return fail("CONFLICT", "Only pending registrations can be reviewed", 409);

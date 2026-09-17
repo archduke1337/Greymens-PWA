@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const queries = type && RECORD_TYPES.has(type)
       ? [Query.equal("recordType", [type]), Query.orderDesc("updatedAt"), Query.limit(100)]
       : [Query.orderDesc("updatedAt"), Query.limit(100)];
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.GOVERNANCE_RECORDS, queries);
     return ok({ records: response.documents, total: response.total });
   } catch (error) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Invalid governance record", 400);
     }
     const now = new Date().toISOString();
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const record = await databases.createDocument(DATABASE_ID, COLLECTIONS.GOVERNANCE_RECORDS, ID.unique(), {
       recordType,
       title,
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     if (typeof data.body === "string" && (!data.body.trim() || data.body.length > 65535)) return fail("VALIDATION", "Invalid body", 400);
     if (data.visibility !== undefined && (typeof data.visibility !== "string" || !VISIBILITIES.has(data.visibility))) return fail("VALIDATION", "Invalid visibility", 400);
     if (data.status !== undefined && (typeof data.status !== "string" || !STATUSES.has(data.status))) return fail("VALIDATION", "Invalid status", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const record = await databases.updateDocument(DATABASE_ID, COLLECTIONS.GOVERNANCE_RECORDS, recordId, data);
     await recordAudit({
       request,

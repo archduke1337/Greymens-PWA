@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isRecord } from "@/lib/validation";
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Uniform negative: missing and unpublished both answer `recorded: false`
     // so the endpoint cannot be used to probe for draft posts.
     const blog = await databases.getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId).catch(() => null);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Actor identity is taken from the verified session and the stored profile,
     // never from the request body, so a client cannot attribute an action to
     // somebody else.
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     queries.push(Query.limit(limit));
     queries.push(Query.offset(page * limit));
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [response, last24h] = await Promise.all([
       databases.listDocuments(DATABASE_ID, COLLECTIONS.AUDIT_LOGS, queries),

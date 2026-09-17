@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
 import type { Models } from "appwrite";
@@ -17,7 +17,7 @@ import { ok, fail, ApiError } from "@/lib/api";
  * cannot drift apart again.
  */
 async function getOwnedEvent(eventId: string, user: Models.User<Models.Preferences>) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   const event = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
   if (event.ownerId !== user.$id && !(await isAdminUser(user))) return null;
   return { databases, event };

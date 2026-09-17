@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAuthenticatedUser, getMembershipStatus, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
@@ -25,7 +26,7 @@ function text(value: FormDataEntryValue | null, max: number) {
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.RESOURCES, [
       Query.equal("isActive", [true]),
       Query.orderDesc("$createdAt"),
@@ -138,7 +139,7 @@ export async function PATCH(request: NextRequest) {
       updates.tags = updates.tags.slice(0, 30);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const resource = await databases.updateDocument(DATABASE_ID, COLLECTIONS.RESOURCES, resourceId, updates);
     await recordAudit({
       request,
@@ -170,7 +171,7 @@ export async function DELETE(request: NextRequest) {
     }
     const resourceId = queryResourceId || bodyResourceId;
     if (!resourceId) return fail("VALIDATION", "resourceId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     await databases.updateDocument(DATABASE_ID, COLLECTIONS.RESOURCES, resourceId, { isActive: false });
     await recordAudit({
       request,
@@ -226,7 +227,8 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Unsupported file type or file exceeds 50MB", 400);
     }
 
-    const { storage, databases } = createAdminClient();
+    const { storage } = createAdminClient();
+    const { databases } = createServerDatabases();
     let fileUrl = url || undefined;
     let fileId: string | null = null;
     if (file instanceof File) {

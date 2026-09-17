@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
@@ -20,7 +20,7 @@ function stringField(value: unknown, maxLength: number, required = false) {
 }
 
 async function loadBlog(blogId: string) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   try {
     return { databases, blog: await databases.getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId) };
   } catch {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   const scope = request.nextUrl.searchParams.get("scope") ?? "mine";
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     let queries: string[];
 
     if (scope === "mine") {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Invalid blog category", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const duplicate = await databases.listDocuments(DATABASE_ID, COLLECTIONS.BLOGS, [
       Query.equal("slug", [slug]),
       Query.limit(1),

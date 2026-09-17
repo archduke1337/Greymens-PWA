@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
@@ -31,7 +31,7 @@ const NOTIFICATION_TYPES = new Set([
 
 /** Notifications belong to exactly one account; only that account may read it. */
 async function getOwnedNotification(notificationId: string, userId: string) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   try {
     const document = await databases.getDocument(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, notificationId);
     return document.userId === userId ? document : null;
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const rawLimit = Number(params.get("limit"));
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(MAX_LIMIT, Math.floor(rawLimit)) : DEFAULT_LIMIT;
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     // The admin console views the whole feed; a member only ever sees their own.
     if (wantsAll) {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const notification = await databases.createDocument(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, ID.unique(), {
       userId,
       type,
@@ -174,7 +174,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const readAt = new Date().toISOString();
 
     if (body.all === true) {
@@ -225,7 +225,7 @@ export async function DELETE(request: NextRequest) {
     const owned = await getOwnedNotification(notificationId, authenticated.user.$id);
     if (!owned) return fail("NOT_FOUND", "Notification not found", 404);
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, notificationId);
     return ok({ success: true });
   } catch (error) {

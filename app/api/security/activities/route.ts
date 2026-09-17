@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability, hasServerCapability } from "@/lib/access-control";
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const isAdmin = await hasServerCapability(authenticated.user.$id, "security.manage_incidents");
     const queries = isAdmin
       ? [Query.orderDesc("createdAt"), Query.limit(100)]
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const techniques = Array.isArray(body.techniques)
       ? body.techniques.filter((item): item is string => typeof item === "string" && item.length <= 255).slice(0, 30)
       : [];
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const activity = await databases.createDocument(DATABASE_ID, COLLECTIONS.AUTHORIZED_ACTIVITIES, ID.unique(), {
       title: String(body.title).trim().slice(0, 255),
       description: String(body.description).trim(),
@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
     const activityId = typeof body.activityId === "string" ? body.activityId.trim() : "";
     const status = typeof body.status === "string" ? body.status.trim() : "";
     if (!activityId || !STATUSES.has(status)) return fail("VALIDATION", "Invalid activity decision", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const activity = await databases.updateDocument(DATABASE_ID, COLLECTIONS.AUTHORIZED_ACTIVITIES, activityId, {
       status,
       approvedBy: authenticated.user.$id,

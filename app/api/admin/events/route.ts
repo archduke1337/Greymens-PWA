@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "events.manage");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [Query.orderDesc("$createdAt"), Query.limit(100)]);
     return ok({ events: response.documents, total: response.total });
   } catch (error) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (!title || !description || !date || !time || !venue || !location) {
       return fail("VALIDATION", "Title, description, date, time, venue, and location are required", 400);
     }
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now()}`;
     const audience = text("audience", 50) || "public";
     if (!AUDIENCES.has(audience)) return fail("VALIDATION", "Invalid audience", 400);
@@ -112,7 +112,7 @@ export async function PATCH(request: NextRequest) {
     const eventId = typeof body.eventId === "string" ? body.eventId.trim() : "";
     const action = body.action;
     if (!eventId) return fail("VALIDATION", "eventId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     if (action === "update") {
       const raw = body as Record<string, unknown>;
@@ -204,7 +204,7 @@ export async function DELETE(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
   try {
     const body = await request.json().catch(() => null) as { eventId?: unknown; past?: unknown } | null;
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     if (body?.past === true) {
       const today = new Date().toISOString().split("T")[0];
       const past = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [Query.lessThan("date", today), Query.limit(100)]);

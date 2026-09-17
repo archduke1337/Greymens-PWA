@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const queries = [
       ...(category && category !== "all" ? [Query.equal("category", [category])] : []),
       Query.orderDesc("$createdAt"),

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -21,7 +21,7 @@ import { ok, fail, ApiError } from "@/lib/api";
 const MAX_LIMIT = 500;
 
 async function getActiveDesignation(designationId: string) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   try {
     const designation = await databases.getDocument(DATABASE_ID, COLLECTIONS.DESIGNATIONS, designationId);
     if ((designation as Record<string, unknown>).isActive !== true) return null;
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       return fail("NOT_FOUND", "Designation not found", 404);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const holders = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
       Query.equal("designationId", [designationId]),
       Query.equal("isActive", [true]),
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
 
     const designation = await getActiveDesignation(designationId);
     if (!designation) {
@@ -148,7 +148,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Revocation needs existence, not active status: holders of a deactivated
     // designation keep their seniority until revoked, so blocking revoke on
     // inactive would orphan the privilege. Assignment (POST) still requires

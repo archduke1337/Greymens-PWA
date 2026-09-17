@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "sponsors.manage");
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.SPONSORS, [Query.orderAsc("displayOrder"), Query.limit(100)]);
     return ok({ sponsors: response.documents, total: response.total });
   } catch (error) {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const fields = pickSponsorFields(body);
     const validationError = validate(fields);
     if (validationError) return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const sponsor = await databases.createDocument(DATABASE_ID, COLLECTIONS.SPONSORS, ID.unique(), fields);
     await recordAudit({
       request,
@@ -119,7 +119,7 @@ export async function PATCH(request: NextRequest) {
     const data = pickSponsorFields(rest);
     const validationError = validate(data, true);
     if (validationError) return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const sponsor = await databases.updateDocument(DATABASE_ID, COLLECTIONS.SPONSORS, sponsorId, data);
     await recordAudit({
       request,
@@ -142,7 +142,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const sponsorId = new URL(request.url).searchParams.get("sponsorId")?.trim();
     if (!sponsorId) return fail("VALIDATION", "sponsorId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.SPONSORS, sponsorId);
     await recordAudit({
       request,

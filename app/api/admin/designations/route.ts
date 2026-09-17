@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
   if (!authenticated.user) return authenticated.response;
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const response = await databases.listDocuments(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 
     if (validationError)
       return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const designation = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
@@ -183,7 +183,7 @@ export async function PATCH(request: NextRequest) {
 
     if (validationError)
       return fail("VALIDATION", validationError, 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const designation = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
@@ -219,7 +219,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!designationId)
       return fail("VALIDATION", "designationId is required", 400);
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     // Warn if holders exist; deactivation cascades via isActive filter.
     const holders = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
       Query.equal("designationId", [designationId]),

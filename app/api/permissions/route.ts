@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { getEffectiveCapabilities } from "@/lib/access-control";
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const userId = authenticated.user.$id;
 
     const own = { limit: 100 } as const;
