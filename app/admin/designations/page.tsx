@@ -23,6 +23,8 @@ import {
   CardContent,
   Chip,
   Input,
+  Label,
+  ListBox,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -30,6 +32,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Select,
   Switch,
   TextArea,
   useOverlayState,
@@ -564,25 +567,32 @@ export default function AdminDesignationsPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">
-                          Category
-                        </label>
-                        <select
+                        <Select
+                          fullWidth
                           value={formData.category}
-                          onChange={(e) =>
+                          onChange={(value) =>
                             setFormData({
                               ...formData,
-                              category: e.target.value as Designation["category"],
+                              category: String(value ?? "department") as Designation["category"],
                             })
                           }
-                          required
-                          className="w-full px-3 py-2.5 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                         >
-                          <option value="department">Department</option>
-                          <option value="operations">Operations</option>
-                          <option value="executive">Executive</option>
-                          <option value="special">Special</option>
-                        </select>
+                          <Label>Category</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {["department", "operations", "executive", "special"].map((category) => (
+                                <ListBox.Item key={category} id={category} textValue={category.charAt(0).toUpperCase() + category.slice(1)}>
+                                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
                       </div>
 
                       <div>
@@ -676,7 +686,12 @@ export default function AdminDesignationsPage() {
                         setFormData({ ...formData, isActive: checked })
                       }
                     >
-                      Active
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        Active
+                      </Switch.Content>
                     </Switch>
                   </ModalBody>
 

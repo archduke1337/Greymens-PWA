@@ -24,6 +24,8 @@ import {
   CardHeader,
   Chip,
   Input,
+  Label,
+  ListBox,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -31,6 +33,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Select,
   Switch,
   TextArea,
   useOverlayState,
@@ -539,21 +542,38 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <select
+                      <Select
+                        fullWidth
+                        aria-label="Department category"
                         value={formData.category}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
-                            category: e.target.value as Department["category"],
+                            category: String(value ?? "technical") as Department["category"],
                           })
                         }
-                        required
-                        className="w-full px-3 py-2.5 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                       >
-                        <option value="technical">Technical</option>
-                        <option value="content">Content</option>
-                        <option value="operations">Operations</option>
-                      </select>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="technical" textValue="Technical">
+                              Technical
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="content" textValue="Content">
+                              Content
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="operations" textValue="Operations">
+                              Operations
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
 
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium">Color</label>
@@ -630,7 +650,12 @@ export default function AdminDepartmentsPage() {
                         setFormData({ ...formData, isActive: checked })
                       }
                     >
-                      Active
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        Active
+                      </Switch.Content>
                     </Switch>
                   </ModalBody>
 

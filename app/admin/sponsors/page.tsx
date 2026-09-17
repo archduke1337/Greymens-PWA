@@ -20,7 +20,7 @@ const sponsorTiers = {
   partner: { color: "from-blue-400 to-blue-600", label: "Community Partner", size: "small", maxWidth: "100px" },
 };
 import { getErrorMessage } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Switch, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -227,30 +227,61 @@ export default function AdminSponsorsPage() {
                   required
                 />
 
-                <select
+                <Select
+                  fullWidth
+                  aria-label="Sponsor tier"
                   value={formData.tier}
-                  onChange={(e) => setFormData({ ...formData, tier: e.target.value as Sponsor["tier"] })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                  onChange={(value) => setFormData({ ...formData, tier: String(value ?? "gold") as Sponsor["tier"] })}
                 >
-                  <option value="platinum">Platinum Partner</option>
-                  <option value="gold">Gold Sponsor</option>
-                  <option value="silver">Silver Sponsor</option>
-                  <option value="bronze">Bronze Sponsor</option>
-                  <option value="partner">Community Partner</option>
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {[
+                        { value: "platinum", label: "Platinum Partner" },
+                        { value: "gold", label: "Gold Sponsor" },
+                        { value: "silver", label: "Silver Sponsor" },
+                        { value: "bronze", label: "Bronze Sponsor" },
+                        { value: "partner", label: "Community Partner" },
+                      ].map((tier) => (
+                        <ListBox.Item key={tier.value} id={tier.value} textValue={tier.label}>
+                          {tier.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
 
-                <select
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                <Select
+                  fullWidth
+                  placeholder="Select category"
+                  value={formData.category === "" ? null : formData.category}
+                  onChange={(value) => setFormData({ ...formData, category: String(value ?? "") })}
                 >
-                  <option value="">Select category</option>
-                  <option value="tech">Technology</option>
-                  <option value="education">Education</option>
-                  <option value="finance">Finance</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="other">Other</option>
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {[
+                        { value: "tech", label: "Technology" },
+                        { value: "education", label: "Education" },
+                        { value: "finance", label: "Finance" },
+                        { value: "healthcare", label: "Healthcare" },
+                        { value: "other", label: "Other" },
+                      ].map((cat) => (
+                        <ListBox.Item key={cat.value} id={cat.value} textValue={cat.label}>
+                          {cat.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
 
                 <Input
                   type="number"
@@ -285,14 +316,24 @@ export default function AdminSponsorsPage() {
                   isSelected={formData.isActive}
                   onChange={(value: any) => setFormData({ ...formData, isActive: value })}
                 >
-                  Active
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb />
+                    </Switch.Control>
+                    Active
+                  </Switch.Content>
                 </Switch>
 
                 <Switch
                   isSelected={formData.featured}
                   onChange={(value: any) => setFormData({ ...formData, featured: value })}
                 >
-                  Featured (Show in footer & homepage)
+                  <Switch.Content>
+                    <Switch.Control>
+                      <Switch.Thumb />
+                    </Switch.Control>
+                    Featured (Show in footer & homepage)
+                  </Switch.Content>
                 </Switch>
               </div>
 
