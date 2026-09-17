@@ -6,7 +6,7 @@
  * Run with: npx tsx scripts/seed-data.ts
  */
 
-import { Client, TablesDB, Query } from "node-appwrite";
+import { Client, TablesDB } from "node-appwrite";
 import dotenv from "dotenv";
 import path from "path";
 import { OFFICE_CAPABILITIES } from "../lib/capabilities";
@@ -15,14 +15,51 @@ import { GOVERNANCE_OFFICES } from "../lib/governance";
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-  .setKey(process.env.APPWRITE_API_KEY!);
-
-const databases = new TablesDB(client);
+const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+const API_KEY = process.env.APPWRITE_API_KEY;
 // Same default as scripts/setup-appwrite.js; must match the provisioned DB.
 const DB_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "greymens_db";
+
+if (!ENDPOINT || !PROJECT_ID || !API_KEY) {
+  console.error(
+    "Missing NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT_ID, or APPWRITE_API_KEY.\n" +
+      "Add them to .env.local (see .env.example), then re-run.",
+  );
+  process.exit(1);
+}
+
+const client = new Client().setEndpoint(ENDPOINT).setProject(PROJECT_ID).setKey(API_KEY);
+
+const databases = new TablesDB(client);
+
+let okCount = 0;
+let failCount = 0;
+const failures: string[] = [];
+
+/**
+ * Single-call create-or-update by deterministic row id.
+ *
+ * The previous list-then-create flow needed a lookup index per table and
+ * masked the real error behind a fallback update retry. `upsertRow` is one
+ * round trip and idempotent across reruns.
+ */
+async function upsertRow(
+  tableId: string,
+  rowId: string,
+  data: Record<string, any>,
+  label: string,
+): Promise<void> {
+  try {
+    await databases.upsertRow({ databaseId: DB_ID, tableId, rowId, data });
+    okCount += 1;
+    console.log(`  ✓ ${label}`);
+  } catch (e: any) {
+    failCount += 1;
+    failures.push(`${tableId}/${rowId}: ${e?.message ?? e}`);
+    console.log(`  ! ${label}: ${e?.message ?? e}`);
+  }
+}
 
 // ============================================================
 // Departments
@@ -255,138 +292,40 @@ const DESIGNATIONS = [
 async function seedDepartments() {
   console.log("\n=== Seeding Departments ===");
   for (const dept of DEPARTMENTS) {
-    const docId = `dept-${dept.slug}`;
-    const payload = { ...dept, isActive: true };
-    try {
-      // Upsert by slug lookup first (reruns update instead of duplicating).
-      const found = await databases.listRows(DB_ID, "departments", [
-        Query.equal("slug", [dept.slug]),
-        Query.limit(1),
-      ]);
-      if (found.rows.length > 0) {
-        await databases.updateRow(DB_ID, "departments", found.rows[0].$id, {
-          ...payload,
-        });
-        console.log(`  ~ ${dept.name} (updated)`);
-      } else {
-        await databases.createRow(DB_ID, "departments", docId, payload);
-        console.log(`  ✓ ${dept.name}`);
-      }
-    } catch (e: any) {
-      // Fallback: deterministic ID collision means it exists — update by ID.
-      try {
-        await databases.updateRow(DB_ID, "departments", docId, { ...payload });
-        console.log(`  ~ ${dept.name} (updated by id)`);
-      } catch (e2: any) {
-        console.log(`  ! ${dept.name}: first ${e.message} / then ${e2.message ?? e.message}`);
-      }
-    }
+    await upsertRow("departments", `dept-${dept.slug}`, { ...dept, isActive: true }, dept.name);
   }
 }
 
 async function seedPowers() {
   console.log("\n=== Seeding Powers ===");
   for (const power of POWERS) {
-    // Upsert by name: the unique index on powers.name rejects a blind
-    // re-create (Appwrite raises row_unique_constraint_violation rather than
-    // document-exists), so a repeat run must update instead of duplicating.
-    // The document id stays the power name: user_powers.powerId stores either
-    // form and the grant map is keyed by name.
-    try {
-      const found = await databases.listRows(DB_ID, "powers", [
-        Query.equal("name", [power.name]),
-        Query.limit(1),
-      ]);
-      if (found.rows.length > 0) {
-        await databases.updateRow(DB_ID, "powers", found.rows[0].$id, {
-          ...power,
-        });
-        console.log(`  ~ ${power.displayName} (updated)`);
-      } else {
-        await databases.createRow(DB_ID, "powers", power.name, power);
-        console.log(`  ✓ ${power.displayName}`);
-      }
-    } catch (e: any) {
-      // Fallback: deterministic ID collision means it exists — update by ID.
-      try {
-        await databases.updateRow(DB_ID, "powers", power.name, {
-          ...power,
-        });
-        console.log(`  ~ ${power.displayName} (updated by id)`);
-      } catch (e2: any) {
-        console.log(
-          `  ! ${power.displayName}: first ${e.message} / then ${e2.message ?? e.message}`,
-        );
-      }
-    }
+    // The row id is the power name: user_powers.powerId stores either form
+    // and the grant map is keyed by name.
+    await upsertRow("powers", power.name, { ...power }, power.displayName);
   }
 }
 
 async function seedEventTypes() {
   console.log("\n=== Seeding Event Types ===");
   for (const et of EVENT_TYPES) {
-    const docId = `etype-${et.name}`;
-    const payload = { ...et, isActive: true };
-    try {
-      // Upsert by name lookup first (reruns update instead of duplicating).
-      const found = await databases.listRows(DB_ID, "event_types", [
-        Query.equal("name", [et.name]),
-        Query.limit(1),
-      ]);
-      if (found.rows.length > 0) {
-        await databases.updateRow(DB_ID, "event_types", found.rows[0].$id, {
-          ...payload,
-        });
-        console.log(`  ~ ${et.displayName} (updated)`);
-      } else {
-        await databases.createRow(DB_ID, "event_types", docId, payload);
-        console.log(`  ✓ ${et.displayName}`);
-      }
-    } catch (e: any) {
-      // Fallback: deterministic ID collision means it exists — update by ID.
-      try {
-        await databases.updateRow(DB_ID, "event_types", docId, { ...payload });
-        console.log(`  ~ ${et.displayName} (updated by id)`);
-      } catch (e2: any) {
-        console.log(`  ! ${et.displayName}: first ${e.message} / then ${e2.message ?? e.message}`);
-      }
-    }
+    await upsertRow(
+      "event_types",
+      `etype-${et.name}`,
+      { ...et, isActive: true },
+      et.displayName,
+    );
   }
 }
 
 async function seedDesignations() {
   console.log("\n=== Seeding Designations ===");
   for (const desig of DESIGNATIONS) {
-    const docId = `desig-${desig.slug}`;
-    const payload = { ...desig, isActive: true };
-    try {
-      // Upsert by slug lookup first (reruns update instead of duplicating).
-      const found = await databases.listRows(DB_ID, "designations", [
-        Query.equal("slug", [desig.slug]),
-        Query.limit(1),
-      ]);
-      if (found.rows.length > 0) {
-        await databases.updateRow(DB_ID, "designations", found.rows[0].$id, {
-          ...payload,
-        });
-        console.log(`  ~ ${desig.name} (updated)`);
-      } else {
-        await databases.createRow(DB_ID, "designations", docId, payload);
-        console.log(`  ✓ ${desig.name}`);
-      }
-    } catch (e: any) {
-      // Fallback: deterministic ID collision means it exists — update by ID.
-      // Both errors are printed: the fallback used to mask the primary one,
-      // which hid the real cause of designation seed failures.
-      try {
-        await databases.updateRow(DB_ID, "designations", docId, { ...payload });
-        console.log(`  ~ ${desig.name} (updated by id)`);
-      } catch (e2: any) {
-        console.log(
-          `  ! ${desig.name}: first ${e.message} / then ${e2.message ?? e.message}`,
-        );
-      }
-    }
+    await upsertRow(
+      "designations",
+      `desig-${desig.slug}`,
+      { ...desig, isActive: true },
+      desig.name,
+    );
   }
 }
 
@@ -403,50 +342,23 @@ async function seedRoleTemplates() {
       continue;
     }
     const docId = `office-${office.id}`;
+    // Optional string columns are omitted when unset: Appwrite rejects an
+    // explicit null for a string column, which previously failed every
+    // role_template row.
     const payload = {
       name: office.title,
       slug: office.id,
       description: `${office.title} — ${office.layer}${office.elected ? " (elected)" : " (appointed)"} per Charter`,
       capabilities: caps,
-      teamId: null,
-      teamRole: null,
       label: office.layer,
       isActive: true,
     };
-    try {
-      // Upsert by slug lookup first (idx_slug unique).
-      const found = await databases.listRows(DB_ID, "role_templates", [
-        Query.equal("slug", [office.id]),
-        Query.limit(1),
-      ]);
-      if (found.rows.length > 0) {
-        await databases.updateRow(DB_ID, "role_templates", found.rows[0].$id, {
-          ...payload,
-        });
-        console.log(`  ~ ${office.title} (updated)`);
-      } else {
-        await databases.createRow(DB_ID, "role_templates", docId, payload);
-        console.log(`  ✓ ${office.title}`);
-      }
-    } catch (e: any) {
-      // Fallback: deterministic ID collision means it exists — update by ID.
-      try {
-        await databases.updateRow(DB_ID, "role_templates", docId, { ...payload });
-        console.log(`  ~ ${office.title} (updated by id)`);
-      } catch (e2: any) {
-        console.log(`  ! ${office.title}: ${e2.message ?? e.message}`);
-      }
-    }
+    await upsertRow("role_templates", docId, payload, office.title);
   }
 }
 
 async function main() {
   console.log("=== Greymens — Seed Data ===");
-
-  if (!process.env.APPWRITE_API_KEY) {
-    console.error("ERROR: APPWRITE_API_KEY not found in .env.local");
-    process.exit(1);
-  }
 
   await seedDepartments();
   await seedPowers();
@@ -454,7 +366,12 @@ async function main() {
   await seedDesignations();
   await seedRoleTemplates();
 
-  console.log("\n=== Seeding complete ===");
+  console.log(`\n=== Seeding complete: ${okCount} ok, ${failCount} failed ===`);
+  if (failCount > 0) {
+    console.log("Failures:");
+    for (const failure of failures) console.log(`  - ${failure}`);
+    process.exitCode = 1;
+  }
 }
 
 main().catch(console.error);

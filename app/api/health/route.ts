@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Query } from "appwrite";
+import { Query } from "node-appwrite";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { createAdminClient } from "@/lib/appwrite";
-import { DATABASE_ID } from "@/lib/database";
+import { createServerTablesClient } from "@/lib/appwrite-server";
 import { ok, fail } from "@/lib/api";
 
 /**
@@ -56,8 +55,12 @@ export async function GET(request: NextRequest) {
   // departments, dashboard, …) into a 500 while this probe still answers.
   if (checks.apiKey && checks.databaseId) {
     try {
-      const { databases } = createAdminClient();
-      await databases.listDocuments(DATABASE_ID, "departments", [Query.limit(1)]);
+      const { tables, databaseId } = createServerTablesClient();
+      await tables.listRows({
+        databaseId,
+        tableId: "departments",
+        queries: [Query.limit(1)],
+      });
       checks.databaseReadable = true;
     } catch {
       checks.databaseReadable = false;

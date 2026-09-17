@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
-import { Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
-import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { ok, fail, ApiError } from "@/lib/api";
+import { createServerTablesClient, Query } from "@/lib/appwrite-server";
+import { COLLECTIONS } from "@/lib/database";
+import { ok, fail } from "@/lib/api";
 
 /**
  * Public department catalogue.
@@ -19,14 +18,18 @@ import { ok, fail, ApiError } from "@/lib/api";
  */
 export async function GET(_request: NextRequest) {
   try {
-    const { databases } = createAdminClient();
-    const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-      Query.equal("isActive", [true]),
-      Query.orderAsc("displayOrder"),
-      Query.limit(100),
-    ]);
+    const { tables, databaseId } = createServerTablesClient();
+    const response = await tables.listRows({
+      databaseId,
+      tableId: COLLECTIONS.DEPARTMENTS,
+      queries: [
+        Query.equal("isActive", true),
+        Query.orderAsc("displayOrder"),
+        Query.limit(100),
+      ],
+    });
 
-    const departments = response.documents.map((department) => ({
+    const departments = response.rows.map((department) => ({
       $id: department.$id,
       name: department.name,
       slug: department.slug,

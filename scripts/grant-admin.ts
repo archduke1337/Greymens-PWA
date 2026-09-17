@@ -122,7 +122,9 @@ function parseArgs(argv: string[]): Options {
 async function findUserByEmail(email: string) {
   // Appwrite treats email as case-insensitive, but normalising here keeps the
   // lookup stable regardless of how the address was typed.
-  const response = await users.list([Query.equal("email", [email]), Query.limit(1)]);
+  const response = await users.list({
+    queries: [Query.equal("email", email), Query.limit(1)],
+  });
   return response.users[0] ?? null;
 }
 
@@ -135,16 +137,22 @@ async function writeAuditEntry(entry: {
   // and does not roll back a governance change that already succeeded, because
   // the alternative — leaving the database and the intent out of sync — is worse.
   try {
-    await databases.createRow(DB_ID, "audit_logs", ID.unique(), {
-      actorId: SCRIPT_ACTOR_ID,
-      actorName: SCRIPT_ACTOR_NAME,
-      actorRole: "system",
-      action: entry.action,
-      entityType: "user_roles",
-      entityId: entry.userId,
-      details: JSON.stringify(entry.details),
-      timestamp: new Date().toISOString(),
-    }, []);
+    await databases.createRow({
+      databaseId: DB_ID,
+      tableId: "audit_logs",
+      rowId: ID.unique(),
+      data: {
+        actorId: SCRIPT_ACTOR_ID,
+        actorName: SCRIPT_ACTOR_NAME,
+        actorRole: "system",
+        action: entry.action,
+        entityType: "user_roles",
+        entityId: entry.userId,
+        details: JSON.stringify(entry.details),
+        timestamp: new Date().toISOString(),
+      },
+      permissions: [],
+    });
   } catch (error) {
     console.warn(`  ! Could not write the audit entry: ${(error as Error).message}`);
   }
@@ -156,11 +164,15 @@ async function listRoles() {
   let offset = 0;
   const rows: Record<string, unknown>[] = [];
   for (;;) {
-    const response = await databases.listRows(DB_ID, "user_roles", [
-      Query.equal("isActive", [true]),
-      Query.limit(LIMIT),
-      Query.offset(offset),
-    ]);
+    const response = await databases.listRows({
+      databaseId: DB_ID,
+      tableId: "user_roles",
+      queries: [
+        Query.equal("isActive", true),
+        Query.limit(LIMIT),
+        Query.offset(offset),
+      ],
+    });
     rows.push(...(response.rows as unknown as Record<string, unknown>[]));
     if (response.rows.length < LIMIT) break;
     offset += LIMIT;
@@ -191,9 +203,14 @@ async function revokeRole(userId: string, email: string) {
   try {
     // user_roles has no revokedAt column (see setup-appwrite.js): revoke by
     // flipping isActive + a reason note. grantedAt is history — never overwrite.
-    await databases.updateRow(DB_ID, "user_roles", userId, {
-      isActive: false,
-      reason: `Revoked via scripts/grant-admin.ts at ${new Date().toISOString()}`,
+    await databases.updateRow({
+      databaseId: DB_ID,
+      tableId: "user_roles",
+      rowId: userId,
+      data: {
+        isActive: false,
+        reason: `Revoked via scripts/grant-admin.ts at ${new Date().toISOString()}`,
+      },
     });
   } catch (error) {
     const code = (error as { code?: number }).code;
@@ -225,11 +242,17 @@ async function grantRole(userId: string, email: string, role: GovernanceRole) {
   try {
     // The row id is the user id, so this either creates the first role row for
     // the account or replaces the existing one in place.
-    await databases.createRow(DB_ID, "user_roles", userId, data, []);
+    await databases.createRow({
+      databaseId: DB_ID,
+      tableId: "user_roles",
+      rowId: userId,
+      data,
+      permissions: [],
+    });
   } catch (error) {
     const code = (error as { code?: number }).code;
     if (code !== 409) throw error;
-    await databases.updateRow(DB_ID, "user_roles", userId, data);
+    await databases.updateRow({ databaseId: DB_ID, tableId: "user_roles", rowId: userId, data });
   }
 
   await writeAuditEntry({
