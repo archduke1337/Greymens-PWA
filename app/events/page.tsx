@@ -16,6 +16,8 @@ import {
   SparklesIcon,
   StarIcon,
   CrownIcon,
+  CalendarXIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, Label, ListBox, ProgressBar, Select } from "@heroui/react";
@@ -504,7 +506,7 @@ export default function EventsPage() {
 
         {loadError ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">⚠️</div>
+            <TriangleAlertIcon className="w-12 h-12 mx-auto mb-4 text-warning" />
             <h3 className="text-xl font-semibold mb-2">Couldn&apos;t load events</h3>
             <p className="text-default-500 mb-4">{loadError}</p>
             <Button variant="primary" onPress={() => { setLoading(true); loadEvents(); }}>
@@ -513,7 +515,7 @@ export default function EventsPage() {
           </div>
         ) : filteredEvents.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🎯</div>
+            <CalendarXIcon className="w-12 h-12 mx-auto mb-4 text-default-300" />
             <h3 className="text-xl font-semibold mb-2">No events found</h3>
             <p className="text-default-500">
               Try adjusting your search or filter criteria

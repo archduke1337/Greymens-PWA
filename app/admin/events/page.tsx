@@ -559,7 +559,7 @@ export default function AdminEventsPage() {
                       )}
                       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                          💡 Tip: Use free image hosting services like Imgur, Cloudinary, or Unsplash for reliable image URLs
+                          Tip: use free image hosting services like Imgur, Cloudinary, or Unsplash for reliable image URLs
                         </p>
                       </div>
                     </div>
@@ -719,7 +719,7 @@ export default function AdminEventsPage() {
 
                     <div className="p-4 bg-muted rounded-xl">
                       <p className="text-sm font-semibold text-muted-foreground mb-2">
-                        💡 Pricing Tips
+                        Pricing tips
                       </p>
                       <ul className="text-sm text-muted-foreground space-y-1">
                         <li>• Set price to $0 for free events</li>

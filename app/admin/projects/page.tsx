@@ -51,12 +51,12 @@ export default function AdminProjectsPage() {
 
   // Admin tips
   const adminTips = [
-    "💡 Use high-quality images from Unsplash for better project presentation",
-    "💡 Set realistic progress percentages to track project development accurately",
-    "💡 Feature important projects to highlight them on the homepage",
-    "💡 Use commas to separate technologies and team members for better organization",
-    "💡 Update project status regularly to keep members informed",
-    "💡 Add demo and repository links to showcase live projects"
+    "Use high-quality images from Unsplash for better project presentation",
+    "Set realistic progress percentages to track project development accurately",
+    "Feature important projects to highlight them on the homepage",
+    "Use commas to separate technologies and team members for better organization",
+    "Update project status regularly to keep members informed",
+    "Add demo and repository links to showcase live projects"
   ];
 
   // Fetch projects
