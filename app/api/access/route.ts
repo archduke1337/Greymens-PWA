@@ -4,6 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { CAPABILITIES, getAccessSummary, isCapability, requireCapability, hasServerCapability } from "@/lib/access-control";
+import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -32,7 +33,14 @@ export async function GET(request: NextRequest) {
       databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.orderAsc("name"), Query.limit(100)]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [Query.orderDesc("assignedAt"), Query.limit(200)]),
     ]);
-    return ok({ ...summary, capabilities: CAPABILITIES, roles: roles.documents, assignments: assignments.documents });
+    // Names live on the auth record — best-effort so a lookup failure never
+    // fails the access center.
+    const assigneeIds = [...new Set(assignments.documents.map((item) => String(item.userId ?? "")).filter(Boolean))];
+    const accountNames = await getAccountNames(assigneeIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+    return ok({ ...summary, capabilities: CAPABILITIES, roles: roles.documents, assignments: assignments.documents, accountNames });
   } catch (error) {
     console.error("Access lookup error:", error);
     return fail("INTERNAL", "Unable to load access data", 500);

@@ -41,6 +41,8 @@ import {
   CardContent,
   Chip,
   Input,
+  Label,
+  ListBox,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -48,6 +50,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -108,6 +111,9 @@ export default function AdminUsersPage() {
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [grantDesigId, setGrantDesigId] = useState("");
+  const [grantPowerId, setGrantPowerId] = useState("");
+  const [grantBusy, setGrantBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -150,9 +156,11 @@ export default function AdminUsersPage() {
       setAllPowers(payload?.powers ?? []);
       setAccountNames(payload?.accountNames ?? {});
       setEnrichedUsers(payload?.users ?? []);
+      return payload?.users ?? [];
     } catch (error) {
       console.error("Error loading users:", error);
       toast.error(getErrorMessage(error) || "Failed to load users");
+      return [];
     } finally {
       setLoadingUsers(false);
     }
@@ -215,6 +223,8 @@ export default function AdminUsersPage() {
     setSelectedUser(eu);
     setEditForm({ ...eu.profile });
     setIsEditing(false);
+    setGrantDesigId("");
+    setGrantPowerId("");
     open();
   };
 
@@ -367,6 +377,116 @@ export default function AdminUsersPage() {
       { status: "active" },
       "Membership reactivated",
     );
+  };
+
+  /**
+   * Refresh the open detail panel after a grant/revoke: loadAllData updates
+   * the table, but selectedUser is a snapshot that would otherwise show stale
+   * designations/powers until the panel is closed and reopened.
+   */
+  const refreshSelectedUser = useCallback(
+    async (userId: string) => {
+      const users = await loadAllData();
+      const fresh = users.find((eu) => eu.profile.userId === userId);
+      if (fresh) {
+        setSelectedUser(fresh);
+        setEditForm({ ...fresh.profile });
+      }
+    },
+    [loadAllData],
+  );
+
+  const handleGrantDesignation = async () => {
+    if (!selectedUser || !grantDesigId) return;
+    const userId = selectedUser.profile.userId;
+    setGrantBusy(`desig-grant`);
+    try {
+      const response = await fetch("/api/admin/designations/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, designationId: grantDesigId }),
+      });
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      // 404 (deactivated designation) and 409 (maxHolders cap reached) carry
+      // the real reason — surface it instead of a generic failure.
+      if (!response.ok) throw new Error(payload?.error || "Could not grant designation");
+      toast.success(`Designation granted to ${userLabel(selectedUser, accountNames)}`);
+      setGrantDesigId("");
+      await refreshSelectedUser(userId);
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Could not grant designation");
+    } finally {
+      setGrantBusy(null);
+    }
+  };
+
+  const handleRevokeDesignation = async (designationId: string, designationName: string) => {
+    if (!selectedUser) return;
+    if (!confirm(`Revoke "${designationName}" from ${userLabel(selectedUser, accountNames)}?`)) return;
+    const userId = selectedUser.profile.userId;
+    setGrantBusy(`desig-${designationId}`);
+    try {
+      const response = await fetch(
+        `/api/admin/designations/assign?${new URLSearchParams({ userId, designationId })}`,
+        { method: "DELETE" },
+      );
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Could not revoke designation");
+      toast.success(`Designation revoked from ${userLabel(selectedUser, accountNames)}`);
+      await refreshSelectedUser(userId);
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Could not revoke designation");
+    } finally {
+      setGrantBusy(null);
+    }
+  };
+
+  const handleGrantPower = async () => {
+    if (!selectedUser || !grantPowerId) return;
+    const userId = selectedUser.profile.userId;
+    setGrantBusy(`power-grant`);
+    try {
+      const response = await fetch("/api/admin/powers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "grant", userId, powerId: grantPowerId }),
+      });
+      const payload = (await response.json().catch(() => null)) as { alreadyGranted?: boolean; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Could not grant power");
+      toast.success(
+        payload?.alreadyGranted
+          ? `${userLabel(selectedUser, accountNames)} already holds this power — no duplicate created`
+          : `Power granted to ${userLabel(selectedUser, accountNames)}`,
+      );
+      setGrantPowerId("");
+      await refreshSelectedUser(userId);
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Could not grant power");
+    } finally {
+      setGrantBusy(null);
+    }
+  };
+
+  const handleRevokePower = async (powerId: string, powerName: string) => {
+    if (!selectedUser) return;
+    if (!confirm(`Revoke "${powerName}" from ${userLabel(selectedUser, accountNames)}? They lose this privilege immediately.`)) return;
+    const userId = selectedUser.profile.userId;
+    setGrantBusy(`power-${powerId}`);
+    try {
+      const response = await fetch("/api/admin/powers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "revoke", userId, powerId }),
+      });
+      const payload = (await response.json().catch(() => null)) as { revoked?: number; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Could not revoke power");
+      toast.success(`Power revoked from ${userLabel(selectedUser, accountNames)}`);
+      await refreshSelectedUser(userId);
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Could not revoke power");
+    } finally {
+      setGrantBusy(null);
+    }
   };
 
   const getDepartmentName = (deptId: string) => {
@@ -1083,13 +1203,16 @@ export default function AdminUsersPage() {
                       </div>
                     )}
 
-                    {selectedUser.designations.length > 0 && (
+                    {selectedUser && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
                           <AwardIcon className="w-4 h-4 text-primary" />
                           Designations
                         </h3>
                         <div className="space-y-2">
+                          {selectedUser.designations.length === 0 && (
+                            <p className="text-xs text-default-400">No designations held.</p>
+                          )}
                           {selectedUser.designations.map((ud) => (
                             <div
                               key={ud.$id}
@@ -1098,22 +1221,68 @@ export default function AdminUsersPage() {
                               <span className="text-sm font-medium">
                                 {getDesignationName(ud.designationId)}
                               </span>
-                              <span className="text-xs text-default-400">
-                                {formatDate(ud.assignedAt)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-default-400">
+                                  {formatDate(ud.assignedAt)}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  isPending={grantBusy === `desig-${ud.designationId}`}
+                                  onPress={() => handleRevokeDesignation(ud.designationId, getDesignationName(ud.designationId))}
+                                >
+                                  Revoke
+                                </Button>
+                              </div>
                             </div>
                           ))}
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Select
+                            fullWidth
+                            aria-label="Designation to grant"
+                            value={grantDesigId === "" ? null : grantDesigId}
+                            onChange={(value) => setGrantDesigId(String(value ?? ""))}
+                          >
+                            <Label>Grant designation</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {allDesignations.map((desig) => (
+                                  <ListBox.Item key={desig.$id} id={desig.$id!} textValue={desig.name}>
+                                    {desig.name}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            isPending={grantBusy === "desig-grant"}
+                            isDisabled={!grantDesigId}
+                            onPress={handleGrantDesignation}
+                          >
+                            Grant
+                          </Button>
                         </div>
                       </div>
                     )}
 
-                    {selectedUser.powers.length > 0 && (
+                    {selectedUser && (
                       <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
                           <ZapIcon className="w-4 h-4 text-primary" />
                           Powers
                         </h3>
                         <div className="space-y-2">
+                          {selectedUser.powers.length === 0 && (
+                            <p className="text-xs text-default-400">No powers granted.</p>
+                          )}
                           {selectedUser.powers.map((up) => (
                             <div
                               key={up.$id}
@@ -1131,9 +1300,50 @@ export default function AdminUsersPage() {
                                 <span className="text-xs text-default-400">
                                   {formatDate(up.grantedAt)}
                                 </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  isPending={grantBusy === `power-${up.powerId}`}
+                                  onPress={() => handleRevokePower(up.powerId, getPowerName(up.powerId))}
+                                >
+                                  Revoke
+                                </Button>
                               </div>
                             </div>
                           ))}
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Select
+                            fullWidth
+                            aria-label="Power to grant"
+                            value={grantPowerId === "" ? null : grantPowerId}
+                            onChange={(value) => setGrantPowerId(String(value ?? ""))}
+                          >
+                            <Label>Grant power</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {allPowers.map((power) => (
+                                  <ListBox.Item key={power.$id} id={power.$id!} textValue={power.displayName || power.name}>
+                                    {power.displayName || power.name}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            isPending={grantBusy === "power-grant"}
+                            isDisabled={!grantPowerId}
+                            onPress={handleGrantPower}
+                          >
+                            Grant
+                          </Button>
                         </div>
                       </div>
                     )}

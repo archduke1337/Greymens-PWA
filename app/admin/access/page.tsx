@@ -10,7 +10,9 @@ type Assignment = { $id: string; userId: string; roleId: string; expiresAt?: str
 export default function AccessCenterPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState<"create_role" | "assign_role" | null>(null);
   const [message, setMessage] = useState("");
   const [role, setRole] = useState({ name: "", slug: "", description: "", capabilities: [] as string[] });
   const [assignment, setAssignment] = useState({ userId: "", roleId: "", expiresAt: "", scopeType: "global", scopeId: "" });
@@ -19,25 +21,31 @@ export default function AccessCenterPage() {
   const load = async () => {
     const response = await fetch("/api/access", { credentials: "include" });
     if (!response.ok) throw new Error("Unable to load access data");
-    const data = await response.json() as { roles?: Role[]; assignments?: Assignment[] };
+    const data = await response.json() as { roles?: Role[]; assignments?: Assignment[]; accountNames?: Record<string, string> };
     setRoles(data.roles || []);
     setAssignments(data.assignments || []);
+    setAccountNames(data.accountNames || {});
   };
 
   useEffect(() => { load().catch(() => setMessage("Unable to load access data")).finally(() => setLoading(false)); }, []);
 
   const submit = async (action: "create_role" | "assign_role") => {
     setMessage("");
-    const response = await fetch("/api/access", {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(action === "create_role" ? { action, ...role } : { action, ...assignment }),
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok) { setMessage(data?.error || "Unable to save access"); return; }
-    setMessage(action === "create_role" ? "Role template created" : "Role assigned");
-    if (action === "create_role") setRole({ name: "", slug: "", description: "", capabilities: [] });
-    else setAssignment({ userId: "", roleId: "", expiresAt: "", scopeType: "global", scopeId: "" });
-    await load();
+    setSubmitting(action);
+    try {
+      const response = await fetch("/api/access", {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action === "create_role" ? { action, ...role } : { action, ...assignment }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) { setMessage(data?.error || "Unable to save access"); return; }
+      setMessage(action === "create_role" ? "Role template created" : "Role assigned");
+      if (action === "create_role") setRole({ name: "", slug: "", description: "", capabilities: [] });
+      else setAssignment({ userId: "", roleId: "", expiresAt: "", scopeType: "global", scopeId: "" });
+      await load();
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   const toggleCapability = (capability: string) => setRole((current) => ({
@@ -47,7 +55,8 @@ export default function AccessCenterPage() {
       : [...current.capabilities, capability],
   }));
 
-  const revoke = async (assignmentId: string) => {
+  const revoke = async (assignmentId: string, assignee: string) => {
+    if (!confirm(`Revoke this role from ${assignee}? They lose these capabilities immediately.`)) return;
     setRevokingId(assignmentId);
     setMessage("");
     try {
@@ -93,7 +102,7 @@ export default function AccessCenterPage() {
               </Checkbox>
             ))}
           </div></fieldset>
-          <Button onPress={() => submit("create_role")} isDisabled={!role.name || !role.slug || role.capabilities.length === 0}>Create role</Button>
+          <Button onPress={() => submit("create_role")} isPending={submitting === "create_role"} isDisabled={!role.name || !role.slug || role.capabilities.length === 0}>Create role</Button>
         </Card>
         <Card className="p-6 space-y-4">
           <h2 className="text-xl font-semibold">Assign role to member</h2>
@@ -143,11 +152,11 @@ export default function AccessCenterPage() {
           </Select>
           <label className="block text-sm font-medium">Scope ID (optional)<Input value={assignment.scopeId} onChange={(event) => setAssignment({ ...assignment, scopeId: event.target.value })} /></label>
           <label className="block text-sm font-medium">Expires (optional)<Input type="datetime-local" value={assignment.expiresAt} onChange={(event) => setAssignment({ ...assignment, expiresAt: event.target.value ? new Date(event.target.value).toISOString() : "" })} /></label>
-          <Button onPress={() => submit("assign_role")} isDisabled={!assignment.userId || !assignment.roleId}>Assign role</Button>
+          <Button onPress={() => submit("assign_role")} isPending={submitting === "assign_role"} isDisabled={!assignment.userId || !assignment.roleId}>Assign role</Button>
         </Card>
       </div>
       <section className="space-y-4"><h2 className="text-xl font-semibold">Role templates</h2>{roles.map((item) => <Card key={item.$id} className="flex flex-wrap items-center justify-between gap-4 p-4"><div><h3 className="font-semibold">{item.name}</h3><p className="text-sm text-default-600">{item.description || item.slug}</p></div><div className="flex flex-wrap gap-2">{item.capabilities.map((capability) => <Chip key={capability} size="sm">{capability}</Chip>)}</div></Card>)}</section>
-      <section className="space-y-4"><h2 className="text-xl font-semibold">Recent assignments</h2>{assignments.map((item) => <Card key={item.$id} className="flex flex-wrap items-center justify-between gap-4 p-4"><span>{item.userId} → {roles.find((roleItem) => roleItem.$id === item.roleId)?.name || item.roleId}</span><span className="flex flex-wrap items-center gap-2 text-sm text-default-600">{item.scopeType}{item.scopeId ? `:${item.scopeId}` : ""}{item.expiresAt ? <Chip size="sm" variant="soft">expires {new Date(item.expiresAt).toLocaleDateString()}</Chip> : null}{!item.isActive ? <Chip size="sm">revoked</Chip> : null}</span>{item.isActive && <Button size="sm" variant="secondary" onPress={() => revoke(item.$id)} isPending={revokingId === item.$id} isDisabled={revokingId === item.$id}>Revoke</Button>}</Card>)}</section>
+      <section className="space-y-4"><h2 className="text-xl font-semibold">Recent assignments</h2>{assignments.map((item) => { const assignee = accountNames[item.userId] || item.userId; return (<Card key={item.$id} className="flex flex-wrap items-center justify-between gap-4 p-4"><span>{assignee} → {roles.find((roleItem) => roleItem.$id === item.roleId)?.name || item.roleId}</span><span className="flex flex-wrap items-center gap-2 text-sm text-default-600">{item.scopeType}{item.scopeId ? `:${item.scopeId}` : ""}{item.expiresAt ? <Chip size="sm" variant="soft">expires {new Date(item.expiresAt).toLocaleDateString()}</Chip> : null}{!item.isActive ? <Chip size="sm">revoked</Chip> : null}</span>{item.isActive && <Button size="sm" variant="secondary" onPress={() => revoke(item.$id, assignee)} isPending={revokingId === item.$id} isDisabled={revokingId === item.$id}>Revoke</Button>}</Card>); })}</section>
     </main>
   );
 }
