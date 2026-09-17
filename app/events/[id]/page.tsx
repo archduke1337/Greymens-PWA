@@ -575,15 +575,20 @@ export default function EventDetailPage() {
 
                   {event.capacity && (
                     <>
-                      <ProgressBar 
-                        value={getRegistrationPercentage()} 
-                        size="md" 
+                      <ProgressBar
+                        value={getRegistrationPercentage()}
+                        size="md"
                         color={
-                          getRegistrationPercentage() > 90 ? "danger" : 
+                          getRegistrationPercentage() > 90 ? "danger" :
                           getRegistrationPercentage() > 70 ? "warning" : "accent"
                         }
                         className="mt-2"
-                      />
+                        aria-label="Registration progress"
+                      >
+                        <ProgressBar.Track>
+                          <ProgressBar.Fill />
+                        </ProgressBar.Track>
+                      </ProgressBar>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-default-500">
                           {getSpotsLeft()} spots remaining

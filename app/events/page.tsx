@@ -18,7 +18,7 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, ProgressBar } from "@heroui/react";
+import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, Label, ListBox, ProgressBar, Select } from "@heroui/react";
 
 const categories = [
   { key: "all", label: "All Events" },
@@ -282,25 +282,55 @@ export default function EventsPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <select
+                <Select
+                  className="min-w-[150px]"
+                  aria-label="Sort events"
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                  onChange={(value) => setSortBy(String(value ?? "date"))}
                 >
-                  <option value="date">Date</option>
-                  <option value="price">Price</option>
-                  <option value="popularity">Popularity</option>
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="date" textValue="Date">
+                        Date
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="price" textValue="Price">
+                        Price
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="popularity" textValue="Popularity">
+                        Popularity
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
 
-                <select
+                <Select
+                  className="min-w-[150px]"
+                  aria-label="Filter by category"
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="min-w-[150px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                  onChange={(value) => setSelectedCategory(String(value ?? "all"))}
                 >
-                  {categories.map(category => (
-                    <option key={category.key} value={category.key}>{category.label}</option>
-                  ))}
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {categories.map(category => (
+                        <ListBox.Item key={category.key} id={category.key} textValue={category.label}>
+                          {category.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -415,7 +445,12 @@ export default function EventsPage() {
                       value={registrationProgress(event)}
                       size="sm"
                       className="mt-2"
-                    />
+                      aria-label="Registration progress"
+                    >
+                      <ProgressBar.Track>
+                        <ProgressBar.Fill />
+                      </ProgressBar.Track>
+                    </ProgressBar>
                   ) : null}
 
                   <div className="flex flex-wrap gap-2 pt-2">

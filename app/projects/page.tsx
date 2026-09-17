@@ -185,7 +185,11 @@ export default function ProjectsPage() {
                           <span className="text-default-500">Progress</span>
                           <span className="font-semibold">{project.progress}%</span>
                         </div>
-                        <ProgressBar value={project.progress} size="sm" aria-label={`${project.title} progress`} />
+                        <ProgressBar value={project.progress} size="sm" aria-label={`${project.title} progress`}>
+                        <ProgressBar.Track>
+                          <ProgressBar.Fill />
+                        </ProgressBar.Track>
+                      </ProgressBar>
                       </div>
 
                       {/* Stats */}
