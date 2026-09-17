@@ -11,6 +11,7 @@ export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const { isOpen, open, close } = useOverlayState();
   const [isEditing, setIsEditing] = useState(false);
@@ -63,12 +64,12 @@ export default function AdminProjectsPage() {
     try {
       setLoading(true);
       const response = await fetch("/api/admin/projects", { credentials: "include" });
-      const payload = (await response.json()) as { projects?: Project[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load projects");
-      setProjects(payload.projects ?? []);
+      const payload = (await response.json().catch(() => null)) as { projects?: Project[]; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to load projects");
+      setProjects(payload?.projects ?? []);
     } catch (error) {
       console.error("Error fetching projects:", error);
-      toast.error("Failed to fetch projects. Check console for details.");
+      toast.error(getErrorMessage(error) || "Failed to fetch projects");
     } finally {
       setLoading(false);
     }
@@ -195,7 +196,8 @@ export default function AdminProjectsPage() {
           credentials: "include",
           body: JSON.stringify({ projectId: selectedProject.$id, ...projectData }),
         });
-        if (!response.ok) throw new Error("Unable to update project");
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error || "Unable to update project");
         toast.success("Project updated successfully!");
       } else {
         const response = await fetch("/api/admin/projects", {
@@ -204,7 +206,8 @@ export default function AdminProjectsPage() {
           credentials: "include",
           body: JSON.stringify(projectData),
         });
-        if (!response.ok) throw new Error("Unable to create project");
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error || "Unable to create project");
         toast.success("Project created successfully!");
       }
 
@@ -223,18 +226,22 @@ export default function AdminProjectsPage() {
   // Delete project
   const handleDelete = async (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    setDeletingId(projectId);
     try {
       const response = await fetch(`/api/admin/projects?projectId=${encodeURIComponent(projectId)}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Unable to delete project");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete project");
       toast.success("Project deleted successfully!");
       fetchProjects();
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error deleting project:", message);
       toast.error(`Failed to delete project: ${message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -427,6 +434,7 @@ export default function AdminProjectsPage() {
                                   size="sm"
                                   variant="ghost"
                                   className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                  isPending={deletingId === project.$id}
                                   onPress={() => handleDelete(project.$id!)}
                                 >
                                   <TrashIcon className="w-4 h-4" />

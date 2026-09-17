@@ -25,6 +25,7 @@ import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Sel
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [saving, setSaving] = useState(false);
@@ -51,12 +52,12 @@ export default function AdminSponsorsPage() {
   const loadSponsors = async () => {
     try {
       const response = await fetch("/api/admin/sponsors", { credentials: "include" });
-      const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load sponsors");
-      setSponsors(payload.sponsors ?? []);
+      const payload = (await response.json().catch(() => null)) as { sponsors?: Sponsor[]; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to load sponsors");
+      setSponsors(payload?.sponsors ?? []);
     } catch (error) {
       console.error("Error loading sponsors:", error);
-      toast.error("Failed to load sponsors");
+      toast.error(getErrorMessage(error) || "Failed to load sponsors");
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,8 @@ export default function AdminSponsorsPage() {
           credentials: "include",
           body: JSON.stringify({ sponsorId: editingSponsor.$id, ...formData }),
         });
-        if (!response.ok) throw new Error("Unable to update sponsor");
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error || "Unable to update sponsor");
         toast.success("Sponsor updated successfully!");
       } else {
         // Create new sponsor
@@ -98,7 +100,8 @@ export default function AdminSponsorsPage() {
           credentials: "include",
           body: JSON.stringify(formData),
         });
-        if (!response.ok) throw new Error("Unable to create sponsor");
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error || "Unable to create sponsor");
         toast.success("Sponsor created successfully!");
       }
 
@@ -134,17 +137,21 @@ export default function AdminSponsorsPage() {
 
   const handleDelete = async (sponsorId: string) => {
     if (!confirm("Are you sure you want to delete this sponsor? This cannot be undone.")) return;
+    setDeletingId(sponsorId);
     try {
       const response = await fetch(`/api/admin/sponsors?sponsorId=${encodeURIComponent(sponsorId)}`, {
         method: "DELETE",
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Unable to delete sponsor");
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to delete sponsor");
       toast.success("Sponsor deleted successfully!");
       await loadSponsors();
     } catch (error) {
       console.error("Error deleting sponsor:", error);
-      toast.error("Failed to delete sponsor");
+      toast.error(getErrorMessage(error) || "Failed to delete sponsor");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -356,6 +363,7 @@ export default function AdminSponsorsPage() {
               <div className="flex gap-4 justify-end">
                 <Button
                   variant="primary"
+                  isDisabled={saving}
                   onPress={resetForm}
                 >
                   Cancel
@@ -393,7 +401,9 @@ export default function AdminSponsorsPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sponsors.map((sponsor) => {
-              const tierInfo = sponsorTiers[sponsor.tier as keyof typeof sponsorTiers];
+              // Unknown tier values (legacy rows, API drift) must degrade to a
+              // plain badge — indexing blind would crash the whole grid.
+              const tierInfo = (sponsorTiers[sponsor.tier as keyof typeof sponsorTiers] ?? sponsorTiers.partner);
               
               return (
                 <Card key={sponsor.$id} className="relative">
@@ -473,6 +483,7 @@ export default function AdminSponsorsPage() {
                         
                         variant="primary"
                         isIconOnly
+                        isPending={deletingId === sponsor.$id}
                         onPress={() => handleDelete(sponsor.$id!)}
                       >
                         <TrashIcon className="w-4 h-4" />

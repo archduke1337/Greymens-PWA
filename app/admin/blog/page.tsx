@@ -369,6 +369,7 @@ export default function AdminBlogsPage() {
                         size="sm"
                         variant="primary"
                         className="flex-1 md:flex-none"
+                        isPending={processingBlog === blog.$id}
                         onPress={() => toggleFeatured(blog)}
                       >
                         {blog.featured ? "Unfeature" : "Feature"}
@@ -379,6 +380,7 @@ export default function AdminBlogsPage() {
                       size="sm"
                       variant="primary"
                       className="flex-1 md:flex-none"
+                      isPending={processingBlog === blog.$id}
                       onPress={() => handleDelete(blog.$id!)}
                     >
                       Delete

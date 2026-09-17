@@ -141,16 +141,19 @@ export default function AdminPowersPage() {
     setSearching(true);
     try {
       const response = await fetch("/api/admin/users?limit=500", { credentials: "include" });
-      const payload = (await response.json()) as { users?: Array<{ profile: Profile }>; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to search users");
+      const payload = (await response.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to search users");
       const query = searchQuery.trim().toLowerCase();
-      const results = (payload.users ?? []).map((entry) => entry.profile).filter((profile) =>
-        [profile.userId, profile.urn, profile.program, profile.branch].some((value) => String(value ?? "").toLowerCase().includes(query)),
+      const names = payload?.accountNames ?? {};
+      // Search spans the 500 most recent profiles only — the empty-state copy
+      // below says so instead of pretending the search is global.
+      const results = (payload?.users ?? []).map((entry) => entry.profile).filter((profile) =>
+        [profile.userId, profile.urn, profile.program, profile.branch, names[profile.userId]].some((value) => String(value ?? "").toLowerCase().includes(query)),
       );
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching users:", error);
-      toast.error("Failed to search users");
+      toast.error(getErrorMessage(error) || "Failed to search users");
     } finally {
       setSearching(false);
     }
@@ -197,15 +200,15 @@ export default function AdminPowersPage() {
         fetch("/api/admin/powers", { credentials: "include" }),
         fetch("/api/admin/users?limit=500", { credentials: "include" }),
       ]);
-      const powerPayload = (await powerResponse.json()) as { grants?: UserPower[]; error?: string };
-      const usersPayload = (await usersResponse.json()) as { users?: Array<{ profile: Profile }> };
-      if (!powerResponse.ok) throw new Error(powerPayload.error || "Unable to load power holders");
-      const profileByUser = new Map((usersPayload.users ?? []).map((entry) => [entry.profile.userId, entry.profile]));
-      const holdersData = (powerPayload.grants ?? []).filter((grant) => grant.powerId === power.$id);
+      const powerPayload = (await powerResponse.json().catch(() => null)) as { grants?: UserPower[]; error?: string } | null;
+      const usersPayload = (await usersResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; error?: string } | null;
+      if (!powerResponse.ok) throw new Error(powerPayload?.error || "Unable to load power holders");
+      const profileByUser = new Map((usersPayload?.users ?? []).map((entry) => [entry.profile.userId, entry.profile]));
+      const holdersData = (powerPayload?.grants ?? []).filter((grant) => grant.powerId === power.$id);
       setHolders(holdersData.map((holder) => ({ ...holder, profile: profileByUser.get(holder.userId) ?? null })));
     } catch (error) {
       console.error("Error loading holders:", error);
-      toast.error("Failed to load power holders");
+      toast.error(getErrorMessage(error) || "Failed to load power holders");
     } finally {
       setLoadingHolders(false);
     }
@@ -213,7 +216,7 @@ export default function AdminPowersPage() {
 
   const handleRevoke = async (userId: string) => {
     if (!holdersTarget) return;
-    if (!confirm("Are you sure you want to revoke this power?")) return;
+    if (!confirm(`Revoke "${holdersTarget.displayName}" from this member? They lose this privilege immediately.`)) return;
     setRevokingUserId(userId);
     try {
       const response = await fetch("/api/admin/powers", {
@@ -222,12 +225,17 @@ export default function AdminPowersPage() {
         credentials: "include",
         body: JSON.stringify({ action: "revoke", userId, powerId: holdersTarget.$id }),
       });
-      if (!response.ok) throw new Error("Unable to revoke power");
-      toast.success("Power revoked successfully!");
+      const payload = (await response.json().catch(() => null)) as { revoked?: number; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to revoke power");
+      toast.success(
+        typeof payload?.revoked === "number" && payload.revoked === 0
+          ? "No active grant found — nothing revoked"
+          : "Power revoked successfully!",
+      );
       setHolders((prev) => prev.filter((h) => h.userId !== userId));
     } catch (error) {
       console.error("Error revoking power:", error);
-      toast.error("Failed to revoke power");
+      toast.error(getErrorMessage(error) || "Failed to revoke power");
     } finally {
       setRevokingUserId(null);
     }
@@ -451,7 +459,7 @@ export default function AdminPowersPage() {
                         searchQuery &&
                         !searching && (
                           <p className="text-sm text-default-400 text-center py-4">
-                            No results found. Try a different search.
+                            No results in the 500 most recent profiles. Try a different search.
                           </p>
                         )}
                       {searchResults.map((profile) => (
@@ -630,7 +638,7 @@ export default function AdminPowersPage() {
                                       size="sm"
                                       className="bg-amber-100 text-amber-700 text-xs"
                                     >
-                                      Dept-scoped
+                                      {departments.find((dept) => dept.$id === holder.departmentId)?.name || "Dept-scoped"}
                                     </Chip>
                                   )}
                                   {holder.expiresAt && (

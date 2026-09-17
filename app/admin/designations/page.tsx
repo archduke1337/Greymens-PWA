@@ -37,7 +37,7 @@ import {
   TextArea,
   useOverlayState,
 } from "@heroui/react";
-import type { Designation, UserDesignation, Profile } from "@/lib/types";
+import type { Designation, UserDesignation, Profile, Department } from "@/lib/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
   department: "Department",
@@ -59,9 +59,11 @@ export default function AdminDesignationsPage() {
   const { isOpen, open, close } = useOverlayState();
 
   const [designations, setDesignations] = useState<Designation[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingDesig, setEditingDesig] = useState<Designation | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Assign modal state
   const { isOpen: isAssignOpen, open: openAssign, close: closeAssign } = useOverlayState();
@@ -102,10 +104,17 @@ export default function AdminDesignationsPage() {
 
   const loadDesignations = async () => {
     try {
-      const response = await fetch("/api/admin/designations", { credentials: "include" });
-      const payload = (await response.json()) as { designations?: Designation[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load designations");
-      setDesignations(payload.designations ?? []);
+      const [desigResponse, deptResponse] = await Promise.all([
+        fetch("/api/admin/designations", { credentials: "include" }),
+        fetch("/api/departments", { credentials: "include" }),
+      ]);
+      const payload = (await desigResponse.json().catch(() => null)) as { designations?: Designation[]; error?: string } | null;
+      if (!desigResponse.ok) throw new Error(payload?.error || "Unable to load designations");
+      setDesignations(payload?.designations ?? []);
+      // Department directory for the link picker — best-effort so a failure
+      // here never blocks designation management.
+      const deptPayload = (await deptResponse.json().catch(() => null)) as { departments?: Department[] } | null;
+      if (deptResponse.ok) setDepartments(deptPayload?.departments ?? []);
     } catch (error) {
       console.error("Error loading designations:", error);
       toast.error(getErrorMessage(error));
@@ -186,6 +195,7 @@ export default function AdminDesignationsPage() {
       )
     )
       return;
+    setDeletingId(desigId);
     try {
       const response = await fetch(`/api/admin/designations?designationId=${encodeURIComponent(desigId)}`, {
         method: "DELETE",
@@ -199,6 +209,8 @@ export default function AdminDesignationsPage() {
       const message = getErrorMessage(error);
       console.error("Error deleting designation:", message);
       toast.error(message || "Failed to delete designation");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -218,9 +230,9 @@ export default function AdminDesignationsPage() {
       const response = await fetch(`/api/admin/members/search?q=${encodeURIComponent(searchQuery.trim())}`, {
         credentials: "include",
       });
-      const payload = (await response.json()) as { profiles?: Profile[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Failed to search users");
-      setSearchResults(payload.profiles ?? []);
+      const payload = (await response.json().catch(() => null)) as { profiles?: Profile[]; error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to search users");
+      setSearchResults(payload?.profiles ?? []);
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error searching users:", message);
@@ -273,15 +285,15 @@ export default function AdminDesignationsPage() {
         }),
         fetch("/api/admin/users?limit=500", { credentials: "include" }),
       ]);
-      const holdersPayload = (await holdersResponse.json()) as { holders?: UserDesignation[]; error?: string };
-      const profilesPayload = (await profilesResponse.json()) as { users?: Array<{ profile: Profile }> };
-      if (!holdersResponse.ok) throw new Error(holdersPayload.error || "Failed to load holders");
+      const holdersPayload = (await holdersResponse.json().catch(() => null)) as { holders?: UserDesignation[]; error?: string } | null;
+      const profilesPayload = (await profilesResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }> } | null;
+      if (!holdersResponse.ok) throw new Error(holdersPayload?.error || "Failed to load holders");
 
       const profileByUser = new Map(
-        (profilesPayload.users ?? []).map((entry) => [entry.profile.userId, entry.profile]),
+        (profilesPayload?.users ?? []).map((entry) => [entry.profile.userId, entry.profile]),
       );
       setHolders(
-        (holdersPayload.holders ?? []).map((holder) => ({
+        (holdersPayload?.holders ?? []).map((holder) => ({
           ...holder,
           profile: profileByUser.get(holder.userId) ?? null,
         })),
@@ -505,6 +517,7 @@ export default function AdminDesignationsPage() {
                       size="sm"
                       variant="primary"
                       isIconOnly
+                      isPending={deletingId === desig.$id}
                       onPress={() => handleDelete(desig.$id!)}
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -667,17 +680,37 @@ export default function AdminDesignationsPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Department ID (optional)</label>
-                      <Input
-                        placeholder="Link to a specific department"
+                      <label className="text-sm font-medium mb-1 block">Department (optional)</label>
+                      <Select
+                        fullWidth
+                        aria-label="Linked department"
                         value={formData.departmentId || ""}
-                        onChange={(e: any) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
-                            departmentId: e.target.value || undefined,
+                            departmentId: String(value ?? "") || undefined,
                           })
                         }
-                      />
+                      >
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="" textValue="None">
+                              None
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            {departments.map((dept) => (
+                              <ListBox.Item key={dept.$id} id={dept.$id!} textValue={dept.name}>
+                                {dept.name}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
 
                     <Switch
