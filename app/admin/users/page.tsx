@@ -52,7 +52,7 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader,
+  TableHeader, TableContent, TableScrollContainer,
   TableRow,
   useOverlayState,
 } from "@heroui/react";
@@ -606,7 +606,9 @@ export default function AdminUsersPage() {
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table aria-label="Users table" className="min-w-full">
+            <Table>
+              <TableScrollContainer>
+                <TableContent aria-label="Users table" className="min-w-full">
               <TableHeader>
                 <TableColumn>USER</TableColumn>
                 <TableColumn className="hidden md:table-cell">URN</TableColumn>
@@ -744,6 +746,8 @@ export default function AdminUsersPage() {
                   ))
                 )}
               </TableBody>
+                </TableContent>
+              </TableScrollContainer>
             </Table>
           </div>
         </CardContent>

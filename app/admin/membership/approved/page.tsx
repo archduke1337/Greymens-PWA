@@ -24,7 +24,7 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader,
+  TableHeader, TableContent, TableScrollContainer,
   TableRow,
   Input,
 } from "@heroui/react";
@@ -201,7 +201,9 @@ export default function AdminMembershipApprovedPage() {
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table aria-label="Approved members table" className="min-w-full">
+            <Table>
+              <TableScrollContainer>
+                <TableContent aria-label="Approved members table" className="min-w-full">
               <TableHeader>
                 <TableColumn>MEMBER</TableColumn>
                 <TableColumn className="hidden md:table-cell">MEMBERSHIP #</TableColumn>
@@ -335,6 +337,8 @@ export default function AdminMembershipApprovedPage() {
                   })
                 )}
               </TableBody>
+                </TableContent>
+              </TableScrollContainer>
             </Table>
           </div>
         </CardContent>

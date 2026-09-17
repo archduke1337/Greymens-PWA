@@ -26,7 +26,7 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader,
+  TableHeader, TableContent, TableScrollContainer,
   TableRow,
   Input,
 } from "@heroui/react";
@@ -180,7 +180,9 @@ export default function AdminMembershipRejectedPage() {
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table aria-label="Rejected applications table" className="min-w-full">
+            <Table>
+              <TableScrollContainer>
+                <TableContent aria-label="Rejected applications table" className="min-w-full">
               <TableHeader>
                 <TableColumn>APPLICANT</TableColumn>
                 <TableColumn className="hidden md:table-cell">REJECTED ON</TableColumn>
@@ -323,6 +325,8 @@ export default function AdminMembershipRejectedPage() {
                   })
                 )}
               </TableBody>
+                </TableContent>
+              </TableScrollContainer>
             </Table>
           </div>
         </CardContent>

@@ -35,7 +35,7 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader,
+  TableHeader, TableContent, TableScrollContainer,
   TableRow,
   Tabs,
   Tab,
@@ -306,7 +306,9 @@ export default function AdminMembershipPage() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <Table aria-label="Pending applications table">
+                    <Table>
+                      <TableScrollContainer>
+                        <TableContent aria-label="Pending applications table">
                       <TableHeader>
                         <TableColumn>APPLICANT</TableColumn>
                         <TableColumn className="hidden md:table-cell">SUBMITTED</TableColumn>
@@ -440,6 +442,8 @@ export default function AdminMembershipPage() {
                           );
                         })}
                       </TableBody>
+                        </TableContent>
+                      </TableScrollContainer>
                     </Table>
                   </div>
                 )}
