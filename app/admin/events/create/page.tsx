@@ -25,8 +25,13 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Chip,
   Input,
+  Label,
+  ListBox,
+  Select,
+  TextArea,
 } from "@heroui/react";
 import type { EventType, RegistrationConfig, TicketConfig, WorkflowConfig } from "@/lib/types/index";
 
@@ -472,34 +477,39 @@ export default function AdminCreateEventPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">Description</label>
-                  <textarea
+                  <Label htmlFor="event-description">Description</Label>
+                  <TextArea
+                    id="event-description"
+                    fullWidth
                     placeholder="Describe your event"
                     value={formData.description}
                     onChange={(e) => updateForm("description", e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-y"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">Category</label>
-                  <select
+                  <Select
+                    fullWidth
                     value={formData.category}
-                    onChange={(e) => updateForm("category", e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                    onChange={(value) => updateForm("category", String(value ?? "conference"))}
                   >
-                    <option value="conference">Conference</option>
-                    <option value="workshop">Workshop</option>
-                    <option value="masterclass">Masterclass</option>
-                    <option value="competition">Competition</option>
-                    <option value="bootcamp">Bootcamp</option>
-                    <option value="forum">Forum</option>
-                    <option value="hackathon">Hackathon</option>
-                    <option value="meetup">Meetup</option>
-                    <option value="seminar">Seminar</option>
-                    <option value="other">Other</option>
-                  </select>
+                    <Label>Category</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {["conference", "workshop", "masterclass", "competition", "bootcamp", "forum", "hackathon", "meetup", "seminar", "other"].map((category) => (
+                          <ListBox.Item key={category} id={category} textValue={category.charAt(0).toUpperCase() + category.slice(1)}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -597,46 +607,71 @@ export default function AdminCreateEventPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">
-                    Audience <span className="text-red-500">*</span>
-                  </label>
-                  <select
+                  <Select
+                    fullWidth
                     value={formData.audience}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       updateForm(
                         "audience",
-                        e.target.value as "public" | "member_only" | "exclusive"
+                        String(value ?? "public") as "public" | "member_only" | "exclusive"
                       )
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   >
-                    <option value="public">Public</option>
-                    <option value="member_only">Members Only</option>
-                    <option value="exclusive">Exclusive</option>
-                  </select>
+                    <Label>Audience <span className="text-red-500">*</span></Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="public" textValue="Public">
+                          Public
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="member_only" textValue="Members Only">
+                          Members Only
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="exclusive" textValue="Exclusive">
+                          Exclusive
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isFeatured}
-                      onChange={(e) => updateForm("isFeatured", e.target.checked)}
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
-                    <StarIcon className="w-4 h-4 text-yellow-600" />
-                    <span className="font-semibold text-sm">Featured</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isPremium}
-                      onChange={(e) => updateForm("isPremium", e.target.checked)}
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
-                    <CrownIcon className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-sm">Premium</span>
-                  </label>
+                    <Checkbox
+                      isSelected={formData.isFeatured}
+                      onChange={(selected: boolean) => updateForm("isFeatured", selected)}
+                      aria-label="Featured"
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <div className="flex items-center gap-2">
+                          <StarIcon className="w-4 h-4 text-yellow-600" />
+                          <span className="font-semibold text-sm">Featured</span>
+                        </div>
+                      </Checkbox.Content>
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.isPremium}
+                      onChange={(selected: boolean) => updateForm("isPremium", selected)}
+                      aria-label="Premium"
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <div className="flex items-center gap-2">
+                          <CrownIcon className="w-4 h-4 text-primary" />
+                          <span className="font-semibold text-sm">Premium</span>
+                        </div>
+                      </Checkbox.Content>
+                    </Checkbox>
                 </div>
 
                 <div className="space-y-1.5">
@@ -720,21 +755,38 @@ export default function AdminCreateEventPage() {
 
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">Default Audience</label>
-                  <select
+                  <Select
+                    fullWidth
                     value={formData.registrationConfig.defaultAudience}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       updateForm("registrationConfig", {
                         ...formData.registrationConfig,
-                        defaultAudience: e.target.value as RegistrationConfig["defaultAudience"],
+                        defaultAudience: String(value ?? "public") as RegistrationConfig["defaultAudience"],
                       })
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                   >
-                    <option value="public">Public</option>
-                    <option value="member_only">Members Only</option>
-                    <option value="exclusive">Exclusive</option>
-                  </select>
+                    <Label>Default Audience</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="public" textValue="Public">
+                          Public
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="member_only" textValue="Members Only">
+                          Members Only
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="exclusive" textValue="Exclusive">
+                          Exclusive
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">
@@ -763,17 +815,22 @@ export default function AdminCreateEventPage() {
                         Allow non-members to register
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.registrationConfig.allowGuestRegistration}
-                      onChange={(e) =>
-                        updateForm("registrationConfig", {
-                          ...formData.registrationConfig,
-                          allowGuestRegistration: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
+                      <Checkbox
+                        isSelected={formData.registrationConfig.allowGuestRegistration}
+                        onChange={(selected: boolean) =>
+                          updateForm("registrationConfig", {
+                            ...formData.registrationConfig,
+                            allowGuestRegistration: selected,
+                          })
+                        }
+                        aria-label="Allow Guest Registration"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -783,17 +840,22 @@ export default function AdminCreateEventPage() {
                         Registrations need admin approval
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.registrationConfig.requiresApproval}
-                      onChange={(e) =>
-                        updateForm("registrationConfig", {
-                          ...formData.registrationConfig,
-                          requiresApproval: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
+                      <Checkbox
+                        isSelected={formData.registrationConfig.requiresApproval}
+                        onChange={(selected: boolean) =>
+                          updateForm("registrationConfig", {
+                            ...formData.registrationConfig,
+                            requiresApproval: selected,
+                          })
+                        }
+                        aria-label="Requires Approval"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -803,17 +865,22 @@ export default function AdminCreateEventPage() {
                         Waitlist when event is full
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.registrationConfig.waitlistEnabled}
-                      onChange={(e) =>
-                        updateForm("registrationConfig", {
-                          ...formData.registrationConfig,
-                          waitlistEnabled: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
+                      <Checkbox
+                        isSelected={formData.registrationConfig.waitlistEnabled}
+                        onChange={(selected: boolean) =>
+                          updateForm("registrationConfig", {
+                            ...formData.registrationConfig,
+                            waitlistEnabled: selected,
+                          })
+                        }
+                        aria-label="Enable Waitlist"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -823,17 +890,22 @@ export default function AdminCreateEventPage() {
                         Allow users to cancel registration
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.registrationConfig.cancellationAllowed}
-                      onChange={(e) =>
-                        updateForm("registrationConfig", {
-                          ...formData.registrationConfig,
-                          cancellationAllowed: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
+                      <Checkbox
+                        isSelected={formData.registrationConfig.cancellationAllowed}
+                        onChange={(selected: boolean) =>
+                          updateForm("registrationConfig", {
+                            ...formData.registrationConfig,
+                            cancellationAllowed: selected,
+                          })
+                        }
+                        aria-label="Allow Cancellation"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -843,17 +915,22 @@ export default function AdminCreateEventPage() {
                         Allow participants to form teams
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.registrationConfig.teamFormationEnabled || false}
-                      onChange={(e) =>
-                        updateForm("registrationConfig", {
-                          ...formData.registrationConfig,
-                          teamFormationEnabled: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                    />
+                      <Checkbox
+                        isSelected={formData.registrationConfig.teamFormationEnabled || false}
+                        onChange={(selected: boolean) =>
+                          updateForm("registrationConfig", {
+                            ...formData.registrationConfig,
+                            teamFormationEnabled: selected,
+                          })
+                        }
+                        aria-label="Enable Team Formation"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                   </div>
                 </div>
 
@@ -861,21 +938,38 @@ export default function AdminCreateEventPage() {
                   <h3 className="text-sm font-bold mb-3">Ticket Config</h3>
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold">Ticket Type</label>
-                      <select
+                      <Select
+                        fullWidth
                         value={formData.ticketConfig.ticketType}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            ticketType: e.target.value as TicketConfig["ticketType"],
+                            ticketType: String(value ?? "standard") as TicketConfig["ticketType"],
                           })
                         }
-                        className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                       >
-                        <option value="standard">Standard</option>
-                        <option value="team">Team</option>
-                        <option value="exam_seat">Exam Seat</option>
-                      </select>
+                        <Label>Ticket Type</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="standard" textValue="Standard">
+                              Standard
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="team" textValue="Team">
+                              Team
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            <ListBox.Item id="exam_seat" textValue="Exam Seat">
+                              Exam Seat
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
 
                     <div className="space-y-1.5">
@@ -900,17 +994,22 @@ export default function AdminCreateEventPage() {
                           Generate QR codes for tickets
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.ticketConfig.qrEnabled}
-                        onChange={(e) =>
+                      <Checkbox
+                        isSelected={formData.ticketConfig.qrEnabled}
+                        onChange={(selected: boolean) =>
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            qrEnabled: e.target.checked,
+                            qrEnabled: selected,
                           })
                         }
-                        className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                      />
+                        aria-label="QR Enabled"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -920,17 +1019,22 @@ export default function AdminCreateEventPage() {
                           Allow ticket transfers between users
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.ticketConfig.transferAllowed}
-                        onChange={(e) =>
+                      <Checkbox
+                        isSelected={formData.ticketConfig.transferAllowed}
+                        onChange={(selected: boolean) =>
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            transferAllowed: e.target.checked,
+                            transferAllowed: selected,
                           })
                         }
-                        className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                      />
+                        aria-label="Transfer Allowed"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
                   </div>
                 </div>
@@ -945,17 +1049,22 @@ export default function AdminCreateEventPage() {
                           Events need admin approval before publishing
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.workflowConfig.approvalRequired}
-                        onChange={(e) =>
+                      <Checkbox
+                        isSelected={formData.workflowConfig.approvalRequired}
+                        onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
                             ...formData.workflowConfig,
-                            approvalRequired: e.target.checked,
+                            approvalRequired: selected,
                           })
                         }
-                        className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                      />
+                        aria-label="Approval Required"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -965,17 +1074,22 @@ export default function AdminCreateEventPage() {
                           Automatically activate event when date/time arrives
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.workflowConfig.autoActivateAtEventTime}
-                        onChange={(e) =>
+                      <Checkbox
+                        isSelected={formData.workflowConfig.autoActivateAtEventTime}
+                        onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
                             ...formData.workflowConfig,
-                            autoActivateAtEventTime: e.target.checked,
+                            autoActivateAtEventTime: selected,
                           })
                         }
-                        className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                      />
+                        aria-label="Auto Activate at Event Time"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -985,17 +1099,22 @@ export default function AdminCreateEventPage() {
                           Auto-publish once approved
                         </p>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={formData.workflowConfig.publishAfterApproval}
-                        onChange={(e) =>
+                      <Checkbox
+                        isSelected={formData.workflowConfig.publishAfterApproval}
+                        onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
                             ...formData.workflowConfig,
-                            publishAfterApproval: e.target.checked,
+                            publishAfterApproval: selected,
                           })
                         }
-                        className="w-4 h-4 rounded border-default-300 text-primary focus:ring-primary"
-                      />
+                        aria-label="Publish After Approval"
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
                   </div>
                 </div>
