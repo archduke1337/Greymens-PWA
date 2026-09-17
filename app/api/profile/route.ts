@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { MEMBER_FILE_PERMISSIONS, PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
@@ -28,7 +29,7 @@ function extractFileIdFromUrl(url: unknown): string | null {
 }
 
 async function getOwnProfile(userId: string) {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
     Query.equal("userId", [userId]),
     Query.limit(1),
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const userId = authenticated.user.$id;
     const [profile, userDepartments, userDesignations, memberships, tickets] = await Promise.all([
       getOwnProfile(userId),
@@ -67,20 +68,18 @@ export async function GET(request: NextRequest) {
         .catch(() => ({ documents: [] })),
     ]);
 
-    const departmentIds = userDepartments.documents
-      .map((item) => (item as Record<string, unknown>).departmentId)
-      .filter((id): id is string => typeof id === "string");
-    const designationIds = userDesignations.documents
-      .map((item) => (item as Record<string, unknown>).designationId)
-      .filter((id): id is string => typeof id === "string");
-
+    // Resolve names from the small active catalogues in memory rather than
+    // querying by `$id`, keeping enrichment independent of
+    // system-attribute indexing.
     const [departments, designations] = await Promise.all([
-      departmentIds.length
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [Query.equal("$id", departmentIds), Query.limit(100)])
-        : Promise.resolve({ documents: [] }),
-      designationIds.length
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [Query.equal("$id", designationIds), Query.limit(100)])
-        : Promise.resolve({ documents: [] }),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.equal("isActive", true),
+        Query.limit(100),
+      ]).catch(() => ({ documents: [] })),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+        Query.equal("isActive", true),
+        Query.limit(200),
+      ]).catch(() => ({ documents: [] })),
     ]);
 
     const departmentMap = new Map(departments.documents.map((item) => [item.$id, item]));
@@ -142,7 +141,8 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
     }
 
-    const { storage, databases } = createAdminClient();
+    const { storage } = createAdminClient();
+    const { databases } = createServerDatabases();
     const existing = await getOwnProfile(authenticated.user.$id);
     const previousFileId = extractFileIdFromUrl((existing as Record<string, unknown> | null)?.avatar);
 
@@ -189,7 +189,7 @@ export async function PATCH(request: NextRequest) {
       return fail("VALIDATION", "No profile fields supplied", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const existing = await getOwnProfile(authenticated.user.$id);
     const profile = existing
       ? await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, existing.$id, validated.data)

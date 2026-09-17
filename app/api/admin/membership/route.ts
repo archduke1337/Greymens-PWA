@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { hasServerCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       .map((value) => value.trim())
       .filter((value) => APPLICATION_STATUSES.has(value));
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const applicationQueries = [Query.orderDesc("submittedAt"), Query.limit(300)];
     if (requested.length > 0) applicationQueries.unshift(Query.equal("status", requested));
 
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const application = await databases.getDocument(DATABASE_ID, COLLECTIONS.APPLICATIONS, applicationId);
     const applicantId = String(application.userId ?? "");
     if (!applicantId) return fail("CONFLICT", "Application has no applicant", 409);
@@ -206,23 +206,22 @@ export async function POST(request: NextRequest) {
       ? (application.preferredDepartments as unknown[]).filter((value): value is string => typeof value === "string")
       : [];
 
-    // Validate department IDs to avoid orphan user_departments rows.
+    // Validate department IDs to avoid orphan user_departments rows. The
+    // small catalogue is read once and filtered in memory rather than
+    // querying by `$id`, keeping validation independent of
+    // system-attribute indexing.
     let validDeptIds: string[] = preferredDepartments;
+    let departmentNames: string[] = [];
     if (preferredDepartments.length > 0) {
-      const deptCheck = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-        Query.equal("$id", preferredDepartments),
-        Query.limit(50),
+      const catalogue = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.limit(100),
       ]).catch(() => ({ documents: [] as unknown[] }));
-      const found = new Set((deptCheck as { documents: Array<{ $id: string }> }).documents.map((d) => d.$id));
-      validDeptIds = preferredDepartments.filter((id) => found.has(id));
+      const byId = new Map(
+        (catalogue as { documents: Array<{ $id: string; name?: unknown }> }).documents.map((d) => [d.$id, String(d.name ?? "")]),
+      );
+      validDeptIds = preferredDepartments.filter((id) => byId.has(id));
+      departmentNames = validDeptIds.map((id) => byId.get(id) ?? "");
     }
-
-    const departmentNames = validDeptIds.length
-      ? (await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-          Query.equal("$id", validDeptIds),
-          Query.limit(50),
-        ])).documents.map((department) => String(department.name ?? ""))
-      : [];
 
     let membership = existingMemberships.documents[0] ?? null;
     let issuedNumber: string | null = membership ? String(membership.membershipNumber ?? "") : null;

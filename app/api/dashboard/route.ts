@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import {
   getMembershipStatus,
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const userId = authenticated.user.$id;
     const membershipStatus = await getMembershipStatus(authenticated.user);
 
@@ -135,14 +135,16 @@ export async function GET(request: NextRequest) {
       );
       const [departmentDocs, memberAssignments, scopedPending] =
         await Promise.all([
-          departmentIds.length
-            ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-                Query.equal("$id", departmentIds),
-                Query.limit(100),
-              ])
-            : Promise.resolve({
-                documents: [] as Array<Record<string, unknown>>,
-              }),
+          // Resolve the lead's departments from the small catalogue in
+          // memory rather than querying by `$id`, keeping enrichment
+          // independent of system-attribute indexing.
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+            Query.limit(100),
+          ]).then((catalogue) => ({
+            documents: catalogue.documents.filter((department) =>
+              departmentIds.includes(department.$id),
+            ),
+          })),
           departmentIds.length
             ? databases.listDocuments(
                 DATABASE_ID,
