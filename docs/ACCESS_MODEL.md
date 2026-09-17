@@ -221,14 +221,16 @@ What remains, in priority order:
    - `app/admin/resources`, `app/admin/sponsors`, `app/admin/gallery` — uploads
      and destructive edits. (The public gallery upload path already goes through
      `/api/gallery`.)
-   - `app/admin/departments`, `app/admin/designations`, `app/admin/powers` —
-     assignment and catalogue edits.
+   - `app/admin/departments`, `app/admin/designations` — assignment and
+     catalogue edits. (Powers already writes through `/api/admin/powers`; its
+     UI now lives in the Access console as `components/admin/PowersManager.tsx`.)
    - `app/admin/projects`, `app/admin/notifications` — create/edit/delete.
 2. **Reads second** — screens that still read `profiles`, `applications`,
    `memberships`, `departments`, `user_departments`, `user_powers` and
    `resources` directly:
-   - `app/admin/departments`, `app/admin/designations`, `app/admin/powers`,
-     `app/admin/gallery`, `app/admin/resources`, `app/admin/notifications`.
+   - `app/admin/departments`, `app/admin/designations`, `app/admin/gallery`,
+     `app/admin/resources`, `app/admin/notifications`. (Powers reads through
+     `/api/admin/powers`.)
    - `components/dashboards/*` — the Admin/Head/Lead/Member dashboards read
      `applications`, `memberships`, `departments` and `resources`. The member
      dashboard's ticket read has already moved to `/api/events/register`.
