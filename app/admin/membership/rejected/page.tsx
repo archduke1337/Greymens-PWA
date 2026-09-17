@@ -22,6 +22,13 @@ import {
   Card,
   CardContent,
   Chip,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Table,
   TableBody,
   TableCell,
@@ -29,7 +36,9 @@ import {
   TableHeader, TableContent, TableScrollContainer,
   TableRow,
   Input,
+  useOverlayState,
 } from "@heroui/react";
+import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
 
 interface RejectedApp {
   application: Application;
@@ -46,6 +55,12 @@ export default function AdminMembershipRejectedPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailsApp, setDetailsApp] = useState<RejectedApp | null>(null);
+  const {
+    isOpen: isDetailsOpen,
+    open: openDetails,
+    close: closeDetails,
+  } = useOverlayState();
 
   const loadData = useCallback(async () => {
     try {
@@ -325,6 +340,17 @@ export default function AdminMembershipRejectedPage() {
                               No reason provided
                             </div>
                           )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="mt-1"
+                            onPress={() => {
+                              setDetailsApp(item);
+                              openDetails();
+                            }}
+                          >
+                            Details
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -337,6 +363,57 @@ export default function AdminMembershipRejectedPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Full applicant details */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isDetailsOpen}
+          onOpenChange={(open: boolean) => {
+            if (!open) {
+              closeDetails();
+              setDetailsApp(null);
+            }
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog className="sm:max-w-2xl">
+              <ModalHeader className="flex flex-col gap-1 border-b pb-4">
+                <h2 className="text-xl font-bold">
+                  {detailsApp
+                    ? accountNames[detailsApp.application.userId] || "Applicant details"
+                    : "Applicant details"}
+                </h2>
+                <p className="text-sm text-default-500 font-normal">
+                  Everything the applicant submitted
+                </p>
+              </ModalHeader>
+              <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
+                {detailsApp && (
+                  <ApplicantDetails
+                    profile={detailsApp.profile}
+                    application={detailsApp.application}
+                    accountName={accountNames[detailsApp.application.userId]}
+                    departmentNames={getDepartmentNames(
+                      detailsApp.application.preferredDepartments
+                    )}
+                  />
+                )}
+              </ModalBody>
+              <ModalFooter className="border-t pt-4">
+                <Button
+                  variant="ghost"
+                  onPress={() => {
+                    closeDetails();
+                    setDetailsApp(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }

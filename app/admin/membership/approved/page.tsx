@@ -20,6 +20,13 @@ import {
   Card,
   CardContent,
   Chip,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Table,
   TableBody,
   TableCell,
@@ -27,7 +34,9 @@ import {
   TableHeader, TableContent, TableScrollContainer,
   TableRow,
   Input,
+  useOverlayState,
 } from "@heroui/react";
+import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
 
 interface ApprovedMember {
   application: Application;
@@ -44,6 +53,12 @@ export default function AdminMembershipApprovedPage() {
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [detailsMember, setDetailsMember] = useState<ApprovedMember | null>(null);
+  const {
+    isOpen: isDetailsOpen,
+    open: openDetails,
+    close: closeDetails,
+  } = useOverlayState();
 
   const loadData = useCallback(async () => {
     try {
@@ -322,19 +337,31 @@ export default function AdminMembershipApprovedPage() {
                         </TableCell>
 
                         <TableCell>
-                          <Chip
-                            color={
-                              membership.status === "active"
-                                ? "success"
-                                : membership.status === "banned"
-                                  ? "danger"
-                                  : "default"
-                            }
-                            variant="soft"
-                            size="sm"
-                          >
-                            {membership.status}
-                          </Chip>
+                          <div className="flex items-center gap-2">
+                            <Chip
+                              color={
+                                membership.status === "active"
+                                  ? "success"
+                                  : membership.status === "banned"
+                                    ? "danger"
+                                    : "default"
+                              }
+                              variant="soft"
+                              size="sm"
+                            >
+                              {membership.status}
+                            </Chip>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onPress={() => {
+                                setDetailsMember(member);
+                                openDetails();
+                              }}
+                            >
+                              Details
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -347,6 +374,57 @@ export default function AdminMembershipApprovedPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Full member details */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isDetailsOpen}
+          onOpenChange={(open: boolean) => {
+            if (!open) {
+              closeDetails();
+              setDetailsMember(null);
+            }
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog className="sm:max-w-2xl">
+              <ModalHeader className="flex flex-col gap-1 border-b pb-4">
+                <h2 className="text-xl font-bold">
+                  {detailsMember
+                    ? accountNames[detailsMember.application.userId] || "Member details"
+                    : "Member details"}
+                </h2>
+                <p className="text-sm text-default-500 font-normal">
+                  Everything the member submitted
+                </p>
+              </ModalHeader>
+              <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
+                {detailsMember && (
+                  <ApplicantDetails
+                    profile={detailsMember.profile}
+                    application={detailsMember.application}
+                    accountName={accountNames[detailsMember.application.userId]}
+                    departmentNames={getDepartmentNames(
+                      detailsMember.application.preferredDepartments
+                    )}
+                  />
+                )}
+              </ModalBody>
+              <ModalFooter className="border-t pt-4">
+                <Button
+                  variant="ghost"
+                  onPress={() => {
+                    closeDetails();
+                    setDetailsMember(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }

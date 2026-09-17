@@ -46,6 +46,7 @@ import {
   TextArea,
   useOverlayState,
 } from "@heroui/react";
+import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
 
 type TabKey = "pending" | "approved" | "rejected";
 
@@ -67,6 +68,12 @@ export default function AdminMembershipPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const { isOpen, open, close } = useOverlayState();
+  const [detailsApp, setDetailsApp] = useState<Application | null>(null);
+  const {
+    isOpen: isDetailsOpen,
+    open: openDetails,
+    close: closeDetails,
+  } = useOverlayState();
 
   /**
    * One request returns the applications, their applicants' profiles, the
@@ -424,6 +431,16 @@ export default function AdminMembershipPage() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
+                                    onPress={() => {
+                                      setDetailsApp(app);
+                                      openDetails();
+                                    }}
+                                  >
+                                    Details
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onPress={() => handleOpenAction(app, "approve")}
                                     isDisabled={processing}
                                   >
@@ -602,6 +619,53 @@ export default function AdminMembershipPage() {
                   </ModalFooter>
                 </>
               )}
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
+
+      {/* Full applicant details */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isDetailsOpen}
+          onOpenChange={(open: boolean) => {
+            if (!open) {
+              closeDetails();
+              setDetailsApp(null);
+            }
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog className="sm:max-w-2xl">
+              <ModalHeader className="flex flex-col gap-1 border-b pb-4">
+                <h2 className="text-xl font-bold">
+                  {detailsApp ? accountNames[detailsApp.userId] || "Applicant details" : "Applicant details"}
+                </h2>
+                <p className="text-sm text-default-500 font-normal">
+                  Everything the applicant submitted
+                </p>
+              </ModalHeader>
+              <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
+                {detailsApp && (
+                  <ApplicantDetails
+                    profile={profiles[detailsApp.userId] ?? null}
+                    application={detailsApp}
+                    accountName={accountNames[detailsApp.userId]}
+                    departmentNames={getDepartmentNames(detailsApp.preferredDepartments)}
+                  />
+                )}
+              </ModalBody>
+              <ModalFooter className="border-t pt-4">
+                <Button
+                  variant="ghost"
+                  onPress={() => {
+                    closeDetails();
+                    setDetailsApp(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </ModalFooter>
             </ModalDialog>
           </ModalContainer>
         </ModalBackdrop>
