@@ -61,6 +61,7 @@ import {
 } from "@heroui/react";
 
 import { getErrorMessage } from "@/lib/errorHandler";
+import MemberAvatar from "@/components/MemberAvatar";
 import { auditService } from "@/lib/audit";
 import { useAuth } from "@/context/AuthContext";
 
@@ -764,18 +765,11 @@ export default function AdminUsersPage() {
                     <TableRow key={eu.profile.userId}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {eu.profile.avatar ? (
-                            <img
-                              alt={eu.profile.userId}
-                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                              src={eu.profile.avatar}
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm flex-shrink-0">
-                              {eu.profile.userId?.charAt(0)?.toUpperCase() ||
-                                "?"}
-                            </div>
-                          )}
+                          <MemberAvatar
+                            src={eu.profile.avatar}
+                            name={accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}
+                            className="w-10 h-10 text-sm font-bold flex-shrink-0"
+                          />
                            <div className="min-w-0">
                             <p className="font-semibold text-sm truncate max-w-[150px]">
                               {accountNames[eu.profile.userId] || eu.profile.userId}
@@ -840,6 +834,7 @@ export default function AdminUsersPage() {
                             isIconOnly
                             size="sm"
                             variant="ghost"
+                            aria-label={`View profile of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
                             onPress={() => handleViewProfile(eu)}
                           >
                             <EyeIcon className="w-4 h-4" />
@@ -848,6 +843,7 @@ export default function AdminUsersPage() {
                             isIconOnly
                             size="sm"
                             variant="ghost"
+                            aria-label={`View audit trail of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
                             onPress={() => handleViewAudit(eu)}
                           >
                             <HistoryIcon className="w-4 h-4" />
@@ -856,6 +852,7 @@ export default function AdminUsersPage() {
                             isIconOnly
                             size="sm"
                             variant="ghost"
+                            aria-label={`${expandedRows.has(eu.profile.userId) ? "Collapse" : "Expand"} row for ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
                             onPress={() => toggleRow(eu.profile.userId)}
                           >
                             {expandedRows.has(eu.profile.userId) ? (
@@ -917,19 +914,11 @@ export default function AdminUsersPage() {
                 <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
                   <div className="space-y-6">
                     <div className="flex items-center gap-4 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
-                      {selectedUser.profile.avatar ? (
-                        <img
-                          alt={accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
-                          className="w-16 h-16 rounded-full object-cover"
-                          src={selectedUser.profile.avatar}
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-                          {(accountNames[selectedUser.profile.userId] || selectedUser.profile.userId)
-                            ?.charAt(0)
-                            ?.toUpperCase() || "?"}
-                        </div>
-                      )}
+                      <MemberAvatar
+                        src={selectedUser.profile.avatar}
+                        name={accountNames[selectedUser.profile.userId] || selectedUser.profile.urn || selectedUser.profile.userId}
+                        className="w-16 h-16 text-xl font-bold"
+                      />
                       <div className="flex-1">
                         <p className="font-bold text-lg">
                           {accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
