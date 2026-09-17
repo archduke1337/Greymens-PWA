@@ -36,6 +36,19 @@ describe("validateProfilePatch", () => {
     expect(
       "error" in validateProfilePatch({ githubUrl: "javascript:alert(1)" }),
     ).toBe(true);
+    expect(
+      "error" in validateProfilePatch({ instagramUrl: "not a url" }),
+    ).toBe(true);
+  });
+
+  it("treats social URLs as optional", () => {
+    expect(validateProfilePatch({})).toEqual({ data: {} });
+    expect(
+      validateProfilePatch({ instagramUrl: "https://instagram.com/greymens" }),
+    ).toEqual({ data: { instagramUrl: "https://instagram.com/greymens" } });
+    expect(validateProfilePatch({ instagramUrl: "" })).toEqual({
+      data: { instagramUrl: null },
+    });
   });
 
   it("rejects enum values outside the catalogue", () => {

@@ -78,6 +78,7 @@ export interface Profile {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
+  instagramUrl?: string;
   bio?: string;
   skills?: string[];
   interests?: string[];

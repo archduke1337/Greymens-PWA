@@ -496,6 +496,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "githubUrl", type: "string", size: 500 },
     { key: "linkedinUrl", type: "string", size: 500 },
     { key: "portfolioUrl", type: "string", size: 500 },
+    { key: "instagramUrl", type: "string", size: 500 },
     { key: "bio", type: "string", size: 65535 },
     { key: "skills", type: "string", size: 100, array: true },
     { key: "interests", type: "string", size: 100, array: true },

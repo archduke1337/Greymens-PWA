@@ -14,6 +14,7 @@ const STRING_FIELDS = new Map<string, number>([
   ["githubUrl", 500],
   ["linkedinUrl", 500],
   ["portfolioUrl", 500],
+  ["instagramUrl", 500],
   ["phone", 20],
   ["urn", 50],
   ["program", 100],
@@ -24,7 +25,7 @@ const STRING_FIELDS = new Map<string, number>([
   ["dateOfBirth", 30],
 ]);
 
-const URL_FIELDS = new Set(["githubUrl", "linkedinUrl", "portfolioUrl"]);
+const URL_FIELDS = new Set(["githubUrl", "linkedinUrl", "portfolioUrl", "instagramUrl"]);
 
 // Constrained fields must match the unions declared in lib/types.
 const ENUM_FIELDS = new Map<string, readonly string[]>([

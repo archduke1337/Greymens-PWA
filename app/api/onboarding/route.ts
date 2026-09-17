@@ -21,6 +21,7 @@ const PROFILE_FIELDS = [
   "githubUrl",
   "linkedinUrl",
   "portfolioUrl",
+  "instagramUrl",
   "bio",
   "whyJoin",
   "experience",
