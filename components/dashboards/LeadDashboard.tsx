@@ -1,6 +1,7 @@
 "use client";
 
 import type { Application, Event } from "@/lib/types";
+import MyPowersCard from "@/components/dashboards/MyPowersCard";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -135,6 +136,7 @@ export default function LeadDashboard() {
       </div>
 
       {/* Department Overview */}
+      <MyPowersCard />
       {leadDepartments.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Users className="w-10 h-10 text-muted mx-auto mb-3" />

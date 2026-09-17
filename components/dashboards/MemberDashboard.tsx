@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import type { Event, Notification, Registration, Resource } from "@/lib/types";
+import MyPowersCard from "@/components/dashboards/MyPowersCard";
 import { Button, Tabs } from "@heroui/react";
 /** The caller's own issued tickets, as returned by /api/events/register. */
 type MemberTicket = {
@@ -188,6 +189,8 @@ export default function MemberDashboard() {
           );
         })}
       </div>
+
+      <MyPowersCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* My Events */}

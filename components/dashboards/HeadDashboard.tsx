@@ -1,6 +1,7 @@
 "use client";
 
 import type { Application, Department, Event } from "@/lib/types";
+import MyPowersCard from "@/components/dashboards/MyPowersCard";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -176,6 +177,8 @@ export default function HeadDashboard() {
           </Link>
         </div>
       </div>
+
+      <MyPowersCard />
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
