@@ -99,8 +99,13 @@ export const RESTRICTED_STATUSES = new Set([
  * exist before any governance record does. It is checked before any database
  * lookup so that a misconfigured or unavailable database cannot lock every
  * administrator out of the console.
+ *
+ * Exported so the capability pipeline (`requireCapability`) honors the same
+ * escape hatch: without it a bootstrap administrator would see the console
+ * shell (status resolves via `getMembershipStatus`) while every data API
+ * underneath 403s via the DB-only `resolveMembershipStatus`.
  */
-function isBootstrapAdmin(email: string): boolean {
+export function isBootstrapAdmin(email: string): boolean {
   return (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((value) => value.trim().toLowerCase())

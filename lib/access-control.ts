@@ -9,6 +9,7 @@ import { fail } from "@/lib/api";
 import {
   requireAuthenticatedUser,
   resolveMembershipStatus,
+  isBootstrapAdmin,
   RESTRICTED_STATUSES,
   type AuthResult,
 } from "@/lib/server-auth";
@@ -293,6 +294,11 @@ export async function requireCapability(
       response: fail("FORBIDDEN", "Forbidden", 403),
     };
   }
+  // Bootstrap escape hatch (ADMIN_EMAILS): the first administrator exists
+  // before any user_roles row does, so the DB-only status above resolves to
+  // "account" for them. Honor the same allowlist the status ladder uses —
+  // after the restriction check, so a ban still wins.
+  if (isBootstrapAdmin(authenticated.user.email)) return authenticated;
   if (!(await hasServerCapability(authenticated.user.$id, capability, scope))) {
     return {
       user: null,
