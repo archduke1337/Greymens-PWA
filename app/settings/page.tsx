@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBody, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBackdrop, ModalBody, ModalContainer, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
 
 // Notification preference keys stored on the authenticated account.
 const EMAIL_NOTIFICATIONS_PREF = "emailNotifications";
@@ -476,7 +476,13 @@ export default function SettingsPage() {
               onChange={(value: boolean) =>
                 updateNotificationPreference(EMAIL_NOTIFICATIONS_PREF, value)
               }
-            />
+            >
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
+            </Switch>
           </div>
 
           <Separator />
@@ -495,7 +501,13 @@ export default function SettingsPage() {
               onChange={(value: boolean) =>
                 updateNotificationPreference(PUSH_NOTIFICATIONS_PREF, value)
               }
-            />
+            >
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
+            </Switch>
           </div>
         </CardContent>
       </Card>
@@ -526,8 +538,10 @@ export default function SettingsPage() {
       </Card>
 
       {/* Add/Update Phone Modal */}
-      <Modal isOpen={isPhoneModalOpen}>
-        <ModalDialog>
+      <Modal>
+        <ModalBackdrop isOpen={isPhoneModalOpen} onOpenChange={(open: boolean) => { if (!open) onPhoneModalClose(); }}>
+          <ModalContainer>
+            <ModalDialog>
           <form onSubmit={handleAddPhone}>
             <ModalHeader>
               {user.phone ? "Update" : "Add"} Phone Number
@@ -573,12 +587,16 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalDialog>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
 
       {/* Verify Phone Modal */}
-      <Modal isOpen={isVerifyModalOpen}>
-        <ModalDialog>
+      <Modal>
+        <ModalBackdrop isOpen={isVerifyModalOpen} onOpenChange={(open: boolean) => { if (!open) onVerifyModalClose(); }}>
+          <ModalContainer>
+            <ModalDialog>
           <form onSubmit={handleVerifyPhone}>
             <ModalHeader>
               Verify Phone Number
@@ -630,7 +648,9 @@ export default function SettingsPage() {
               </Button>
             </ModalFooter>
           </form>
-        </ModalDialog>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
       </Modal>
     </div>
   );
