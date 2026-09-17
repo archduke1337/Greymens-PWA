@@ -7,7 +7,7 @@ import type { Event } from "@/lib/types";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Label, ListBox, Select, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -304,7 +304,9 @@ export default function AdminEventsPage() {
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table aria-label="Events table" className="min-w-full">
+            <Table>
+              <TableScrollContainer>
+                <TableContent aria-label="Events table" className="min-w-full">
               <TableHeader>
                 <TableColumn>EVENT</TableColumn>
                 <TableColumn className="hidden md:table-cell">DATE</TableColumn>
@@ -386,6 +388,8 @@ export default function AdminEventsPage() {
                   </TableRow>
                 ))}
               </TableBody>
+                </TableContent>
+              </TableScrollContainer>
             </Table>
           </div>
         </CardContent>
@@ -496,38 +500,58 @@ export default function AdminEventsPage() {
                       required
                     />
 
-                    <select
+                    <Select
+                      fullWidth
+                      aria-label="Event category"
                       value={formData.category!}
-                      onChange={(e) => handleInputChange("category", e.target.value)}
-                      required
-                      className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                      onChange={(value) => handleInputChange("category", String(value ?? "conference"))}
                     >
-                      <option value="conference">Conference</option>
-                      <option value="workshop">Workshop</option>
-                      <option value="masterclass">Masterclass</option>
-                      <option value="competition">Competition</option>
-                      <option value="bootcamp">Bootcamp</option>
-                      <option value="forum">Forum</option>
-                    </select>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {["conference", "workshop", "masterclass", "competition", "bootcamp", "forum"].map((category) => (
+                            <ListBox.Item key={category} id={category} textValue={category.charAt(0).toUpperCase() + category.slice(1)}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
                       <Switch
                         isSelected={formData.isFeatured}
                         onChange={(checked: any) => handleInputChange("isFeatured", checked)}
+                        aria-label="Featured"
                       >
-                        <div className="flex items-center gap-2">
-                          <StarIcon className="w-4 h-4 text-yellow-600" />
-                          <span className="font-semibold text-sm">Featured</span>
-                        </div>
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          <div className="flex items-center gap-2">
+                            <StarIcon className="w-4 h-4 text-yellow-600" />
+                            <span className="font-semibold text-sm">Featured</span>
+                          </div>
+                        </Switch.Content>
                       </Switch>
                       <Switch
                         isSelected={formData.isPremium}
                         onChange={(checked: any) => handleInputChange("isPremium", checked)}
+                        aria-label="Premium"
                       >
-                        <div className="flex items-center gap-2">
-                          <CrownIcon className="w-4 h-4 text-primary" />
-                          <span className="font-semibold text-sm">Premium</span>
-                        </div>
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          <div className="flex items-center gap-2">
+                            <CrownIcon className="w-4 h-4 text-primary" />
+                            <span className="font-semibold text-sm">Premium</span>
+                          </div>
+                        </Switch.Content>
                       </Switch>
                     </div>
                   </div>
