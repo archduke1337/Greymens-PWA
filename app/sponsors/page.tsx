@@ -184,7 +184,7 @@ export default function SponsorsPage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 pt-4">
-              <Card className="bg-white/50 dark:bg-default-100/50">
+              <Card variant="secondary">
                 <CardContent className="p-4 text-center space-y-2">
                   <TrendingUpIcon className="w-6 h-6 text-primary mx-auto" />
                   <p className="text-sm font-semibold">Brand Visibility</p>
@@ -192,7 +192,7 @@ export default function SponsorsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/50 dark:bg-default-100/50">
+              <Card variant="secondary">
                 <CardContent className="p-4 text-center space-y-2">
                   <UsersIcon className="w-6 h-6 text-primary mx-auto" />
                   <p className="text-sm font-semibold">Talent Pipeline</p>
@@ -200,7 +200,7 @@ export default function SponsorsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/50 dark:bg-default-100/50">
+              <Card variant="secondary">
                 <CardContent className="p-4 text-center space-y-2">
                   <AwardIcon className="w-6 h-6 text-blue-500 mx-auto" />
                   <p className="text-sm font-semibold">Community Impact</p>

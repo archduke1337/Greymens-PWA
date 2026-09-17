@@ -92,14 +92,14 @@ function ExploreLinks() {
             <Link
               key={link.href}
               href={link.href}
-              className="group rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-200"
+              className="group rounded-xl border border-border bg-surface p-5 hover:border-border hover:bg-surface-secondary transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <Icon className={`w-5 h-5 ${link.color}`} />
-                <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="w-4 h-4 text-muted group-hover:text-muted group-hover:translate-x-0.5 transition-all" />
               </div>
-              <h3 className="font-medium mt-3 group-hover:text-white transition-colors">{link.label}</h3>
-              <p className="text-xs text-zinc-500 mt-1">{link.description}</p>
+              <h3 className="font-medium mt-3 group-hover:text-foreground transition-colors">{link.label}</h3>
+              <p className="text-xs text-muted mt-1">{link.description}</p>
             </Link>
           );
         })}
@@ -121,7 +121,7 @@ export default function ApplicantDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome, <span className="tracking-tight text-foreground">{user?.name}</span>
           </h1>
-          <p className="text-zinc-400">Join the club to unlock member events, resources, and departments.</p>
+          <p className="text-muted">Join the club to unlock member events, resources, and departments.</p>
         </div>
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
           <div className="flex items-start gap-4">
@@ -130,7 +130,7 @@ export default function ApplicantDashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold">Start your application</h2>
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-muted mt-1">
                 Tell us about yourself and pick your departments. It takes a few minutes.
               </p>
               <Link
@@ -159,7 +159,7 @@ export default function ApplicantDashboard() {
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome, <span className="tracking-tight text-foreground">{user?.name}</span>
         </h1>
-        <p className="text-zinc-400">Track your application and explore what Greymens Club has to offer.</p>
+        <p className="text-muted">Track your application and explore what Greymens Club has to offer.</p>
       </div>
 
       {/* Application Status Card */}
@@ -170,7 +170,7 @@ export default function ApplicantDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold">{config.label}</h2>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-muted mt-1">
               {appStatus === "pending" && "Your application is being reviewed by our team. We'll notify you once a decision is made."}
               {appStatus === "approved" && "Congratulations! Your membership has been approved. Welcome to Greymens Club!"}
               {appStatus === "rejected" && "Your application was not approved at this time. You may reapply after 30 days."}
@@ -178,7 +178,7 @@ export default function ApplicantDashboard() {
             </p>
 
             {application?.submittedAt && (
-              <p className="text-xs text-zinc-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Submitted {new Date(application.submittedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -188,7 +188,7 @@ export default function ApplicantDashboard() {
             )}
 
             {application?.reviewedAt && (
-              <p className="text-xs text-zinc-500 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Reviewed {new Date(application.reviewedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -220,11 +220,11 @@ export default function ApplicantDashboard() {
 
         {/* Progress Bar */}
         <div className="mt-6">
-          <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+          <div className="flex items-center justify-between text-xs text-muted mb-2">
             <span>Application Progress</span>
             <span>{config.progress}%</span>
           </div>
-          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+          <div className="h-2 rounded-full bg-surface-secondary overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
                 appStatus === "approved"
@@ -245,10 +245,10 @@ export default function ApplicantDashboard() {
                       ? appStatus === "rejected" && i === 2
                         ? "border-red-500 bg-red-500"
                         : "border-primary bg-primary"
-                      : "border-zinc-700 bg-zinc-800"
+                      : "border-border bg-surface-secondary"
                   }`}
                 />
-                <span className="text-[10px] text-zinc-500 mt-1">{step}</span>
+                <span className="text-[10px] text-muted mt-1">{step}</span>
               </div>
             ))}
           </div>
@@ -257,26 +257,26 @@ export default function ApplicantDashboard() {
 
       {/* Application Details */}
       {application && (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="rounded-2xl border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold mb-4">Application Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <span className={`w-2 h-2 rounded-full ${application.oathAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
-                <span className="text-zinc-300">Oath Accepted</span>
+                <span className="text-muted">Oath Accepted</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className={`w-2 h-2 rounded-full ${application.termsAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
-                <span className="text-zinc-300">Terms Accepted</span>
+                <span className="text-muted">Terms Accepted</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className={`w-2 h-2 rounded-full ${application.constitutionAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
-                <span className="text-zinc-300">Constitution Accepted</span>
+                <span className="text-muted">Constitution Accepted</span>
               </div>
             </div>
             {application.preferredDepartments && application.preferredDepartments.length > 0 && (
               <div>
-                <p className="text-xs text-zinc-500 mb-2">Preferred Departments</p>
+                <p className="text-xs text-muted mb-2">Preferred Departments</p>
                 <div className="flex flex-wrap gap-2">
                   {application.preferredDepartments.map((dept) => (
                     <span key={dept} className="px-2.5 py-1 text-xs rounded-full bg-muted text-primary border border-border">
@@ -293,7 +293,7 @@ export default function ApplicantDashboard() {
       <ExploreLinks />
 
       {/* What's Next */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="rounded-2xl border border-border bg-surface p-6">
         <h2 className="text-lg font-semibold mb-4">What Happens Next?</h2>
         <div className="space-y-4">
           {[
@@ -307,7 +307,7 @@ export default function ApplicantDashboard() {
               </div>
               <div>
                 <h3 className="font-medium text-sm">{item.title}</h3>
-                <p className="text-xs text-zinc-500 mt-0.5">{item.desc}</p>
+                <p className="text-xs text-muted mt-0.5">{item.desc}</p>
               </div>
             </div>
           ))}

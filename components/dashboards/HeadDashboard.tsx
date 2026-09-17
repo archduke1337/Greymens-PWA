@@ -113,14 +113,14 @@ export default function HeadDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div className="space-y-2">
-          <div className="h-9 w-64 bg-zinc-800 rounded-lg animate-pulse" />
-          <div className="h-4 w-80 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-9 w-64 bg-surface-secondary rounded-lg animate-pulse" />
+          <div className="h-4 w-80 bg-surface-secondary rounded animate-pulse" />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="h-28 bg-zinc-800 rounded-xl animate-pulse"
+              className="h-28 bg-surface-secondary rounded-xl animate-pulse"
             />
           ))}
         </div>
@@ -132,7 +132,7 @@ export default function HeadDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-semibold">Operations dashboard unavailable</h1>
-        <p className="text-zinc-500 mt-2">{error || "The server did not return an operations view."}</p>
+        <p className="text-muted mt-2">{error || "The server did not return an operations view."}</p>
       </div>
     );
   }
@@ -145,13 +145,13 @@ export default function HeadDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">
             Operations Overview
           </h1>
-          <p className="text-zinc-400">
+          <p className="text-muted">
             Multi-department management and organizational health.
           </p>
         </div>
         <div className="flex gap-3">
           <Link
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-surface hover:bg-surface-secondary text-sm font-medium transition-colors"
             href="/admin"
           >
             <BarChart3 className="w-4 h-4" />
@@ -168,14 +168,14 @@ export default function HeadDashboard() {
           return (
             <div
               key={stat.label}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5"
+              className="rounded-xl border border-border bg-surface p-5"
             >
               <div className="flex items-center justify-between">
                 <Icon className={`w-5 h-5 ${stat.color}`} />
                 <span className="text-2xl font-bold">{stat.value}</span>
               </div>
-              <p className="text-sm text-zinc-400 mt-2">{stat.label}</p>
-              <p className="text-xs text-zinc-500 mt-1">{stat.change}</p>
+              <p className="text-sm text-muted mt-2">{stat.label}</p>
+              <p className="text-xs text-muted mt-1">{stat.change}</p>
             </div>
           );
         })}
@@ -183,7 +183,7 @@ export default function HeadDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Event Approvals Queue */}
-        <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Event Approvals Queue</h2>
             <Link
@@ -220,13 +220,13 @@ export default function HeadDashboard() {
             ].map((stage) => (
               <div
                 key={stage.label}
-                className="text-center p-3 rounded-lg bg-zinc-800/50"
+                className="text-center p-3 rounded-lg bg-surface-secondary"
               >
                 <div
                   className={`w-2 h-2 rounded-full ${stage.color} mx-auto mb-2`}
                 />
                 <p className="text-lg font-bold">{stage.count}</p>
-                <p className="text-xs text-zinc-500">{stage.label}</p>
+                <p className="text-xs text-muted">{stage.label}</p>
               </div>
             ))}
           </div>
@@ -249,7 +249,7 @@ export default function HeadDashboard() {
                     <h4 className="font-medium text-sm truncate">
                       {event.title}
                     </h4>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                    <div className="flex items-center gap-2 text-xs text-muted mt-0.5">
                       <span>{event.organizerName}</span>
                       <span>•</span>
                       <span>
@@ -274,7 +274,7 @@ export default function HeadDashboard() {
           {reviewEvents.length === 0 && (
             <div className="text-center py-8">
               <CheckCircle className="w-10 h-10 text-emerald-500/50 mx-auto mb-3" />
-              <p className="text-sm text-zinc-500">All events reviewed</p>
+              <p className="text-sm text-muted">All events reviewed</p>
             </div>
           )}
         </div>
@@ -282,7 +282,7 @@ export default function HeadDashboard() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Membership Queue */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Membership Queue</h2>
               <Link
@@ -306,7 +306,7 @@ export default function HeadDashboard() {
                       <p className="text-sm font-medium truncate">
                         New Application
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted">
                         Submitted{" "}
                         {new Date(app.submittedAt).toLocaleDateString()}
                       </p>
@@ -317,13 +317,13 @@ export default function HeadDashboard() {
             ) : (
               <div className="text-center py-4">
                 <CheckCircle className="w-8 h-8 text-emerald-500/50 mx-auto mb-2" />
-                <p className="text-sm text-zinc-500">No pending applications</p>
+                <p className="text-sm text-muted">No pending applications</p>
               </div>
             )}
           </div>
 
           {/* Department Health */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">Department Health</h2>
             <div className="space-y-3">
               {departments.slice(0, 6).map((dept) => {
@@ -362,7 +362,7 @@ export default function HeadDashboard() {
                           {count} members
                         </span>
                       </div>
-                      <div className="mt-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
+                      <div className="mt-1 h-1 rounded-full bg-surface-secondary overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary transition-all"
                           style={{
@@ -378,28 +378,28 @@ export default function HeadDashboard() {
           </div>
 
           {/* Quick Stats */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">Membership Stats</h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-400">Active Members</span>
+                <span className="text-sm text-muted">Active Members</span>
                 <span className="font-semibold text-emerald-400">
                   {membershipStats.active}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-400">Inactive</span>
-                <span className="font-semibold text-zinc-400">
+                <span className="text-sm text-muted">Inactive</span>
+                <span className="font-semibold text-muted">
                   {membershipStats.inactive}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-400">Banned</span>
+                <span className="text-sm text-muted">Banned</span>
                 <span className="font-semibold text-red-400">
                   {membershipStats.banned}
                 </span>
               </div>
-              <div className="pt-3 border-t border-zinc-800">
+              <div className="pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total</span>
                   <span className="font-bold">{totalMembers}</span>

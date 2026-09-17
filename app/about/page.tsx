@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Lightbulb, Handshake, Rocket, Award } from "lucide-react";
 import { title, subtitle } from "@/components/primitives";
 import { Avatar, AvatarImage, AvatarFallback, Card, CardContent, Chip } from "@heroui/react";
 
@@ -14,22 +15,22 @@ export default function AboutPage() {
 
   const values = [
     {
-      icon: "💡",
+      icon: Lightbulb,
       title: "Innovation",
       description: "We foster creativity and encourage thinking outside the box",
     },
     {
-      icon: "🤝",
+      icon: Handshake,
       title: "Collaboration",
       description: "Building connections and working together to achieve more",
     },
     {
-      icon: "🚀",
+      icon: Rocket,
       title: "Growth",
       description: "Continuous learning and development for all members",
     },
     {
-      icon: "🌟",
+      icon: Award,
       title: "Excellence",
       description: "Striving for quality in everything we create",
     },
@@ -93,15 +94,19 @@ export default function AboutPage() {
           Our Values
         </h2>
         <div className="grid md:grid-cols-2 gap-6">
-          {values.map((value, index) => (
+          {values.map((value) => {
+            const Icon = value.icon;
+            return (
             <Card
-              key={index}
-              className="border-none hover:scale-105 transition-all duration-300 hover:shadow-xl"
-             
+              key={value.title}
+              variant="secondary"
+              className="border-none hover:shadow-xl transition-shadow duration-300"
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="text-4xl" aria-hidden="true">{value.icon}</div>
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0" aria-hidden="true">
+                    <Icon className="w-6 h-6" />
+                  </div>
                   <div>
                     <h3 className="text-xl font-semibold mb-2">{value.title}</h3>
                     <p className="text-default-600">{value.description}</p>
@@ -109,7 +114,8 @@ export default function AboutPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
 

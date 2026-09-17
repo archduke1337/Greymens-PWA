@@ -26,7 +26,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center space-y-4">
           <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-400">Loading dashboard...</p>
+          <p className="text-muted">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -60,7 +60,7 @@ export default function DashboardPage() {
       return (
         <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
           <h1 className="text-2xl font-bold tracking-tight">Account Restricted</h1>
-          <p className="text-zinc-400">
+          <p className="text-muted">
             Your account is currently {status}. Access to the dashboard is
             unavailable. If you believe this is a mistake, please contact support.
           </p>

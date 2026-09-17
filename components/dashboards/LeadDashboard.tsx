@@ -93,12 +93,12 @@ export default function LeadDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div className="space-y-2">
-          <div className="h-9 w-64 bg-zinc-800 rounded-lg animate-pulse" />
-          <div className="h-4 w-80 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-9 w-64 bg-surface-secondary rounded-lg animate-pulse" />
+          <div className="h-4 w-80 bg-surface-secondary rounded animate-pulse" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-64 bg-zinc-800 rounded-2xl animate-pulse" />
-          <div className="h-64 bg-zinc-800 rounded-2xl animate-pulse" />
+          <div className="lg:col-span-2 h-64 bg-surface-secondary rounded-2xl animate-pulse" />
+          <div className="h-64 bg-surface-secondary rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -108,7 +108,7 @@ export default function LeadDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-semibold">Lead dashboard unavailable</h1>
-        <p className="text-zinc-500 mt-2">{error || "The server did not return a lead view."}</p>
+        <p className="text-muted mt-2">{error || "The server did not return a lead view."}</p>
       </div>
     );
   }
@@ -119,7 +119,7 @@ export default function LeadDashboard() {
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Lead Dashboard</h1>
-          <p className="text-zinc-400">
+          <p className="text-muted">
             Manage your departments and oversee event pipeline.
           </p>
         </div>
@@ -136,10 +136,10 @@ export default function LeadDashboard() {
 
       {/* Department Overview */}
       {leadDepartments.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
-          <Users className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-          <p className="text-sm text-zinc-400">No department leadership assigned yet.</p>
-          <p className="text-xs text-zinc-500 mt-1">Your event pipeline below is still available.</p>
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+          <Users className="w-10 h-10 text-muted mx-auto mb-3" />
+          <p className="text-sm text-muted">No department leadership assigned yet.</p>
+          <p className="text-xs text-muted mt-1">Your event pipeline below is still available.</p>
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -151,7 +151,7 @@ export default function LeadDashboard() {
           return (
             <div
               key={ud.$id}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5"
+              className="rounded-2xl border border-border bg-surface p-5"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function LeadDashboard() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{dept.name}</h3>
-                    <p className="text-xs text-zinc-500 capitalize">
+                    <p className="text-xs text-muted capitalize">
                       {dept.category}
                     </p>
                   </div>
@@ -180,13 +180,13 @@ export default function LeadDashboard() {
                   <p className="text-2xl font-bold">
                     {departmentMembers[ud.departmentId] || 0}
                   </p>
-                  <p className="text-xs text-zinc-500">Members</p>
+                  <p className="text-xs text-muted">Members</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
                     {events.length}
                   </p>
-                  <p className="text-xs text-zinc-500">Pipeline events</p>
+                  <p className="text-xs text-muted">Pipeline events</p>
                 </div>
               </div>
               <Link
@@ -203,7 +203,7 @@ export default function LeadDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Event Pipeline */}
-        <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Event Pipeline</h2>
             <Link
@@ -216,10 +216,10 @@ export default function LeadDashboard() {
 
           {/* Pipeline Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="p-3 rounded-lg bg-zinc-800/50">
+            <div className="p-3 rounded-lg bg-surface-secondary">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-zinc-400" />
-                <span className="text-sm text-zinc-400">Drafts</span>
+                <FileText className="w-4 h-4 text-muted" />
+                <span className="text-sm text-muted">Drafts</span>
               </div>
               <p className="text-xl font-bold mt-1">{draftEvents.length}</p>
             </div>
@@ -242,22 +242,22 @@ export default function LeadDashboard() {
           {/* Draft Events */}
           {draftEvents.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">
+              <h3 className="text-sm font-medium text-muted mb-2">
                 Your Drafts
               </h3>
               {draftEvents.slice(0, 5).map((event) => (
                 <div
                   key={event.$id}
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-zinc-800/50 transition-colors"
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-secondary transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-4 h-4 text-zinc-500" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-secondary flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-muted" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm truncate">
                       {event.title}
                     </h4>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       {new Date(event.date).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -266,7 +266,7 @@ export default function LeadDashboard() {
                     </p>
                   </div>
                   <Link
-                    className="text-zinc-500 hover:text-zinc-300"
+                    className="text-muted hover:text-muted"
                     href="/admin/events"
                     aria-label={`Manage ${event.title} in the event console`}
                   >
@@ -295,7 +295,7 @@ export default function LeadDashboard() {
                     <h4 className="font-medium text-sm truncate">
                       {event.title}
                     </h4>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       Submitted by {event.organizerName}
                     </p>
                   </div>
@@ -312,8 +312,8 @@ export default function LeadDashboard() {
 
           {draftEvents.length === 0 && reviewEvents.length === 0 && (
             <div className="text-center py-8">
-              <FolderOpen className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-              <p className="text-sm text-zinc-500">No events in pipeline</p>
+              <FolderOpen className="w-10 h-10 text-muted mx-auto mb-3" />
+              <p className="text-sm text-muted">No events in pipeline</p>
             </div>
           )}
         </div>
@@ -321,7 +321,7 @@ export default function LeadDashboard() {
         {/* Team & Applications Sidebar */}
         <div className="space-y-6">
           {/* Pending Applications */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Applications</h2>
               {canManageTeam && (
@@ -347,7 +347,7 @@ export default function LeadDashboard() {
                       <p className="text-sm font-medium truncate">
                         New Application
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted">
                         {new Date(app.submittedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -357,13 +357,13 @@ export default function LeadDashboard() {
             ) : (
               <div className="text-center py-4">
                 <CheckCircle className="w-8 h-8 text-emerald-500/50 mx-auto mb-2" />
-                <p className="text-sm text-zinc-500">All caught up!</p>
+                <p className="text-sm text-muted">All caught up!</p>
               </div>
             )}
           </div>
 
           {/* Quick Actions */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-2">
               {[
@@ -393,14 +393,14 @@ export default function LeadDashboard() {
                   return (
                     <Link
                       key={action.href}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-secondary transition-colors group"
                       href={action.href}
                     >
-                      <Icon className="w-4 h-4 text-zinc-500 group-hover:text-primary transition-colors" />
-                      <span className="text-sm group-hover:text-white transition-colors">
+                      <Icon className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+                      <span className="text-sm group-hover:text-foreground transition-colors">
                         {action.label}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 ml-auto transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-muted group-hover:text-muted ml-auto transition-colors" />
                     </Link>
                   );
                 })}

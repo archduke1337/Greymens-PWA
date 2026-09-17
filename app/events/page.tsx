@@ -270,7 +270,7 @@ export default function EventsPage() {
 
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
-        <Card className="border-none shadow-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
+        <Card variant="secondary" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
@@ -352,7 +352,7 @@ export default function EventsPage() {
             return (
             <Card
               key={event.$id}
-              className="border-none hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl group"
+              className="border-none hover:shadow-2xl transition-all duration-300 group" variant="secondary"
             >
               <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
