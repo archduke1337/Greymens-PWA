@@ -1,15 +1,10 @@
-// app/admin/powers/page.tsx
+// components/admin/PowersManager.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  PlusIcon,
   TrashIcon,
-  CheckIcon,
-  XIcon,
   SearchIcon,
   ZapIcon,
   ShieldIcon,
@@ -65,10 +60,38 @@ const SCOPE_COLORS: Record<string, string> = {
   own: "bg-green-100 text-green-700",
 };
 
-export default function AdminPowersPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+/** One 500-row directory fetch per modal session, reused for every keystroke. */
+interface MemberDirectory {
+  profiles: Profile[];
+  names: Record<string, string>;
+}
 
+/**
+ * Rank directory entries against a query: name matches first (that is what an
+ * admin actually types), then URN/branch/program/user ID, alphabetical within
+ * a rank.
+ */
+function rankDirectory(directory: MemberDirectory, query: string): Profile[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return directory.profiles
+    .map((profile) => {
+      const display = directory.names[profile.userId] || profile.urn || profile.userId;
+      const rank = directory.names[profile.userId]?.toLowerCase().includes(q)
+        ? 0
+        : [profile.urn, profile.program, profile.branch, profile.userId].some((value) =>
+              String(value ?? "").toLowerCase().includes(q),
+            )
+          ? 1
+          : -1;
+      return { profile, rank, display };
+    })
+    .filter((entry) => entry.rank >= 0)
+    .sort((a, b) => a.rank - b.rank || a.display.localeCompare(b.display))
+    .map((entry) => entry.profile);
+}
+
+export default function PowersManager() {
   const [powers, setPowers] = useState<Power[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,14 +119,7 @@ export default function AdminPowersPage() {
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-    loadData();
-  }, [user, authLoading, router]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/powers", { credentials: "include" });
       const payload = (await response.json()) as { powers?: Power[]; departments?: Department[]; error?: string };
@@ -128,7 +144,11 @@ export default function AdminPowersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   // --- Grant Flow ---
   const handleOpenGrant = (power: Power) => {
@@ -145,10 +165,7 @@ export default function AdminPowersPage() {
   // Member directory cache: one 500-row fetch per modal session, not per
   // keystroke. Entries carry the account name so search AND display both
   // work through names, not just URNs and raw IDs.
-  const [directory, setDirectory] = useState<{
-    profiles: Profile[];
-    names: Record<string, string>;
-  } | null>(null);
+  const [directory, setDirectory] = useState<MemberDirectory | null>(null);
 
   const handleSearchUsers = async () => {
     if (!searchQuery.trim()) return;
@@ -166,26 +183,9 @@ export default function AdminPowersPage() {
         setDirectory(directoryData);
         setResultNames(directoryData.names);
       }
-      const query = searchQuery.trim().toLowerCase();
-      const names = directoryData.names;
-      const displayName = (profile: Profile) =>
-        names[profile.userId] || profile.urn || profile.userId;
       // Search spans the cached directory (500 most recent profiles) — the
       // empty-state copy below says so instead of pretending it is global.
-      // Name first: that is what the admin actually types.
-      const results = directoryData.profiles
-        .map((profile) => ({
-          profile,
-          rank: names[profile.userId]?.toLowerCase().includes(query)
-            ? 0
-            : [profile.urn, profile.program, profile.branch, profile.userId].some((value) =>
-              String(value ?? "").toLowerCase().includes(query)) ? 1 : -1,
-          _display: displayName(profile),
-        }))
-        .filter((entry) => entry.rank >= 0)
-        .sort((a, b) => a.rank - b.rank || a._display.localeCompare(b._display))
-        .map((entry) => entry.profile);
-      setSearchResults(results);
+      setSearchResults(rankDirectory(directoryData, searchQuery));
     } catch (error) {
       console.error("Error searching users:", error);
       toast.error(getErrorMessage(error) || "Failed to search users");
@@ -194,8 +194,15 @@ export default function AdminPowersPage() {
     }
   };
 
+  // Once the directory is cached, refine results as the admin types instead of
+  // making them press search again for every correction.
+  useEffect(() => {
+    if (!directory) return;
+    setSearchResults(rankDirectory(directory, searchQuery));
+  }, [directory, searchQuery]);
+
   const handleGrant = async () => {
-    if (!selectedUser || !grantTarget || !user) return;
+    if (!selectedUser || !grantTarget) return;
     setGranting(true);
     try {
       const response = await fetch("/api/admin/powers", {
@@ -278,9 +285,9 @@ export default function AdminPowersPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4">Loading powers...</p>
@@ -294,18 +301,10 @@ export default function AdminPowersPage() {
   const totalOwn = powers.filter((p) => p.scope === "own").length;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-            Power Management
-          </h1>
-          <p className="text-default-500 mt-1 text-sm md:text-base">
-            Manage user powers, permissions, and scopes
-          </p>
-        </div>
-      </div>
+    <>
+      <p className="text-sm text-default-500 -mt-2">
+        Operational powers: fixed catalogue, granted per member with scope and expiry.
+      </p>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -756,6 +755,6 @@ export default function AdminPowersPage() {
           </ModalContainer>
         </ModalBackdrop>
       </Modal>
-    </div>
+    </>
   );
 }
