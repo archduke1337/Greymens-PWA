@@ -44,6 +44,7 @@ import {
   TabIndicator,
   TabPanel,
   TextArea,
+  Input,
   useOverlayState,
 } from "@heroui/react";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
@@ -61,6 +62,7 @@ export default function AdminMembershipPage() {
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("pending");
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [actionTarget, setActionTarget] = useState<Application | null>(null);
@@ -121,7 +123,18 @@ export default function AdminMembershipPage() {
   }, [user, authLoading, router, loadData]);
 
   const getFilteredApps = () => {
-    return applications.filter((a) => a.status === activeTab);
+    const q = searchQuery.trim().toLowerCase();
+    return applications.filter((a) => {
+      if (a.status !== activeTab) return false;
+      if (!q) return true;
+      const profile = profiles[a.userId];
+      return (
+        accountNames[a.userId]?.toLowerCase().includes(q) ||
+        profile?.urn?.toLowerCase().includes(q) ||
+        profile?.branch?.toLowerCase().includes(q) ||
+        a.userId.toLowerCase().includes(q)
+      );
+    });
   };
 
   const getDepartmentNames = (ids?: string[]) => {
@@ -166,18 +179,33 @@ export default function AdminMembershipPage() {
       const payload = await response.json().catch(() => null) as {
         assignedDepartments?: number;
         membershipCreated?: boolean;
+        alreadyApproved?: boolean;
+        alreadyRejected?: boolean;
         error?: string;
       } | null;
       if (!response.ok) throw new Error(payload?.error || "Action failed. Please try again.");
 
       if (actionType === "approve") {
-        const assigned = payload?.assignedDepartments ?? 0;
-        toast.success("Application approved.", {
-          description: [
-            payload?.membershipCreated ? "Membership created" : "Existing membership reactivated",
-            assigned > 0 ? `${assigned} department ${assigned === 1 ? "assignment" : "assignments"} added` : null,
-            "Applicant notified",
-          ].filter(Boolean).join(" \u00b7 "),
+        // A double-submit can win the race after a colleague already approved:
+        // the server answers 200 + alreadyApproved, which must not read as a
+        // fresh approval.
+        if (payload?.alreadyApproved) {
+          toast.info("Already approved.", {
+            description: "This application was approved earlier. No changes made.",
+          });
+        } else {
+          const assigned = payload?.assignedDepartments ?? 0;
+          toast.success("Application approved.", {
+            description: [
+              payload?.membershipCreated ? "Membership created" : "Existing membership reactivated",
+              assigned > 0 ? `${assigned} department ${assigned === 1 ? "assignment" : "assignments"} added` : null,
+              "Applicant notified",
+            ].filter(Boolean).join(" \u00b7 "),
+          });
+        }
+      } else if (payload?.alreadyRejected) {
+        toast.info("Already rejected.", {
+          description: "This application was rejected earlier. No changes made.",
         });
       } else {
         toast.success("Application rejected.", { description: "The applicant has been notified." });
@@ -268,6 +296,17 @@ export default function AdminMembershipPage() {
       {/* Tabs */}
       <Card className="border-none shadow-lg">
         <CardContent className="p-0">
+          <div className="px-4 pt-4">
+            <label htmlFor="membership-search" className="sr-only">
+              Search applications by name, URN, branch, or user ID
+            </label>
+            <Input
+              id="membership-search"
+              placeholder="Search by name, URN, branch, or user ID..."
+              value={searchQuery}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <Tabs
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key as TabKey)}
@@ -309,9 +348,13 @@ export default function AdminMembershipPage() {
                 {filteredApps.length === 0 ? (
                   <div className="text-center py-12">
                     <ClockIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
-                    <p className="text-default-500 text-lg font-medium">No pending applications</p>
+                    <p className="text-default-500 text-lg font-medium">
+                      {searchQuery.trim() ? "No matching applications" : "No pending applications"}
+                    </p>
                     <p className="text-default-400 text-sm mt-1">
-                      All applications have been reviewed
+                      {searchQuery.trim()
+                        ? "Try a different search term"
+                        : "All applications have been reviewed"}
                     </p>
                   </div>
                 ) : (
@@ -442,7 +485,6 @@ export default function AdminMembershipPage() {
                                     size="sm"
                                     variant="ghost"
                                     onPress={() => handleOpenAction(app, "approve")}
-                                    isDisabled={processing}
                                   >
                                     <CheckCircleIcon className="w-4 h-4" />
                                     <span className="hidden sm:inline ml-1">Approve</span>
@@ -451,7 +493,6 @@ export default function AdminMembershipPage() {
                                     size="sm"
                                     variant="ghost"
                                     onPress={() => handleOpenAction(app, "reject")}
-                                    isDisabled={processing}
                                   >
                                     <XIcon className="w-4 h-4" />
                                     <span className="hidden sm:inline ml-1">Reject</span>
