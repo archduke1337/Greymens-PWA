@@ -65,7 +65,12 @@ export default function AdminDepartmentsPage() {
   // Member view state
   const [expandedDept, setExpandedDept] = useState<string | null>(null);
   const [deptMembers, setDeptMembers] = useState<Record<string, (UserDepartment & { profile?: Profile | null })[]>>({});
+  const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [loadingMembers, setLoadingMembers] = useState<string | null>(null);
+  const [deletingDeptId, setDeletingDeptId] = useState<string | null>(null);
+  const [addingMemberDept, setAddingMemberDept] = useState<string | null>(null);
+  const [removingUserId, setRemovingUserId] = useState<string | null>(null);
+  const [addMemberForm, setAddMemberForm] = useState({ userId: "", role: "member" });
 
   // Member counts
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
@@ -176,12 +181,15 @@ export default function AdminDepartmentsPage() {
   };
 
   const handleDelete = async (deptId: string) => {
+    // Server-side this is a soft delete (isActive=false, audited) — say so,
+    // so the admin knows reactivation via Edit is possible.
     if (
       !confirm(
-        "Are you sure you want to delete this department? This cannot be undone."
+        "Deactivate this department? Members keep their history and it can be reactivated via Edit."
       )
     )
       return;
+    setDeletingDeptId(deptId);
     try {
       const response = await fetch(`/api/admin/departments?departmentId=${encodeURIComponent(deptId)}`, {
         method: "DELETE",
@@ -189,12 +197,14 @@ export default function AdminDepartmentsPage() {
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) throw new Error(result?.error || "Failed to delete department");
-      toast.success("Department deleted successfully!");
+      toast.success("Department deactivated. Reactivate it via Edit.");
       await loadDepartments();
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error deleting department:", message);
       toast.error(message || "Failed to delete department");
+    } finally {
+      setDeletingDeptId(null);
     }
   };
 
@@ -205,6 +215,7 @@ export default function AdminDepartmentsPage() {
     }
 
     setExpandedDept(dept.$id!);
+    setAddMemberForm({ userId: "", role: "member" });
 
     if (!deptMembers[dept.$id!]) {
       setLoadingMembers(dept.$id!);
@@ -212,9 +223,10 @@ export default function AdminDepartmentsPage() {
         const response = await fetch(`/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`, {
           credentials: "include",
         });
-        const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; error?: string };
+        const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
         if (!response.ok) throw new Error(payload.error || "Failed to load department members");
         setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
+        if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
       } catch (error) {
         const message = getErrorMessage(error);
         console.error("Error loading members:", message);
@@ -222,6 +234,87 @@ export default function AdminDepartmentsPage() {
       } finally {
         setLoadingMembers(null);
       }
+    }
+  };
+
+  const handleAddMember = async (deptId: string) => {
+    if (!addMemberForm.userId.trim()) {
+      toast.error("Enter the member's user ID");
+      return;
+    }
+    setAddingMemberDept(deptId);
+    try {
+      const response = await fetch("/api/admin/departments/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId: addMemberForm.userId.trim(), departmentId: deptId, role: addMemberForm.role }),
+      });
+      const payload = (await response.json().catch(() => null)) as { reactivated?: boolean; error?: string } | null;
+      // 404 (unknown department) and 409 (already assigned) carry the reason.
+      if (!response.ok) throw new Error(payload?.error || "Failed to add member");
+      toast.success(payload?.reactivated ? "Member reinstated in department" : "Member added to department");
+      setAddMemberForm({ userId: "", role: "member" });
+      // Refresh the cached roster for this department.
+      setDeptMembers((prev) => {
+        const next = { ...prev };
+        delete next[deptId];
+        return next;
+      });
+      const dept = departments.find((d) => d.$id === deptId);
+      if (dept) await handleToggleMembersRefresh(dept);
+      await loadDepartments();
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error adding member:", message);
+      toast.error(message || "Failed to add member");
+    } finally {
+      setAddingMemberDept(null);
+    }
+  };
+
+  const handleToggleMembersRefresh = async (dept: Department) => {
+    setLoadingMembers(dept.$id!);
+    try {
+      const response = await fetch(`/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`, {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Failed to load department members");
+      setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
+      if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error loading members:", message);
+      toast.error(message || "Failed to load department members");
+    } finally {
+      setLoadingMembers(null);
+    }
+  };
+
+  const handleRemoveMember = async (deptId: string, userId: string) => {
+    const name = memberNames[userId] || userId;
+    if (!confirm(`Remove ${name} from this department? Their history is kept and they can be re-added.`)) return;
+    setRemovingUserId(userId);
+    try {
+      const response = await fetch(`/api/admin/departments/members?${new URLSearchParams({ userId, departmentId: deptId })}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) throw new Error(payload?.error || "Failed to remove member");
+      toast.success(`${name} removed from department`);
+      setDeptMembers((prev) => ({
+        ...prev,
+        [deptId]: (prev[deptId] ?? []).filter((member) => member.userId !== userId),
+      }));
+      await loadDepartments();
+    } catch (error) {
+      const message = getErrorMessage(error);
+      console.error("Error removing member:", message);
+      toast.error(message || "Failed to remove member");
+    } finally {
+      setRemovingUserId(null);
     }
   };
 
@@ -420,6 +513,7 @@ export default function AdminDepartmentsPage() {
                         size="sm"
                         variant="primary"
                         isIconOnly
+                        isPending={deletingDeptId === dept.$id}
                         onPress={() => handleDelete(dept.$id!)}
                       >
                         <TrashIcon className="w-4 h-4" />
@@ -433,6 +527,47 @@ export default function AdminDepartmentsPage() {
                       <h4 className="font-semibold text-sm mb-3">
                         Department Members
                       </h4>
+                      <form
+                        className="flex flex-col sm:flex-row gap-2 mb-4"
+                        onSubmit={(e) => { e.preventDefault(); void handleAddMember(dept.$id!); }}
+                      >
+                        <Input
+                          placeholder="User ID to add"
+                          value={addMemberForm.userId}
+                          onChange={(e: any) => setAddMemberForm({ ...addMemberForm, userId: e.target.value })}
+                          aria-label="User ID to add to department"
+                        />
+                        <Select
+                          fullWidth={false}
+                          aria-label="Role for new member"
+                          value={addMemberForm.role}
+                          onChange={(value) => setAddMemberForm({ ...addMemberForm, role: String(value ?? "member") })}
+                        >
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="member" textValue="Member">
+                                Member
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="core_member" textValue="Core member">
+                                Core member
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="lead" textValue="Lead">
+                                Lead
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                        <Button type="submit" size="sm" variant="primary" isPending={addingMemberDept === dept.$id}>
+                          Add
+                        </Button>
+                      </form>
                       {loadingMembers === dept.$id ? (
                         <div className="flex items-center gap-2 py-4">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
@@ -458,13 +593,17 @@ export default function AdminDepartmentsPage() {
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium">
-                                    {member.profile?.urn || member.userId}
+                                    {memberNames[member.userId] || member.profile?.urn || member.userId}
                                   </p>
-                                  {member.profile?.branch && (
-                                    <p className="text-xs text-default-400">
-                                      {member.profile.branch}
-                                    </p>
-                                  )}
+                                  {(() => {
+                                    const sub = [
+                                      memberNames[member.userId] ? member.profile?.urn : null,
+                                      member.profile?.branch,
+                                    ].filter(Boolean);
+                                    return sub.length > 0 ? (
+                                      <p className="text-xs text-default-400">{sub.join(" · ")}</p>
+                                    ) : null;
+                                  })()}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
@@ -479,6 +618,14 @@ export default function AdminDepartmentsPage() {
                                     member.assignedAt
                                   ).toLocaleDateString()}
                                 </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  isPending={removingUserId === member.userId}
+                                  onPress={() => handleRemoveMember(dept.$id!, member.userId)}
+                                >
+                                  Remove
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -617,17 +764,39 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Parent Department ID (optional)</label>
-                      <Input
-                        placeholder="Leave empty for top-level department"
+                      <label className="text-sm font-medium mb-1 block">Parent Department (optional)</label>
+                      <Select
+                        fullWidth
+                        aria-label="Parent department"
                         value={formData.parentId || ""}
-                        onChange={(e: any) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
-                            parentId: e.target.value || undefined,
+                            parentId: String(value ?? "") || undefined,
                           })
                         }
-                      />
+                      >
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            <ListBox.Item id="" textValue="None (top-level)">
+                              None (top-level)
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                            {departments
+                              .filter((dept) => dept.$id !== editingDept?.$id)
+                              .map((dept) => (
+                                <ListBox.Item key={dept.$id} id={dept.$id!} textValue={dept.name}>
+                                  {dept.name}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
                     </div>
 
                     <div>

@@ -4,6 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
+import { getAccountNames } from "@/lib/server-users";
 import { isRecord } from "@/lib/validation";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -56,7 +57,14 @@ export async function GET(request: NextRequest) {
       profile: profileByUser.get(String(member.userId ?? "")) ?? null,
     }));
 
-    return ok({ members: joined, total: members.total });
+    // Names live on the auth record — best-effort so a lookup failure never
+    // fails the member list.
+    const accountNames = await getAccountNames(userIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+
+    return ok({ members: joined, total: members.total, accountNames });
   } catch (error) {
     console.error("Department member list error:", error);
     return fail("INTERNAL", "Unable to load department members", 500);
