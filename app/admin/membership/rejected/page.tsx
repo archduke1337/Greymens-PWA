@@ -42,6 +42,7 @@ export default function AdminMembershipRejectedPage() {
 
   const [applications, setApplications] = useState<RejectedApp[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -53,9 +54,13 @@ export default function AdminMembershipRejectedPage() {
         applications?: Application[];
         profiles?: Profile[];
         departments?: Department[];
+        accountNames?: Record<string, string>;
         error?: string;
       } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to load rejected applications");
+
+      setDepartments(payload?.departments ?? []);
+      setAccountNames(payload?.accountNames ?? {});
 
       setDepartments(payload?.departments ?? []);
 
@@ -94,6 +99,7 @@ export default function AdminMembershipRejectedPage() {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
+      accountNames[a.application.userId]?.toLowerCase().includes(q) ||
       a.profile?.urn?.toLowerCase().includes(q) ||
       a.profile?.branch?.toLowerCase().includes(q) ||
       a.application.userId.toLowerCase().includes(q) ||
@@ -222,15 +228,15 @@ export default function AdminMembershipRejectedPage() {
                                 src={
                                   item.profile?.avatar ||
                                   `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    item.profile?.urn || item.application.userId
+                                    accountNames[item.application.userId] || item.profile?.urn || item.application.userId
                                   )}&background=dc2626&color=fff`
                                 }
-                                alt={item.profile?.urn || "Applicant"}
+                                alt={accountNames[item.application.userId] || item.profile?.urn || "Applicant"}
                                 className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                               />
                               <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">
-                                  {item.profile?.urn || item.application.userId.slice(0, 12)}
+                                  {accountNames[item.application.userId] || item.profile?.urn || item.application.userId.slice(0, 12)}
                                 </p>
                                 <p className="text-xs text-default-400 truncate">
                                   {item.profile?.branch || item.profile?.program || "N/A"}

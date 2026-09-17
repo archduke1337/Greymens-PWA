@@ -55,6 +55,7 @@ export default function AdminMembershipPage() {
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [departments, setDepartments] = useState<Department[]>([]);
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
@@ -82,12 +83,14 @@ export default function AdminMembershipPage() {
         profiles?: Profile[];
         departments?: Department[];
         counts?: { pending: number; approved: number; rejected: number };
+        accountNames?: Record<string, string>;
         error?: string;
       } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to load membership data");
 
       setApplications(payload?.applications ?? []);
       setDepartments(payload?.departments ?? []);
+      setAccountNames(payload?.accountNames ?? {});
       setCounts(payload?.counts ?? { pending: 0, approved: 0, rejected: 0 });
 
       const profileMap: Record<string, Profile> = {};
@@ -327,13 +330,13 @@ export default function AdminMembershipPage() {
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-3">
                                     <img
-                                      src={profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.urn || app.userId)}&background=7c3aed&color=fff`}
-                                      alt={profile?.urn || "Applicant"}
+                                      src={profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(accountNames[app.userId] || profile?.urn || app.userId)}&background=7c3aed&color=fff`}
+                                      alt={accountNames[app.userId] || profile?.urn || "Applicant"}
                                       className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                                     />
                                     <div className="min-w-0">
                                       <p className="font-semibold text-sm truncate">
-                                        {profile?.urn || app.userId.slice(0, 8)}
+                                        {accountNames[app.userId] || profile?.urn || app.userId.slice(0, 8)}
                                       </p>
                                       <p className="text-xs text-default-400 truncate">
                                         {profile?.branch || profile?.program || "No program info"}
@@ -376,7 +379,7 @@ export default function AdminMembershipPage() {
                                     <div className="md:hidden p-3 bg-default-50 dark:bg-default-100/10 rounded-lg text-xs space-y-1">
                                       <p className="flex items-center gap-1">
                                         <MailIcon className="w-3 h-3" />
-                                        {app.userId}
+                                        {accountNames[app.userId] || app.userId}
                                       </p>
                                       <p className="flex items-center gap-1">
                                         <Building2Icon className="w-3 h-3" />

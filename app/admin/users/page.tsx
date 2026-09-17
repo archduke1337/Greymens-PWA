@@ -72,9 +72,9 @@ interface EnrichedUser {
   powers: UserPower[];
 }
 
-/** Label used in confirmations. A raw 36-character account id is not readable. */
-function userLabel(user: EnrichedUser): string {
-  return user.profile.urn?.trim() || user.profile.userId.slice(0, 8);
+/** Label used in confirmations. Prefers the account name; a raw 36-character account id is not readable. */
+function userLabel(user: EnrichedUser, names: Record<string, string> = {}): string {
+  return names[user.profile.userId] || user.profile.urn?.trim() || user.profile.userId.slice(0, 8);
 }
 
 export default function AdminUsersPage() {
@@ -88,6 +88,7 @@ export default function AdminUsersPage() {
   } = useOverlayState();
 
   const [enrichedUsers, setEnrichedUsers] = useState<EnrichedUser[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [allDepartments, setAllDepartments] = useState<Department[]>([]);
   const [allDesignations, setAllDesignations] = useState<Designation[]>([]);
   const [allPowers, setAllPowers] = useState<Power[]>([]);
@@ -137,6 +138,7 @@ export default function AdminUsersPage() {
         departments?: Department[];
         designations?: Designation[];
         powers?: Power[];
+        accountNames?: Record<string, string>;
         error?: string;
       } | null;
 
@@ -146,6 +148,7 @@ export default function AdminUsersPage() {
       setAllDepartments(payload?.departments ?? []);
       setAllDesignations(payload?.designations ?? []);
       setAllPowers(payload?.powers ?? []);
+      setAccountNames(payload?.accountNames ?? {});
       setEnrichedUsers(payload?.users ?? []);
     } catch (error) {
       console.error("Error loading users:", error);
@@ -161,6 +164,7 @@ export default function AdminUsersPage() {
     return enrichedUsers.filter((eu) => {
       const matchesSearch =
         !q ||
+        accountNames[eu.profile.userId]?.toLowerCase().includes(q) ||
         eu.profile.userId?.toLowerCase().includes(q) ||
         eu.profile.urn?.toLowerCase().includes(q) ||
         eu.profile.branch?.toLowerCase().includes(q) ||
@@ -176,7 +180,7 @@ export default function AdminUsersPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [enrichedUsers, searchQuery, statusFilter]);
+  }, [enrichedUsers, searchQuery, statusFilter, accountNames]);
 
   const stats = useMemo(() => {
     const total = enrichedUsers.length;
@@ -325,7 +329,7 @@ export default function AdminUsersPage() {
   const handleBanUser = async (eu: EnrichedUser) => {
     if (
       !confirm(
-        `Ban ${userLabel(eu)}? Their access is revoked immediately. This can be reversed later.`,
+        `Ban ${userLabel(eu, accountNames)}? Their access is revoked immediately. This can be reversed later.`,
       )
     )
       return;
@@ -340,7 +344,7 @@ export default function AdminUsersPage() {
   const handleDeactivateUser = async (eu: EnrichedUser) => {
     if (
       !confirm(
-        `Deactivate ${userLabel(eu)}? They keep their record but lose member access.`,
+        `Deactivate ${userLabel(eu, accountNames)}? They keep their record but lose member access.`,
       )
     )
       return;
@@ -354,7 +358,7 @@ export default function AdminUsersPage() {
 
   const handleReactivateUser = async (eu: EnrichedUser) => {
     if (
-      !confirm(`Reactivate ${userLabel(eu)}? Member access will be restored.`)
+      !confirm(`Reactivate ${userLabel(eu, accountNames)}? Member access will be restored.`)
     )
       return;
     await applyUserAction(
@@ -563,7 +567,7 @@ export default function AdminUsersPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by URN, phone, branch, program, skills..."
+                placeholder="Search by name, URN, phone, branch, program, skills..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
               />
@@ -652,9 +656,9 @@ export default function AdminUsersPage() {
                                 "?"}
                             </div>
                           )}
-                          <div className="min-w-0">
+                           <div className="min-w-0">
                             <p className="font-semibold text-sm truncate max-w-[150px]">
-                              {eu.profile.userId}
+                              {accountNames[eu.profile.userId] || eu.profile.userId}
                             </p>
                             {eu.profile.phone && (
                               <p className="text-xs text-default-400 truncate">
@@ -786,7 +790,7 @@ export default function AdminUsersPage() {
                     </Button>
                   </div>
                   <p className="text-sm text-default-500 font-normal">
-                    {selectedUser.profile.userId}
+                    {accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
                   </p>
                 </ModalHeader>
 
@@ -795,20 +799,20 @@ export default function AdminUsersPage() {
                     <div className="flex items-center gap-4 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
                       {selectedUser.profile.avatar ? (
                         <img
-                          alt={selectedUser.profile.userId}
+                          alt={accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
                           className="w-16 h-16 rounded-full object-cover"
                           src={selectedUser.profile.avatar}
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-                          {selectedUser.profile.userId
+                          {(accountNames[selectedUser.profile.userId] || selectedUser.profile.userId)
                             ?.charAt(0)
                             ?.toUpperCase() || "?"}
                         </div>
                       )}
                       <div className="flex-1">
                         <p className="font-bold text-lg">
-                          {selectedUser.profile.userId}
+                          {accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
                         </p>
                         <p className="text-sm text-default-500">
                           {selectedUser.profile.urn || "No URN"}

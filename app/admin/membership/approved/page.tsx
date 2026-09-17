@@ -41,6 +41,7 @@ export default function AdminMembershipApprovedPage() {
 
   const [members, setMembers] = useState<ApprovedMember[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -52,12 +53,14 @@ export default function AdminMembershipApprovedPage() {
         profiles?: Profile[];
         memberships?: Membership[];
         departments?: Department[];
+        accountNames?: Record<string, string>;
         error?: string;
       } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to load approved members");
 
       const approvedApps = payload?.applications ?? [];
       setDepartments(payload?.departments ?? []);
+      setAccountNames(payload?.accountNames ?? {});
 
       const membershipMap: Record<string, Membership> = {};
       for (const membership of payload?.memberships ?? []) membershipMap[membership.applicationId] = membership;
@@ -99,6 +102,7 @@ export default function AdminMembershipApprovedPage() {
     const q = searchQuery.toLowerCase();
     const profile = m.profile;
     return (
+      accountNames[m.application.userId]?.toLowerCase().includes(q) ||
       profile?.urn?.toLowerCase().includes(q) ||
       profile?.branch?.toLowerCase().includes(q) ||
       m.membership?.membershipNumber?.toLowerCase().includes(q) ||
@@ -257,15 +261,15 @@ export default function AdminMembershipApprovedPage() {
                               src={
                                 member.profile?.avatar ||
                                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  member.profile?.urn || member.application.userId
+                                  accountNames[member.application.userId] || member.profile?.urn || member.application.userId
                                 )}&background=16a34a&color=fff`
                               }
-                              alt={member.profile?.urn || "Member"}
+                              alt={accountNames[member.application.userId] || member.profile?.urn || "Member"}
                               className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                             />
                             <div className="min-w-0">
                               <p className="font-semibold text-sm truncate">
-                                {member.profile?.urn || member.application.userId.slice(0, 12)}
+                                {accountNames[member.application.userId] || member.profile?.urn || member.application.userId.slice(0, 12)}
                               </p>
                               <p className="text-xs text-default-400 truncate">
                                 {member.profile?.branch || member.profile?.program || "N/A"}
