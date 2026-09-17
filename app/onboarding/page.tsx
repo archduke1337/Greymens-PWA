@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { toast } from "sonner";
+import { Button, Checkbox, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 import type { Department } from "@/lib/types";
 
 const STEPS = [
@@ -515,62 +516,81 @@ export default function OnboardingPage() {
         <div className="bg-card rounded-lg border p-6 space-y-4">
           {step === 1 && (
             <>
-              <div>
-                <label htmlFor="onboarding-phone" className="text-sm font-medium">Phone Number *</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-phone">Phone Number *</Label>
+                <Input
                   id="onboarding-phone"
                   type="tel"
+                  fullWidth
                   value={formData.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   placeholder="+91 9876543210"
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-urn" className="text-sm font-medium">University Roll Number *</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-urn">University Roll Number *</Label>
+                <Input
                   id="onboarding-urn"
                   type="text"
+                  fullWidth
                   value={formData.urn}
                   onChange={(e) => updateField("urn", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   placeholder="e.g., 2100320100001"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="onboarding-dob" className="text-sm font-medium">Date of Birth *</label>
-                  <input
+                <div className="space-y-1">
+                  <Label htmlFor="onboarding-dob">Date of Birth *</Label>
+                  <Input
                     id="onboarding-dob"
                     type="date"
+                    fullWidth
                     value={formData.dateOfBirth}
                     onChange={(e) => updateField("dateOfBirth", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   />
                 </div>
                 <div>
-                  <label htmlFor="onboarding-gender" className="text-sm font-medium">Gender *</label>
-                  <select
-                    id="onboarding-gender"
-                    value={formData.gender}
-                    onChange={(e) => updateField("gender", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                  <Select
+                    fullWidth
+                    placeholder="Select"
+                    value={formData.gender === "" ? null : formData.gender}
+                    onChange={(value) => updateField("gender", String(value ?? ""))}
                   >
-                    <option value="">Select</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer_not_to_say">Prefer not to say</option>
-                  </select>
+                    <Label>Gender *</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="male" textValue="Male">
+                          Male
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="female" textValue="Female">
+                          Female
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="other" textValue="Other">
+                          Other
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="prefer_not_to_say" textValue="Prefer not to say">
+                          Prefer not to say
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
               </div>
-              <div>
-                <label htmlFor="onboarding-address" className="text-sm font-medium">Address</label>
-                <textarea
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-address">Address</Label>
+                <TextArea
                   id="onboarding-address"
+                  fullWidth
                   value={formData.address}
                   onChange={(e) => updateField("address", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   rows={2}
                   placeholder="Residential address"
                 />
@@ -581,73 +601,101 @@ export default function OnboardingPage() {
           {step === 2 && (
             <>
               <div>
-                <label htmlFor="onboarding-program" className="text-sm font-medium">Program *</label>
-                <select
-                  id="onboarding-program"
-                  value={formData.program}
-                  onChange={(e) => updateField("program", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                <Select
+                  fullWidth
+                  placeholder="Select"
+                  value={formData.program === "" ? null : formData.program}
+                  onChange={(value) => updateField("program", String(value ?? ""))}
                 >
-                  <option value="">Select</option>
-                  <option value="B.Tech">B.Tech</option>
-                  <option value="M.Tech">M.Tech</option>
-                  <option value="BCA">BCA</option>
-                  <option value="MCA">MCA</option>
-                  <option value="B.Sc">B.Sc</option>
-                  <option value="M.Sc">M.Sc</option>
-                  <option value="MBA">MBA</option>
-                  <option value="PhD">PhD</option>
-                </select>
+                  <Label>Program *</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {["B.Tech", "M.Tech", "BCA", "MCA", "B.Sc", "M.Sc", "MBA", "PhD"].map((program) => (
+                        <ListBox.Item key={program} id={program} textValue={program}>
+                          {program}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
               <div>
-                <label htmlFor="onboarding-branch" className="text-sm font-medium">Branch *</label>
-                <select
-                  id="onboarding-branch"
-                  value={formData.branch}
-                  onChange={(e) => updateField("branch", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                <Select
+                  fullWidth
+                  placeholder="Select"
+                  value={formData.branch === "" ? null : formData.branch}
+                  onChange={(value) => updateField("branch", String(value ?? ""))}
                 >
-                  <option value="">Select</option>
-                  <option value="Computer Science">Computer Science</option>
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Electrical">Electrical</option>
-                  <option value="Mechanical">Mechanical</option>
-                  <option value="Civil">Civil</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <Label>Branch *</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {["Computer Science", "Information Technology", "Electronics", "Electrical", "Mechanical", "Civil", "Other"].map((branch) => (
+                        <ListBox.Item key={branch} id={branch} textValue={branch}>
+                          {branch}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="onboarding-year" className="text-sm font-medium">Year *</label>
-                  <select
-                    id="onboarding-year"
-                    value={formData.year}
-                    onChange={(e) => updateField("year", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                  <Select
+                    fullWidth
+                    placeholder="Select"
+                    value={formData.year === "" ? null : formData.year}
+                    onChange={(value) => updateField("year", String(value ?? ""))}
                   >
-                    <option value="">Select</option>
-                    <option value="1st">1st Year</option>
-                    <option value="2nd">2nd Year</option>
-                    <option value="3rd">3rd Year</option>
-                    <option value="4th">4th Year</option>
-                  </select>
+                    <Label>Year *</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {["1st", "2nd", "3rd", "4th"].map((year) => (
+                          <ListBox.Item key={year} id={year} textValue={`${year} Year`}>
+                            {year} Year
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
                 <div>
-                  <label htmlFor="onboarding-semester" className="text-sm font-medium">Semester *</label>
-                  <select
-                    id="onboarding-semester"
-                    value={formData.semester}
-                    onChange={(e) => updateField("semester", e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                  <Select
+                    fullWidth
+                    placeholder="Select"
+                    value={formData.semester === "" ? null : formData.semester}
+                    onChange={(value) => updateField("semester", String(value ?? ""))}
                   >
-                    <option value="">Select</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                      <option key={s} value={String(s)}>
-                        Semester {s}
-                      </option>
-                    ))}
-                  </select>
+                    <Label>Semester *</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                          <ListBox.Item key={s} id={String(s)} textValue={`Semester ${s}`}>
+                            Semester {s}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
               </div>
             </>
@@ -675,113 +723,129 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </div>
-              <div>
-                <label htmlFor="onboarding-skills" className="text-sm font-medium">Skills</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-skills">Skills</Label>
+                <Input
                   id="onboarding-skills"
                   type="text"
+                  fullWidth
                   placeholder="React, Python, Design (comma separated)"
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   value={formData.skills.join(", ")}
                   onChange={(e) =>
                     updateField("skills", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))
                   }
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-interests" className="text-sm font-medium">Interests</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-interests">Interests</Label>
+                <Input
                   id="onboarding-interests"
                   type="text"
+                  fullWidth
                   placeholder="AI, Web Dev, Cybersecurity (comma separated)"
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   value={formData.interests.join(", ")}
                   onChange={(e) =>
                     updateField("interests", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))
                   }
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-experience" className="text-sm font-medium">Prior Experience</label>
-                <textarea
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-experience">Prior Experience</Label>
+                <TextArea
                   id="onboarding-experience"
+                  fullWidth
                   value={formData.experience}
                   onChange={(e) => updateField("experience", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   rows={3}
                   placeholder="Any prior club experience or relevant projects..."
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-whyjoin" className="text-sm font-medium">Why do you want to join? *</label>
-                <textarea
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-whyjoin">Why do you want to join? *</Label>
+                <TextArea
                   id="onboarding-whyjoin"
+                  fullWidth
                   value={formData.whyJoin}
                   onChange={(e) => updateField("whyJoin", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   rows={3}
                   placeholder="Tell us why you want to join Greymens Club..."
                 />
               </div>
               <div>
-                <label htmlFor="onboarding-availability" className="text-sm font-medium">Availability *</label>
-                <select
-                  id="onboarding-availability"
+                <Select
+                  fullWidth
                   value={formData.availability}
-                  onChange={(e) => updateField("availability", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
+                  onChange={(value) => updateField("availability", String(value ?? "full"))}
                 >
-                  <option value="full">Full time</option>
-                  <option value="partial">Partial</option>
-                  <option value="event_only">Events only</option>
-                </select>
+                  <Label>Availability *</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="full" textValue="Full time">
+                        Full time
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="partial" textValue="Partial">
+                        Partial
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="event_only" textValue="Events only">
+                        Events only
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
             </>
           )}
 
           {step === 4 && (
             <>
-              <div>
-                <label htmlFor="onboarding-bio" className="text-sm font-medium">Bio</label>
-                <textarea
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-bio">Bio</Label>
+                <TextArea
                   id="onboarding-bio"
+                  fullWidth
                   value={formData.bio}
                   onChange={(e) => updateField("bio", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   rows={3}
                   placeholder="A short bio about yourself..."
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-github" className="text-sm font-medium">GitHub URL <span className="font-normal text-muted-foreground">(optional)</span></label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-github">GitHub URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Input
                   id="onboarding-github"
                   type="url"
+                  fullWidth
                   value={formData.githubUrl}
                   onChange={(e) => updateField("githubUrl", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   placeholder="https://github.com/username"
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-linkedin" className="text-sm font-medium">LinkedIn URL <span className="font-normal text-muted-foreground">(optional)</span></label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-linkedin">LinkedIn URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Input
                   id="onboarding-linkedin"
                   type="url"
+                  fullWidth
                   value={formData.linkedinUrl}
                   onChange={(e) => updateField("linkedinUrl", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   placeholder="https://linkedin.com/in/username"
                 />
               </div>
-              <div>
-                <label htmlFor="onboarding-portfolio" className="text-sm font-medium">Portfolio URL <span className="font-normal text-muted-foreground">(optional)</span></label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="onboarding-portfolio">Portfolio URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Input
                   id="onboarding-portfolio"
                   type="url"
+                  fullWidth
                   value={formData.portfolioUrl}
                   onChange={(e) => updateField("portfolioUrl", e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-md border bg-background text-foreground"
                   placeholder="https://yourportfolio.com"
                 />
               </div>
@@ -791,49 +855,58 @@ export default function OnboardingPage() {
           {step === 5 && (
             <>
               <div className="space-y-4">
-                <label className="flex items-start gap-3 p-4 rounded-md border cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.oathAccepted}
-                    onChange={(e) => updateField("oathAccepted", e.target.checked)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium">Club Oath</div>
-                    <div className="text-sm text-muted-foreground">
-                      I solemnly pledge to uphold the values and mission of Greymens Club, to contribute actively
-                      to its growth, and to maintain the highest standards of integrity and collaboration.
+                <Checkbox
+                  isSelected={formData.oathAccepted}
+                  onChange={(value) => updateField("oathAccepted", value)}
+                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <div>
+                      <div className="font-medium">Club Oath</div>
+                      <div className="text-sm text-muted-foreground">
+                        I solemnly pledge to uphold the values and mission of Greymens Club, to contribute actively
+                        to its growth, and to maintain the highest standards of integrity and collaboration.
+                      </div>
                     </div>
-                  </div>
-                </label>
-                <label className="flex items-start gap-3 p-4 rounded-md border cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.termsAccepted}
-                    onChange={(e) => updateField("termsAccepted", e.target.checked)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium">Terms of Service</div>
-                    <div className="text-sm text-muted-foreground">
-                      I agree to the terms of service and code of conduct of Greymens Club.
+                  </Checkbox.Content>
+                </Checkbox>
+                <Checkbox
+                  isSelected={formData.termsAccepted}
+                  onChange={(value) => updateField("termsAccepted", value)}
+                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <div>
+                      <div className="font-medium">Terms of Service</div>
+                      <div className="text-sm text-muted-foreground">
+                        I agree to the terms of service and code of conduct of Greymens Club.
+                      </div>
                     </div>
-                  </div>
-                </label>
-                <label className="flex items-start gap-3 p-4 rounded-md border cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.constitutionAccepted}
-                    onChange={(e) => updateField("constitutionAccepted", e.target.checked)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <div className="font-medium">Constitution Acknowledgment</div>
-                    <div className="text-sm text-muted-foreground">
-                      I have read and acknowledge the constitution and bylaws of Greymens Club.
+                  </Checkbox.Content>
+                </Checkbox>
+                <Checkbox
+                  isSelected={formData.constitutionAccepted}
+                  onChange={(value) => updateField("constitutionAccepted", value)}
+                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <div>
+                      <div className="font-medium">Constitution Acknowledgment</div>
+                      <div className="text-sm text-muted-foreground">
+                        I have read and acknowledge the constitution and bylaws of Greymens Club.
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </Checkbox.Content>
+                </Checkbox>
               </div>
             </>
           )}
@@ -848,13 +921,14 @@ export default function OnboardingPage() {
             <p className="text-sm">
               Departments could not be loaded. Your application cannot be submitted until they are available.
             </p>
-            <button
+            <Button
               type="button"
-              onClick={() => setDeptReloadKey((k) => k + 1)}
-              className="px-4 py-2 rounded-md border hover:bg-muted transition-colors flex-shrink-0"
+              variant="secondary"
+              onPress={() => setDeptReloadKey((k) => k + 1)}
+              className="flex-shrink-0"
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
 
@@ -875,30 +949,24 @@ export default function OnboardingPage() {
         {/* Navigation */}
         <div className="flex justify-between mt-6">
           {step > 1 ? (
-            <button
-              onClick={() => setStep(step - 1)}
-              className="px-6 py-2 rounded-md border hover:bg-muted transition-colors"
-            >
+            <Button variant="outline" onPress={() => setStep(step - 1)}>
               Previous
-            </button>
+            </Button>
           ) : (
             <div />
           )}
           {step < STEPS.length ? (
-            <button
-              onClick={handleNext}
-              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity hover:opacity-90"
-            >
+            <Button onPress={handleNext}>
               Next
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={loading || deptLoading || deptError}
-              className="px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity disabled:opacity-50 hover:opacity-90"
+            <Button
+              onPress={handleSubmit}
+              isPending={loading}
+              isDisabled={deptLoading || deptError}
             >
-              {loading ? "Submitting..." : deptLoading ? "Loading departments..." : "Submit Application"}
-            </button>
+              {deptLoading ? "Loading departments..." : "Submit Application"}
+            </Button>
           )}
         </div>
       </div>
