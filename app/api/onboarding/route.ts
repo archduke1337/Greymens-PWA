@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { ID, Query } from "appwrite";
 import { RESTRICTED_STATUSES, getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const applications = await databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
       Query.equal("userId", [authenticated.user.$id]),
       Query.limit(1),
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Select at least one department", 400);
     }
 
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const existingApplications = await databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
       Query.equal("userId", [authenticated.user.$id]),
       Query.limit(1),
@@ -162,16 +162,18 @@ export async function POST(request: NextRequest) {
       return fail("CONFLICT", "An application already exists for this account", 409);
     }
 
-    // Validate department IDs to avoid storing orphan references.
+    // Validate department IDs to avoid storing orphan references. Reads the
+    // small active catalogue and filters in memory rather than querying by
+    // `$id`, which keeps validation independent of system-attribute indexing.
     const requestedDepts = Array.isArray(applicationInput.preferredDepartments)
       ? (applicationInput.preferredDepartments as unknown[]).filter((v): v is string => typeof v === "string")
       : [];
     if (requestedDepts.length > 0) {
-      const deptCheck = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-        Query.equal("$id", requestedDepts),
-        Query.limit(50),
+      const catalogue = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.equal("isActive", true),
+        Query.limit(100),
       ]).catch(() => ({ documents: [] as unknown[] }));
-      const found = new Set((deptCheck as { documents: Array<{ $id: string }> }).documents.map((d) => d.$id));
+      const found = new Set((catalogue as { documents: Array<{ $id: string }> }).documents.map((d) => d.$id));
       const invalid = requestedDepts.filter((id) => !found.has(id));
       if (invalid.length > 0) {
         return fail("VALIDATION", `Unknown departments: ${invalid.slice(0, 3).join(", ")}`, 400);
@@ -227,7 +229,7 @@ export async function POST(request: NextRequest) {
       (error as { code?: unknown }).code === 409
     ) {
       try {
-        const { databases: retryDb } = createAdminClient();
+        const { databases: retryDb } = createServerDatabases();
         const existing = await retryDb.listDocuments(
           DATABASE_ID,
           COLLECTIONS.APPLICATIONS,

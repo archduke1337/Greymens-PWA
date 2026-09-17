@@ -3,7 +3,7 @@ import type { Capability } from "@/lib/capabilities";
 
 import { Query } from "appwrite";
 
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { fail } from "@/lib/api";
 import {
@@ -58,7 +58,7 @@ export async function getEffectiveCapabilities(
   scope?: { type: string; id?: string },
   knownStatus?: string,
 ): Promise<Set<string>> {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
 
   // Admin has all and every power — single wildcard, enforced in
   // hasServerCapability + hasPower. No office, role, or power row can add
@@ -226,7 +226,7 @@ export async function hasPower(
   } catch {
     // Fall through to table check on status resolution failure.
   }
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   // Resolve both id and name: grants may store either (see permissions.ts dual
   // resolution). Fetch catalog once to map.
   let acceptedIds = new Set<string>([powerId]);

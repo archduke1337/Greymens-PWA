@@ -1,5 +1,5 @@
 import { ID, type Models } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getClientAddress } from "@/lib/rate-limit";
 import { getMembershipStatus } from "@/lib/server-auth";
@@ -54,7 +54,7 @@ export interface AuditEntry {
  */
 export async function recordAudit(entry: AuditEntry): Promise<boolean> {
   try {
-    const { databases } = createAdminClient();
+    const { databases } = createServerDatabases();
     const actorRole = await getMembershipStatus(entry.actor);
     const details = entry.details ? serializeDetails(entry.details) : null;
 

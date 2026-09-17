@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
-import { ID, Query, type Databases } from "appwrite";
+import { ID, Query } from "appwrite";
+
+import type { ServerDatabases } from "@/lib/appwrite-server";
 
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 
@@ -74,7 +76,7 @@ export interface IssuedTicketInput {
  * code could be allocated so callers fail loudly instead of issuing unsigned.
  */
 export async function createSignedTicket(
-  databases: Pick<Databases, "listDocuments" | "createDocument">,
+  databases: Pick<ServerDatabases, "listDocuments" | "createDocument">,
   input: IssuedTicketInput,
 ) {
   let code = "";

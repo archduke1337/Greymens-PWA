@@ -37,7 +37,10 @@ vi.mock("@/lib/appwrite", () => ({
     projectsCollectionId: "projects",
     eventImagesBucketId: "event-images",
   },
-  createAdminClient: () => ({
+}));
+
+vi.mock("@/lib/appwrite-server", () => ({
+  createServerDatabases: () => ({
     databases: {
       listDocuments: async (
         _dbId: string,

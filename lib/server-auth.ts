@@ -1,7 +1,8 @@
 import { Account, Client, Query, type Models } from "appwrite";
 import { NextRequest, NextResponse } from "next/server";
 
-import { createAdminClient, SESSION_COOKIE_NAME } from "@/lib/appwrite";
+import { SESSION_COOKIE_NAME } from "@/lib/appwrite";
+import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { fail } from "@/lib/api";
 
@@ -153,7 +154,7 @@ export async function resolveMembershipStatus(userId: string): Promise<string> {
 }
 
 async function resolveMembershipStatusInner(userId: string): Promise<string> {
-  const { databases } = createAdminClient();
+  const { databases } = createServerDatabases();
   const [
     profiles,
     memberships,
