@@ -534,6 +534,20 @@ export default function SettingsPage() {
               Request deletion
             </Link>
           </div>
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div>
+              <p className="font-medium">Connection diagnostics</p>
+              <p className="text-sm text-default-500">
+                Check backend reachability and configuration when something is not loading.
+              </p>
+            </div>
+            <Link
+              href="/diagnostics"
+              className="inline-flex items-center rounded-lg border border-default-300 px-4 py-2 text-sm font-medium hover:bg-default-100 transition-colors"
+            >
+              Open diagnostics
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

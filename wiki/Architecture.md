@@ -3,7 +3,7 @@
 ## Shape
 
 Next.js 16 App Router + React 19 + HeroUI v3 + Tailwind 4, backed by
-Appwrite tables. There is no separate backend process: **the 43 route
+Appwrite tables. There is no separate backend process: **the 44 route
 handlers under `app/api/` are the backend**.
 
 ```

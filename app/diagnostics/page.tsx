@@ -116,14 +116,17 @@ export default function DiagnosticsPage() {
         }
       }
 
-      // Check EmailJS configuration
+      // Check EmailJS configuration. The browser can only see NEXT_PUBLIC_*
+      // vars, and no such EmailJS var is provisioned (server uses
+      // EMAILJS_SERVICE_ID in lib/contact-mailer.ts) — so "unknown" here
+      // means "not visible to this check", never "broken". Report honestly.
       const emailJsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
       data.services.push({
         name: "EmailJS Configuration",
         status: emailJsServiceId ? "connected" : "unknown",
         message: emailJsServiceId
           ? "EmailJS is configured"
-          : "EmailJS not configured (optional)",
+          : "Not visible to the browser check (server-side EMAILJS_* vars decide delivery)",
       });
 
       setDiagnostics(data);

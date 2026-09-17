@@ -30,5 +30,7 @@ camera-only permissions policy) and applied to `/:path*`.
 
 1. `/api/health` — environment + Appwrite reachability, minimal disclosure.
 2. `/diagnostics`, `/connectivity-check` — client-side environment checks.
-3. Logs: API routes log server-side with redacted identities
-   (`redactEmail`); never paste raw logs with PII into issues.
+3. Logs: API routes log server-side; email-shaped values inside audit details
+   are redacted centrally by the audit serializer, but raw `console.error`
+   lines elsewhere can carry identifiers — never paste raw logs with PII
+   into issues.

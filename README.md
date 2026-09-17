@@ -8,7 +8,7 @@ Next.js 16 / React 19 / Appwrite (client `appwrite`, server `node-appwrite`) / T
 
 ## Setup
 
-1. `cp .env.example .env` and fill values (see below).
+1. `cp .env.example .env.local` and fill values (see below).
 2. `npm install --legacy-peer-deps`
 3. `npm run db:setup` — create tables/indexes from `scripts/setup-appwrite.js`.
    Re-running reconciles columns, indexes and read permissions on an existing

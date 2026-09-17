@@ -100,6 +100,9 @@ const must = [
   ["registrations", "idx_event_user", "unique"],
   ["role_templates", "idx_slug", "unique"],
   ["blogs", "idx_slug", "unique"],
+  // The event slug race (same title, same millisecond) retries on this
+  // constraint: without it the retry path has nothing to catch.
+  ["events", "idx_slug", "unique"],
 ];
 for (const [t, key, type] of must) {
   const block = tables.get(t)?.idx ?? "";
