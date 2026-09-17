@@ -5,6 +5,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { GOVERNANCE_OFFICES } from "@/lib/governance";
+import { isIsoDate } from "@/lib/validation";
 import { getAccountNames } from "@/lib/server-users";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -34,9 +35,10 @@ export async function POST(request: NextRequest) {
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     const selectionMethod = typeof body.selectionMethod === "string" ? body.selectionMethod.trim() : "";
     const termStart = typeof body.termStart === "string" ? body.termStart.trim() : "";
-    const termEnd = typeof body.termEnd === "string" && body.termEnd.trim() ? body.termEnd.trim() : null;
-    if (!OFFICE_IDS.has(officeId) || !userId || !METHODS.has(selectionMethod) || !termStart) return fail("VALIDATION", "Invalid office assignment", 400);
-    if (termEnd && new Date(termEnd) <= new Date(termStart)) return fail("VALIDATION", "Term end must follow term start", 400);
+    const termEnd = typeof body.termEnd === "string" && body.termEnd.trim() ? body.termEnd.trim() : undefined;
+    if (!OFFICE_IDS.has(officeId) || !userId || !METHODS.has(selectionMethod) || !isIsoDate(termStart)) return fail("VALIDATION", "Invalid office assignment", 400);
+    if (termEnd !== undefined && !isIsoDate(termEnd)) return fail("VALIDATION", "Term end must be a valid date", 400);
+    if (termEnd && termEnd <= termStart) return fail("VALIDATION", "Term end must follow term start", 400);
     const nameMap = await getAccountNames([userId]);
     if (!nameMap.has(userId)) return fail("NOT_FOUND", "User not found", 404);
     const { databases } = createServerDatabases();

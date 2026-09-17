@@ -4,6 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
+import { isIsoDate } from "@/lib/validation";
 import { ok, fail, ApiError } from "@/lib/api";
 
 const RECORD_TYPES = new Set(["minute", "resolution", "amendment", "handover", "annual_review", "asset"]);
@@ -40,13 +41,15 @@ export async function POST(request: NextRequest) {
     if (!RECORD_TYPES.has(recordType) || !title || title.length > 255 || !recordBody || recordBody.length > 65535 || !VISIBILITIES.has(visibility) || !STATUSES.has(status)) {
       return fail("VALIDATION", "Invalid governance record", 400);
     }
+    const meetingDate = typeof body.meetingDate === "string" && body.meetingDate.trim() ? body.meetingDate.trim().slice(0, 30) : undefined;
+    if (meetingDate !== undefined && !isIsoDate(meetingDate)) return fail("VALIDATION", "Meeting date must be a valid date", 400);
     const now = new Date().toISOString();
     const { databases } = createServerDatabases();
     const record = await databases.createDocument(DATABASE_ID, COLLECTIONS.GOVERNANCE_RECORDS, ID.unique(), {
       recordType,
       title,
       body: recordBody,
-      meetingDate: typeof body.meetingDate === "string" ? body.meetingDate.slice(0, 30) : null,
+      meetingDate,
       visibility,
       status,
       createdBy: authenticated.user.$id,

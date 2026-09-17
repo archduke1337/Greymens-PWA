@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
           membershipNumber: candidate,
           approvedBy: authenticated.user.$id,
           approvedAt: now,
-          department: validDeptIds[0] ?? null,
+          department: validDeptIds[0] ?? undefined,
           joinedAt: now,
         });
         issuedNumber = candidate;
@@ -271,7 +271,6 @@ export async function POST(request: NextRequest) {
       status: "approved",
       reviewedBy: authenticated.user.$id,
       reviewedAt: now,
-      rejectionReason: null,
     });
 
     // Department assignment is idempotent: re-approving must not stack duplicate

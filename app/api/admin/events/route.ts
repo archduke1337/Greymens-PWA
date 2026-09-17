@@ -62,13 +62,15 @@ export async function POST(request: NextRequest) {
     const capacity = toCount(body.capacity, 50, MAX_CAPACITY);
     const price = toCount(body.price, 0, MAX_PRICE);
     const discountRaw = body.discountPrice;
+    // Appwrite rejects explicit null for optional columns: absent means
+    // undefined (dropped from the payload), never null.
     const discountPrice =
       discountRaw === undefined || discountRaw === null
-        ? null
+        ? undefined
         : toCount(discountRaw, 0, MAX_PRICE);
     if (capacity === null || price === null) return fail("VALIDATION", "Invalid capacity or price", 400);
-    if (discountRaw !== undefined && discountRaw !== null && discountPrice === null) return fail("VALIDATION", "Invalid discount price", 400);
-    if (discountPrice !== null && discountPrice >= price && price > 0) return fail("VALIDATION", "Discount price must be below price", 400);
+    if (discountPrice === null) return fail("VALIDATION", "Invalid discount price", 400);
+    if (discountPrice !== undefined && discountPrice >= price && price > 0) return fail("VALIDATION", "Discount price must be below price", 400);
     const image = text("image", 500);
     const organizerAvatar = text("organizerAvatar", 500);
     if ((image && !isHttpUrl(image)) || (organizerAvatar && !isHttpUrl(organizerAvatar))) return fail("VALIDATION", "Invalid image URL", 400);
@@ -76,13 +78,13 @@ export async function POST(request: NextRequest) {
       title,
       slug,
       description,
-      image: image || null,
+      image: image || undefined,
       eventTypeId: text("eventTypeId", 36) || "general",
       status: "draft",
       audience,
       date,
       time,
-      endDate: text("endDate", 30) || null,
+      endDate: text("endDate", 30) || undefined,
       venue,
       location,
       capacity,
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
       price,
       discountPrice,
       organizerName: text("organizerName", 255) || authenticated.user.name || "Greymens",
-      organizerAvatar: organizerAvatar || null,
+      organizerAvatar: organizerAvatar || undefined,
       ownerId: authenticated.user.$id,
       tags: Array.isArray(body.tags) ? body.tags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim().slice(0, 100)).filter(Boolean).slice(0, 30) : [],
       isFeatured: body.isFeatured === true,

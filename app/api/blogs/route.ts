@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       // The author's email is deliberately not copied onto the post: the blogs
       // table is world-readable, so every author's address would be public.
       authorEmail: "",
-      authorAvatar: (authenticated.user.prefs as Record<string, unknown> | undefined)?.avatar || null,
+      authorAvatar: (authenticated.user.prefs as Record<string, unknown> | undefined)?.avatar || undefined,
       status: "pending",
       views: 0,
       likes: 0,
@@ -198,7 +198,7 @@ export async function PATCH(request: NextRequest) {
 
     const now = new Date().toISOString();
     const updates: Record<string, unknown> =
-      action === "approve" ? { status: "approved", publishedAt: blog.publishedAt || now, rejectionReason: null }
+      action === "approve" ? { status: "approved", publishedAt: blog.publishedAt || now }
       : action === "reject" ? { status: "rejected", rejectionReason: reason, featured: false }
       : { featured: action === "feature" };
 

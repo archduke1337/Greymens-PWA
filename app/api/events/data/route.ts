@@ -4,7 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
 import type { Models } from "appwrite";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail, isConflict } from "@/lib/api";
 
 /**
  * Event type data is editable by the event owner, or by an administrator acting
@@ -36,7 +36,17 @@ export async function GET(request: NextRequest) {
       Query.equal("eventId", [eventId]),
       Query.limit(1),
     ]);
-    return ok({ data: response.documents[0] || null });
+    const row = response.documents[0] || null;
+    // fieldData is a JSON-string column: parse on the way out so readers get
+    // the object the writer sent, never the raw string.
+    if (row && typeof row.fieldData === "string") {
+      try {
+        return ok({ data: { ...row, fieldData: JSON.parse(row.fieldData) } });
+      } catch {
+        return ok({ data: row });
+      }
+    }
+    return ok({ data: row });
   } catch (error) {
     console.error("Event type data lookup error:", error);
     return fail("INTERNAL", "Unable to load event data", 500);
@@ -59,15 +69,37 @@ export async function POST(request: NextRequest) {
 
     const owned = await getOwnedEvent(eventId, authenticated.user);
     if (!owned) return fail("FORBIDDEN", "Forbidden", 403);
+    // The eventTypeId must reference a real template: otherwise the payload
+    // is validated against nothing and renders against nothing.
+    const template = await owned.databases.getDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, eventTypeId).catch(() => null);
+    if (!template) return fail("NOT_FOUND", "Event type not found", 404);
     const existing = await owned.databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, [
       Query.equal("eventId", [eventId]),
       Query.limit(1),
     ]);
-    const data = { eventId, eventTypeId, fieldData };
-    const saved = existing.documents[0]
-      ? await owned.databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, existing.documents[0].$id, { eventTypeId, fieldData })
-      : await owned.databases.createDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, ID.unique(), data);
-    return ok({ data: saved });
+    // fieldData is a JSON-string column (size 65535): serialize on write.
+    // A raw object here 400s on the column type, which is how every save
+    // through this endpoint used to fail.
+    const data = { eventId, eventTypeId, fieldData: JSON.stringify(fieldData) };
+    if (existing.documents[0]) {
+      const saved = await owned.databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, existing.documents[0].$id, { eventTypeId, fieldData: data.fieldData });
+      return ok({ data: saved });
+    }
+    try {
+      const saved = await owned.databases.createDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, ID.unique(), data);
+      return ok({ data: saved });
+    } catch (error) {
+      // Lost the idx_event race: the winner's row exists now, so update it
+      // instead of 500ing the loser's save.
+      if (!isConflict(error)) throw error;
+      const winner = await owned.databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, [
+        Query.equal("eventId", [eventId]),
+        Query.limit(1),
+      ]);
+      if (!winner.documents[0]) throw error;
+      const saved = await owned.databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, winner.documents[0].$id, { eventTypeId, fieldData: data.fieldData });
+      return ok({ data: saved });
+    }
   } catch (error) {
     console.error("Event type data save error:", error);
     return fail("INTERNAL", "Unable to save event data", 500);

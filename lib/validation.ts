@@ -69,9 +69,27 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Strict calendar-date check (YYYY-MM-DD). Date columns are plain strings, so
+ * lexical range/order queries only work on real ISO input — garbage like
+ * "tomorrow" silently corrupts sorting and term comparisons. new Date() alone
+ * is not enough: it accepts "tomorrow" in some runtimes and rolls over
+ * impossible dates (2026-02-30 becomes March 2nd).
+ */
+export function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 /** Keeps error logs useful without dumping personal data into application logs. */
-export function redactEmail(email: string): string {
-  const [local, domain] = email.split("@");
+export function redactEmail(email: string): string {  const [local, domain] = email.split("@");
   if (!domain) return "[redacted]";
   return `${local.slice(0, 1)}***@${domain}`;
 }

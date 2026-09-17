@@ -69,16 +69,18 @@ export async function POST(request: NextRequest) {
         return fail("VALIDATION", "Name, valid slug, and at least one capability are required", 400);
       }
       const role = await databases.createDocument(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, ID.unique(), {
-        name, slug, description, capabilities, teamId: text(body.teamId, 100) || null,
-        teamRole: text(body.teamRole, 100) || null, label: text(body.label, 100) || null, isActive: true,
+        name, slug, description, capabilities, teamId: text(body.teamId, 100) || undefined,
+        teamRole: text(body.teamRole, 100) || undefined, label: text(body.label, 100) || undefined, isActive: true,
       });
       await recordAudit({ request, actor: authenticated.user, action: "access.role_created", entityType: "role_template", entityId: role.$id, details: { slug, capabilities } });
       return ok({ role }, 201);
     }
 
     if (action === "assign_role") {
-      const userId = text(body.userId, 100);
-      const roleId = text(body.roleId, 100);
+      // userId/roleId are Appwrite document IDs (36 chars): validating wider
+      // only moves the failure to the column size.
+      const userId = text(body.userId, 36);
+      const roleId = text(body.roleId, 36);
       const scopeType = text(body.scopeType, 30) || "global";
       const scopeId = text(body.scopeId, 100);
       const expiresAt = text(body.expiresAt, 40);
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       }
       const assignment = await databases.createDocument(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, ID.unique(), {
         userId, roleId, assignedBy: authenticated.user.$id, assignedAt: new Date().toISOString(),
-        expiresAt: expiresAt || null, scopeType, scopeId: scopeId || null, isActive: true,
+        expiresAt: expiresAt || undefined, scopeType, scopeId: scopeId || undefined, isActive: true,
       });
       await recordAudit({ request, actor: authenticated.user, action: "access.role_assigned", entityType: "role_assignment", entityId: assignment.$id, details: { userId, roleId, scopeType, scopeId, expiresAt } });
       return ok({ assignment }, 201);

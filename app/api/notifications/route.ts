@@ -16,8 +16,11 @@ const MAX_BODY_LENGTH = 5000;
 const MAX_JSON_LENGTH = 5000;
 
 // Closed notification vocabulary (see audit: free-string types let a sender
-// forge system-looking notices). System flows own membership_approved /
-// membership_rejected; the console offers the rest.
+// forge system-looking notices). membership_approved / membership_rejected are
+// written only by the membership flow itself — accepting them here would let
+// any console sender emit approval letters unbacked by a membership row,
+// indistinguishable from the real ones.
+const SYSTEM_TYPES = new Set(["membership_approved", "membership_rejected"]);
 const NOTIFICATION_TYPES = new Set([
   "membership_approved",
   "membership_rejected",
@@ -130,9 +133,12 @@ export async function POST(request: NextRequest) {
   if (!NOTIFICATION_TYPES.has(type)) {
     return fail("VALIDATION", "Invalid notification type", 400);
   }
+  if (SYSTEM_TYPES.has(type)) {
+    return fail("FORBIDDEN", "That notice is sent by its system flow, not the console", 403);
+  }
 
-  const letter = body.letter === undefined || body.letter === null ? null : JSON.stringify(body.letter);
-  const data = body.data === undefined || body.data === null ? null : JSON.stringify(body.data);
+  const letter = body.letter === undefined || body.letter === null ? undefined : JSON.stringify(body.letter);
+  const data = body.data === undefined || body.data === null ? undefined : JSON.stringify(body.data);
   if ((letter && letter.length > MAX_JSON_LENGTH) || (data && data.length > MAX_JSON_LENGTH)) {
     return fail("VALIDATION", "Notification payload is too large", 400);
   }

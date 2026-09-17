@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
       type,
       url: fileUrl,
       fileId,
-      departmentId: category === "department" ? departmentId : null,
+      departmentId: category === "department" ? departmentId : undefined,
       uploadedBy: authenticated.user.$id,
       uploadedByName: authenticated.user.name,
       tags,

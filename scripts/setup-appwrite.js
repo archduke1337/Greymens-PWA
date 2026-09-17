@@ -431,6 +431,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "registrationUrl", type: "string", size: 500 },
     { key: "eventWebsite", type: "string", size: 500 },
     { key: "contactEmail", type: "string", size: 255 },
+    { key: "rejectionReason", type: "string", size: 2000 },
   ], [
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_slug", type: "unique", columns: ["slug"] },
@@ -516,6 +517,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     // (There is deliberately no `status` column and no status index here;
     // membership status lives on the membership row.)
     { key: "idx_user", type: "unique", columns: ["userId"] },
+    { key: "idx_urn", type: "key", columns: ["urn"] },
   ]);
 
   await createTable("applications", "Applications", [
@@ -629,6 +631,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     // Power names are the grant vocabulary: duplicates would make id-vs-name
     // resolution ambiguous (see hasPower dual resolution).
     { key: "idx_name", type: "unique", columns: ["name"] },
+    { key: "idx_category", type: "key", columns: ["category"] },
   ]);
 
   await createTable("user_powers", "User Powers", [
@@ -675,6 +678,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
   ], [
     { key: "idx_slug", type: "unique", columns: ["slug"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
+    { key: "idx_name", type: "key", columns: ["name"] },
   ]);
 
   await createTable("role_assignments", "Role Assignments", [
@@ -691,6 +695,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "idx_role", type: "key", columns: ["roleId"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_expiry", type: "key", columns: ["expiresAt"] },
+    { key: "idx_assigned", type: "key", columns: ["assignedAt"] },
   ]);
 
   await createTable("tickets", "Tickets", [
@@ -704,6 +709,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "checkedInAt", type: "string", size: 30 },
     { key: "checkedInBy", type: "string", size: 36 },
     { key: "invalidatedAt", type: "string", size: 30 },
+    { key: "invalidatedBy", type: "string", size: 36 },
     { key: "invalidatedReason", type: "string", size: 65535 },
     { key: "transferredTo", type: "string", size: 36 },
     { key: "transferHistory", type: "string", size: 65535 },
@@ -717,6 +723,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_issued", type: "key", columns: ["issuedAt"] },
     { key: "idx_event_user", type: "key", columns: ["eventId", "userId"] },
+    { key: "idx_registration", type: "key", columns: ["registrationId"] },
   ]);
 
   await createTable("ticket_verifications", "Ticket Verifications", [
@@ -812,6 +819,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "idx_category", type: "key", columns: ["category"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_order", type: "key", columns: ["displayOrder"] },
+    { key: "idx_uploader", type: "key", columns: ["uploadedBy"] },
   ]);
 
   await createTable("approval_workflows", "Approval Workflows", [
@@ -846,6 +854,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
   ], [
     { key: "idx_requested", type: "key", columns: ["requestedBy"] },
     { key: "idx_status", type: "key", columns: ["status"] },
+    { key: "idx_created", type: "key", columns: ["createdAt"] },
     { key: "idx_target", type: "key", columns: ["target"] },
   ]);
 
@@ -862,6 +871,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "updatedAt", type: "string", size: 30, required: true },
   ], [
     { key: "idx_reporter", type: "key", columns: ["reportedBy"] },
+    { key: "idx_created", type: "key", columns: ["createdAt"] },
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_severity", type: "key", columns: ["severity"] },
   ]);
@@ -880,6 +890,7 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "idx_type", type: "key", columns: ["recordType"] },
     { key: "idx_visibility", type: "key", columns: ["visibility"] },
     { key: "idx_status", type: "key", columns: ["status"] },
+    { key: "idx_updated", type: "key", columns: ["updatedAt"] },
     { key: "idx_date", type: "key", columns: ["meetingDate"] },
   ]);
 

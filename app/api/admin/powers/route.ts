@@ -62,10 +62,12 @@ export async function POST(request: NextRequest) {
     if (action === "revoke") {
       // Revoke by both id and name: legacy grants may store powerName while
       // permission engine resolves either. Revoking only by id leaves privilege effective.
+      // Limit matches the catalogue cap: a truncated scan would leave live
+      // privilege behind while reporting success.
       const grants = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
         Query.equal("userId", [userId]),
         Query.equal("isActive", [true]),
-        Query.limit(100),
+        Query.limit(500),
       ]);
       const matching = grants.documents.filter((g) => {
         const pid = String((g as Record<string, unknown>).powerId ?? "");
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
     const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
       Query.equal("userId", [userId]),
       Query.equal("isActive", [true]),
-      Query.limit(100),
+      Query.limit(500),
     ]);
     const already = existing.documents.find((g) => {
       const pid = String((g as Record<string, unknown>).powerId ?? "");
@@ -100,8 +102,8 @@ export async function POST(request: NextRequest) {
       powerId,
       grantedBy: authenticated.user.$id,
       grantedAt: new Date().toISOString(),
-      departmentId: departmentId || null,
-      expiresAt,
+      departmentId: departmentId || undefined,
+      expiresAt: expiresAt || undefined,
       isActive: true,
     });
     await recordAudit({ request, actor: authenticated.user, action: "power.grant", entityType: "user_power", entityId: grant.$id, details: { userId, powerId, powerName: power.name, departmentId: departmentId || null, expiresAt } });

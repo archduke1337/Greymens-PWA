@@ -42,8 +42,7 @@ export function fail(code: string, message: string, status: number, extra?: Reco
   return NextResponse.json({ success: false, error: { code, message }, ...safe }, { status });
 }
 
-export const ApiError = {
-  unauthorized: () => fail("UNAUTHENTICATED", "Unauthorized", 401),
+export const ApiError = {  unauthorized: () => fail("UNAUTHENTICATED", "Unauthorized", 401),
   forbidden: () => fail("FORBIDDEN", "Forbidden", 403),
   notFound: (message = "Not found") => fail("NOT_FOUND", message, 404),
   conflict: (message: string) => fail("CONFLICT", message, 409),
@@ -51,3 +50,18 @@ export const ApiError = {
   rateLimited: (message = "Too many requests") => fail("RATE_LIMITED", message, 429),
   internal: (message = "Something went wrong") => fail("INTERNAL", message, 500),
 };
+
+/**
+ * Detect an Appwrite unique-constraint violation (HTTP 409) for
+ * check-then-create races: two concurrent requests can both pass the
+ * pre-check, and the loser's create throws. Callers catch this and fall back
+ * to reading/updating the winner's row instead of 500ing.
+ */
+export function isConflict(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === 409
+  );
+}

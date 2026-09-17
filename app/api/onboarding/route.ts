@@ -4,8 +4,9 @@ import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { ID, Query } from "appwrite";
 import { RESTRICTED_STATUSES, getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { recordAudit } from "@/lib/server-audit";
+import { isHttpUrl, isIsoDate } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail, isConflict } from "@/lib/api";
 
 const PROFILE_FIELDS = [
   "phone",
@@ -31,11 +32,36 @@ const PROFILE_FIELDS = [
 
 const PROFILE_ARRAY_FIELDS = ["skills", "interests"] as const;
 
-const LONG_TEXT_PROFILE_FIELDS = new Set([
-  "address",
-  "bio",
-  "whyJoin",
-  "experience",
+// Maximum lengths mirror the profiles columns in setup-appwrite.js exactly.
+// The old blanket 500/4000 limits accepted values the database rejects,
+// turning valid-looking submits into raw 500s.
+const PROFILE_FIELD_SIZES: Record<string, number> = {
+  phone: 20,
+  urn: 50,
+  dateOfBirth: 30,
+  gender: 30,
+  address: 65535,
+  pronouns: 30,
+  program: 100,
+  branch: 100,
+  year: 20,
+  semester: 20,
+  githubUrl: 500,
+  linkedinUrl: 500,
+  portfolioUrl: 500,
+  instagramUrl: 500,
+  bio: 65535,
+  whyJoin: 65535,
+  experience: 65535,
+  availability: 30,
+  profileVisibility: 30,
+};
+
+const URL_PROFILE_FIELDS = new Set([
+  "githubUrl",
+  "linkedinUrl",
+  "portfolioUrl",
+  "instagramUrl",
 ]);
 
 const PROFILE_ENUM_FIELDS: Record<string, readonly string[]> = {
@@ -123,8 +149,19 @@ export async function POST(request: NextRequest) {
     for (const field of PROFILE_FIELDS) {
       const value = profileInput[field];
       if (value === undefined) continue;
-      if (!isString(value, LONG_TEXT_PROFILE_FIELDS.has(field) ? 4000 : 500)) {
+      if (!isString(value, PROFILE_FIELD_SIZES[field] ?? 500)) {
         return fail("VALIDATION", `Invalid profile field: ${field}`, 400);
+      }
+      // Format checks: without them curl bypasses store "tomorrow" as a
+      // birth date and "not-a-url" as a portfolio for the admin queue.
+      if (value && URL_PROFILE_FIELDS.has(field) && !isHttpUrl(String(value))) {
+        return fail("VALIDATION", `Invalid URL for ${field}`, 400);
+      }
+      if (field === "dateOfBirth" && value && !isIsoDate(String(value))) {
+        return fail("VALIDATION", "Invalid date of birth", 400);
+      }
+      if (field === "phone" && value && !/^[+\d][\d\s\-()]{5,19}$/.test(String(value))) {
+        return fail("VALIDATION", "Invalid phone number", 400);
       }
       const allowed = PROFILE_ENUM_FIELDS[field];
       if (allowed && value && !allowed.includes(value)) {
@@ -155,11 +192,12 @@ export async function POST(request: NextRequest) {
       Query.limit(1),
     ]);
 
-    // Reapply path: rejected applicants may resubmit (pending/reapplied flow).
-    // Only block when an active pending/reapplied/approved application exists.
+    // Reapply path: rejected applicants may resubmit, and any other
+    // non-active row (including legacy/unknown statuses) rejoins the queue
+    // instead of 409ing forever with no way out. Only pending/approved block.
     const existing = existingApplications.documents[0] as Record<string, unknown> | undefined;
     const existingStatus = existing ? String(existing.status ?? "") : "";
-    if (existing && ["pending", "reapplied", "approved"].includes(existingStatus)) {
+    if (existing && ["pending", "approved"].includes(existingStatus)) {
       return fail("CONFLICT", "An application already exists for this account", 409);
     }
 
@@ -193,9 +231,23 @@ export async function POST(request: NextRequest) {
 
     const profile = existingProfiles.documents[0]
       ? await databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, existingProfiles.documents[0].$id, profileData)
-      : await databases.createDocument(DATABASE_ID, COLLECTIONS.PROFILES, ID.unique(), profileData);
+      : await (async () => {
+          try {
+            return await databases.createDocument(DATABASE_ID, COLLECTIONS.PROFILES, ID.unique(), profileData);
+          } catch (error) {
+            // Lost the idx_user race: a concurrent submit created the row.
+            // Update the winner instead of 500ing the loser's application.
+            if (!isConflict(error)) throw error;
+            const winner = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+              Query.equal("userId", [authenticated.user.$id]),
+              Query.limit(1),
+            ]);
+            if (!winner.documents[0]) throw error;
+            return databases.updateDocument(DATABASE_ID, COLLECTIONS.PROFILES, winner.documents[0].$id, profileData);
+          }
+        })();
 
-    const application = existing && existingStatus === "rejected"
+    const application = existing && existingStatus !== ""
       ? await databases.updateDocument(DATABASE_ID, COLLECTIONS.APPLICATIONS, String(existing.$id ?? ""), {
         ...pickFields(applicationInput, APPLICATION_FIELDS),
         profileId: profile.$id,
@@ -213,7 +265,7 @@ export async function POST(request: NextRequest) {
     await recordAudit({
       request,
       actor: authenticated.user,
-      action: existing && existingStatus === "rejected" ? "application.reapply" : "application.submit",
+      action: existing && existingStatus !== "" ? "application.reapply" : "application.submit",
       entityType: "application",
       entityId: application.$id,
       details: {},
