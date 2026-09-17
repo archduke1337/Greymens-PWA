@@ -4,6 +4,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
+import { getAccountNames } from "@/lib/server-users";
 import { isRecord } from "@/lib/validation";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -53,7 +54,33 @@ export async function GET(request: NextRequest) {
       Query.limit(MAX_LIMIT),
     ]);
 
-    return ok({ holders: holders.documents, total: holders.total });
+    // Joined server-side: the old client fetched the whole 500-row user
+    // directory per revoke click just to resolve names for a handful of
+    // holders. Profiles and names ride along here instead.
+    const holderIds = [...new Set(holders.documents.map((row) => String((row as Record<string, unknown>).userId ?? "")).filter(Boolean))];
+    const profiles = holderIds.length > 0
+      ? await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+        Query.equal("userId", holderIds),
+        Query.limit(MAX_LIMIT),
+      ]).catch(() => ({ documents: [] as unknown[] }))
+      : { documents: [] as unknown[] };
+    const profileByUser = new Map(
+      (profiles as { documents: Array<Record<string, unknown>> }).documents.map((profile) => [String(profile.userId ?? ""), profile]),
+    );
+    const accountNames = await getAccountNames(holderIds).then(
+      (names) => Object.fromEntries(names) as Record<string, string>,
+      () => ({}) as Record<string, string>,
+    );
+
+    return ok({
+      holders: holders.documents.map((row) => {
+        const record = row as Record<string, unknown>;
+        const userId = String(record.userId ?? "");
+        return { ...record, profile: profileByUser.get(userId) ?? null };
+      }),
+      accountNames,
+      total: holders.total,
+    });
   } catch (error) {
     console.error("Designation holder list error:", error);
     return fail("INTERNAL", "Unable to load designation holders", 500);

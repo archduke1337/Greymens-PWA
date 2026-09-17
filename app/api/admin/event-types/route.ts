@@ -156,6 +156,14 @@ export async function DELETE(request: NextRequest) {
       return fail("CONFLICT", `Cannot delete: ${inUse.total} event(s) use this type. Deactivate it instead.`, 409, { events: inUse.total });
     }
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPES, eventTypeId);
+    // Cascade: custom-field payloads stored against this type would otherwise
+    // dangle with no template to validate or render them.
+    const payloads = await databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, [
+      Query.equal("eventTypeId", [eventTypeId]),
+      Query.limit(100),
+    ]).catch(() => ({ documents: [] as Array<{ $id: string }> }));
+    await Promise.all(payloads.documents.map((row) =>
+      databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, row.$id).catch((error: unknown) => console.error("Event type cascade error:", error))));
     await recordAudit({
       request,
       actor: authenticated.user,

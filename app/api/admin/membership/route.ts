@@ -260,6 +260,7 @@ export async function POST(request: NextRequest) {
     let departmentNames: string[] = [];
     if (preferredDepartments.length > 0) {
       const catalogue = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.equal("isActive", [true]),
         Query.limit(100),
       ]).catch(() => ({ documents: [] as unknown[] }));
       const byId = new Map(

@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
 
     const { databases } = createServerDatabases();
     const [roles, assignments] = await Promise.all([
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.orderAsc("name"), Query.limit(100)]),
+      // Only active templates: the authorizer ignores inactive roles, so
+      // offering them here would promise grants that never take effect.
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.equal("isActive", [true]), Query.orderAsc("name"), Query.limit(100)]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [Query.orderDesc("assignedAt"), Query.limit(200)]),
     ]);
     // Names live on the auth record — best-effort so a lookup failure never

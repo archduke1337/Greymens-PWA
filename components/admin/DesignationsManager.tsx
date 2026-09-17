@@ -75,7 +75,7 @@ export default function DesignationsManager({ designations, departments, onChang
   // Revoke state
   const { isOpen: isRevokeOpen, open: openRevoke, close: closeRevoke } = useOverlayState();
   const [revokeTarget, setRevokeTarget] = useState<Designation | null>(null);
-  const [holders, setHolders] = useState<(UserDesignation & { profile?: Profile | null })[]>([]);
+  const [holders, setHolders] = useState<Array<UserDesignation & { profile?: Profile | null; holderName?: string }>>([]);
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
 
@@ -249,23 +249,24 @@ export default function DesignationsManager({ designations, departments, onChang
     setLoadingHolders(true);
     openRevoke();
     try {
-      const [holdersResponse, profilesResponse] = await Promise.all([
-        fetch(`/api/admin/designations/assign?designationId=${encodeURIComponent(desig.$id!)}`, {
-          credentials: "include",
-        }),
-        fetch("/api/admin/users?limit=500", { credentials: "include" }),
-      ]);
-      const holdersPayload = (await holdersResponse.json().catch(() => null)) as { holders?: UserDesignation[]; error?: string } | null;
-      const profilesPayload = (await profilesResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }> } | null;
+      // Holders arrive joined with profiles and names: one call, no 500-row
+      // directory over-fetch per click.
+      const holdersResponse = await fetch(`/api/admin/designations/assign?designationId=${encodeURIComponent(desig.$id!)}`, {
+        credentials: "include",
+      });
+      const holdersPayload = (await holdersResponse.json().catch(() => null)) as {
+        holders?: Array<UserDesignation & { profile?: Profile | null }>;
+        accountNames?: Record<string, string>;
+        error?: string;
+      } | null;
       if (!holdersResponse.ok) throw new Error(holdersPayload?.error || "Failed to load holders");
 
-      const profileByUser = new Map(
-        (profilesPayload?.users ?? []).map((entry) => [entry.profile.userId, entry.profile]),
-      );
+      const names = holdersPayload?.accountNames ?? {};
       setHolders(
         (holdersPayload?.holders ?? []).map((holder) => ({
           ...holder,
-          profile: profileByUser.get(holder.userId) ?? null,
+          profile: holder.profile ?? null,
+          holderName: names[holder.userId] || undefined,
         })),
       );
     } catch (error) {
@@ -877,9 +878,10 @@ export default function DesignationsManager({ designations, departments, onChang
                               </div>
                               <div>
                                 <p className="text-sm font-medium">
-                                  {holder.profile?.urn || holder.userId}
+                                  {holder.holderName || holder.profile?.urn || holder.userId}
                                 </p>
                                 <p className="text-xs text-default-400">
+                                  {holder.holderName && holder.profile?.urn ? `${holder.profile.urn} · ` : ""}
                                   Assigned:{" "}
                                   {new Date(
                                     holder.assignedAt

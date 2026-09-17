@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
       canAssignDesignations
         ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+            Query.equal("isActive", [true]),
             Query.orderAsc("level"),
             Query.limit(100),
           ])

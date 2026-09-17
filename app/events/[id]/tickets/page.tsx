@@ -62,7 +62,7 @@ export default function EventTicketsPage() {
       if (!eventResponse.ok) throw new Error(eventPayload?.error || "Failed to load event");
       setEvent(eventPayload?.event ?? null);
 
-      const ticketsResponse = await fetch(`/api/tickets/verify?eventId=${encodeURIComponent(eventId)}`, { cache: "no-store", credentials: "include" });
+      const ticketsResponse = await fetch(`/api/tickets/verify?${new URLSearchParams({ eventId, limit: "500", offset: "0" })}`, { cache: "no-store", credentials: "include" });
       if (ticketsResponse.status === 403) {
         // No door authority: fall back to the member view (caller's own ticket).
         setDoorForbidden(true);
@@ -103,11 +103,31 @@ export default function EventTicketsPage() {
       }
       setDoorForbidden(false);
 
-      const payload = await ticketsResponse.json().catch(() => null) as { tickets?: Ticket[]; error?: string } | null;
+      // Walk every page: a capped first page would hide attendees at the door.
+      // The initial response above is page one; continue only if rows remain.
+      const firstPage = await ticketsResponse.json().catch(() => null) as { tickets?: Ticket[]; total?: number; error?: string } | null;
       if (!ticketsResponse.ok) {
-        throw new Error(payload?.error || "Failed to load tickets");
+        throw new Error(firstPage?.error || "Failed to load tickets");
       }
-      setTickets(payload?.tickets ?? []);
+      const allTickets: Ticket[] = [...(firstPage?.tickets ?? [])];
+      const total = firstPage?.total ?? allTickets.length;
+      let offset = allTickets.length;
+      const pageSize = 500;
+      while (allTickets.length < total) {
+        const pageResponse = await fetch(
+          `/api/tickets/verify?${new URLSearchParams({ eventId, limit: String(pageSize), offset: String(offset) })}`,
+          { cache: "no-store", credentials: "include" },
+        );
+        const payload = await pageResponse.json().catch(() => null) as { tickets?: Ticket[]; error?: string } | null;
+        if (!pageResponse.ok) {
+          throw new Error(payload?.error || "Failed to load tickets");
+        }
+        const rows = payload?.tickets ?? [];
+        if (rows.length === 0) break;
+        allTickets.push(...rows);
+        offset += rows.length;
+      }
+      setTickets(allTickets);
     } catch (error) {
       console.error("Error loading tickets:", error);
       toast.error(getErrorMessage(error) || "Failed to load tickets");

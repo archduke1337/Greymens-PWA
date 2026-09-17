@@ -239,6 +239,26 @@ export async function DELETE(request: NextRequest) {
       );
     }
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
+    // Cascade: custom-field payloads and gallery rows keyed to this event
+    // would otherwise dangle forever with no parent to resolve against.
+    // Bounded per table; failures are logged, not fatal, so one stuck child
+    // table cannot block the delete itself.
+    const [typeData, galleryRows] = await Promise.all([
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, [
+        Query.equal("eventId", [eventId]),
+        Query.limit(100),
+      ]).catch(() => ({ documents: [] as Array<{ $id: string }> })),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.GALLERY, [
+        Query.equal("eventId", [eventId]),
+        Query.limit(100),
+      ]).catch(() => ({ documents: [] as Array<{ $id: string }> })),
+    ]);
+    await Promise.all([
+      ...typeData.documents.map((row) =>
+        databases.deleteDocument(DATABASE_ID, COLLECTIONS.EVENT_TYPE_DATA, row.$id).catch((error: unknown) => console.error("Event cascade (type data) error:", error))),
+      ...galleryRows.documents.map((row) =>
+        databases.deleteDocument(DATABASE_ID, COLLECTIONS.GALLERY, row.$id).catch((error: unknown) => console.error("Event cascade (gallery) error:", error))),
+    ]);
     await recordAudit({ request, actor: authenticated.user, action: "event.delete", entityType: "event", entityId: eventId });
     return ok({ success: true });
   } catch (error) {

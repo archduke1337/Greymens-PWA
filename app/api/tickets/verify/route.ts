@@ -99,19 +99,27 @@ export async function GET(request: NextRequest) {
       if (!permitted) {
         return fail("FORBIDDEN", "Forbidden", 403);
       }
+      // Paginated: the old fixed cap silently hid attendees past row 200 at
+      // the door. The door client walks pages until total; single lookups are
+      // unaffected.
+      const doorLimit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") ?? String(MAX_TICKETS), 10) || MAX_TICKETS, 1), 500);
+      const doorOffset = Math.max(Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0, 0);
       const tickets = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.TICKETS,
         [
           Query.equal("eventId", [eventId]),
           Query.orderDesc("issuedAt"),
-          Query.limit(MAX_TICKETS),
+          Query.limit(doorLimit),
+          Query.offset(doorOffset),
         ],
       );
 
       return ok({
         tickets: tickets.documents,
         total: tickets.total,
+        limit: doorLimit,
+        offset: doorOffset,
       });
     }
 

@@ -220,12 +220,17 @@ export async function DELETE(request: NextRequest) {
     if (!designationId)
       return fail("VALIDATION", "designationId is required", 400);
     const { databases } = createServerDatabases();
-    // Warn if holders exist; deactivation cascades via isActive filter.
+    // Deactivation revokes every active grant: the old comment claimed a
+    // cascade "via isActive filter", but no reader filters grants by the
+    // catalogue row — holders kept their titles indefinitely.
     const holders = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
       Query.equal("designationId", [designationId]),
       Query.equal("isActive", [true]),
-      Query.limit(1),
+      Query.limit(500),
     ]);
+    await Promise.all(holders.documents.map((holder) =>
+      databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, holder.$id, { isActive: false }).catch(() => null),
+    ));
     const designation = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
@@ -239,10 +244,10 @@ export async function DELETE(request: NextRequest) {
       action: "designation.deactivate",
       entityType: "designation",
       entityId: designationId,
-      details: { activeHolders: holders.total },
+      details: { grantsRevoked: holders.documents.length },
     });
 
-    return ok({ designation, activeHolders: holders.total });
+    return ok({ designation, grantsRevoked: holders.documents.length });
   } catch (error) {
     console.error("Admin designation delete error:", error);
 
