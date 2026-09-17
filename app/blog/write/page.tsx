@@ -10,7 +10,7 @@ import { getErrorMessage } from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -221,23 +221,30 @@ export default function WriteBlogPage() {
 
             {/* Category */}
             <div>
-              <label htmlFor="blog-category" className="text-sm font-medium mb-1 block">
-                Category <span className="text-danger" aria-hidden="true">*</span>
-              </label>
-              <select
-                id="blog-category"
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
+              <Select
+                fullWidth
+                placeholder="Select a category"
+                value={formData.category === "" ? null : formData.category}
+                onChange={(value) =>
+                  setFormData({ ...formData, category: String(value ?? "") })
                 }
-                required
-                className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
               >
-                <option value="">Select a category</option>
-                {blogCategories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
+                <Label>Category <span className="text-danger" aria-hidden="true">*</span></Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {blogCategories.map((cat) => (
+                      <ListBox.Item key={cat.value} id={cat.value} textValue={cat.label}>
+                        {cat.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
 
             {/* Tags */}

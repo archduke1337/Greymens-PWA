@@ -11,6 +11,8 @@ import {
   CardContent,
   CardFooter,
   Chip,
+  Label,
+  ListBox,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -18,6 +20,7 @@ import {
   ModalDialog,
   ModalFooter,
   Input,
+  Select,
   TextArea,
   useOverlayState,
 } from "@heroui/react";
@@ -445,27 +448,50 @@ export default function GalleryPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="gallery-category" className="text-sm font-medium mb-1 block">
-                      Category
-                    </label>
-                    <select
-                      id="gallery-category"
-                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground"
+                    <Select
+                      fullWidth
                       value={uploadForm.category}
-                      onChange={(e) =>
+                      onChange={(value) =>
                         setUploadForm((p) => ({
                           ...p,
-                          category: e.target.value as GalleryImage["category"],
+                          category: String(value ?? "events") as GalleryImage["category"],
                         }))
                       }
                     >
-                      <option value="events">Events</option>
-                      <option value="workshops">Workshops</option>
-                      <option value="hackathons">Hackathons</option>
-                      <option value="team">Team</option>
-                      <option value="projects">Projects</option>
-                      <option value="other">Other</option>
-                    </select>
+                      <Label>Category</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="events" textValue="Events">
+                            Events
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="workshops" textValue="Workshops">
+                            Workshops
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="hackathons" textValue="Hackathons">
+                            Hackathons
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="team" textValue="Team">
+                            Team
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="projects" textValue="Projects">
+                            Projects
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="other" textValue="Other">
+                            Other
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
                   </div>
                   <div>
                     <label htmlFor="gallery-image-url" className="text-sm font-medium mb-1 block">

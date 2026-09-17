@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Input, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -134,17 +134,27 @@ export default function HelpFeedbackPage() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="feedback-type" className="text-sm font-medium">Feedback type</label>
-              <select
-                id="feedback-type"
+              <Select
+                fullWidth
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as FeedbackType })}
-                className="w-full px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                onChange={(value) => setFormData({ ...formData, type: String(value ?? "general") as FeedbackType })}
               >
-                {feedbackTypes.map((type) => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
+                <Label>Feedback type</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {feedbackTypes.map((type) => (
+                      <ListBox.Item key={type.value} id={type.value} textValue={type.label}>
+                        {type.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
 
             <div className="space-y-1">

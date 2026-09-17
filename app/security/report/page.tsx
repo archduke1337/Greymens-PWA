@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, CardContent, CardHeader, Label } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 import { AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
 
 export default function SecurityReportPage() {
@@ -84,14 +84,14 @@ export default function SecurityReportPage() {
                 Activity request submitted for review. The security team will respond with a decision.
               </div>
             )}
-            <label className="block text-sm font-medium">Activity title<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={activity.title} onChange={(event) => setActivity({ ...activity, title: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Description<textarea className="mt-1 min-h-20 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={activity.description} onChange={(event) => setActivity({ ...activity, description: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Target<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" placeholder="System, domain, lab, or repository" value={activity.target} onChange={(event) => setActivity({ ...activity, target: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Exact scope and exclusions<textarea className="mt-1 min-h-20 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={activity.scope} onChange={(event) => setActivity({ ...activity, scope: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Techniques<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" placeholder="comma-separated" value={activity.techniques} onChange={(event) => setActivity({ ...activity, techniques: event.target.value })} /></label>
-            <label className="block text-sm font-medium">Data boundary<textarea className="mt-1 min-h-20 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={activity.dataBoundary} onChange={(event) => setActivity({ ...activity, dataBoundary: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Purpose<textarea className="mt-1 min-h-20 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={activity.purpose} onChange={(event) => setActivity({ ...activity, purpose: event.target.value })} required /></label>
-            <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Starts<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" type="datetime-local" value={activity.startsAt} onChange={(event) => setActivity({ ...activity, startsAt: event.target.value })} required /></label><label className="block text-sm font-medium">Ends<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" type="datetime-local" value={activity.endsAt} onChange={(event) => setActivity({ ...activity, endsAt: event.target.value })} required /></label></div>
+            <label className="block text-sm font-medium">Activity title<Input fullWidth value={activity.title} onChange={(event) => setActivity({ ...activity, title: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Description<TextArea fullWidth rows={3} value={activity.description} onChange={(event) => setActivity({ ...activity, description: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Target<Input fullWidth placeholder="System, domain, lab, or repository" value={activity.target} onChange={(event) => setActivity({ ...activity, target: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Exact scope and exclusions<TextArea fullWidth rows={3} value={activity.scope} onChange={(event) => setActivity({ ...activity, scope: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Techniques<Input fullWidth placeholder="comma-separated" value={activity.techniques} onChange={(event) => setActivity({ ...activity, techniques: event.target.value })} /></label>
+            <label className="block text-sm font-medium">Data boundary<TextArea fullWidth rows={3} value={activity.dataBoundary} onChange={(event) => setActivity({ ...activity, dataBoundary: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Purpose<TextArea fullWidth rows={3} value={activity.purpose} onChange={(event) => setActivity({ ...activity, purpose: event.target.value })} required /></label>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Starts<Input fullWidth type="datetime-local" value={activity.startsAt} onChange={(event) => setActivity({ ...activity, startsAt: event.target.value })} required /></label><label className="block text-sm font-medium">Ends<Input fullWidth type="datetime-local" value={activity.endsAt} onChange={(event) => setActivity({ ...activity, endsAt: event.target.value })} required /></label></div>
             <Button type="submit" variant="primary" isPending={activityLoading}>Submit for authorization</Button>
           </form></CardContent>
         </Card>
@@ -109,10 +109,10 @@ export default function SecurityReportPage() {
                 Incident report submitted confidentially. Thank you for reporting promptly.
               </div>
             )}
-            <label className="block text-sm font-medium">Incident title<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={incident.title} onChange={(event) => setIncident({ ...incident, title: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">What happened?<textarea className="mt-1 min-h-24 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={incident.description} onChange={(event) => setIncident({ ...incident, description: event.target.value })} required /></label>
-            <label className="block text-sm font-medium">Affected resource<input className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={incident.affectedResource} onChange={(event) => setIncident({ ...incident, affectedResource: event.target.value })} required /></label>
-            <div><Label htmlFor="incident-severity">Severity</Label><select id="incident-severity" className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-2" value={incident.severity} onChange={(event) => setIncident({ ...incident, severity: event.target.value })}><option value="low">Low</option><option value="moderate">Moderate</option><option value="major">Major</option><option value="critical">Critical</option></select></div>
+            <label className="block text-sm font-medium">Incident title<Input fullWidth value={incident.title} onChange={(event) => setIncident({ ...incident, title: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">What happened?<TextArea fullWidth rows={4} value={incident.description} onChange={(event) => setIncident({ ...incident, description: event.target.value })} required /></label>
+            <label className="block text-sm font-medium">Affected resource<Input fullWidth value={incident.affectedResource} onChange={(event) => setIncident({ ...incident, affectedResource: event.target.value })} required /></label>
+            <div><Select fullWidth value={incident.severity} onChange={(value) => setIncident({ ...incident, severity: String(value ?? "low") })}><Label>Severity</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox><ListBox.Item id="low" textValue="Low">Low<ListBox.ItemIndicator /></ListBox.Item><ListBox.Item id="moderate" textValue="Moderate">Moderate<ListBox.ItemIndicator /></ListBox.Item><ListBox.Item id="major" textValue="Major">Major<ListBox.ItemIndicator /></ListBox.Item><ListBox.Item id="critical" textValue="Critical">Critical<ListBox.ItemIndicator /></ListBox.Item></ListBox></Select.Popover></Select></div>
             <Button type="submit" variant="danger" isPending={incidentLoading}>Submit confidential report</Button>
           </form></CardContent>
         </Card>

@@ -9,7 +9,7 @@ import { blogService } from "@/lib/blog";
 import type { Blog } from "@/lib/blog";
 import { blogCategories } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input} from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, Input, Label, ListBox, Select} from "@heroui/react";
 import {
   SearchIcon, 
   PenIcon, 
@@ -146,22 +146,31 @@ export default function BlogPage() {
                 onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="flex-1"
               />
-              <label htmlFor="blog-category" className="sr-only">
-                Filter by category
-              </label>
-              <select
-                id="blog-category"
+              <Select
+                className="min-w-[200px]"
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="min-w-[200px] px-3 py-2 rounded-lg border border-default-300 bg-white dark:bg-gray-900 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                onChange={(value) => setSelectedCategory(String(value ?? "all"))}
               >
-                <option value="all">All Categories</option>
-                {blogCategories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
+                <Label className="sr-only">Filter by category</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="all" textValue="All Categories">
+                      All Categories
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    {blogCategories.map((cat) => (
+                      <ListBox.Item key={cat.value} id={cat.value} textValue={cat.label}>
+                        {cat.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
           </CardContent>
         </Card>
