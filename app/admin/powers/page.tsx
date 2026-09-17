@@ -16,6 +16,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/errorHandler";
+import MemberAvatar from "@/components/MemberAvatar";
 import {
   Button,
   Card,
@@ -80,6 +81,7 @@ export default function AdminPowersPage() {
   const [grantTarget, setGrantTarget] = useState<Power | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
+  const [resultNames, setResultNames] = useState<Record<string, string>>({});
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [grantScope, setGrantScope] = useState<{ departmentId?: string; expiresAt?: string }>({});
@@ -131,25 +133,56 @@ export default function AdminPowersPage() {
     setGrantTarget(power);
     setSearchQuery("");
     setSearchResults([]);
+    setResultNames({});
+    setDirectory(null);
     setSelectedUser(null);
     setGrantScope({});
     openGrant();
   };
 
+  // Member directory cache: one 500-row fetch per modal session, not per
+  // keystroke. Entries carry the account name so search AND display both
+  // work through names, not just URNs and raw IDs.
+  const [directory, setDirectory] = useState<{
+    profiles: Profile[];
+    names: Record<string, string>;
+  } | null>(null);
+
   const handleSearchUsers = async () => {
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const response = await fetch("/api/admin/users?limit=500", { credentials: "include" });
-      const payload = (await response.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to search users");
+      let directoryData = directory;
+      if (!directoryData) {
+        const response = await fetch("/api/admin/users?limit=500", { credentials: "include" });
+        const payload = (await response.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
+        if (!response.ok) throw new Error(payload?.error || "Unable to search users");
+        directoryData = {
+          profiles: (payload?.users ?? []).map((entry) => entry.profile),
+          names: payload?.accountNames ?? {},
+        };
+        setDirectory(directoryData);
+        setResultNames(directoryData.names);
+      }
       const query = searchQuery.trim().toLowerCase();
-      const names = payload?.accountNames ?? {};
-      // Search spans the 500 most recent profiles only — the empty-state copy
-      // below says so instead of pretending the search is global.
-      const results = (payload?.users ?? []).map((entry) => entry.profile).filter((profile) =>
-        [profile.userId, profile.urn, profile.program, profile.branch, names[profile.userId]].some((value) => String(value ?? "").toLowerCase().includes(query)),
-      );
+      const names = directoryData.names;
+      const displayName = (profile: Profile) =>
+        names[profile.userId] || profile.urn || profile.userId;
+      // Search spans the cached directory (500 most recent profiles) — the
+      // empty-state copy below says so instead of pretending it is global.
+      // Name first: that is what the admin actually types.
+      const results = directoryData.profiles
+        .map((profile) => ({
+          profile,
+          rank: names[profile.userId]?.toLowerCase().includes(query)
+            ? 0
+            : [profile.urn, profile.program, profile.branch, profile.userId].some((value) =>
+              String(value ?? "").toLowerCase().includes(query)) ? 1 : -1,
+          _display: displayName(profile),
+        }))
+        .filter((entry) => entry.rank >= 0)
+        .sort((a, b) => a.rank - b.rank || a._display.localeCompare(b._display))
+        .map((entry) => entry.profile);
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching users:", error);
@@ -178,7 +211,7 @@ export default function AdminPowersPage() {
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(payload?.error || "Unable to grant power");
       toast.success(
-        `Power "${grantTarget.displayName}" granted to ${selectedUser.urn || selectedUser.userId}!`
+        `Power "${grantTarget.displayName}" granted to ${resultNames[selectedUser.userId] || selectedUser.urn || selectedUser.userId}!`
       );
       closeGrant();
     } catch (error) {
@@ -433,10 +466,11 @@ export default function AdminPowersPage() {
                     {/* Search */}
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Search by URN, branch, or userId..."
+                        placeholder="Search by name, URN, branch, or user ID..."
+                        aria-label="Search members by name, URN, branch, or user ID"
                         value={searchQuery}
                         onChange={(e: any) => setSearchQuery(e.target.value)}
-                        onKeyPress={(e: any) => {
+                        onKeyDown={(e: any) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             handleSearchUsers();
@@ -462,7 +496,9 @@ export default function AdminPowersPage() {
                             No results in the 500 most recent profiles. Try a different search.
                           </p>
                         )}
-                      {searchResults.map((profile) => (
+                      {searchResults.map((profile) => {
+                        const displayName = resultNames[profile.userId] || profile.urn || profile.userId;
+                        return (
                         <button
                           key={profile.userId}
                           type="button"
@@ -474,23 +510,25 @@ export default function AdminPowersPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-default-200 flex items-center justify-center text-xs font-bold">
-                              {profile.urn?.charAt(0) ||
-                                profile.userId.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {profile.urn || profile.userId}
+                            <MemberAvatar
+                              src={profile.avatar}
+                              name={displayName}
+                              className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {displayName}
                               </p>
-                              <p className="text-xs text-default-400">
-                                {[profile.branch, profile.program]
+                              <p className="text-xs text-default-400 truncate">
+                                {[profile.urn, profile.branch, profile.program]
                                   .filter(Boolean)
                                   .join(" | ")}
                               </p>
                             </div>
                           </div>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Selected User */}
@@ -498,8 +536,13 @@ export default function AdminPowersPage() {
                       <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
                         <p className="text-sm font-semibold">Selected:</p>
                         <p className="text-sm">
-                          {selectedUser.urn || selectedUser.userId}
+                          {resultNames[selectedUser.userId] || selectedUser.urn || selectedUser.userId}
                         </p>
+                        {(resultNames[selectedUser.userId] || selectedUser.urn) && (
+                          <p className="text-xs text-default-400">
+                            {[selectedUser.urn, selectedUser.branch].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -618,10 +661,11 @@ export default function AdminPowersPage() {
                             className="flex items-center justify-between p-3 border border-default-200 rounded-lg"
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-8 h-8 rounded-full bg-default-200 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                {holder.profile?.urn?.charAt(0) ||
-                                  holder.userId.charAt(0).toUpperCase()}
-                              </div>
+                              <MemberAvatar
+                                src={holder.profile?.avatar}
+                                name={holder.profile?.urn || holder.userId}
+                                className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                              />
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate">
                                   {holder.profile?.urn || holder.userId}
