@@ -753,7 +753,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label htmlFor="onboarding-github" className="text-sm font-medium">GitHub URL</label>
+                <label htmlFor="onboarding-github" className="text-sm font-medium">GitHub URL <span className="font-normal text-muted-foreground">(optional)</span></label>
                 <input
                   id="onboarding-github"
                   type="url"
@@ -764,7 +764,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label htmlFor="onboarding-linkedin" className="text-sm font-medium">LinkedIn URL</label>
+                <label htmlFor="onboarding-linkedin" className="text-sm font-medium">LinkedIn URL <span className="font-normal text-muted-foreground">(optional)</span></label>
                 <input
                   id="onboarding-linkedin"
                   type="url"
@@ -775,7 +775,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label htmlFor="onboarding-portfolio" className="text-sm font-medium">Portfolio URL</label>
+                <label htmlFor="onboarding-portfolio" className="text-sm font-medium">Portfolio URL <span className="font-normal text-muted-foreground">(optional)</span></label>
                 <input
                   id="onboarding-portfolio"
                   type="url"

@@ -634,9 +634,9 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.githubUrl}
-                    aria-label="GitHub profile URL"
+                    aria-label="GitHub profile URL (optional)"
                     onChange={(e) => setEditForm((prev) => ({ ...prev, githubUrl: e.target.value }))}
-                    placeholder="GitHub profile URL"
+                    placeholder="GitHub profile URL (optional)"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -645,9 +645,9 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.linkedinUrl}
-                    aria-label="LinkedIn profile URL"
+                    aria-label="LinkedIn profile URL (optional)"
                     onChange={(e) => setEditForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))}
-                    placeholder="LinkedIn profile URL"
+                    placeholder="LinkedIn profile URL (optional)"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -656,9 +656,9 @@ export default function ProfilePage() {
                   </svg>
                   <Input
                     value={editForm.portfolioUrl}
-                    aria-label="Portfolio website URL"
+                    aria-label="Portfolio website URL (optional)"
                     onChange={(e) => setEditForm((prev) => ({ ...prev, portfolioUrl: e.target.value }))}
-                    placeholder="Portfolio website URL"
+                    placeholder="Portfolio website URL (optional)"
                   />
                 </div>
               </div>
