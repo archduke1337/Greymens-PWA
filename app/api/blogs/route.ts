@@ -316,6 +316,15 @@ export async function PATCH(request: NextRequest) {
       : action === "reject" ? { status: "rejected", rejectionReason: reason, featured: false }
       : { featured: action === "feature" };
 
+    // Approving publishes the author's *current* public picture: posts
+    // submitted before the avatar upload would otherwise go live faceless.
+    // Non-public profiles stay blank by design — a restricted file URL would
+    // render broken for signed-out readers.
+    if (action === "approve") {
+      const avatar = await publicAvatarFor(databases, String(blog.authorId ?? ""));
+      if (avatar !== undefined) updates.authorAvatar = avatar;
+    }
+
     const updated = await databases.updateDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId, updates);
 
     await recordAudit({
