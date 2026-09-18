@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { account, authService } from "@/lib/appwrite";
 import type { ExtendedUser } from "@/lib/types";
-import { Button, Card, CardContent, CardHeader, Input, Modal, ModalBackdrop, ModalBody, ModalContainer, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, useOverlayState } from "@heroui/react";
+import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, Modal, ModalBackdrop, ModalBody, ModalContainer, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, TextField, useOverlayState } from "@heroui/react";
 
 // Notification preference keys stored on the authenticated account.
 const EMAIL_NOTIFICATIONS_PREF = "emailNotifications";
@@ -120,7 +120,7 @@ export default function SettingsPage() {
     }
 
     if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
+      setPasswordError("New password must be at least 8 characters");
       return;
     }
 
@@ -304,64 +304,91 @@ export default function SettingsPage() {
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
-            <form onSubmit={handlePasswordChange} className="space-y-4">
-              <div className="space-y-1">
-                <label htmlFor="settings-current-password" className="text-sm font-medium">Current password</label>
+            <Form validationBehavior="aria" onSubmit={handlePasswordChange} className="space-y-4">
+              <TextField
+                isRequired
+                isDisabled={passwordLoading}
+                name="currentPassword"
+                type="password"
+                value={oldPassword}
+                onChange={setOldPassword}
+              >
+                <Label>Current password</Label>
                 <Input
-                  id="settings-current-password"
-                  type="password"
                   autoComplete="current-password"
-                  value={oldPassword}
-                  onChange={(e: any) => setOldPassword(e.target.value)}
                   placeholder="Enter current password"
-                  required
-                  disabled={passwordLoading}
                 />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="settings-new-password" className="text-sm font-medium">New password</label>
+                <FieldError />
+              </TextField>
+              <TextField
+                isRequired
+                isDisabled={passwordLoading}
+                name="newPassword"
+                type="password"
+                validate={(value) =>
+                  value.length >= 8 ? null : "New password must be at least 8 characters"
+                }
+                value={newPassword}
+                onChange={setNewPassword}
+              >
+                <Label>New password</Label>
                 <Input
-                  id="settings-new-password"
-                  type="password"
                   autoComplete="new-password"
-                  value={newPassword}
-                  onChange={(e: any) => setNewPassword(e.target.value)}
                   placeholder="Enter new password (min 8 characters)"
-                  required
-                  disabled={passwordLoading}
                 />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="settings-confirm-password" className="text-sm font-medium">Confirm new password</label>
+                <Description>At least 8 characters.</Description>
+                <FieldError />
+              </TextField>
+              <TextField
+                isRequired
+                isDisabled={passwordLoading}
+                name="confirmNewPassword"
+                type="password"
+                validate={(value) =>
+                  value === newPassword ? null : "New passwords do not match"
+                }
+                value={confirmNewPassword}
+                onChange={setConfirmNewPassword}
+              >
+                <Label>Confirm new password</Label>
                 <Input
-                  id="settings-confirm-password"
-                  type="password"
                   autoComplete="new-password"
-                  value={confirmNewPassword}
-                  onChange={(e: any) => setConfirmNewPassword(e.target.value)}
                   placeholder="Confirm new password"
-                  required
-                  disabled={passwordLoading}
                 />
-              </div>
+                <FieldError />
+              </TextField>
 
               {passwordError && (
-                <div className="text-danger text-sm" role="alert">{passwordError}</div>
+                <Alert role="alert" status="danger">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>Couldn&apos;t change your password</Alert.Title>
+                    <Alert.Description>{passwordError}</Alert.Description>
+                  </Alert.Content>
+                </Alert>
               )}
 
               {passwordSuccess && (
-                <div className="text-success text-sm" role="status">
-                  Password changed successfully!
-                </div>
+                <Alert role="status" status="success">
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>Password changed</Alert.Title>
+                    <Alert.Description>
+                      Use the new password next time you log in.
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert>
               )}
 
               <Button
-                type="submit"
+                className="w-full sm:w-auto"
+                isDisabled={passwordLoading}
                 isPending={passwordLoading}
+                type="submit"
               >
                 Update Password
               </Button>
-            </form>
+            </Form>
           </div>
 
           <Separator />
@@ -373,9 +400,9 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm text-default-500">
                   Status: {user.emailVerification ? (
-                    <span className="text-success">Verified ✓</span>
+                    <span className="text-success">Verified</span>
                   ) : (
-                    <span className="text-warning">Not Verified</span>
+                    <span className="text-warning">Not verified</span>
                   )}
                 </p>
                 <p className="text-sm text-default-500 mt-1">
@@ -395,13 +422,23 @@ export default function SettingsPage() {
             </div>
 
             {verificationError && (
-              <div className="text-danger text-sm mt-2" role="alert">{verificationError}</div>
+              <Alert role="alert" status="danger" className="mt-2">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t send the email</Alert.Title>
+                  <Alert.Description>{verificationError}</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
 
             {verificationSuccess && (
-              <div className="text-success text-sm mt-2" role="status">
-                Verification email sent! Check your inbox.
-              </div>
+              <Alert role="status" status="success" className="mt-2">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Verification email sent</Alert.Title>
+                  <Alert.Description>Check your inbox.</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
           </div>
 
@@ -414,11 +451,11 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm text-default-500">
                   Status: {user.phoneVerification ? (
-                    <span className="text-success">Verified ✓</span>
+                    <span className="text-success">Verified</span>
                   ) : user.phone ? (
-                    <span className="text-warning">Not Verified</span>
+                    <span className="text-warning">Not verified</span>
                   ) : (
-                    <span className="text-default-400">Not Added</span>
+                    <span className="text-default-400">Not added</span>
                   )}
                 </p>
                 <p className="text-sm text-default-500 mt-1">
@@ -444,13 +481,23 @@ export default function SettingsPage() {
             </div>
 
             {phoneError && (
-              <div className="text-danger text-sm mt-2" role="alert">{phoneError}</div>
+              <Alert role="alert" status="danger" className="mt-2">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t save the phone number</Alert.Title>
+                  <Alert.Description>{phoneError}</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
 
             {phoneSuccess && (
-              <div className="text-success text-sm mt-2" role="status">
-                Phone number updated successfully!
-              </div>
+              <Alert role="status" status="success" className="mt-2">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Phone number saved</Alert.Title>
+                  <Alert.Description>Verify it to finish.</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
           </div>
         </CardContent>
@@ -556,51 +603,71 @@ export default function SettingsPage() {
         <ModalBackdrop isOpen={isPhoneModalOpen} onOpenChange={(open: boolean) => { if (!open) onPhoneModalClose(); }}>
           <ModalContainer>
             <ModalDialog>
-          <form onSubmit={handleAddPhone}>
-            <ModalHeader>
-              {user.phone ? "Update" : "Add"} Phone Number
-            </ModalHeader>
-            <ModalBody>
-              <div className="space-y-1">
-                <label htmlFor="settings-phone-number" className="text-sm font-medium">Phone number</label>
-                <Input
-                  id="settings-phone-number"
-                  type="tel"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  placeholder="+911234567890"
-                  value={phoneNumber}
-                  onChange={(e: any) => setPhoneNumber(e.target.value)}
-                  required
-                  disabled={phoneLoading}
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="settings-phone-password" className="text-sm font-medium">Password</label>
-                <Input
-                  id="settings-phone-password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  value={phonePassword}
-                  onChange={(e: any) => setPhonePassword(e.target.value)}
-                  required
-                  disabled={phoneLoading}
-                />
-              </div>
-              {phoneError && (
-                <div className="text-danger text-sm" role="alert">{phoneError}</div>
-              )}
-            </ModalBody>
-            <ModalFooter>
-              <Button type="button" variant="ghost" onPress={onPhoneModalClose}>
-                Cancel
-              </Button>
-              <Button type="submit" isPending={phoneLoading}>
-                {user.phone ? "Update" : "Add"} Phone
-              </Button>
-            </ModalFooter>
-          </form>
+              <Form validationBehavior="aria" onSubmit={handleAddPhone}>
+                <ModalHeader>
+                  {user.phone ? "Update" : "Add"} Phone Number
+                </ModalHeader>
+                <ModalBody>
+                  <TextField
+                    isRequired
+                    isDisabled={phoneLoading}
+                    name="phoneNumber"
+                    type="tel"
+                    validate={(value) =>
+                      /^\+\d{7,15}$/.test(value.replace(/[\s()-]/g, ""))
+                        ? null
+                        : "Enter a valid phone number with country code (e.g., +911234567890)"
+                    }
+                    value={phoneNumber}
+                    onChange={setPhoneNumber}
+                  >
+                    <Label>Phone number</Label>
+                    <Input
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder="+911234567890"
+                    />
+                    <Description>Country code first, e.g. +91…</Description>
+                    <FieldError />
+                  </TextField>
+                  <TextField
+                    isRequired
+                    isDisabled={phoneLoading}
+                    name="phonePassword"
+                    type="password"
+                    value={phonePassword}
+                    onChange={setPhonePassword}
+                  >
+                    <Label>Password</Label>
+                    <Input
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                    />
+                    <FieldError />
+                  </TextField>
+                  {phoneError && (
+                    <Alert role="alert" status="danger">
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Title>Couldn&apos;t save the phone number</Alert.Title>
+                        <Alert.Description>{phoneError}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                </ModalBody>
+                <ModalFooter>
+                  <Button type="button" variant="ghost" onPress={onPhoneModalClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    isDisabled={phoneLoading}
+                    isPending={phoneLoading}
+                    type="submit"
+                  >
+                    {user.phone ? "Update" : "Add"} Phone
+                  </Button>
+                </ModalFooter>
+              </Form>
             </ModalDialog>
           </ModalContainer>
         </ModalBackdrop>
@@ -611,57 +678,75 @@ export default function SettingsPage() {
         <ModalBackdrop isOpen={isVerifyModalOpen} onOpenChange={(open: boolean) => { if (!open) onVerifyModalClose(); }}>
           <ModalContainer>
             <ModalDialog>
-          <form onSubmit={handleVerifyPhone}>
-            <ModalHeader>
-              Verify Phone Number
-            </ModalHeader>
-            <ModalBody>
-              <p className="text-sm text-default-500 mb-4">
-                Enter the verification code sent to your phone number
-              </p>
-              <div className="space-y-1">
-                <label htmlFor="settings-verification-code" className="text-sm font-medium">Verification code</label>
-                <Input
-                  id="settings-verification-code"
-                  placeholder="Enter 6-digit code"
-                  value={verificationCode}
-                  onChange={(e: any) => setVerificationCode(e.target.value)}
-                  required
-                  maxLength={6}
-                  disabled={phoneVerifyLoading}
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                />
-              </div>
-              {phoneVerifyError && (
-                <div className="text-danger text-sm" role="alert">{phoneVerifyError}</div>
-              )}
-              {phoneVerifySuccess && (
-                <div className="text-success text-sm" role="status">
-                  Phone verified successfully!
-                </div>
-              )}
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                isPending={phoneResending}
-                isDisabled={phoneVerifyLoading || smsCooldown}
-                className="mt-2"
-                onPress={handleSendPhoneVerification}
-              >
-                {smsCooldown ? "Code sent — wait to resend" : "Resend Code"}
-              </Button>
-            </ModalBody>
-            <ModalFooter>
-              <Button type="button" variant="ghost" onPress={onVerifyModalClose}>
-                Cancel
-              </Button>
-              <Button type="submit" isPending={phoneVerifyLoading}>
-                Verify Phone
-              </Button>
-            </ModalFooter>
-          </form>
+              <Form validationBehavior="aria" onSubmit={handleVerifyPhone}>
+                <ModalHeader>
+                  Verify Phone Number
+                </ModalHeader>
+                <ModalBody>
+                  <p className="text-sm text-default-500 mb-4">
+                    Enter the verification code sent to your phone number
+                  </p>
+                  <TextField
+                    isRequired
+                    isDisabled={phoneVerifyLoading}
+                    name="verificationCode"
+                    validate={(value) =>
+                      value.trim() ? null : "Enter the verification code"
+                    }
+                    value={verificationCode}
+                    onChange={setVerificationCode}
+                  >
+                    <Label>Verification code</Label>
+                    <Input
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                    />
+                    <FieldError />
+                  </TextField>
+                  {phoneVerifyError && (
+                    <Alert role="alert" status="danger">
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Title>Couldn&apos;t verify the code</Alert.Title>
+                        <Alert.Description>{phoneVerifyError}</Alert.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                  {phoneVerifySuccess && (
+                    <Alert role="status" status="success">
+                      <Alert.Indicator />
+                      <Alert.Content>
+                        <Alert.Title>Phone verified</Alert.Title>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                  <Button
+                    className="mt-2"
+                    isDisabled={phoneVerifyLoading || smsCooldown}
+                    isPending={phoneResending}
+                    onPress={handleSendPhoneVerification}
+                    size="sm"
+                    type="button"
+                    variant="primary"
+                  >
+                    {smsCooldown ? "Code sent — wait to resend" : "Resend Code"}
+                  </Button>
+                </ModalBody>
+                <ModalFooter>
+                  <Button type="button" variant="ghost" onPress={onVerifyModalClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    isDisabled={phoneVerifyLoading}
+                    isPending={phoneVerifyLoading}
+                    type="submit"
+                  >
+                    Verify Phone
+                  </Button>
+                </ModalFooter>
+              </Form>
             </ModalDialog>
           </ModalContainer>
         </ModalBackdrop>
