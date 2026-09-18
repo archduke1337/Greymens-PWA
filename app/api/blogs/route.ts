@@ -7,7 +7,7 @@ import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isHttpUrl, isRecord } from "@/lib/validation";
-import { blogCategories } from "@/lib/blog-format";
+import { blogCategories, calculateReadTime } from "@/lib/blog-format";
 import { ok, fail, ApiError } from "@/lib/api";
 
 const MAX_REASON_LENGTH = 2000;
@@ -26,6 +26,35 @@ async function loadBlog(blogId: string) {
   } catch {
     return { databases, blog: null };
   }
+}
+
+/**
+ * The author's current profile picture, for stamping onto a world-readable
+ * post. Returns undefined unless the profile is explicitly public — a
+ * restricted file URL would render broken (or leak) for signed-out readers.
+ */
+async function publicAvatarFor(
+  databases: Awaited<ReturnType<typeof createServerDatabases>>["databases"],
+  userId: string,
+): Promise<string | undefined> {
+  try {
+    const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+      Query.equal("userId", [userId]),
+      Query.limit(1),
+    ]);
+    const profile = profiles.documents[0] as Record<string, unknown> | undefined;
+    if (
+      profile &&
+      String(profile.profileVisibility ?? "public") === "public" &&
+      typeof profile.avatar === "string" &&
+      profile.avatar
+    ) {
+      return profile.avatar;
+    }
+  } catch {
+    // Best effort: the post stands without a picture.
+  }
+  return undefined;
 }
 
 /**
@@ -120,7 +149,7 @@ export async function POST(request: NextRequest) {
       return fail("CONFLICT", "A blog with this title already exists", 409);
     }
 
-    const blog = await databases.createDocument(DATABASE_ID, COLLECTIONS.BLOGS, ID.unique(), {
+    const newPost: Record<string, unknown> = {
       title,
       slug,
       excerpt,
@@ -133,13 +162,18 @@ export async function POST(request: NextRequest) {
       // The author's email is deliberately not copied onto the post: the blogs
       // table is world-readable, so every author's address would be public.
       authorEmail: "",
-      authorAvatar: (authenticated.user.prefs as Record<string, unknown> | undefined)?.avatar || undefined,
       status: "pending",
       views: 0,
       likes: 0,
       featured: false,
       readTime,
-    });
+    };
+    // The picture lives on the profile row (account prefs were never
+    // written by any flow) — copy it only when the profile is public.
+    const avatar = await publicAvatarFor(databases, authenticated.user.$id);
+    if (avatar !== undefined) newPost.authorAvatar = avatar;
+
+    const blog = await databases.createDocument(DATABASE_ID, COLLECTIONS.BLOGS, ID.unique(), newPost);
 
     await recordAudit({
       request,
@@ -175,6 +209,78 @@ export async function PATCH(request: NextRequest) {
   const blogId = typeof body.blogId === "string" ? body.blogId.trim() : "";
   const action = typeof body.action === "string" ? body.action : "";
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
+
+  // Content edits ride on ownership, not on a separate capability: the post's
+  // author (in any status, published included) or a reviewer may revise it.
+  // Slugs are deliberately not editable — they are public URLs, and renaming
+  // them would silently break every link, ticket reference, and share.
+  if (action === "edit") {
+    const authenticated = await requireAuthenticatedUser(request);
+    if (!authenticated.user) return authenticated.response;
+
+    const title = stringField(body.title, 255, true);
+    const excerpt = stringField(body.excerpt, 500, true);
+    const content = stringField(body.content, 65535, true);
+    const coverImage = stringField(body.coverImage, 500, true);
+    const category = stringField(body.category, 100, true);
+    const tags = Array.isArray(body.tags) && body.tags.length <= 20 && body.tags.every((tag) => typeof tag === "string" && tag.trim().length > 0 && tag.length <= 100)
+      ? (body.tags as string[]).map((tag) => tag.trim())
+      : null;
+    if (!title || !excerpt || !content || !coverImage || !category || !tags) {
+      return fail("VALIDATION", "Invalid or missing blog fields", 400);
+    }
+    if (!isHttpUrl(coverImage)) return fail("VALIDATION", "Invalid cover image URL", 400);
+    if (!BLOG_CATEGORIES.has(category)) return fail("VALIDATION", "Invalid blog category", 400);
+
+    try {
+      const { databases, blog } = await loadBlog(blogId);
+      if (!blog) return fail("NOT_FOUND", "Blog not found", 404);
+
+      const isAuthor = String(blog.authorId ?? "") === authenticated.user.$id;
+      let editedByReviewer = false;
+      if (!isAuthor) {
+        const permitted = await requireCapability(request, "blog.review");
+        if (!permitted.user) return permitted.response;
+        editedByReviewer = true;
+      }
+
+      // An author revising a live post sends it back through review — otherwise
+      // "edit" would be a review bypass for approved content. A reviewer
+      // polishing copy keeps the post's status untouched.
+      const resetToPending = isAuthor && String(blog.status ?? "") !== "pending";
+      const updates: Record<string, unknown> = {
+        title,
+        excerpt,
+        content,
+        coverImage,
+        category,
+        tags,
+        readTime: Math.max(1, Math.min(calculateReadTime(content), 1440)),
+      };
+      // Best effort: a newly public picture appears on the post. Guarded —
+      // Appwrite rejects undefined attributes, and a missing picture must
+      // never wipe the stored one.
+      const avatar = await publicAvatarFor(databases, String(blog.authorId ?? ""));
+      if (avatar !== undefined) updates.authorAvatar = avatar;
+      if (resetToPending) updates.status = "pending";
+
+      const updated = await databases.updateDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId, updates);
+
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: "blog.edit",
+        entityType: "blog",
+        entityId: blogId,
+        details: { authorId: String(blog.authorId ?? ""), byReviewer: editedByReviewer, resetToPending },
+      });
+
+      return ok({ blog: updated, resetToPending });
+    } catch (error) {
+      console.error("Blog edit error:", error);
+      return fail("INTERNAL", "Unable to save the edit", 500);
+    }
+  }
 
   const capabilityByAction: Record<string, string> = {
     approve: "blog.approve",
