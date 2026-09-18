@@ -137,12 +137,12 @@ export default function MemberDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div className="space-y-2">
-          <div className="h-9 w-64 bg-zinc-800 rounded-lg animate-pulse" />
-          <div className="h-4 w-80 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-9 w-64 bg-surface-secondary rounded-lg animate-pulse" />
+          <div className="h-4 w-80 bg-surface-secondary rounded animate-pulse" />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-zinc-800 rounded-xl animate-pulse" />
+            <div key={i} className="h-24 bg-surface-secondary rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function MemberDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-16 text-center space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Couldn&apos;t load your dashboard</h1>
-        <p className="text-zinc-400">{loadError}</p>
+        <p className="text-muted">{loadError}</p>
         <Button onPress={reload}>
           Try again
         </Button>
@@ -168,9 +168,9 @@ export default function MemberDashboard() {
         <h1 className="text-3xl font-bold tracking-tight">
           Welcome back, <span className="tracking-tight text-foreground">{user?.name}</span>
         </h1>
-        <p className="text-zinc-400">
+        <p className="text-muted">
           {membership?.membershipNumber && (
-            <span className="text-zinc-500">Member #{membership.membershipNumber}</span>
+            <span className="text-muted">Member #{membership.membershipNumber}</span>
           )}
         </p>
       </div>
@@ -180,12 +180,12 @@ export default function MemberDashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <div key={stat.label} className="rounded-xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between">
                 <Icon className={`w-5 h-5 ${stat.color}`} />
                 <span className="text-2xl font-bold">{stat.value}</span>
               </div>
-              <p className="text-sm text-zinc-400 mt-2">{stat.label}</p>
+              <p className="text-sm text-muted mt-2">{stat.label}</p>
             </div>
           );
         })}
@@ -193,7 +193,7 @@ export default function MemberDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* My Events */}
-        <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">My Events</h2>
             <Link href="/events" className="text-sm text-primary hover:opacity-90 flex items-center gap-1">
@@ -229,13 +229,13 @@ export default function MemberDashboard() {
                   const event = registeredEvents.find((e) => e.$id === reg.eventId);
                   if (!event) return null;
                   return (
-                    <div key={reg.$id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-zinc-800/50 transition-colors">
+                    <div key={reg.$id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-secondary transition-colors">
                       <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <Calendar className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{event.title}</h3>
-                        <div className="flex items-center gap-3 text-xs text-zinc-500 mt-1">
+                        <div className="flex items-center gap-3 text-xs text-muted mt-1">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -246,7 +246,7 @@ export default function MemberDashboard() {
                           </span>
                         </div>
                       </div>
-                      <Link href={`/events/${event.$id}`} className="text-zinc-500 hover:text-zinc-300">
+                      <Link href={`/events/${event.$id}`} className="text-muted hover:text-foreground">
                         <ArrowUpRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -255,8 +255,8 @@ export default function MemberDashboard() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Calendar className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
-                <p className="text-sm text-zinc-500">No upcoming events registered</p>
+                <Calendar className="w-10 h-10 text-muted mx-auto mb-3" />
+                <p className="text-sm text-muted">No upcoming events registered</p>
                 <Link href="/events" className="text-sm text-primary hover:opacity-90 mt-2 inline-block">
                   Browse Events
                 </Link>
@@ -269,12 +269,12 @@ export default function MemberDashboard() {
                 if (!event) return null;
                 return (
                   <div key={reg.$id} className="flex items-center gap-4 p-3 rounded-lg opacity-60">
-                    <div className="w-12 h-12 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-zinc-500" />
+                    <div className="w-12 h-12 rounded-lg bg-surface-secondary flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-muted" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-sm truncate">{event.title}</h3>
-                      <p className="text-xs text-zinc-500 mt-1">
+                      <p className="text-xs text-muted mt-1">
                         {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
@@ -284,7 +284,7 @@ export default function MemberDashboard() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-sm text-zinc-500">No past events</p>
+              <p className="text-sm text-muted">No past events</p>
             </div>
           )}
         </div>
@@ -294,7 +294,7 @@ export default function MemberDashboard() {
           <AccessCard />
 
           {/* Upcoming Events Feed */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">Upcoming Events</h2>
             {upcomingEvents.length > 0 ? (
               <div className="space-y-3">
@@ -302,15 +302,15 @@ export default function MemberDashboard() {
                   <Link
                     key={event.$id}
                     href={`/events/${event.$id}`}
-                    className="block p-3 rounded-lg hover:bg-zinc-800/50 transition-colors group"
+                    className="block p-3 rounded-lg hover:bg-surface-secondary transition-colors group"
                   >
                     <h3 className="font-medium text-sm group-hover:text-primary transition-colors truncate">
                       {event.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
+                    <div className="flex items-center gap-2 text-xs text-muted mt-1">
                       <Clock className="w-3 h-3" />
                       {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      <span className="text-zinc-700">•</span>
+                      <span className="text-muted">•</span>
                       <MapPin className="w-3 h-3" />
                       {event.venue}
                     </div>
@@ -318,25 +318,25 @@ export default function MemberDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-zinc-500 text-center py-4">No upcoming events</p>
+              <p className="text-sm text-muted text-center py-4">No upcoming events</p>
             )}
           </div>
 
           {/* Recent Notifications */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-semibold mb-4">Notifications</h2>
             {notifications.length > 0 ? (
               <div className="space-y-3">
                 {notifications.slice(0, 5).map((notif) => (
                   <div
                     key={notif.$id}
-                    className={`p-3 rounded-lg ${notif.read ? "opacity-60" : "bg-zinc-800/50"}`}
+                    className={`p-3 rounded-lg ${notif.read ? "opacity-60" : "bg-surface-secondary"}`}
                   >
                     <div className="flex items-start gap-2">
                       {!notif.read && <Bell className="w-3 h-3 text-primary mt-1 flex-shrink-0" />}
                       <div className="min-w-0">
                         <h4 className="text-sm font-medium truncate">{notif.title}</h4>
-                        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{notif.body}</p>
+                        <p className="text-xs text-muted mt-0.5 line-clamp-2">{notif.body}</p>
                       </div>
                     </div>
                   </div>
@@ -344,14 +344,14 @@ export default function MemberDashboard() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <Bell className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
-                <p className="text-sm text-zinc-500">No notifications</p>
+                <Bell className="w-8 h-8 text-muted mx-auto mb-2" />
+                <p className="text-sm text-muted">No notifications</p>
               </div>
             )}
           </div>
 
           {/* Resources Quick Access */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Resources</h2>
               <Link href="/resources" className="text-sm text-primary hover:opacity-90 flex items-center gap-1">
@@ -375,16 +375,16 @@ export default function MemberDashboard() {
                       href={res.url || "/resources"}
                       target={res.url ? "_blank" : undefined}
                       rel={res.url ? "noreferrer" : undefined}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors"
                     >
-                      <Icon className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                      <Icon className="w-4 h-4 text-muted flex-shrink-0" />
                       <span className="text-sm truncate">{res.title}</span>
                     </Link>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-sm text-zinc-500 text-center py-4">No resources available</p>
+              <p className="text-sm text-muted text-center py-4">No resources available</p>
             )}
           </div>
         </div>
