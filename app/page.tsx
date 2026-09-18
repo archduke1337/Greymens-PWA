@@ -45,27 +45,29 @@ const FIRST_MONTH = [
 export default function Home() {
   return (
     <div className="w-full">
-      {/* Institutional marks — quiet trust line between navbar and the fold.
-          Centered like the about page; white tiles keep both logos' brand
-          colors intact on the dark bg. */}
+      {/* Institutional marks — centered above the hero, both logos clearly visible.
+          White tiles preserve brand colors on either theme; logos share one
+          centered row, caption sits below so nothing crowds. */}
       <section
         aria-label="Institutional affiliation"
-        className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-4 pb-5 pt-1 sm:flex-row sm:justify-center sm:gap-4"
+        className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-4 px-4 pb-6 pt-4 text-center"
       >
-        <span className="flex h-11 items-center rounded-xl bg-white px-3.5">
-          <img
-            src="/adypu-logo.png"
-            alt="Ajeenkya D Y Patil University"
-            className="h-6 w-auto object-contain"
-          />
-        </span>
-        <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
-          <img
-            src="/seamedu-logo.jpg"
-            alt="Seamedu"
-            className="h-8 w-8 object-contain"
-          />
-        </span>
+        <div className="flex items-center justify-center gap-4">
+          <span className="flex h-16 items-center rounded-2xl bg-white px-5 shadow-sm ring-1 ring-black/10 sm:h-[72px]">
+            <img
+              src="/adypu-logo.png"
+              alt="Ajeenkya D Y Patil University"
+              className="h-10 w-auto object-contain sm:h-11"
+            />
+          </span>
+          <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/10 sm:h-[72px] sm:w-[72px]">
+            <img
+              src="/seamedu-logo.jpg"
+              alt="Seamedu"
+              className="h-12 w-12 object-contain sm:h-14 sm:w-14"
+            />
+          </span>
+        </div>
         <p className="text-center text-xs text-muted sm:text-sm">
           A student club of Ajeenkya D Y Patil University
         </p>
