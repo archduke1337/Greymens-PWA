@@ -270,11 +270,11 @@ export default function EventsPage() {
       <figure className="space-y-2">
         <div className="overflow-hidden rounded-3xl border border-default-200/70">
             <img
-              src="/Assets/Banners/clut.jpg"
-              alt="A crowd in black and white with one figure lit in green binary code"
-            loading="lazy"
-            className="h-40 w-full object-cover object-bottom sm:h-52"
-          />
+              src="/Assets/Objects/crowd.jpg"
+              alt="A crowd of members seen from behind, watching together"
+              loading="lazy"
+              className="h-40 w-full object-cover object-bottom sm:h-52"
+            />
         </div>
         <figcaption className="text-center text-sm text-muted">
           Room for one more. Usually you.
