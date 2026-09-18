@@ -93,7 +93,7 @@ export default function ProjectsPage() {
           <RocketIcon className="w-4 h-4" aria-hidden="true" />
           Member projects
         </Chip>
-        <h1 className={title({ size: "lg" })}>Built here, not just talked about</h1>
+        <h1 className={title({ size: "lg", class: "block" })}>Built here, not just talked about</h1>
         <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto" })}>
           Tools, labs, and experiments from across the club — most of them
           started as a workshop demo that refused to stay a demo.
@@ -130,15 +130,17 @@ export default function ProjectsPage() {
           <p className="mt-4 text-default-500">Loading projects…</p>
         </div>
       ) : error ? (
-        <Card>
-          <CardContent className="text-center py-16 space-y-4">
-            <h2 className="text-xl font-semibold">Projects could not be loaded</h2>
-            <p className="text-default-500 max-w-md mx-auto">{error}</p>
-            <Button variant="primary" onPress={fetchProjects}>
-              Try again
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="max-w-7xl mx-auto px-6">
+          <Card>
+            <CardContent className="text-center items-center py-16 space-y-4">
+              <h2 className="text-xl font-semibold">Projects could not be loaded</h2>
+              <p className="text-default-500 max-w-md mx-auto">{error}</p>
+              <Button variant="primary" onPress={fetchProjects}>
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
