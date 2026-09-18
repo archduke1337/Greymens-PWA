@@ -177,12 +177,12 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-5 px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-sm text-default-500">
-            {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up"}
+          <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+          <p className="text-sm text-muted">
+            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -237,8 +237,8 @@ export default function NotificationsPage() {
               <Card
                 className={`transition-all ${
                   !notification.read
-                    ? "border-l-4 border-l-primary bg-primary-50/30"
-                    : "opacity-70"
+                    ? "border-foreground/40"
+                    : "opacity-60"
                 }`}
               >
                 <CardContent className="p-4">
@@ -252,7 +252,7 @@ export default function NotificationsPage() {
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
+                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground" aria-hidden="true" />
                         )}
                       </div>
                       <p className="text-sm text-default-600 line-clamp-2">
