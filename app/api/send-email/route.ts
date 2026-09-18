@@ -1,8 +1,12 @@
-import type { NextRequest } from "next/server";
 import { sendContactMessage } from "@/lib/contact-mailer";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { TEXT_LIMITS, isEmailAddress, isRecord, readString } from "@/lib/validation";
-import { ok, fail, ApiError } from "@/lib/api";
+import {
+  TEXT_LIMITS,
+  isEmailAddress,
+  isRecord,
+  readString,
+} from "@/lib/validation";
+import { ok, fail } from "@/lib/api";
 
 // This endpoint is unauthenticated and spends a metered third-party quota, so it
 // is rate limited per client address.
@@ -11,12 +15,24 @@ const RATE_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: Request) {
   const address = getClientAddress(request);
-  const limited = consumeRateLimit(`send-email:${address}`, RATE_LIMIT, RATE_WINDOW_MS);
+  const limited = consumeRateLimit(
+    `send-email:${address}`,
+    RATE_LIMIT,
+    RATE_WINDOW_MS,
+  );
+
   if (!limited.allowed) {
-    return fail("RATE_LIMITED", "Too many messages sent. Please try again shortly.", 429, undefined, { "Retry-After": String(limited.retryAfter) });
+    return fail(
+      "RATE_LIMITED",
+      "Too many messages sent. Please try again shortly.",
+      429,
+      undefined,
+      { "Retry-After": String(limited.retryAfter) },
+    );
   }
 
   let body: unknown;
+
   try {
     body = await request.json();
   } catch {
@@ -40,8 +56,25 @@ export async function POST(request: Request) {
   }
 
   const result = await sendContactMessage({ name, email, subject, message });
+
   if (!result.ok) {
-    return fail((result.status === 400 ? "VALIDATION" : result.status === 401 ? "UNAUTHENTICATED" : result.status === 403 ? "FORBIDDEN" : result.status === 404 ? "NOT_FOUND" : result.status === 409 ? "CONFLICT" : result.status === 429 ? "RATE_LIMITED" : "INTERNAL"), result.error, result.status);
+    return fail(
+      result.status === 400
+        ? "VALIDATION"
+        : result.status === 401
+          ? "UNAUTHENTICATED"
+          : result.status === 403
+            ? "FORBIDDEN"
+            : result.status === 404
+              ? "NOT_FOUND"
+              : result.status === 409
+                ? "CONFLICT"
+                : result.status === 429
+                  ? "RATE_LIMITED"
+                  : "INTERNAL",
+      result.error,
+      result.status,
+    );
   }
 
   return ok({ success: true });

@@ -9,7 +9,8 @@ import {
   unheldCapabilities,
 } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const CATEGORIES = new Set([
   "department",
@@ -84,7 +85,10 @@ function pickDesignationFields(body: Record<string, unknown>) {
     slug: String(body.slug ?? "").trim(),
     level: Number(body.level),
     category: String(body.category ?? "").trim(),
-    description: typeof body.description === "string" ? body.description.slice(0, 2000) : "",
+    description:
+      typeof body.description === "string"
+        ? body.description.slice(0, 2000)
+        : "",
   };
 
   if (
@@ -108,9 +112,10 @@ function pickDesignationFields(body: Record<string, unknown>) {
   }
   // Always written, so an empty list is a deliberate revocation rather than an
   // omitted field that silently leaves the previous grant in place.
-  out.capabilities = (Array.isArray(body.capabilities) ? body.capabilities : []).filter(
-    isCapability,
-  );
+  out.capabilities = (
+    Array.isArray(body.capabilities) ? body.capabilities : []
+  ).filter(isCapability);
+
   return out;
 }
 
@@ -144,7 +149,7 @@ export async function GET(request: NextRequest) {
       total: response.total,
     });
   } catch (error) {
-    console.error("Admin designation list error:", error);
+    logError("Admin designation list error:", error);
 
     return fail("INTERNAL", "Unable to load designations", 500);
   }
@@ -158,8 +163,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as Record<string, unknown>;
     const validationError = validate(body);
 
-    if (validationError)
-      return fail("VALIDATION", validationError, 400);
+    if (validationError) return fail("VALIDATION", validationError, 400);
     const unknown = unknownCapabilities(body.capabilities);
 
     if (unknown.length > 0) {
@@ -208,7 +212,7 @@ export async function POST(request: NextRequest) {
 
     return ok({ designation }, 201);
   } catch (error) {
-    console.error("Admin designation create error:", error);
+    logError("Admin designation create error:", error);
 
     return fail("INTERNAL", "Unable to create designation", 500);
   }
@@ -228,8 +232,7 @@ export async function PATCH(request: NextRequest) {
     const { designationId: _designationId, ...rest } = body;
     const validationError = validate({ ...rest, designationId: undefined });
 
-    if (validationError)
-      return fail("VALIDATION", validationError, 400);
+    if (validationError) return fail("VALIDATION", validationError, 400);
     const unknown = unknownCapabilities(rest.capabilities);
 
     if (unknown.length > 0) {
@@ -271,7 +274,7 @@ export async function PATCH(request: NextRequest) {
 
     return ok({ designation });
   } catch (error) {
-    console.error("Admin designation update error:", error);
+    logError("Admin designation update error:", error);
 
     return fail("INTERNAL", "Unable to update designation", 500);
   }
@@ -292,14 +295,28 @@ export async function DELETE(request: NextRequest) {
     // Deactivation revokes every active grant: the old comment claimed a
     // cascade "via isActive filter", but no reader filters grants by the
     // catalogue row — holders kept their titles indefinitely.
-    const holders = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-      Query.equal("designationId", [designationId]),
-      Query.equal("isActive", [true]),
-      Query.limit(500),
-    ]);
-    await Promise.all(holders.documents.map((holder) =>
-      databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, holder.$id, { isActive: false }).catch(() => null),
-    ));
+    const holders = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.USER_DESIGNATIONS,
+      [
+        Query.equal("designationId", [designationId]),
+        Query.equal("isActive", [true]),
+        Query.limit(500),
+      ],
+    );
+
+    await Promise.all(
+      holders.documents.map((holder) =>
+        databases
+          .updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.USER_DESIGNATIONS,
+            holder.$id,
+            { isActive: false },
+          )
+          .catch(() => null),
+      ),
+    );
     const designation = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
@@ -318,7 +335,7 @@ export async function DELETE(request: NextRequest) {
 
     return ok({ designation, grantsRevoked: holders.documents.length });
   } catch (error) {
-    console.error("Admin designation delete error:", error);
+    logError("Admin designation delete error:", error);
 
     return fail("INTERNAL", "Unable to deactivate designation", 500);
   }

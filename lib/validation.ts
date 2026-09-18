@@ -20,7 +20,9 @@ export const TEXT_LIMITS = {
 export function readString(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
+
   if (!trimmed || trimmed.length > maxLength) return null;
+
   return trimmed;
 }
 
@@ -35,12 +37,17 @@ export function readString(value: unknown, maxLength: number): string | null {
  * Collapsing invalid into `undefined` would let oversized input silently pass
  * as "not provided", so callers must handle `null` as a 400, never as absent.
  */
-export function readOptionalString(value: unknown, maxLength: number): string | null | undefined {
+export function readOptionalString(
+  value: unknown,
+  maxLength: number,
+): string | null | undefined {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
+
   if (!trimmed) return undefined;
   if (trimmed.length > maxLength) return null;
+
   return trimmed;
 }
 
@@ -55,6 +62,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
+
     return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
@@ -79,8 +87,10 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export function isIsoDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
+
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   const date = new Date(Date.UTC(year, month - 1, day));
+
   return (
     date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
@@ -89,7 +99,10 @@ export function isIsoDate(value: string): boolean {
 }
 
 /** Keeps error logs useful without dumping personal data into application logs. */
-export function redactEmail(email: string): string {  const [local, domain] = email.split("@");
+export function redactEmail(email: string): string {
+  const [local, domain] = email.split("@");
+
   if (!domain) return "[redacted]";
+
   return `${local.slice(0, 1)}***@${domain}`;
 }

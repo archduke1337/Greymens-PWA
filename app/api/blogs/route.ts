@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
@@ -8,21 +9,32 @@ import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isHttpUrl, isRecord } from "@/lib/validation";
 import { blogCategories, calculateReadTime } from "@/lib/blog-format";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const MAX_REASON_LENGTH = 2000;
 const MAX_BLOGS = 200;
 const BLOG_CATEGORIES = new Set(blogCategories.map((entry) => entry.value));
 
 function stringField(value: unknown, maxLength: number, required = false) {
-  if (typeof value !== "string" || value.length > maxLength || (required && !value.trim())) return null;
+  if (
+    typeof value !== "string" ||
+    value.length > maxLength ||
+    (required && !value.trim())
+  )
+    return null;
+
   return value.trim();
 }
 
 async function loadBlog(blogId: string) {
   const { databases } = createServerDatabases();
+
   try {
-    return { databases, blog: await databases.getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId) };
+    return {
+      databases,
+      blog: await databases.getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId),
+    };
   } catch {
     return { databases, blog: null };
   }
@@ -38,11 +50,14 @@ async function publicAvatarFor(
   userId: string,
 ): Promise<string | undefined> {
   try {
-    const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-      Query.equal("userId", [userId]),
-      Query.limit(1),
-    ]);
-    const profile = profiles.documents[0] as Record<string, unknown> | undefined;
+    const profiles = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.equal("userId", [userId]), Query.limit(1)],
+    );
+    const profile = profiles.documents[0] as
+      Record<string, unknown> | undefined;
+
     if (
       profile &&
       String(profile.profileVisibility ?? "public") === "public" &&
@@ -54,6 +69,7 @@ async function publicAvatarFor(
   } catch {
     // Best effort: the post stands without a picture.
   }
+
   return undefined;
 }
 
@@ -71,6 +87,7 @@ async function publicAvatarFor(
  */
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
   const scope = request.nextUrl.searchParams.get("scope") ?? "mine";
@@ -80,50 +97,87 @@ export async function GET(request: NextRequest) {
     let queries: string[];
 
     if (scope === "mine") {
-      queries = [Query.equal("authorId", [authenticated.user.$id]), Query.orderDesc("$createdAt"), Query.limit(MAX_BLOGS)];
+      queries = [
+        Query.equal("authorId", [authenticated.user.$id]),
+        Query.orderDesc("$createdAt"),
+        Query.limit(MAX_BLOGS),
+      ];
     } else if (scope === "review" || scope === "all") {
       const permitted = await requireCapability(request, "blog.review");
+
       if (!permitted.user) return permitted.response;
-      queries = scope === "review"
-        ? [Query.equal("status", ["pending"]), Query.orderDesc("$createdAt"), Query.limit(MAX_BLOGS)]
-        : [Query.orderDesc("$createdAt"), Query.limit(MAX_BLOGS)];
+      queries =
+        scope === "review"
+          ? [
+              Query.equal("status", ["pending"]),
+              Query.orderDesc("$createdAt"),
+              Query.limit(MAX_BLOGS),
+            ]
+          : [Query.orderDesc("$createdAt"), Query.limit(MAX_BLOGS)];
     } else {
       return fail("VALIDATION", "Unsupported scope", 400);
     }
 
-    const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.BLOGS, queries);
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.BLOGS,
+      queries,
+    );
+
     return ok({ blogs: response.documents, total: response.total });
   } catch (error) {
-    console.error("Blog lookup error:", error);
+    logError("Blog lookup error:", error);
+
     return fail("INTERNAL", "Unable to load blogs", 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "blog.create");
+
   if (!authenticated.user) return authenticated.response;
 
-  const limited = consumeRateLimit(`blog-submit:${authenticated.user.$id}`, 20, 60 * 60 * 1000);
+  const limited = consumeRateLimit(
+    `blog-submit:${authenticated.user.$id}`,
+    20,
+    60 * 60 * 1000,
+  );
+
   if (!limited.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
 
   try {
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
     const title = stringField(body.title, 255, true);
     const slug = stringField(body.slug, 255, true);
     const excerpt = stringField(body.excerpt, 500, true);
     const content = stringField(body.content, 65535, true);
     const coverImage = stringField(body.coverImage, 500, true);
     const category = stringField(body.category, 100, true);
-    const tags = Array.isArray(body.tags) && body.tags.length <= 20 && body.tags.every((tag) => typeof tag === "string" && tag.trim().length > 0 && tag.length <= 100)
-      ? body.tags.map((tag) => (tag as string).trim())
-      : null;
-    const readTime = typeof body.readTime === "number" && Number.isInteger(body.readTime)
-      ? Math.max(1, Math.min(body.readTime, 1440))
-      : 1;
+    const tags =
+      Array.isArray(body.tags) &&
+      body.tags.length <= 20 &&
+      body.tags.every(
+        (tag) =>
+          typeof tag === "string" && tag.trim().length > 0 && tag.length <= 100,
+      )
+        ? body.tags.map((tag) => (tag as string).trim())
+        : null;
+    const readTime =
+      typeof body.readTime === "number" && Number.isInteger(body.readTime)
+        ? Math.max(1, Math.min(body.readTime, 1440))
+        : 1;
 
-    if (!title || !slug || !excerpt || !content || !coverImage || !category || !tags) {
+    if (
+      !title ||
+      !slug ||
+      !excerpt ||
+      !content ||
+      !coverImage ||
+      !category ||
+      !tags
+    ) {
       return fail("VALIDATION", "Invalid or missing blog fields", 400);
     }
     // Slugs become public URLs: restrict the alphabet so links stay clean and
@@ -141,10 +195,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
-    const duplicate = await databases.listDocuments(DATABASE_ID, COLLECTIONS.BLOGS, [
-      Query.equal("slug", [slug]),
-      Query.limit(1),
-    ]);
+    const duplicate = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.BLOGS,
+      [Query.equal("slug", [slug]), Query.limit(1)],
+    );
+
     if (duplicate.documents.length > 0) {
       return fail("CONFLICT", "A blog with this title already exists", 409);
     }
@@ -171,9 +227,15 @@ export async function POST(request: NextRequest) {
     // The picture lives on the profile row (account prefs were never
     // written by any flow) — copy it only when the profile is public.
     const avatar = await publicAvatarFor(databases, authenticated.user.$id);
+
     if (avatar !== undefined) newPost.authorAvatar = avatar;
 
-    const blog = await databases.createDocument(DATABASE_ID, COLLECTIONS.BLOGS, ID.unique(), newPost);
+    const blog = await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.BLOGS,
+      ID.unique(),
+      newPost,
+    );
 
     await recordAudit({
       request,
@@ -183,9 +245,11 @@ export async function POST(request: NextRequest) {
       entityId: blog.$id,
       details: { title },
     });
+
     return ok({ blog }, 201);
   } catch (error) {
-    console.error("Blog submission error:", error);
+    logError("Blog submission error:", error);
+
     return fail("INTERNAL", "Unable to submit blog", 500);
   }
 }
@@ -199,6 +263,7 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   let body: unknown;
+
   try {
     body = await request.json();
   } catch {
@@ -208,6 +273,7 @@ export async function PATCH(request: NextRequest) {
 
   const blogId = typeof body.blogId === "string" ? body.blogId.trim() : "";
   const action = typeof body.action === "string" ? body.action : "";
+
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
 
   // Content edits ride on ownership, not on a separate capability: the post's
@@ -216,6 +282,7 @@ export async function PATCH(request: NextRequest) {
   // them would silently break every link, ticket reference, and share.
   if (action === "edit") {
     const authenticated = await requireAuthenticatedUser(request);
+
     if (!authenticated.user) return authenticated.response;
 
     const title = stringField(body.title, 255, true);
@@ -223,23 +290,35 @@ export async function PATCH(request: NextRequest) {
     const content = stringField(body.content, 65535, true);
     const coverImage = stringField(body.coverImage, 500, true);
     const category = stringField(body.category, 100, true);
-    const tags = Array.isArray(body.tags) && body.tags.length <= 20 && body.tags.every((tag) => typeof tag === "string" && tag.trim().length > 0 && tag.length <= 100)
-      ? (body.tags as string[]).map((tag) => tag.trim())
-      : null;
+    const tags =
+      Array.isArray(body.tags) &&
+      body.tags.length <= 20 &&
+      body.tags.every(
+        (tag) =>
+          typeof tag === "string" && tag.trim().length > 0 && tag.length <= 100,
+      )
+        ? (body.tags as string[]).map((tag) => tag.trim())
+        : null;
+
     if (!title || !excerpt || !content || !coverImage || !category || !tags) {
       return fail("VALIDATION", "Invalid or missing blog fields", 400);
     }
-    if (!isHttpUrl(coverImage)) return fail("VALIDATION", "Invalid cover image URL", 400);
-    if (!BLOG_CATEGORIES.has(category)) return fail("VALIDATION", "Invalid blog category", 400);
+    if (!isHttpUrl(coverImage))
+      return fail("VALIDATION", "Invalid cover image URL", 400);
+    if (!BLOG_CATEGORIES.has(category))
+      return fail("VALIDATION", "Invalid blog category", 400);
 
     try {
       const { databases, blog } = await loadBlog(blogId);
+
       if (!blog) return fail("NOT_FOUND", "Blog not found", 404);
 
       const isAuthor = String(blog.authorId ?? "") === authenticated.user.$id;
       let editedByReviewer = false;
+
       if (!isAuthor) {
         const permitted = await requireCapability(request, "blog.review");
+
         if (!permitted.user) return permitted.response;
         editedByReviewer = true;
       }
@@ -247,7 +326,8 @@ export async function PATCH(request: NextRequest) {
       // An author revising a live post sends it back through review — otherwise
       // "edit" would be a review bypass for approved content. A reviewer
       // polishing copy keeps the post's status untouched.
-      const resetToPending = isAuthor && String(blog.status ?? "") !== "pending";
+      const resetToPending =
+        isAuthor && String(blog.status ?? "") !== "pending";
       const updates: Record<string, unknown> = {
         title,
         excerpt,
@@ -260,11 +340,20 @@ export async function PATCH(request: NextRequest) {
       // Best effort: a newly public picture appears on the post. Guarded —
       // Appwrite rejects undefined attributes, and a missing picture must
       // never wipe the stored one.
-      const avatar = await publicAvatarFor(databases, String(blog.authorId ?? ""));
+      const avatar = await publicAvatarFor(
+        databases,
+        String(blog.authorId ?? ""),
+      );
+
       if (avatar !== undefined) updates.authorAvatar = avatar;
       if (resetToPending) updates.status = "pending";
 
-      const updated = await databases.updateDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId, updates);
+      const updated = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.BLOGS,
+        blogId,
+        updates,
+      );
 
       await recordAudit({
         request,
@@ -272,12 +361,17 @@ export async function PATCH(request: NextRequest) {
         action: "blog.edit",
         entityType: "blog",
         entityId: blogId,
-        details: { authorId: String(blog.authorId ?? ""), byReviewer: editedByReviewer, resetToPending },
+        details: {
+          authorId: String(blog.authorId ?? ""),
+          byReviewer: editedByReviewer,
+          resetToPending,
+        },
       });
 
       return ok({ blog: updated, resetToPending });
     } catch (error) {
-      console.error("Blog edit error:", error);
+      logError("Blog edit error:", error);
+
       return fail("INTERNAL", "Unable to save the edit", 500);
     }
   }
@@ -289,43 +383,66 @@ export async function PATCH(request: NextRequest) {
     unfeature: "blog.feature",
   };
   const capability = capabilityByAction[action];
+
   if (!capability) return fail("VALIDATION", "Unsupported action", 400);
 
   const authenticated = await requireCapability(request, capability);
+
   if (!authenticated.user) return authenticated.response;
 
-  const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, MAX_REASON_LENGTH) : "";
+  const reason =
+    typeof body.reason === "string"
+      ? body.reason.trim().slice(0, MAX_REASON_LENGTH)
+      : "";
+
   if (action === "reject" && !reason) {
     return fail("VALIDATION", "A rejection reason is required", 400);
   }
 
   try {
     const { databases, blog } = await loadBlog(blogId);
+
     if (!blog) return fail("NOT_FOUND", "Blog not found", 404);
 
     // Parity with /api/admin/blogs: nobody approves, publishes, or features
     // their own post — authors holding review powers need a second reviewer.
     const isAuthor = String(blog.authorId ?? "") === authenticated.user.$id;
+
     if (isAuthor && (action === "approve" || action === "feature")) {
-      return fail("FORBIDDEN", "Authors cannot approve or feature their own posts", 403);
+      return fail(
+        "FORBIDDEN",
+        "Authors cannot approve or feature their own posts",
+        403,
+      );
     }
 
     const now = new Date().toISOString();
     const updates: Record<string, unknown> =
-      action === "approve" ? { status: "approved", publishedAt: blog.publishedAt || now }
-      : action === "reject" ? { status: "rejected", rejectionReason: reason, featured: false }
-      : { featured: action === "feature" };
+      action === "approve"
+        ? { status: "approved", publishedAt: blog.publishedAt || now }
+        : action === "reject"
+          ? { status: "rejected", rejectionReason: reason, featured: false }
+          : { featured: action === "feature" };
 
     // Approving publishes the author's *current* public picture: posts
     // submitted before the avatar upload would otherwise go live faceless.
     // Non-public profiles stay blank by design — a restricted file URL would
     // render broken for signed-out readers.
     if (action === "approve") {
-      const avatar = await publicAvatarFor(databases, String(blog.authorId ?? ""));
+      const avatar = await publicAvatarFor(
+        databases,
+        String(blog.authorId ?? ""),
+      );
+
       if (avatar !== undefined) updates.authorAvatar = avatar;
     }
 
-    const updated = await databases.updateDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId, updates);
+    const updated = await databases.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.BLOGS,
+      blogId,
+      updates,
+    );
 
     await recordAudit({
       request,
@@ -333,12 +450,17 @@ export async function PATCH(request: NextRequest) {
       action: `blog_${action}`,
       entityType: "blog",
       entityId: blogId,
-      details: { authorId: String(blog.authorId ?? ""), status: String(updates.status ?? blog.status), ...(reason ? { reason } : {}) },
+      details: {
+        authorId: String(blog.authorId ?? ""),
+        status: String(updates.status ?? blog.status),
+        ...(reason ? { reason } : {}),
+      },
     });
 
     return ok({ blog: updated });
   } catch (error) {
-    console.error("Blog action error:", error);
+    logError("Blog action error:", error);
+
     return fail("INTERNAL", "Unable to apply the change", 500);
   }
 }
@@ -352,22 +474,31 @@ export async function PATCH(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
   const blogId = (request.nextUrl.searchParams.get("blogId") ?? "").trim();
+
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
 
   try {
     const { databases, blog } = await loadBlog(blogId);
+
     if (!blog) return fail("NOT_FOUND", "Blog not found", 404);
 
     const isAuthor = String(blog.authorId ?? "") === authenticated.user.$id;
+
     if (isAuthor && blog.status === "approved") {
-      return fail("FORBIDDEN", "A published post cannot be withdrawn by its author. Ask an editor to remove it.", 403);
+      return fail(
+        "FORBIDDEN",
+        "A published post cannot be withdrawn by its author. Ask an editor to remove it.",
+        403,
+      );
     }
 
     if (!isAuthor) {
       const reviewer = await requireCapability(request, "blog.review");
+
       if (!reviewer.user) return reviewer.response;
     }
 
@@ -379,12 +510,17 @@ export async function DELETE(request: NextRequest) {
       action: "blog_delete",
       entityType: "blog",
       entityId: blogId,
-      details: { authorId: String(blog.authorId ?? ""), status: String(blog.status ?? ""), byAuthor: isAuthor },
+      details: {
+        authorId: String(blog.authorId ?? ""),
+        status: String(blog.status ?? ""),
+        byAuthor: isAuthor,
+      },
     });
 
     return ok({ success: true });
   } catch (error) {
-    console.error("Blog delete error:", error);
+    logError("Blog delete error:", error);
+
     return fail("INTERNAL", "Unable to delete the post", 500);
   }
 }

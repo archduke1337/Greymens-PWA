@@ -1,8 +1,21 @@
 // context/AuthContext.tsx
 "use client";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { authService, clearSessionCookie, syncSessionCookie } from "@/lib/appwrite";
 import type { AppwriteUser } from "@/lib/types";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  authService,
+  clearSessionCookie,
+  syncSessionCookie,
+} from "@/lib/appwrite";
 
 interface AuthContextType {
   user: AppwriteUser | null;
@@ -42,12 +55,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(next);
     if (next) syncSessionCookie();
     else clearSessionCookie();
+
     return next;
   }, []);
 
   const checkUser = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
+
       return applyUser(currentUser);
     } catch {
       // Unknown failure (network, outage): getCurrentUser only returns null
@@ -62,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshUser = useCallback(async () => {
     try {
       const currentUser = await authService.getCurrentUser();
+
       return applyUser(currentUser);
     } catch {
       // Transient failure: keep polling and retry once after 30s instead of
@@ -74,6 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           })
           .catch(() => {});
       }, 30000);
+
       return null;
     }
   }, [applyUser]);
@@ -86,6 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (user) {
       intervalRef.current = setInterval(refreshUser, SESSION_REFRESH_INTERVAL);
     }
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -128,6 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (typeof caches !== "undefined" && caches.keys) {
         const keys = await caches.keys().catch(() => [] as string[]);
+
         await Promise.all(
           (keys || []).map((key) => caches.delete(key).catch(() => false)),
         );
@@ -139,6 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const registrations = await navigator.serviceWorker
         ?.getRegistrations()
         .catch(() => [] as ServiceWorkerRegistration[]);
+
       if (registrations) {
         await Promise.all(
           registrations.map((registration) =>
@@ -152,7 +172,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, loginWithGithub, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        loginWithGoogle,
+        loginWithGithub,
+        logout,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

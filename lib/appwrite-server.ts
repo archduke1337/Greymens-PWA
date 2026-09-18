@@ -20,10 +20,15 @@ export function createServerTablesClient() {
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
+
   if (!endpoint || !projectId || !apiKey) {
     throw new Error("Server Appwrite configuration is incomplete");
   }
-  const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+  const client = new Client()
+    .setEndpoint(endpoint)
+    .setProject(projectId)
+    .setKey(apiKey);
+
   return { tables: new TablesDB(client), databaseId: DATABASE_ID };
 }
 
@@ -102,10 +107,15 @@ export function createServerStorage() {
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
+
   if (!endpoint || !projectId || !apiKey) {
     throw new Error("Server Appwrite configuration is incomplete");
   }
-  const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+  const client = new Client()
+    .setEndpoint(endpoint)
+    .setProject(projectId)
+    .setKey(apiKey);
+
   return { storage: new Storage(client) };
 }
 
@@ -118,6 +128,7 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         tableId: collectionId,
         queries,
       });
+
       return {
         documents: response.rows as unknown as ServerRow[],
         total: response.total,
@@ -130,9 +141,16 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         rowId: documentId,
         queries,
       });
+
       return row as unknown as ServerRow;
     },
-    createDocument: async (databaseId, collectionId, documentId, data, permissions) => {
+    createDocument: async (
+      databaseId,
+      collectionId,
+      documentId,
+      data,
+      permissions,
+    ) => {
       const row = await tables.createRow({
         databaseId,
         tableId: collectionId,
@@ -140,9 +158,16 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         data,
         permissions,
       });
+
       return row as unknown as ServerRow;
     },
-    updateDocument: async (databaseId, collectionId, documentId, data, permissions) => {
+    updateDocument: async (
+      databaseId,
+      collectionId,
+      documentId,
+      data,
+      permissions,
+    ) => {
       const row = await tables.updateRow({
         databaseId,
         tableId: collectionId,
@@ -150,13 +175,26 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         data,
         permissions,
       });
+
       return row as unknown as ServerRow;
     },
     deleteDocument: async (databaseId, collectionId, documentId) => {
-      await tables.deleteRow({ databaseId, tableId: collectionId, rowId: documentId });
+      await tables.deleteRow({
+        databaseId,
+        tableId: collectionId,
+        rowId: documentId,
+      });
+
       return {};
     },
-    incrementDocumentAttribute: async (databaseId, collectionId, documentId, attribute, value, max) => {
+    incrementDocumentAttribute: async (
+      databaseId,
+      collectionId,
+      documentId,
+      attribute,
+      value,
+      max,
+    ) => {
       const row = await tables.incrementRowColumn({
         databaseId,
         tableId: collectionId,
@@ -165,9 +203,17 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         value,
         max,
       });
+
       return row as unknown as ServerRow;
     },
-    decrementDocumentAttribute: async (databaseId, collectionId, documentId, attribute, value, min) => {
+    decrementDocumentAttribute: async (
+      databaseId,
+      collectionId,
+      documentId,
+      attribute,
+      value,
+      min,
+    ) => {
       const row = await tables.decrementRowColumn({
         databaseId,
         tableId: collectionId,
@@ -176,8 +222,10 @@ export function createServerDatabases(): { databases: ServerDatabases } {
         value,
         min,
       });
+
       return row as unknown as ServerRow;
     },
   };
+
   return { databases };
 }

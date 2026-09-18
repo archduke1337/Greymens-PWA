@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { getAccountNames } from "@/lib/server-users";
 import { isRecord } from "@/lib/validation";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 /**
  * Department membership, for the admin department screen.
@@ -22,20 +24,27 @@ const MAX_LIMIT = 500;
 
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "departments.manage");
+
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const departmentId = request.nextUrl.searchParams.get("departmentId")?.trim() ?? "";
+    const departmentId =
+      request.nextUrl.searchParams.get("departmentId")?.trim() ?? "";
+
     if (!departmentId) {
       return fail("VALIDATION", "departmentId is required", 400);
     }
 
     const { databases } = createServerDatabases();
-    const members = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-      Query.equal("departmentId", [departmentId]),
-      Query.equal("isActive", [true]),
-      Query.limit(MAX_LIMIT),
-    ]);
+    const members = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.USER_DEPARTMENTS,
+      [
+        Query.equal("departmentId", [departmentId]),
+        Query.equal("isActive", [true]),
+        Query.limit(MAX_LIMIT),
+      ],
+    );
 
     const userIds = members.documents
       .map((member) => String(member.userId ?? ""))
@@ -49,7 +58,10 @@ export async function GET(request: NextRequest) {
       : { documents: [] };
 
     const profileByUser = new Map(
-      profiles.documents.map((profile) => [String(profile.userId ?? ""), profile]),
+      profiles.documents.map((profile) => [
+        String(profile.userId ?? ""),
+        profile,
+      ]),
     );
 
     const joined = members.documents.map((member) => ({
@@ -66,16 +78,19 @@ export async function GET(request: NextRequest) {
 
     return ok({ members: joined, total: members.total, accountNames });
   } catch (error) {
-    console.error("Department member list error:", error);
+    logError("Department member list error:", error);
+
     return fail("INTERNAL", "Unable to load department members", 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "departments.manage");
+
   if (!authenticated.user) return authenticated.response;
 
   let body: unknown;
+
   try {
     body = await request.json();
   } catch {
@@ -86,8 +101,10 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = typeof body.userId === "string" ? body.userId.trim() : "";
-  const departmentId = typeof body.departmentId === "string" ? body.departmentId.trim() : "";
+  const departmentId =
+    typeof body.departmentId === "string" ? body.departmentId.trim() : "";
   const role = typeof body.role === "string" ? body.role : "";
+
   if (!userId || !departmentId) {
     return fail("VALIDATION", "userId and departmentId are required", 400);
   }
@@ -98,26 +115,41 @@ export async function POST(request: NextRequest) {
   try {
     const { databases } = createServerDatabases();
 
-    const department = await databases.getDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, departmentId).catch(() => null);
+    const department = await databases
+      .getDocument(DATABASE_ID, COLLECTIONS.DEPARTMENTS, departmentId)
+      .catch(() => null);
+
     if (!department) {
       return fail("NOT_FOUND", "Department not found", 404);
     }
 
     // Idempotent: reactivate a soft-deleted assignment instead of duplicating.
-    const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-      Query.equal("userId", [userId]),
-      Query.equal("departmentId", [departmentId]),
-      Query.limit(100),
-    ]);
-    const inactive = existing.documents.find((document) => document.isActive === false);
+    const existing = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.USER_DEPARTMENTS,
+      [
+        Query.equal("userId", [userId]),
+        Query.equal("departmentId", [departmentId]),
+        Query.limit(100),
+      ],
+    );
+    const inactive = existing.documents.find(
+      (document) => document.isActive === false,
+    );
 
     if (inactive) {
-      const assignment = await databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, inactive.$id, {
-        role,
-        isActive: true,
-        assignedBy: authenticated.user.$id,
-        assignedAt: new Date().toISOString(),
-      });
+      const assignment = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.USER_DEPARTMENTS,
+        inactive.$id,
+        {
+          role,
+          isActive: true,
+          assignedBy: authenticated.user.$id,
+          assignedAt: new Date().toISOString(),
+        },
+      );
+
       await recordAudit({
         request,
         actor: authenticated.user,
@@ -126,20 +158,26 @@ export async function POST(request: NextRequest) {
         entityId: assignment.$id,
         details: { userId, departmentId, role, reactivated: true },
       });
+
       return ok({ assignment, reactivated: true });
     }
     if (existing.documents.length > 0) {
       return fail("CONFLICT", "User is already in this department", 409);
     }
 
-    const assignment = await databases.createDocument(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, ID.unique(), {
-      userId,
-      departmentId,
-      role,
-      assignedBy: authenticated.user.$id,
-      assignedAt: new Date().toISOString(),
-      isActive: true,
-    });
+    const assignment = await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.USER_DEPARTMENTS,
+      ID.unique(),
+      {
+        userId,
+        departmentId,
+        role,
+        assignedBy: authenticated.user.$id,
+        assignedAt: new Date().toISOString(),
+        isActive: true,
+      },
+    );
 
     await recordAudit({
       request,
@@ -149,40 +187,55 @@ export async function POST(request: NextRequest) {
       entityId: assignment.$id,
       details: { userId, departmentId, role },
     });
+
     return ok({ assignment }, 201);
   } catch (error) {
-    console.error("Department assign error:", error);
+    logError("Department assign error:", error);
+
     return fail("INTERNAL", "Unable to assign department member", 500);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "departments.manage");
+
   if (!authenticated.user) return authenticated.response;
 
   const userId = request.nextUrl.searchParams.get("userId")?.trim() ?? "";
-  const departmentId = request.nextUrl.searchParams.get("departmentId")?.trim() ?? "";
+  const departmentId =
+    request.nextUrl.searchParams.get("departmentId")?.trim() ?? "";
+
   if (!userId || !departmentId) {
     return fail("VALIDATION", "userId and departmentId are required", 400);
   }
 
   try {
     const { databases } = createServerDatabases();
-    const active = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-      Query.equal("userId", [userId]),
-      Query.equal("departmentId", [departmentId]),
-      Query.equal("isActive", [true]),
-      Query.limit(MAX_LIMIT),
-    ]);
+    const active = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.USER_DEPARTMENTS,
+      [
+        Query.equal("userId", [userId]),
+        Query.equal("departmentId", [departmentId]),
+        Query.equal("isActive", [true]),
+        Query.limit(MAX_LIMIT),
+      ],
+    );
+
     if (active.documents.length === 0) {
       return fail("NOT_FOUND", "Assignment not found", 404);
     }
 
     await Promise.all(
       active.documents.map((document) =>
-        databases.updateDocument(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, document.$id, {
-          isActive: false,
-        }),
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USER_DEPARTMENTS,
+          document.$id,
+          {
+            isActive: false,
+          },
+        ),
       ),
     );
 
@@ -194,9 +247,11 @@ export async function DELETE(request: NextRequest) {
       entityId: active.documents[0].$id,
       details: { userId, departmentId, removed: active.documents.length },
     });
+
     return ok({ removed: active.documents.length });
   } catch (error) {
-    console.error("Department remove error:", error);
+    logError("Department remove error:", error);
+
     return fail("INTERNAL", "Unable to remove department member", 500);
   }
 }

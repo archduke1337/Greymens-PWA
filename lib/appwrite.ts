@@ -1,5 +1,14 @@
+import {
+  Client,
+  Account,
+  Databases,
+  Storage,
+  ID,
+  OAuthProvider,
+} from "appwrite";
+
+import { logError } from "@/lib/logger";
 // lib/appwrite.ts
-import { Client, Account, Databases, Storage, ID, OAuthProvider } from "appwrite";
 
 // Lazy browser client: constructing it at import time throws inside the newer
 // SDK when the public endpoint is unset (tests, static prerender without env),
@@ -18,6 +27,7 @@ function getBrowserClient(): Client {
     }
     browserClient = new Client().setEndpoint(endpoint).setProject(projectId);
   }
+
   return browserClient;
 }
 
@@ -111,9 +121,11 @@ export const authService = {
         password,
         name,
       });
+
       if (userAccount) {
         return this.login(email, password);
       }
+
       return userAccount;
     } catch (error) {
       throw error;
@@ -154,7 +166,7 @@ export const authService = {
         failure: failureUrl,
       });
     } catch (error) {
-      console.error("GitHub OAuth error:", error);
+      logError("GitHub OAuth error:", error);
       throw error;
     }
   },
@@ -162,13 +174,15 @@ export const authService = {
   // Google OAuth Login
   loginWithGoogle() {
     try {
-      const successUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback`
-        : '/auth/callback';
-      
-      const failureUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/login`
-        : '/login';
+      const successUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : "/auth/callback";
+
+      const failureUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/login`
+          : "/login";
 
       account.createOAuth2Session({
         provider: OAuthProvider.Google,
@@ -176,7 +190,7 @@ export const authService = {
         failure: failureUrl,
       });
     } catch (error) {
-      console.error("Google OAuth error:", error);
+      logError("Google OAuth error:", error);
       throw error;
     }
   },
@@ -195,7 +209,8 @@ export const authService = {
 
       if (
         code === 401 ||
-        (typeof kind === "string" && kind.toLowerCase().includes("unauthorized"))
+        (typeof kind === "string" &&
+          kind.toLowerCase().includes("unauthorized"))
       ) {
         return null;
       }
@@ -271,11 +286,14 @@ export function getBrowserSessionSecret(): string | null {
   try {
     if (typeof window === "undefined" || !window.localStorage) return null;
     const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+
     if (!projectId) return null;
     const raw = window.localStorage.getItem("cookieFallback");
+
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const value = parsed[`a_session_${projectId}`];
+
     return typeof value === "string" && value ? value : null;
   } catch {
     return null;
@@ -287,14 +305,17 @@ export function syncSessionCookie(): void {
   try {
     if (typeof document === "undefined") return;
     const secret = getBrowserSessionSecret();
+
     if (!secret) {
       clearSessionCookie();
+
       return;
     }
     const secure =
       typeof window !== "undefined" && window.location.protocol === "https:"
         ? "; Secure"
         : "";
+
     document.cookie =
       `${SESSION_COOKIE_NAME}=${encodeURIComponent(secret)}` +
       `; Path=/; Max-Age=${SESSION_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;

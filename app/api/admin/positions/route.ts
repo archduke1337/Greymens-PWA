@@ -1,16 +1,21 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const DESIGNATION_CAP = "designations.assign";
 
 function chunk<T>(values: T[], size: number): T[][] {
   const out: T[][] = [];
-  for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size));
+
+  for (let i = 0; i < values.length; i += size)
+    out.push(values.slice(i, i + size));
+
   return out;
 }
 
@@ -25,6 +30,7 @@ function chunk<T>(values: T[], size: number): T[][] {
  */
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, DESIGNATION_CAP);
+
   if (!authenticated.user) return authenticated.response;
 
   try {
@@ -46,23 +52,33 @@ export async function GET(request: NextRequest) {
       ]),
     ]);
 
-    const catalogue = designationsRes.documents as Array<Record<string, unknown>>;
+    const catalogue = designationsRes.documents as Array<
+      Record<string, unknown>
+    >;
     const grants = grantsRes.documents as Array<Record<string, unknown>>;
     const nameByDesignation = new Map(
-      catalogue.map((entry) => [String(entry.$id ?? ""), String(entry.name ?? "")]),
+      catalogue.map((entry) => [
+        String(entry.$id ?? ""),
+        String(entry.name ?? ""),
+      ]),
     );
 
-    const holderIds = [...new Set(grants.map((row) => String(row.userId ?? "")).filter(Boolean))];
+    const holderIds = [
+      ...new Set(grants.map((row) => String(row.userId ?? "")).filter(Boolean)),
+    ];
 
     // Profiles resolve URN for display. Chunked so a large member directory
     // never builds a query string Appwrite rejects.
     const profileRows: Array<Record<string, unknown>> = [];
+
     for (const ids of chunk(holderIds, 100)) {
       if (ids.length === 0) continue;
-      const page = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-        Query.equal("userId", ids),
-        Query.limit(500),
-      ]);
+      const page = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [Query.equal("userId", ids), Query.limit(500)],
+      );
+
       profileRows.push(...(page.documents as Array<Record<string, unknown>>));
     }
     const profileByUser = new Map(
@@ -85,12 +101,16 @@ export async function GET(request: NextRequest) {
         designations: Array<{ designationId: string; name: string }>;
       }
     >();
+
     for (const row of grants) {
       const id = String(row.userId ?? "");
+
       if (!id) continue;
       let person = peopleById.get(id);
+
       if (!person) {
         const profile = profileByUser.get(id);
+
         person = {
           userId: id,
           name: accountNames[id] || String(profile?.urn ?? "") || id,
@@ -100,6 +120,7 @@ export async function GET(request: NextRequest) {
         peopleById.set(id, person);
       }
       const designationId = String(row.designationId ?? "");
+
       person.designations.push({
         designationId,
         name: nameByDesignation.get(designationId) || designationId,
@@ -107,8 +128,10 @@ export async function GET(request: NextRequest) {
     }
 
     const holderCounts = new Map<string, number>();
+
     for (const row of grants) {
       const key = String(row.designationId ?? "");
+
       holderCounts.set(key, (holderCounts.get(key) ?? 0) + 1);
     }
 
@@ -118,11 +141,14 @@ export async function GET(request: NextRequest) {
         holderCount: holderCounts.get(String(entry.$id ?? "")) ?? 0,
       })),
       departments: departmentsRes.documents,
-      people: [...peopleById.values()].sort((a, b) => a.name.localeCompare(b.name)),
+      people: [...peopleById.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
       accountNames,
     });
   } catch (error) {
-    console.error("Designations read-model error:", error);
+    logError("Designations read-model error:", error);
+
     return fail("INTERNAL", "Unable to load designations", 500);
   }
 }

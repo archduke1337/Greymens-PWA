@@ -32,6 +32,7 @@ export function resolveSessionSecret(
   cookies: Array<RequestCookie>,
 ): string | null {
   const mirror = cookies.find(({ name }) => name === SESSION_COOKIE_NAME);
+
   if (mirror?.value) {
     try {
       return decodeURIComponent(mirror.value) || null;
@@ -40,10 +41,12 @@ export function resolveSessionSecret(
     }
   }
   const legacy = cookies.find(({ name }) => name === "a_session_legacy");
+
   if (legacy?.value) return legacy.value;
   const sessionCookie = cookies.find(
     ({ name }) => name.startsWith("a_session_") && name !== "a_session_",
   );
+
   return sessionCookie?.value || null;
 }
 
@@ -88,6 +91,7 @@ export async function requireAuthenticatedUser(
 }
 
 const ADMIN_STATUSES = new Set(["admin", "dev"]);
+
 export const RESTRICTED_STATUSES = new Set([
   "banned",
   "suspended",
@@ -160,11 +164,14 @@ const inflightStatus = new Map<string, Promise<string>>();
 
 export async function resolveMembershipStatus(userId: string): Promise<string> {
   const pending = inflightStatus.get(userId);
+
   if (pending) return pending;
   const run = resolveMembershipStatusInner(userId).finally(() => {
     if (inflightStatus.get(userId) === run) inflightStatus.delete(userId);
   });
+
   inflightStatus.set(userId, run);
+
   return run;
 }
 
@@ -172,43 +179,45 @@ async function resolveMembershipStatusInner(userId: string): Promise<string> {
   const { databases } = createServerDatabases();
   const [profiles, memberships, applications, userRoles, userDepartments] =
     await Promise.all([
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-      Query.equal("userId", [userId]),
-      Query.limit(1),
-    ]),
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
-      Query.equal("userId", [userId]),
-      Query.limit(1),
-    ]),
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
-      Query.equal("userId", [userId]),
-      Query.limit(1),
-    ]),
-    // `user_roles` is provisioned separately from the original tables. On an
-    // installation that predates it the query throws, and because this function
-    // is awaited by every status check, that would collapse every account to
-    // "account". Degrade to "no role" instead of failing closed so hard.
-    (async () => {
-      try {
-        return await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.USER_ROLES,
-          [
-            Query.equal("userId", [userId]),
-            Query.equal("isActive", [true]),
-            Query.limit(1),
-          ],
-        );
-      } catch {
-        return { documents: [] as Array<Record<string, unknown>> };
-      }
-    })(),
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-      Query.equal("userId", [userId]),
-      Query.equal("isActive", [true]),
-      Query.limit(50),
-    ]).catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
-  ]);
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      // `user_roles` is provisioned separately from the original tables. On an
+      // installation that predates it the query throws, and because this function
+      // is awaited by every status check, that would collapse every account to
+      // "account". Degrade to "no role" instead of failing closed so hard.
+      (async () => {
+        try {
+          return await databases.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.USER_ROLES,
+            [
+              Query.equal("userId", [userId]),
+              Query.equal("isActive", [true]),
+              Query.limit(1),
+            ],
+          );
+        } catch {
+          return { documents: [] as Array<Record<string, unknown>> };
+        }
+      })(),
+      databases
+        .listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
+          Query.equal("userId", [userId]),
+          Query.equal("isActive", [true]),
+          Query.limit(50),
+        ])
+        .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
+    ]);
 
   const membershipStatus = memberships.documents[0]?.status;
   const applicationStatus = applications.documents[0]?.status;
@@ -273,10 +282,12 @@ export async function isAdminUser(user: AppwriteUser): Promise<boolean> {
   // any row exists); a resolved restriction always wins.
   if (isBootstrapAdmin(user.email)) {
     try {
-      if (RESTRICTED_STATUSES.has(await resolveMembershipStatus(user.$id))) return false;
+      if (RESTRICTED_STATUSES.has(await resolveMembershipStatus(user.$id)))
+        return false;
     } catch {
       // Ignore: resolve failed, bootstrap still counts.
     }
+
     return true;
   }
 
@@ -308,6 +319,7 @@ export async function getMembershipStatus(user: AppwriteUser): Promise<string> {
   // the navigation stayed hidden. Restriction still outranks bootstrap: a
   // banned bootstrap email resolves to its restriction, not admin.
   let resolved: string | null = null;
+
   try {
     resolved = await resolveMembershipStatus(user.$id);
   } catch {
@@ -315,6 +327,7 @@ export async function getMembershipStatus(user: AppwriteUser): Promise<string> {
   }
   if (resolved !== null && RESTRICTED_STATUSES.has(resolved)) return resolved;
   if (isBootstrapAdmin(user.email)) return "admin";
+
   return resolved ?? "account";
 }
 

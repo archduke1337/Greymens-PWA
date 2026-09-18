@@ -1,8 +1,8 @@
+import type { ServerDatabases } from "@/lib/appwrite-server";
+
 import { createHmac, timingSafeEqual } from "crypto";
 
 import { ID, Query } from "appwrite";
-
-import type { ServerDatabases } from "@/lib/appwrite-server";
 
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 
@@ -24,40 +24,56 @@ function signingSecret(): string {
 }
 
 function verificationSecrets(): string[] {
-  const secrets = [process.env.TICKET_HMAC_SECRET || "", process.env.APPWRITE_API_KEY || ""];
+  const secrets = [
+    process.env.TICKET_HMAC_SECRET || "",
+    process.env.APPWRITE_API_KEY || "",
+  ];
+
   return secrets.filter((secret) => secret.length > 0);
 }
 
 export function signTicket(ticketCode: string, eventId: string): string {
   const s = signingSecret();
+
   // Fail closed: an "unsigned" ticket is forgeable by anyone who can guess a
   // code, so a missing secret must break issuance loudly, not silently.
   if (!s) throw new Error("Ticket signing secret is not configured");
   const data = `${ticketCode}.${eventId}`;
   const sig = createHmac("sha256", s).update(data).digest("hex").slice(0, 32);
+
   return JSON.stringify({ ticketCode, eventId, sig });
 }
 
-export function parseQrData(raw: string): { ticketCode: string; eventId: string; signed: boolean } | null {
+export function parseQrData(
+  raw: string,
+): { ticketCode: string; eventId: string; signed: boolean } | null {
   try {
     const o = JSON.parse(raw) as Record<string, unknown>;
     const ticketCode = typeof o.ticketCode === "string" ? o.ticketCode : "";
     const eventId = typeof o.eventId === "string" ? o.eventId : "";
+
     if (!ticketCode || !eventId) return null;
     const sig = typeof o.sig === "string" ? o.sig : "";
+
     if (!sig) return { ticketCode, eventId, signed: false };
     // Accept signatures from the dedicated secret or the legacy API-key
     // fallback (pre-split tickets). A signed payload matching neither is
     // forged — reject, never downgrade to the unsigned path.
     const data = `${ticketCode}.${eventId}`;
+
     for (const s of verificationSecrets()) {
-      const expected = createHmac("sha256", s).update(data).digest("hex").slice(0, 32);
+      const expected = createHmac("sha256", s)
+        .update(data)
+        .digest("hex")
+        .slice(0, 32);
       const a = Buffer.from(sig);
       const b = Buffer.from(expected);
+
       if (a.length === b.length && timingSafeEqual(a, b)) {
         return { ticketCode, eventId, signed: true };
       }
     }
+
     return null;
   } catch {
     return null;

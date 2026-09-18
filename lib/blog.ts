@@ -1,7 +1,11 @@
 // lib/blog.ts
-import { Query } from "appwrite";
-import { databases, APPWRITE_CONFIG } from "./appwrite";
 import type { Blog } from "./blog-format";
+
+import { Query } from "appwrite";
+
+import { logError } from "@/lib/logger";
+
+import { databases, APPWRITE_CONFIG } from "./appwrite";
 
 // The Blog type, the category catalogue and the pure formatting helpers live in
 // lib/blog-format.ts so client components can use them without pulling in this
@@ -9,7 +13,8 @@ import type { Blog } from "./blog-format";
 export type { Blog } from "./blog-format";
 export { blogCategories, generateSlug, calculateReadTime } from "./blog-format";
 
-const { databaseId: DATABASE_ID, blogsCollectionId: BLOGS_COLLECTION_ID } = APPWRITE_CONFIG;
+const { databaseId: DATABASE_ID, blogsCollectionId: BLOGS_COLLECTION_ID } =
+  APPWRITE_CONFIG;
 
 /**
  * Public blog reads.
@@ -28,28 +33,39 @@ const { databaseId: DATABASE_ID, blogsCollectionId: BLOGS_COLLECTION_ID } = APPW
 export const blogService = {
   async getPublishedBlogs(limit = 50): Promise<Blog[]> {
     try {
-      const response = await databases.listDocuments(DATABASE_ID, BLOGS_COLLECTION_ID, [
-        Query.equal("status", ["approved", "published"]),
-        Query.orderDesc("publishedAt"),
-        Query.limit(limit),
-      ]);
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        BLOGS_COLLECTION_ID,
+        [
+          Query.equal("status", ["approved", "published"]),
+          Query.orderDesc("publishedAt"),
+          Query.limit(limit),
+        ],
+      );
+
       return response.documents as unknown as Blog[];
     } catch (error) {
-      console.error("Error fetching published blogs:", error);
+      logError("Error fetching published blogs:", error);
+
       return [];
     }
   },
 
   async getBlogBySlug(slug: string): Promise<Blog | undefined> {
     try {
-      const response = await databases.listDocuments(DATABASE_ID, BLOGS_COLLECTION_ID, [
-        Query.equal("slug", slug),
-        Query.equal("status", ["approved", "published"]),
-        Query.limit(1),
-      ]);
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        BLOGS_COLLECTION_ID,
+        [
+          Query.equal("slug", slug),
+          Query.equal("status", ["approved", "published"]),
+          Query.limit(1),
+        ],
+      );
+
       return response.documents[0] as unknown as Blog | undefined;
     } catch (error) {
-      console.error("Error fetching blog by slug:", error);
+      logError("Error fetching blog by slug:", error);
       throw error;
     }
   },

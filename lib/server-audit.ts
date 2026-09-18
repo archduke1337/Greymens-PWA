@@ -1,8 +1,10 @@
 import { ID, type Models } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getClientAddress } from "@/lib/rate-limit";
 import { getMembershipStatus } from "@/lib/server-auth";
+import { logError } from "@/lib/logger";
 
 const MAX_DETAILS_LENGTH = 5000;
 const MAX_DETAIL_STRING = 1000;
@@ -25,6 +27,7 @@ function serializeDetails(details: Record<string, unknown>): string {
       typeof value === "string" && value.includes("@")
         ? value.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, "[redacted]")
         : value;
+
     trimmed[key] =
       typeof redacted === "string" && redacted.length > MAX_DETAIL_STRING
         ? `${redacted.slice(0, MAX_DETAIL_STRING)}…(truncated)`
@@ -64,21 +67,31 @@ export async function recordAudit(entry: AuditEntry): Promise<boolean> {
     const actorRole = await getMembershipStatus(entry.actor);
     const details = entry.details ? serializeDetails(entry.details) : null;
 
-    await databases.createDocument(DATABASE_ID, COLLECTIONS.AUDIT_LOGS, ID.unique(), {
-      actorId: entry.actor.$id,
-      actorName: entry.actor.name || "Unknown",
-      actorRole,
-      action: entry.action,
-      entityType: entry.entityType,
-      entityId: entry.entityId,
-      details,
-      ipAddress: getClientAddress(entry.request).slice(0, 45),
-      userAgent: (entry.request.headers.get("user-agent") || "").slice(0, 500),
-      timestamp: new Date().toISOString(),
-    });
+    await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.AUDIT_LOGS,
+      ID.unique(),
+      {
+        actorId: entry.actor.$id,
+        actorName: entry.actor.name || "Unknown",
+        actorRole,
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId,
+        details,
+        ipAddress: getClientAddress(entry.request).slice(0, 45),
+        userAgent: (entry.request.headers.get("user-agent") || "").slice(
+          0,
+          500,
+        ),
+        timestamp: new Date().toISOString(),
+      },
+    );
+
     return true;
   } catch (error) {
-    console.error("Audit write failed:", error);
+    logError("Audit write failed:", error);
+
     return false;
   }
 }

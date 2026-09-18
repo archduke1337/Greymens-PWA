@@ -1,10 +1,23 @@
 // lib/database.ts
-import { APPWRITE_CONFIG } from "./appwrite";
 import type { Event, Registration, Project } from "@/lib/types";
 
-const { databaseId: DATABASE_ID, eventsCollectionId: EVENTS_COLLECTION_ID, registrationsCollectionId: REGISTRATIONS_COLLECTION_ID, projectsCollectionId: PROJECTS_COLLECTION_ID, eventImagesBucketId: EVENT_IMAGES_BUCKET_ID } = APPWRITE_CONFIG;
+import { APPWRITE_CONFIG } from "./appwrite";
 
-export { DATABASE_ID, EVENTS_COLLECTION_ID, REGISTRATIONS_COLLECTION_ID, PROJECTS_COLLECTION_ID, EVENT_IMAGES_BUCKET_ID };
+const {
+  databaseId: DATABASE_ID,
+  eventsCollectionId: EVENTS_COLLECTION_ID,
+  registrationsCollectionId: REGISTRATIONS_COLLECTION_ID,
+  projectsCollectionId: PROJECTS_COLLECTION_ID,
+  eventImagesBucketId: EVENT_IMAGES_BUCKET_ID,
+} = APPWRITE_CONFIG;
+
+export {
+  DATABASE_ID,
+  EVENTS_COLLECTION_ID,
+  REGISTRATIONS_COLLECTION_ID,
+  PROJECTS_COLLECTION_ID,
+  EVENT_IMAGES_BUCKET_ID,
+};
 
 // Re-export types for backward compatibility with existing imports
 export type { Event, Registration, Project };
@@ -41,4 +54,3 @@ export const COLLECTIONS = {
   USER_ROLES: "user_roles",
   SPONSORS: "sponsors",
 } as const;
-

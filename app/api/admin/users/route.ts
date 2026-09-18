@@ -10,9 +10,10 @@ import {
   validateGovernanceRole,
   validateProfilePatch,
 } from "@/lib/profile-fields";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
 import { isRecord } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { logError } from "@/lib/logger";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
@@ -180,7 +181,7 @@ export async function GET(request: NextRequest) {
       accountNames,
     });
   } catch (error) {
-    console.error("Admin user list error:", error);
+    logError("Admin user list error:", error);
 
     return fail("INTERNAL", "Unable to load users", 500);
   }
@@ -218,21 +219,25 @@ export async function PATCH(request: NextRequest) {
   } catch {
     return fail("VALIDATION", "Invalid request body", 400);
   }
-  if (!isRecord(body))
-    return fail("VALIDATION", "Invalid request body", 400);
+  if (!isRecord(body)) return fail("VALIDATION", "Invalid request body", 400);
 
   const action = typeof body.action === "string" ? body.action : "";
   const userId = typeof body.userId === "string" ? body.userId.trim() : "";
 
-  if (!userId)
-    return fail("VALIDATION", "userId is required", 400);
+  if (!userId) return fail("VALIDATION", "userId is required", 400);
 
   // Tier grants and bans are single-writer sensitive: throttle per actor.
   // Note on granularity: set_governance_role shares the users.update gate — the
   // governance tier is granted here, not through the roles console. There is no
   // separate capability for it; the old `users.manage_roles` name was granted by
   // nothing and checked by nothing, and has been dropped from the vocabulary.
-  if (!consumeRateLimit(`admin-users:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+  if (
+    !consumeRateLimit(
+      `admin-users:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
 
@@ -256,8 +261,7 @@ export async function PATCH(request: NextRequest) {
 
         const { databases, profile } = await findProfile(userId);
 
-        if (!profile)
-          return fail("NOT_FOUND", "User profile not found", 404);
+        if (!profile) return fail("NOT_FOUND", "User profile not found", 404);
         const updated = await databases.updateDocument(
           DATABASE_ID,
           COLLECTIONS.PROFILES,
@@ -298,10 +302,18 @@ export async function PATCH(request: NextRequest) {
         const role = isRevoke ? null : validateGovernanceRole(raw);
 
         if (!isRevoke && !role) {
-          return fail("VALIDATION", "role must be 'admin', 'dev', or null", 400);
+          return fail(
+            "VALIDATION",
+            "role must be 'admin', 'dev', or null",
+            400,
+          );
         }
         if (userId === authenticated.user.$id && role === null) {
-          return fail("CONFLICT", "You cannot revoke your own governance role", 409);
+          return fail(
+            "CONFLICT",
+            "You cannot revoke your own governance role",
+            409,
+          );
         }
 
         const { databases } = createServerDatabases();
@@ -381,7 +393,11 @@ export async function PATCH(request: NextRequest) {
         const membership = memberships.documents[0];
 
         if (!membership) {
-          return fail("NOT_FOUND", "This account has no membership record", 404);
+          return fail(
+            "NOT_FOUND",
+            "This account has no membership record",
+            404,
+          );
         }
         const updated = await databases.updateDocument(
           DATABASE_ID,
@@ -406,7 +422,7 @@ export async function PATCH(request: NextRequest) {
         return fail("VALIDATION", "Unsupported action", 400);
     }
   } catch (error) {
-    console.error("Admin user action error:", error);
+    logError("Admin user action error:", error);
 
     return fail("INTERNAL", "Unable to apply the change", 500);
   }

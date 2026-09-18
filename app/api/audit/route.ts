@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
 import { readOptionalString } from "@/lib/validation";
 import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
@@ -19,18 +20,27 @@ async function actorAvatarMap(
   databases: ReturnType<typeof createServerDatabases>["databases"],
   logs: Array<Record<string, unknown>>,
 ): Promise<Record<string, string>> {
-  const actorIds = [...new Set(logs.map((log) => String(log.actorId ?? "")).filter(Boolean))];
+  const actorIds = [
+    ...new Set(logs.map((log) => String(log.actorId ?? "")).filter(Boolean)),
+  ];
+
   if (actorIds.length === 0) return {};
   try {
-    const profiles = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-      Query.equal("userId", actorIds.slice(0, 100)),
-      Query.limit(100),
-    ]);
+    const profiles = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.equal("userId", actorIds.slice(0, 100)), Query.limit(100)],
+    );
     const map: Record<string, string> = {};
-    for (const profile of profiles.documents as Array<Record<string, unknown>>) {
+
+    for (const profile of profiles.documents as Array<
+      Record<string, unknown>
+    >) {
       const avatar = String(profile.avatar ?? "");
+
       if (avatar) map[String(profile.userId ?? "")] = avatar;
     }
+
     return map;
   } catch {
     return {};
@@ -39,16 +49,21 @@ async function actorAvatarMap(
 
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "audit.view");
+
   if (!authenticated.user) return authenticated.response;
 
   try {
     const params = request.nextUrl.searchParams;
     const rawPage = Number(params.get("page"));
     const rawLimit = Number(params.get("limit"));
-    const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.min(100, Math.floor(rawPage)) : 0;
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0
-      ? Math.min(MAX_PAGE_SIZE, Math.floor(rawLimit))
-      : DEFAULT_PAGE_SIZE;
+    const page =
+      Number.isFinite(rawPage) && rawPage > 0
+        ? Math.min(100, Math.floor(rawPage))
+        : 0;
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0
+        ? Math.min(MAX_PAGE_SIZE, Math.floor(rawLimit))
+        : DEFAULT_PAGE_SIZE;
 
     const action = readOptionalString(params.get("action"), 100);
     const entityType = readOptionalString(params.get("entityType"), 50);
@@ -56,13 +71,19 @@ export async function GET(request: NextRequest) {
     const actorId = readOptionalString(params.get("actorId"), 36);
     const from = readOptionalString(params.get("from"), 40);
     const to = readOptionalString(params.get("to"), 40);
+
     // Present-but-invalid filters must not silently widen into unfiltered
     // reads; reject them instead of ignoring them.
-    if ([action, entityType, entityId, actorId, from, to].some((value) => value === null)) {
+    if (
+      [action, entityType, entityId, actorId, from, to].some(
+        (value) => value === null,
+      )
+    ) {
       return fail("VALIDATION", "Invalid query parameters", 400);
     }
 
     const queries: string[] = [];
+
     if (action) queries.push(Query.equal("action", [action]));
     if (entityType) queries.push(Query.equal("entityType", [entityType]));
     if (entityId) queries.push(Query.equal("entityId", [entityId]));
@@ -94,7 +115,8 @@ export async function GET(request: NextRequest) {
       actorAvatars: await actorAvatarMap(databases, response.documents),
     });
   } catch (error) {
-    console.error("Audit log lookup error:", error);
+    logError("Audit log lookup error:", error);
+
     return fail("INTERNAL", "Unable to load audit logs", 500);
   }
 }

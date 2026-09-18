@@ -7,8 +7,9 @@ import {
   getMembershipStatus,
   requireAuthenticatedUser,
 } from "@/lib/server-auth";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
 import { getAccessSummary, hasServerCapability } from "@/lib/access-control";
+import { logError } from "@/lib/logger";
 
 const RESTRICTED = new Set(["banned", "suspended", "deactivated"]);
 
@@ -71,9 +72,9 @@ export async function GET(request: NextRequest) {
 
     const eventIds = [
       ...new Set(
-        registrations.documents.map((registration) =>
-          String(registration.eventId),
-        ).filter(Boolean),
+        registrations.documents
+          .map((registration) => String(registration.eventId))
+          .filter(Boolean),
       ),
     ];
     // Bounded-concurrency lookups, not one round-trip per registration fired
@@ -81,17 +82,23 @@ export async function GET(request: NextRequest) {
     // only grow. ($id-equality queries have no precedent in this codebase, so
     // per-ID reads in small batches instead of one clever query.)
     const eventDocuments: Array<Record<string, unknown> | null> = [];
+
     for (let index = 0; index < eventIds.length; index += 10) {
       const page = eventIds.slice(index, index + 10);
       const rows = await Promise.all(
         page.map((eventId) =>
-          databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId).catch(() => null),
+          databases
+            .getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId)
+            .catch(() => null),
         ),
       );
+
       eventDocuments.push(...(rows as Array<Record<string, unknown> | null>));
     }
     const eventsById = new Map(
-      eventDocuments.filter(Boolean).map((event) => [String(event!.$id), event]),
+      eventDocuments
+        .filter(Boolean)
+        .map((event) => [String(event!.$id), event]),
     );
     const myEvents = registrations.documents
       .map((registration) => ({
@@ -145,13 +152,15 @@ export async function GET(request: NextRequest) {
           // Resolve the lead's departments from the small catalogue in
           // memory rather than querying by `$id`, keeping enrichment
           // independent of system-attribute indexing.
-          databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-            Query.limit(100),
-          ]).then((catalogue) => ({
-            documents: catalogue.documents.filter((department) =>
-              departmentIds.includes(department.$id),
-            ),
-          })),
+          databases
+            .listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+              Query.limit(100),
+            ])
+            .then((catalogue) => ({
+              documents: catalogue.documents.filter((department) =>
+                departmentIds.includes(department.$id),
+              ),
+            })),
           departmentIds.length
             ? databases.listDocuments(
                 DATABASE_ID,
@@ -333,7 +342,7 @@ export async function GET(request: NextRequest) {
 
     return ok(result);
   } catch (error) {
-    console.error("Dashboard data error:", error);
+    logError("Dashboard data error:", error);
 
     return fail("INTERNAL", "Unable to load dashboard", 500);
   }

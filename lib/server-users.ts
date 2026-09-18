@@ -16,10 +16,14 @@ function createUsersClient(): Users {
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
+
   if (!endpoint || !projectId || !apiKey) {
     throw new Error("Server Appwrite configuration is incomplete");
   }
-  return new Users(new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey));
+
+  return new Users(
+    new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey),
+  );
 }
 
 /**
@@ -30,40 +34,53 @@ function createUsersClient(): Users {
  * to read it from here. Lookups are tolerant: a missing or deleted account
  * simply has no entry rather than failing the whole page.
  */
-export async function getAccountNames(userIds: string[]): Promise<Map<string, string>> {
+export async function getAccountNames(
+  userIds: string[],
+): Promise<Map<string, string>> {
   const unique = [...new Set(userIds.filter(Boolean))];
+
   if (unique.length === 0) return new Map();
 
   const users = createUsersClient();
   // Bounded concurrency in chunks: a 500-row admin dump must not open 500
   // simultaneous user lookups.
   const out = new Map<string, string>();
+
   for (let index = 0; index < unique.length; index += 20) {
     const page = unique.slice(index, index + 20);
     const entries = await Promise.all(
       page.map(async (userId) => {
         try {
           const user = await users.get({ userId });
+
           return [userId, user.name || user.email.split("@")[0]] as const;
         } catch {
           return null;
         }
-      })
+      }),
     );
+
     for (const entry of entries) {
       if (entry !== null) out.set(entry[0], entry[1]);
     }
   }
+
   return out;
 }
 
 /** Resolve an account ID from an email address, or `null` when there is no match. */
 export async function findUserIdByEmail(email: string): Promise<string | null> {
   const normalised = email.trim().toLowerCase();
+
   if (!normalised) return null;
 
   const users = createUsersClient();
-  const response = await users.list({ queries: [`equal("email", [${JSON.stringify(normalised)}])`] });
-  const match = response.users.find((user) => user.email.toLowerCase() === normalised);
+  const response = await users.list({
+    queries: [`equal("email", [${JSON.stringify(normalised)}])`],
+  });
+  const match = response.users.find(
+    (user) => user.email.toLowerCase() === normalised,
+  );
+
   return match?.$id ?? null;
 }

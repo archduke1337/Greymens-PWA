@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { Query } from "node-appwrite";
+
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { createServerTablesClient } from "@/lib/appwrite-server";
 import { ok, fail } from "@/lib/api";
@@ -15,7 +16,12 @@ import { ok, fail } from "@/lib/api";
  * Presence of a variable is inferable from behavior anyway; values never are.
  */
 export async function GET(request: NextRequest) {
-  const limit = consumeRateLimit(`health:${getClientAddress(request)}`, 60, 60_000);
+  const limit = consumeRateLimit(
+    `health:${getClientAddress(request)}`,
+    60,
+    60_000,
+  );
+
   if (!limit.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
@@ -44,6 +50,7 @@ export async function GET(request: NextRequest) {
       signal: AbortSignal.timeout(5000),
       cache: "no-store",
     });
+
     checks.backendReachable = response.status < 500;
   } catch {
     checks.backendReachable = false;
@@ -56,6 +63,7 @@ export async function GET(request: NextRequest) {
   if (checks.apiKey && checks.databaseId) {
     try {
       const { tables, databaseId } = createServerTablesClient();
+
       await tables.listRows({
         databaseId,
         tableId: "departments",
@@ -70,5 +78,6 @@ export async function GET(request: NextRequest) {
   if (!checks.backendReachable || !checks.databaseReadable) {
     return fail("DEGRADED", "Service degraded", 503, { checks });
   }
+
   return ok({ status: "operational", checks });
 }

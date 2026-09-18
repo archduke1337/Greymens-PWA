@@ -51,17 +51,26 @@ export interface AuditLogPage {
 async function fetchAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
   const params = new URLSearchParams();
 
-  for (const key of ["action", "entityType", "entityId", "actorId", "from", "to"] as const) {
+  for (const key of [
+    "action",
+    "entityType",
+    "entityId",
+    "actorId",
+    "from",
+    "to",
+  ] as const) {
     const value = filters[key];
+
     if (value) params.set(key, value);
   }
   if (filters.page !== undefined) params.set("page", String(filters.page));
   if (filters.limit !== undefined) params.set("limit", String(filters.limit));
 
-  const response = await fetch(`/api/audit?${params.toString()}`, { credentials: "include" });
+  const response = await fetch(`/api/audit?${params.toString()}`, {
+    credentials: "include",
+  });
   const payload = (await response.json().catch(() => null)) as
-    | (Partial<AuditLogPage> & { error?: string })
-    | null;
+    (Partial<AuditLogPage> & { error?: string }) | null;
 
   if (!response.ok) {
     throw new Error(payload?.error || "Failed to load audit logs");
@@ -82,6 +91,7 @@ export const auditService = {
 
   async getUserActivity(userId: string, limit = 50): Promise<AuditLog[]> {
     const { logs } = await fetchAuditLogs({ actorId: userId, limit });
+
     return logs;
   },
 };

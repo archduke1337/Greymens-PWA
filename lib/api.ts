@@ -27,28 +27,48 @@ function stripReserved<T extends Record<string, unknown>>(obj: T): T {
   for (const [key, value] of Object.entries(obj)) {
     if (!RESERVED_ENVELOPE_KEYS.has(key)) out[key] = value;
   }
+
   return out as T;
 }
 
-export function ok<T extends Record<string, unknown>>(data: T, status = 200, headers?: Record<string, string>): NextResponse {
+export function ok<T extends Record<string, unknown>>(
+  data: T,
+  status = 200,
+  headers?: Record<string, string>,
+): NextResponse {
   const safe = stripReserved(data);
 
-  return NextResponse.json({ success: true, data: safe, ...safe }, { status, headers });
+  return NextResponse.json(
+    { success: true, data: safe, ...safe },
+    { status, headers },
+  );
 }
 
-export function fail(code: string, message: string, status: number, extra?: Record<string, unknown>, headers?: Record<string, string>): NextResponse {
+export function fail(
+  code: string,
+  message: string,
+  status: number,
+  extra?: Record<string, unknown>,
+  headers?: Record<string, string>,
+): NextResponse {
   const safe = extra ? stripReserved(extra) : {};
 
-  return NextResponse.json({ success: false, error: { code, message }, ...safe }, { status, headers });
+  return NextResponse.json(
+    { success: false, error: { code, message }, ...safe },
+    { status, headers },
+  );
 }
 
-export const ApiError = {  unauthorized: () => fail("UNAUTHENTICATED", "Unauthorized", 401),
+export const ApiError = {
+  unauthorized: () => fail("UNAUTHENTICATED", "Unauthorized", 401),
   forbidden: () => fail("FORBIDDEN", "Forbidden", 403),
   notFound: (message = "Not found") => fail("NOT_FOUND", message, 404),
   conflict: (message: string) => fail("CONFLICT", message, 409),
   validation: (message: string) => fail("VALIDATION", message, 422),
-  rateLimited: (message = "Too many requests") => fail("RATE_LIMITED", message, 429),
-  internal: (message = "Something went wrong") => fail("INTERNAL", message, 500),
+  rateLimited: (message = "Too many requests") =>
+    fail("RATE_LIMITED", message, 429),
+  internal: (message = "Something went wrong") =>
+    fail("INTERNAL", message, 500),
 };
 
 /**

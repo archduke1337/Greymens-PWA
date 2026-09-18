@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isRecord } from "@/lib/validation";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 /**
  * Record a page view for a published post.
@@ -17,12 +19,18 @@ import { ok, fail, ApiError } from "@/lib/api";
  * worked, let any client write an arbitrary value.
  */
 export async function POST(request: NextRequest) {
-  const limit = consumeRateLimit(`blog-view:${getClientAddress(request)}`, 120, 60 * 60 * 1000);
+  const limit = consumeRateLimit(
+    `blog-view:${getClientAddress(request)}`,
+    120,
+    60 * 60 * 1000,
+  );
+
   if (!limit.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
 
   let body: unknown;
+
   try {
     body = await request.json();
   } catch {
@@ -31,21 +39,33 @@ export async function POST(request: NextRequest) {
   if (!isRecord(body)) return fail("VALIDATION", "Invalid request body", 400);
 
   const blogId = typeof body.blogId === "string" ? body.blogId.trim() : "";
+
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
 
   try {
     const { databases } = createServerDatabases();
     // Uniform negative: missing and unpublished both answer `recorded: false`
     // so the endpoint cannot be used to probe for draft posts.
-    const blog = await databases.getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId).catch(() => null);
+    const blog = await databases
+      .getDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId)
+      .catch(() => null);
+
     if (!blog || blog.status !== "approved") {
       return ok({ recorded: false });
     }
 
-    await databases.incrementDocumentAttribute(DATABASE_ID, COLLECTIONS.BLOGS, blogId, "views", 1);
+    await databases.incrementDocumentAttribute(
+      DATABASE_ID,
+      COLLECTIONS.BLOGS,
+      blogId,
+      "views",
+      1,
+    );
+
     return ok({ recorded: true });
   } catch (error) {
-    console.error("Blog view error:", error);
+    logError("Blog view error:", error);
+
     return fail("INTERNAL", "Unable to record the view", 500);
   }
 }

@@ -1,8 +1,13 @@
-import type { NextRequest } from "next/server";
 import { sendContactMessage } from "@/lib/contact-mailer";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
-import { TEXT_LIMITS, isEmailAddress, isRecord, readOptionalString, readString } from "@/lib/validation";
-import { ok, fail, ApiError } from "@/lib/api";
+import {
+  TEXT_LIMITS,
+  isEmailAddress,
+  isRecord,
+  readOptionalString,
+  readString,
+} from "@/lib/validation";
+import { ok, fail } from "@/lib/api";
 
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
@@ -16,12 +21,24 @@ const FEEDBACK_TYPES = new Map<string, string>([
 
 export async function POST(request: Request) {
   const address = getClientAddress(request);
-  const limited = consumeRateLimit(`feedback:${address}`, RATE_LIMIT, RATE_WINDOW_MS);
+  const limited = consumeRateLimit(
+    `feedback:${address}`,
+    RATE_LIMIT,
+    RATE_WINDOW_MS,
+  );
+
   if (!limited.allowed) {
-    return fail("RATE_LIMITED", "Too many submissions. Please try again shortly.", 429, undefined, { "Retry-After": String(limited.retryAfter) });
+    return fail(
+      "RATE_LIMITED",
+      "Too many submissions. Please try again shortly.",
+      429,
+      undefined,
+      { "Retry-After": String(limited.retryAfter) },
+    );
   }
 
   let body: unknown;
+
   try {
     body = await request.json();
   } catch {
@@ -59,8 +76,25 @@ export async function POST(request: Request) {
     subject: `[${typeLabel}] ${subject}`,
     message,
   });
+
   if (!result.ok) {
-    return fail((result.status === 400 ? "VALIDATION" : result.status === 401 ? "UNAUTHENTICATED" : result.status === 403 ? "FORBIDDEN" : result.status === 404 ? "NOT_FOUND" : result.status === 409 ? "CONFLICT" : result.status === 429 ? "RATE_LIMITED" : "INTERNAL"), result.error, result.status);
+    return fail(
+      result.status === 400
+        ? "VALIDATION"
+        : result.status === 401
+          ? "UNAUTHENTICATED"
+          : result.status === 403
+            ? "FORBIDDEN"
+            : result.status === 404
+              ? "NOT_FOUND"
+              : result.status === 409
+                ? "CONFLICT"
+                : result.status === 429
+                  ? "RATE_LIMITED"
+                  : "INTERNAL",
+      result.error,
+      result.status,
+    );
   }
 
   return ok({ success: true });

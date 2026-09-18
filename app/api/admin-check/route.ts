@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
+
 import { getAuthenticatedUser, isAdminUser } from "@/lib/server-auth";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
 
 /**
  * Reports whether the currently authenticated session belongs to an

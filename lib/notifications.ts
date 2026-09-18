@@ -1,4 +1,5 @@
 import type { Notification, LetterData } from "./types";
+
 import { welcomeLetter, promotionLetter, designationLetter } from "./letters";
 
 export type { Notification, LetterData };
@@ -24,8 +25,11 @@ interface NotificationPage {
 }
 
 async function requestNotifications(query = ""): Promise<NotificationPage> {
-  const response = await fetch(`/api/notifications${query}`, { credentials: "include" });
-  const payload = (await response.json().catch(() => null)) as (Partial<NotificationPage> & { error?: string }) | null;
+  const response = await fetch(`/api/notifications${query}`, {
+    credentials: "include",
+  });
+  const payload = (await response.json().catch(() => null)) as
+    (Partial<NotificationPage> & { error?: string }) | null;
 
   if (!response.ok) {
     throw new Error(payload?.error || "Failed to load notifications");
@@ -54,7 +58,10 @@ export const notificationService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const payload = (await response.json().catch(() => null)) as { notification?: Notification; error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as {
+      notification?: Notification;
+      error?: string;
+    } | null;
 
     if (!response.ok || !payload?.notification) {
       throw new Error(payload?.error || "Failed to send notification");
@@ -65,18 +72,23 @@ export const notificationService = {
 
   /** Full feed, for the administrator console. */
   async getAll(limit = 200): Promise<Notification[]> {
-    const { notifications } = await requestNotifications(`?all=true&limit=${limit}`);
+    const { notifications } = await requestNotifications(
+      `?all=true&limit=${limit}`,
+    );
+
     return notifications;
   },
 
   /** The signed-in account's own notifications. */
   async getUserNotifications(limit = 50): Promise<Notification[]> {
     const { notifications } = await requestNotifications(`?limit=${limit}`);
+
     return notifications;
   },
 
   async getUnreadCount(): Promise<number> {
     const { unreadCount } = await requestNotifications("?limit=1");
+
     return unreadCount;
   },
 
@@ -87,8 +99,12 @@ export const notificationService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: notificationId }),
     });
+
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
       throw new Error(payload?.error || "Failed to mark notification as read");
     }
   },
@@ -100,19 +116,30 @@ export const notificationService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ all: true }),
     });
+
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
       throw new Error(payload?.error || "Failed to mark notifications as read");
     }
   },
 
   async delete(notificationId: string): Promise<void> {
-    const response = await fetch(`/api/notifications?id=${encodeURIComponent(notificationId)}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
+    const response = await fetch(
+      `/api/notifications?id=${encodeURIComponent(notificationId)}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      },
+    );
+
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
       throw new Error(payload?.error || "Failed to delete notification");
     }
   },

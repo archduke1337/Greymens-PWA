@@ -155,32 +155,32 @@ export async function getEffectiveCapabilities(
       officeResponse,
       designationResponse,
     ] = await Promise.all([
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [
+        Query.equal("userId", [userId]),
+        Query.equal("isActive", [true]),
+        Query.limit(100),
+      ]),
+      // Not filtered on isActive: an office's capabilities come from its
+      // template, and "template exists but is switched off" (grant nothing)
+      // must stay distinguishable from "no template yet" (seed default).
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [
+        Query.limit(200),
+      ]),
+      databases
+        .listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [
+          Query.equal("userId", [userId]),
+          Query.equal("status", ["active"]),
+          Query.limit(100),
+        ])
+        .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
+      databases
+        .listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
           Query.equal("userId", [userId]),
           Query.equal("isActive", [true]),
-          Query.limit(100),
-        ]),
-        // Not filtered on isActive: an office's capabilities come from its
-        // template, and "template exists but is switched off" (grant nothing)
-        // must stay distinguishable from "no template yet" (seed default).
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [
-          Query.limit(200),
-        ]),
-        databases
-          .listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [
-            Query.equal("userId", [userId]),
-            Query.equal("status", ["active"]),
-            Query.limit(100),
-          ])
-          .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
-        databases
-          .listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-            Query.equal("userId", [userId]),
-            Query.equal("isActive", [true]),
-            Query.limit(50),
-          ])
-          .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
-      ]);
+          Query.limit(50),
+        ])
+        .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
+    ]);
 
     assignments = {
       documents: assignmentResponse.documents as Array<Record<string, unknown>>,
@@ -216,7 +216,9 @@ export async function getEffectiveCapabilities(
         [Query.equal("isActive", [true]), Query.limit(200)],
       );
       const heldIds = new Set(
-        userDesignations.documents.map((row) => String(row.designationId ?? "")),
+        userDesignations.documents.map((row) =>
+          String(row.designationId ?? ""),
+        ),
       );
 
       for (const row of catalogue.documents) {
@@ -272,7 +274,12 @@ export async function getEffectiveCapabilities(
   for (const o of offices.documents) {
     const officeId = String(o.officeId ?? "");
     const termEnd = typeof o.termEnd === "string" ? o.termEnd : "";
-    if (/^\d{4}-\d{2}-\d{2}$/.test(termEnd) && termEnd < new Date().toISOString().slice(0, 10)) continue;
+
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(termEnd) &&
+      termEnd < new Date().toISOString().slice(0, 10)
+    )
+      continue;
 
     officeCapabilities(officeId, roles.documents).forEach((c) =>
       capabilities.add(c),
@@ -333,9 +340,7 @@ export async function getEffectiveCapabilities(
 
     // Only known vocabulary becomes a capability. A role-template writer must
     // not be able to mint arbitrary strings (including "*") into privileges.
-    values
-      .filter(isCapability)
-      .forEach((value) => capabilities.add(value));
+    values.filter(isCapability).forEach((value) => capabilities.add(value));
   }
 
   return capabilities;
@@ -422,6 +427,7 @@ export async function unheldCapabilities(
   const held = await getEffectiveCapabilities(actorId);
 
   if (held.has("*")) return [];
+
   return caps.filter((cap) => !held.has(cap));
 }
 
@@ -472,7 +478,10 @@ export async function requireAnyCapability(
 
   const held = await getEffectiveCapabilities(authenticated.user.$id, scope);
 
-  if (held.has("*") || capabilities.some((capability) => held.has(capability))) {
+  if (
+    held.has("*") ||
+    capabilities.some((capability) => held.has(capability))
+  ) {
     return authenticated;
   }
 
@@ -484,6 +493,11 @@ export async function requireAnyCapability(
 
 export async function getAccessSummary(userId: string, knownStatus?: string) {
   const status = knownStatus ?? (await resolveMembershipStatus(userId));
-  const capabilities = await getEffectiveCapabilities(userId, undefined, status);
+  const capabilities = await getEffectiveCapabilities(
+    userId,
+    undefined,
+    status,
+  );
+
   return { status, capabilities: Array.from(capabilities).sort() };
 }

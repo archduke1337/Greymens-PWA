@@ -6,13 +6,14 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
-  if (error && typeof error === 'object' && 'message' in error) {
+  if (error && typeof error === "object" && "message" in error) {
     return String((error as Record<string, unknown>).message);
   }
-  return 'An unexpected error occurred';
+
+  return "An unexpected error occurred";
 }
 
 /**
@@ -26,18 +27,21 @@ export function getErrorMessage(error: unknown): string {
  * top-level `message`) and falls back honestly.
  */
 export function readApiError(payload: unknown, fallback: string): string {
-  if (typeof payload === 'string' && payload) return payload;
-  if (payload && typeof payload === 'object') {
+  if (typeof payload === "string" && payload) return payload;
+  if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
     const nested = record.error;
-    if (typeof nested === 'string' && nested) return nested;
-    if (nested && typeof nested === 'object') {
+
+    if (typeof nested === "string" && nested) return nested;
+    if (nested && typeof nested === "object") {
       const message = (nested as Record<string, unknown>).message;
-      if (typeof message === 'string' && message) return message;
+
+      if (typeof message === "string" && message) return message;
     }
-    if (typeof record.message === 'string' && record.message) {
+    if (typeof record.message === "string" && record.message) {
       return record.message;
     }
   }
+
   return fallback;
 }

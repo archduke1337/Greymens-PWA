@@ -72,6 +72,7 @@ export function proxy(request: NextRequest) {
   const needsSession =
     protectedRoutes.some((route) => matchesRoute(pathname, route)) ||
     (pathname.startsWith("/events/") && pathname.endsWith("/tickets"));
+
   if (needsSession && !hasSession) {
     const loginUrl = new URL("/login", request.url);
 

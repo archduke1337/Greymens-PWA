@@ -362,8 +362,6 @@ export function pagesForCapabilities(
  * (`/events/[id]/tickets`) are excluded: they name a screen, not an address,
  * and a link to one resolves to a literal "[id]" path that never renders.
  */
-export function accessiblePages(
-  caps: Set<string> | string[],
-): GovernedPage[] {
+export function accessiblePages(caps: Set<string> | string[]): GovernedPage[] {
   return pagesForCapabilities(caps).filter((p) => !p.href.includes("["));
 }

@@ -1,7 +1,5 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "./AuthContext";
 import type {
   MembershipStatus,
   Profile,
@@ -14,6 +12,20 @@ import type {
   Designation,
   Power,
 } from "@/lib/types";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import { logError } from "@/lib/logger";
+
+import { useAuth } from "./AuthContext";
 
 interface PermissionContextType {
   status: MembershipStatus;
@@ -69,7 +81,10 @@ const ROLE_HIERARCHY: MembershipStatus[] = [
 function toMembershipStatus(value: unknown): MembershipStatus {
   if (typeof value !== "string") return "no_account";
   if (value === "suspended") return "banned";
-  return (ROLE_HIERARCHY as string[]).includes(value) || value === "banned" || value === "deactivated"
+
+  return (ROLE_HIERARCHY as string[]).includes(value) ||
+    value === "banned" ||
+    value === "deactivated"
     ? (value as MembershipStatus)
     : "no_account";
 }
@@ -119,7 +134,11 @@ const PermissionContext = createContext<PermissionContextType>({
 
 export const usePermissions = () => useContext(PermissionContext);
 
-export function PermissionProvider({ children }: { children: React.ReactNode }) {
+export function PermissionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, refreshUser } = useAuth();
   const [payload, setPayload] = useState<PermissionsPayload>(EMPTY_PAYLOAD);
   const [loading, setLoading] = useState(true);
@@ -144,6 +163,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
       setError(null);
       setLoading(false);
       lastUserIdRef.current = null;
+
       return;
     }
     // New sign-in resets the single-shot recovery budget.
@@ -171,6 +191,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
     try {
       const response = await fetch("/api/permissions", { cache: "no-store" });
+
       if (!response.ok) {
         // 401 can mean a rotated/expired session rather than a dead one: the
         // auth layer may still be able to re-sync (cookie refresh), so try
@@ -186,8 +207,10 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
             // Session truly dead: fall through to downgrade below.
           }
           const retry = await fetch("/api/permissions", { cache: "no-store" });
+
           if (retry.ok) {
             applyPayload((await retry.json()) as Record<string, unknown>);
+
             return;
           }
         }
@@ -195,14 +218,18 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
           setPayload(EMPTY_PAYLOAD);
         }
         setError(`Unable to load permissions (status ${response.status})`);
+
         return;
       }
-      const data = await response.json() as Record<string, unknown>;
+      const data = (await response.json()) as Record<string, unknown>;
+
       applyPayload(data);
     } catch (error) {
-      console.error("Error loading permissions:", error);
+      logError("Error loading permissions:", error);
       // Preserve the last-good payload instead of downgrading to a wrong tier.
-      setError(error instanceof Error ? error.message : "Unable to load permissions");
+      setError(
+        error instanceof Error ? error.message : "Unable to load permissions",
+      );
     } finally {
       setLoading(false);
     }
@@ -215,17 +242,21 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
   const hasCapability = useCallback(
     (capability: string) => {
       const set = payload.capabilities;
+
       return set.includes("*") || set.includes(capability);
     },
-    [payload.capabilities]
+    [payload.capabilities],
   );
 
-  const isRole = useCallback((role: MembershipStatus) => payload.status === role, [payload.status]);
+  const isRole = useCallback(
+    (role: MembershipStatus) => payload.status === role,
+    [payload.status],
+  );
 
   const isRoleOrAbove = useCallback(
     (role: MembershipStatus) =>
       ROLE_HIERARCHY.indexOf(payload.status) >= ROLE_HIERARCHY.indexOf(role),
-    [payload.status]
+    [payload.status],
   );
 
   const value = useMemo(
@@ -238,8 +269,20 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
       error,
       refresh: loadUserData,
     }),
-    [payload, hasCapability, isRole, isRoleOrAbove, loading, error, loadUserData]
+    [
+      payload,
+      hasCapability,
+      isRole,
+      isRoleOrAbove,
+      loading,
+      error,
+      loadUserData,
+    ],
   );
 
-  return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;
+  return (
+    <PermissionContext.Provider value={value}>
+      {children}
+    </PermissionContext.Provider>
+  );
 }

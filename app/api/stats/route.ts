@@ -1,7 +1,9 @@
 import { Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 /**
  * GET /api/stats — homepage proof-strip counts in one request.
@@ -35,13 +37,15 @@ export async function GET() {
     ).filter(
       (event) => !event.date || new Date(event.date).getTime() >= now,
     ).length;
+
     return ok({
       upcomingEvents,
       projects: projects.total,
       posts: posts.total,
     });
   } catch (error) {
-    console.error("Home stats error:", error);
+    logError("Home stats error:", error);
+
     return fail("INTERNAL", "Unable to load stats", 500);
   }
 }

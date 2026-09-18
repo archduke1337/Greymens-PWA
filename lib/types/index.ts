@@ -1,6 +1,6 @@
 /**
  * Greymens Club Operating System — Type Definitions
- * 
+ *
  * Centralized types for the entire club OS.
  */
 
@@ -24,7 +24,9 @@ export type AppwriteUser = Models.User<UserPreferences>;
 // Extended User (runtime fields from Appwrite)
 // ============================================================
 
-export type ExtendedUser<Preferences extends Models.Preferences = Models.DefaultPreferences> = Models.User<Preferences> & {
+export type ExtendedUser<
+  Preferences extends Models.Preferences = Models.DefaultPreferences,
+> = Models.User<Preferences> & {
   email: string;
   phone: string;
   phoneVerification: boolean;
@@ -65,7 +67,13 @@ export interface Profile {
   $updatedAt?: string;
   userId: string;
   avatar?: string;
-  pronouns?: "he/him" | "she/her" | "they/them" | "he/they" | "she/they" | "prefer_to_say";
+  pronouns?:
+    | "he/him"
+    | "she/her"
+    | "they/them"
+    | "he/they"
+    | "she/they"
+    | "prefer_to_say";
   phone?: string;
   urn?: string;
   program?: string;
@@ -218,7 +226,15 @@ export interface Power {
   name: string;
   displayName: string;
   description?: string;
-  category: "membership" | "events" | "tickets" | "content" | "resources" | "admin" | "gallery" | "social";
+  category:
+    | "membership"
+    | "events"
+    | "tickets"
+    | "content"
+    | "resources"
+    | "admin"
+    | "gallery"
+    | "social";
   scope: "global" | "department" | "own";
 }
 
@@ -279,7 +295,14 @@ export interface Event {
   image?: string;
   eventTypeId: string;
   category?: string;
-  status: "draft" | "review" | "approved" | "published" | "active" | "completed" | "cancelled";
+  status:
+    | "draft"
+    | "review"
+    | "approved"
+    | "published"
+    | "active"
+    | "completed"
+    | "cancelled";
   audience: "public" | "member_only" | "exclusive";
   date: string;
   time: string;
@@ -349,7 +372,18 @@ export interface EventType {
 
 export interface EventField {
   name: string;
-  type: "text" | "textarea" | "number" | "select" | "multi-select" | "boolean" | "date" | "url" | "file" | "json" | "array";
+  type:
+    | "text"
+    | "textarea"
+    | "number"
+    | "select"
+    | "multi-select"
+    | "boolean"
+    | "date"
+    | "url"
+    | "file"
+    | "json"
+    | "array";
   label: string;
   required: boolean;
   options?: string[];
@@ -375,7 +409,9 @@ export interface TicketConfig {
   maxEntries: number;
   qrEnabled: boolean;
   transferAllowed: boolean;
-  verificationMethods: ("qr_scan" | "manual_search" | "manual_entry" | "id_verification")[];
+  verificationMethods: (
+    "qr_scan" | "manual_search" | "manual_entry" | "id_verification"
+  )[];
   teamTicket?: boolean;
 }
 
@@ -433,7 +469,15 @@ export interface Ticket {
   registrationId: string;
   ticketCode: string;
   qrData: string;
-  status: "pending" | "issued" | "active" | "checked_in" | "completed" | "invalidated" | "transferred" | "waitlisted";
+  status:
+    | "pending"
+    | "issued"
+    | "active"
+    | "checked_in"
+    | "completed"
+    | "invalidated"
+    | "transferred"
+    | "waitlisted";
   issuedAt?: string;
   checkedInAt?: string;
   checkedInBy?: string;
@@ -465,7 +509,8 @@ export interface TicketVerification {
   eventId: string;
   verifiedBy: string;
   method: "qr_scan" | "manual_search" | "manual_entry" | "id_verification";
-  result: "success" | "already_checked_in" | "invalid_ticket" | "event_not_active";
+  result:
+    "success" | "already_checked_in" | "invalid_ticket" | "event_not_active";
   verifiedAt: string;
   metadata?: Record<string, any>;
 }
@@ -548,7 +593,8 @@ export interface GalleryImage {
   description?: string;
   imageUrl: string;
   thumbnailUrl?: string;
-  category: "events" | "workshops" | "hackathons" | "team" | "projects" | "other";
+  category:
+    "events" | "workshops" | "hackathons" | "team" | "projects" | "other";
   uploadedBy: string;
   eventId?: string;
   departmentId?: string;
@@ -569,7 +615,12 @@ export interface ApprovalWorkflow {
   $id?: string;
   $createdAt?: string;
   $updatedAt?: string;
-  entityType: "membership" | "event" | "registration" | "promotion" | "department_assignment";
+  entityType:
+    | "membership"
+    | "event"
+    | "registration"
+    | "promotion"
+    | "department_assignment";
   entityId: string;
   currentStep: number;
   totalSteps: number;
@@ -616,7 +667,8 @@ export interface UserRole {
 // Dashboard Types
 // ============================================================
 
-export type DashboardPersona = "applicant" | "member" | "lead" | "head" | "admin";
+export type DashboardPersona =
+  "applicant" | "member" | "lead" | "head" | "admin";
 
 export interface DashboardModule {
   id: string;

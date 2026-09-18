@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
+
 import { createServerTablesClient, Query } from "@/lib/appwrite-server";
 import { COLLECTIONS } from "@/lib/database";
 import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 /**
  * Public department catalogue.
@@ -42,7 +44,8 @@ export async function GET(_request: NextRequest) {
 
     return ok({ departments });
   } catch (error) {
-    console.error("Department catalogue error:", error);
+    logError("Department catalogue error:", error);
+
     return fail("INTERNAL", "Unable to load departments", 500);
   }
 }

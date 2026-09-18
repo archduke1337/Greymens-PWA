@@ -9,7 +9,11 @@ import type { LetterData } from "./types";
  * meant for the browser).
  */
 
-export function welcomeLetter(data: { name: string; membershipId: string; department?: string }): LetterData {
+export function welcomeLetter(data: {
+  name: string;
+  membershipId: string;
+  department?: string;
+}): LetterData {
   return {
     template: "welcome",
     subject: "Welcome to the club",
@@ -18,16 +22,28 @@ export function welcomeLetter(data: { name: string; membershipId: string; depart
   };
 }
 
-export function promotionLetter(data: { name: string; oldRole: string; newDesignation: string; approvedBy: string }): LetterData {
+export function promotionLetter(data: {
+  name: string;
+  oldRole: string;
+  newDesignation: string;
+  approvedBy: string;
+}): LetterData {
   return {
     template: "promotion",
     subject: `Promotion to ${data.newDesignation}`,
     body: `Dear ${data.name},\n\nYou have been promoted to ${data.newDesignation}.\n\nPrevious role: ${data.oldRole}\nNew role: ${data.newDesignation}\nEffective date: ${new Date().toLocaleDateString()}\nApproved by: ${data.approvedBy}\n\nCongratulations.`,
-    metadata: { newDesignation: data.newDesignation, approvedBy: data.approvedBy },
+    metadata: {
+      newDesignation: data.newDesignation,
+      approvedBy: data.approvedBy,
+    },
   };
 }
 
-export function designationLetter(data: { name: string; designation: string; assignedBy: string }): LetterData {
+export function designationLetter(data: {
+  name: string;
+  designation: string;
+  assignedBy: string;
+}): LetterData {
   return {
     template: "designation",
     subject: `Designation assigned: ${data.designation}`,

@@ -1,10 +1,15 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
+import {
+  getMembershipStatus,
+  requireAuthenticatedUser,
+} from "@/lib/server-auth";
 import { getEffectiveCapabilities } from "@/lib/access-control";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 /**
  * The caller's own permissions payload.
@@ -29,6 +34,7 @@ import { ok, fail, ApiError } from "@/lib/api";
  */
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
   try {
@@ -51,15 +57,47 @@ export async function GET(request: NextRequest) {
       capabilities,
     ] = await Promise.all([
       getMembershipStatus(authenticated.user),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [Query.equal("userId", [userId]), Query.limit(1)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [Query.equal("userId", [userId]), Query.limit(1)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [Query.equal("userId", [userId]), Query.limit(1)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [Query.equal("userId", [userId]), Query.equal("isActive", [true]), Query.limit(own.limit)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [Query.equal("userId", [userId]), Query.equal("isActive", [true]), Query.limit(own.limit)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [Query.equal("userId", [userId]), Query.equal("isActive", [true]), Query.limit(own.limit)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [Query.equal("isActive", [true]), Query.orderAsc("displayOrder"), Query.limit(200)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [Query.equal("isActive", [true]), Query.orderAsc("level"), Query.limit(200)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.POWERS, [Query.orderAsc("category"), Query.limit(200)]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
+        Query.equal("userId", [userId]),
+        Query.limit(1),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
+        Query.equal("userId", [userId]),
+        Query.equal("isActive", [true]),
+        Query.limit(own.limit),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
+        Query.equal("userId", [userId]),
+        Query.equal("isActive", [true]),
+        Query.limit(own.limit),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+        Query.equal("userId", [userId]),
+        Query.equal("isActive", [true]),
+        Query.limit(own.limit),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.equal("isActive", [true]),
+        Query.orderAsc("displayOrder"),
+        Query.limit(200),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+        Query.equal("isActive", [true]),
+        Query.orderAsc("level"),
+        Query.limit(200),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.POWERS, [
+        Query.orderAsc("category"),
+        Query.limit(200),
+      ]),
       getEffectiveCapabilities(userId),
     ]);
 
@@ -77,7 +115,8 @@ export async function GET(request: NextRequest) {
       capabilities: Array.from(capabilities).sort(),
     });
   } catch (error) {
-    console.error("Permission lookup error:", error);
+    logError("Permission lookup error:", error);
+
     return fail("INTERNAL", "Unable to load permissions", 500);
   }
 }

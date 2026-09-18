@@ -1,12 +1,18 @@
 import { NextRequest } from "next/server";
+import { ID, Query } from "appwrite";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
-import { ID, Query } from "appwrite";
-import { getMembershipStatus, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
+import {
+  getMembershipStatus,
+  isMemberStatus,
+  requireAuthenticatedUser,
+} from "@/lib/server-auth";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { createSignedTicket } from "@/lib/server/tickets";
-import { ok, fail, ApiError } from "@/lib/api";
+import { ok, fail } from "@/lib/api";
+import { logError } from "@/lib/logger";
 
 const RESTRICTED_STATUSES = new Set(["banned", "suspended", "deactivated"]);
 
@@ -21,6 +27,7 @@ const RESTRICTED_STATUSES = new Set(["banned", "suspended", "deactivated"]);
  */
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
   try {
@@ -55,16 +62,23 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Registration lookup error:", error);
+    logError("Registration lookup error:", error);
+
     return fail("INTERNAL", "Unable to load registrations", 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
-  const limited = consumeRateLimit(`event-register:${authenticated.user.$id}`, 20, 10 * 60 * 1000);
+  const limited = consumeRateLimit(
+    `event-register:${authenticated.user.$id}`,
+    20,
+    10 * 60 * 1000,
+  );
+
   if (!limited.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
@@ -78,6 +92,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => null)) as {
       eventId?: unknown;
     } | null;
+
     eventId = typeof body?.eventId === "string" ? body.eventId.trim() : "";
     if (!eventId) {
       return fail("VALIDATION", "eventId is required", 400);
@@ -85,34 +100,56 @@ export async function POST(request: NextRequest) {
 
     // Step 2: restricted accounts cannot register for any event, including public.
     const callerStatus = await getMembershipStatus(authenticated.user);
+
     if (RESTRICTED_STATUSES.has(callerStatus)) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }
 
     const { databases } = createServerDatabases();
     // Step 3: duplicate guard (unique idx_event_user is the backstop).
-    const existing = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
-      Query.equal("eventId", [eventId]),
-      Query.equal("userId", [authenticated.user.$id]),
-      Query.limit(1),
-    ]);
-    const existingRow = existing.documents[0] as Record<string, unknown> | undefined;
+    const existing = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.REGISTRATIONS,
+      [
+        Query.equal("eventId", [eventId]),
+        Query.equal("userId", [authenticated.user.$id]),
+        Query.limit(1),
+      ],
+    );
+    const existingRow = existing.documents[0] as
+      Record<string, unknown> | undefined;
     const existingStatus = existingRow ? String(existingRow.status ?? "") : "";
+
     if (existingRow && existingStatus === "approved") {
       // Self-heal: a ticket-mint blip can leave approved-without-ticket.
       // Retry mints the missing ticket instead of 409ing a paying user.
-      const issued = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
-        Query.equal("registrationId", [String(existingRow.$id ?? "")]),
-        Query.limit(1),
-      ]);
+      const issued = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.TICKETS,
+        [
+          Query.equal("registrationId", [String(existingRow.$id ?? "")]),
+          Query.limit(1),
+        ],
+      );
+
       if (issued.documents.length === 0) {
         const ticket = await createSignedTicket(databases, {
           userId: authenticated.user.$id,
           eventId,
           registrationId: String(existingRow.$id ?? ""),
         });
-        return ok({ registration: existingRow, status: "approved", ticket, recovered: true }, 200);
+
+        return ok(
+          {
+            registration: existingRow,
+            status: "approved",
+            ticket,
+            recovered: true,
+          },
+          200,
+        );
       }
+
       return fail("CONFLICT", "Already registered", 409);
     }
     if (existingRow && existingStatus === "pending") {
@@ -123,22 +160,35 @@ export async function POST(request: NextRequest) {
     }
     // A rejected row is not a registration — the applicant resubmits through
     // the normal flow below by reviving the same row (no duplicate stack).
-    const reviveRow = existingRow && existingStatus === "rejected" ? existingRow : null;
+    const reviveRow =
+      existingRow && existingStatus === "rejected" ? existingRow : null;
+
     if (existingRow && !reviveRow) {
       return fail("CONFLICT", "Already registered", 409);
     }
 
     // Step 4: load event.
-    const event = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
+    const event = await databases.getDocument(
+      DATABASE_ID,
+      COLLECTIONS.EVENTS,
+      eventId,
+    );
     // Step 5: reject registration when the event date is past — datetime,
     // not just day, so a 9am event stops accepting at 9pm the same day.
-    const eventDay = typeof event.date === "string" ? event.date.slice(0, 10) : "";
+    const eventDay =
+      typeof event.date === "string" ? event.date.slice(0, 10) : "";
     const today = new Date().toISOString().slice(0, 10);
+
     if (eventDay && eventDay < today) {
       return fail("CONFLICT", "Event has ended", 409);
     }
-    if (eventDay === today && typeof event.time === "string" && /^\d{2}:\d{2}/.test(event.time)) {
+    if (
+      eventDay === today &&
+      typeof event.time === "string" &&
+      /^\d{2}:\d{2}/.test(event.time)
+    ) {
       const start = new Date(`${eventDay}T${event.time.slice(0, 5)}:00`);
+
       if (!Number.isNaN(start.getTime()) && start.getTime() <= Date.now()) {
         return fail("CONFLICT", "Event has already started", 409);
       }
@@ -150,6 +200,7 @@ export async function POST(request: NextRequest) {
     // Step 7: member-only / exclusive audience gate.
     if (event.audience === "member_only" || event.audience === "exclusive") {
       const membershipStatus = await getMembershipStatus(authenticated.user);
+
       if (!isMemberStatus(membershipStatus)) {
         return fail("FORBIDDEN", "This event is restricted to members", 403);
       }
@@ -159,38 +210,47 @@ export async function POST(request: NextRequest) {
     const registered = Number(event.registered) || 0;
     const capacity = Number(event.capacity) || 0;
     let status: "approved" | "pending" | "waitlisted" = "approved";
+
     if (event.audience === "exclusive") status = "pending";
     else if (capacity > 0 && registered >= capacity) status = "waitlisted";
 
     // Step 9: create registration row (or revive a rejected one in place —
     // the unique index forbids a second row for the pair).
     const registration = reviveRow
-      ? await databases.updateDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, String(reviveRow.$id ?? ""), {
-        registeredAt: new Date().toISOString(),
-        status,
-      })
+      ? await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.REGISTRATIONS,
+          String(reviveRow.$id ?? ""),
+          {
+            registeredAt: new Date().toISOString(),
+            status,
+          },
+        )
       : await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.REGISTRATIONS,
-        ID.unique(),
-        {
-          eventId,
-          userId: authenticated.user.$id,
-          registeredAt: new Date().toISOString(),
-          status,
-        }
-      );
+          DATABASE_ID,
+          COLLECTIONS.REGISTRATIONS,
+          ID.unique(),
+          {
+            eventId,
+            userId: authenticated.user.$id,
+            registeredAt: new Date().toISOString(),
+            status,
+          },
+        );
 
     // Step 10: approve path — issue ticket + bump counter (unchanged).
     let ticket = null;
+
     if (status === "approved") {
       try {
         // Skip when a ticket already exists (revived rows, retries): minting
         // twice for one registration is how duplicates happen.
-        const already = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
-          Query.equal("registrationId", [registration.$id]),
-          Query.limit(1),
-        ]);
+        const already = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.TICKETS,
+          [Query.equal("registrationId", [registration.$id]), Query.limit(1)],
+        );
+
         ticket = already.documents[0] ?? null;
         if (!ticket) {
           ticket = await createSignedTicket(databases, {
@@ -202,7 +262,11 @@ export async function POST(request: NextRequest) {
       } catch {
         // The registration row is committed; a retry through this same
         // endpoint self-heals by minting the missing ticket (step 3).
-        return fail("INTERNAL", "Registered, but the ticket could not be issued. Please retry — no new registration is created.", 503);
+        return fail(
+          "INTERNAL",
+          "Registered, but the ticket could not be issued. Please retry — no new registration is created.",
+          503,
+        );
       }
 
       await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, {
@@ -243,8 +307,8 @@ export async function POST(request: NextRequest) {
           ],
         );
         const row = existing.documents[0] as
-          | Record<string, unknown>
-          | undefined;
+          Record<string, unknown> | undefined;
+
         if (row) {
           const tickets = await retryDb.listDocuments(
             DATABASE_ID,
@@ -254,6 +318,7 @@ export async function POST(request: NextRequest) {
               Query.limit(1),
             ],
           );
+
           return ok(
             {
               registration: row,
@@ -268,18 +333,25 @@ export async function POST(request: NextRequest) {
         // Fall through to the generic failure below.
       }
     }
-    console.error("Event registration error:", error);
+    logError("Event registration error:", error);
+
     return fail("INTERNAL", "Failed to register for event", 500);
   }
 }
 
 export async function DELETE(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
+
   if (!authenticated.user) return authenticated.response;
 
   // Cancel/re-register cycling farms waitlist promotion and spams promotees:
   // same budget as registering.
-  const limited = consumeRateLimit(`event-register:${authenticated.user.$id}`, 20, 10 * 60 * 1000);
+  const limited = consumeRateLimit(
+    `event-register:${authenticated.user.$id}`,
+    20,
+    10 * 60 * 1000,
+  );
+
   if (!limited.allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }
@@ -290,93 +362,139 @@ export async function DELETE(request: NextRequest) {
     // older clients.
     const queryEventId = request.nextUrl.searchParams.get("eventId")?.trim();
     let bodyEventId = "";
+
     if (!queryEventId) {
-      const body = (await request.json().catch(() => null)) as { eventId?: unknown } | null;
-      bodyEventId = typeof body?.eventId === "string" ? body.eventId.trim() : "";
+      const body = (await request.json().catch(() => null)) as {
+        eventId?: unknown;
+      } | null;
+
+      bodyEventId =
+        typeof body?.eventId === "string" ? body.eventId.trim() : "";
     }
     const eventId = queryEventId || bodyEventId;
+
     if (!eventId) {
       return fail("VALIDATION", "eventId is required", 400);
     }
 
     // Step 2: restricted accounts cannot cancel (no state change).
     const callerStatus = await getMembershipStatus(authenticated.user);
+
     if (RESTRICTED_STATUSES.has(callerStatus)) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }
 
     const { databases } = createServerDatabases();
     // Step 3: load caller's registration.
-    const registrations = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
-      Query.equal("eventId", [eventId]),
-      Query.equal("userId", [authenticated.user.$id]),
-      Query.limit(1),
-    ]);
+    const registrations = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.REGISTRATIONS,
+      [
+        Query.equal("eventId", [eventId]),
+        Query.equal("userId", [authenticated.user.$id]),
+        Query.limit(1),
+      ],
+    );
     const registration = registrations.documents[0];
+
     if (!registration) return fail("NOT_FOUND", "Registration not found", 404);
 
     // Step 4: load event + block cancel after the event date passed.
-    const eventForGuard = await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId).catch(() => null);
+    const eventForGuard = await databases
+      .getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId)
+      .catch(() => null);
+
     if (eventForGuard) {
-      const eventDay = typeof eventForGuard.date === "string" ? eventForGuard.date.slice(0, 10) : "";
+      const eventDay =
+        typeof eventForGuard.date === "string"
+          ? eventForGuard.date.slice(0, 10)
+          : "";
       const today = new Date().toISOString().slice(0, 10);
+
       if (eventDay && eventDay < today) {
         return fail("CONFLICT", "Event has ended", 409);
       }
     }
 
     // Step 5: delete registration row.
-    await databases.deleteDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, registration.$id);
+    await databases.deleteDocument(
+      DATABASE_ID,
+      COLLECTIONS.REGISTRATIONS,
+      registration.$id,
+    );
     // Step 6: invalidate any tickets issued for this registration.
-    const tickets = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
-      Query.equal("eventId", [eventId]),
-      Query.equal("userId", [authenticated.user.$id]),
-      Query.limit(10),
-    ]);
-    await Promise.all(tickets.documents.map((ticket) =>
-      databases.updateDocument(DATABASE_ID, COLLECTIONS.TICKETS, ticket.$id, {
-        status: "invalidated",
-        invalidatedAt: new Date().toISOString(),
-        invalidatedBy: authenticated.user.$id,
-        invalidatedReason: "Registration cancelled",
-      })
-    ));
+    const tickets = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.TICKETS,
+      [
+        Query.equal("eventId", [eventId]),
+        Query.equal("userId", [authenticated.user.$id]),
+        Query.limit(10),
+      ],
+    );
+
+    await Promise.all(
+      tickets.documents.map((ticket) =>
+        databases.updateDocument(DATABASE_ID, COLLECTIONS.TICKETS, ticket.$id, {
+          status: "invalidated",
+          invalidatedAt: new Date().toISOString(),
+          invalidatedBy: authenticated.user.$id,
+          invalidatedReason: "Registration cancelled",
+        }),
+      ),
+    );
 
     // Step 7: decrement counter + waitlist promotion when capacity frees.
     let promoted = false;
+
     if (registration.status === "approved") {
-      const event = eventForGuard ?? await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId);
+      const event =
+        eventForGuard ??
+        (await databases.getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId));
       const currentRegistered = Number(event.registered) || 0;
       const capacity = Number(event.capacity) || 0;
       const nextRegistered = Math.max(0, currentRegistered - 1);
+
       await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, {
         registered: nextRegistered,
       });
       // Step 8: if capacity freed, promote the oldest waitlisted registration.
       if (capacity > 0 && nextRegistered < capacity) {
-        const waitlisted = await databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
-          Query.equal("eventId", [eventId]),
-          Query.equal("status", ["waitlisted"]),
-          Query.orderAsc("registeredAt"),
-          Query.limit(1),
-        ]);
+        const waitlisted = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.REGISTRATIONS,
+          [
+            Query.equal("eventId", [eventId]),
+            Query.equal("status", ["waitlisted"]),
+            Query.orderAsc("registeredAt"),
+            Query.limit(1),
+          ],
+        );
         const next = waitlisted.documents[0];
+
         if (next) {
-          await databases.updateDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, next.$id, {
-            status: "approved",
-          });
+          await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.REGISTRATIONS,
+            next.$id,
+            {
+              status: "approved",
+            },
+          );
           // Step 9: issue ticket for the promoted user (shared issuance).
           // Allocation failure reverts to waitlisted — an approved-without-
           // ticket row is invisible to every remediation flow, so never
           // leave one behind. The admin queue can approve waitlisted rows.
-  try {
+          try {
             // Guard against double promotion: two concurrent cancels can pick
             // the same oldest row. An existing ticket means someone already
             // promoted it — skip minting instead of duplicating.
-            const minted = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
-              Query.equal("registrationId", [next.$id]),
-              Query.limit(1),
-            ]);
+            const minted = await databases.listDocuments(
+              DATABASE_ID,
+              COLLECTIONS.TICKETS,
+              [Query.equal("registrationId", [next.$id]), Query.limit(1)],
+            );
+
             if (minted.documents.length === 0) {
               await createSignedTicket(databases, {
                 userId: String(next.userId),
@@ -384,9 +502,14 @@ export async function DELETE(request: NextRequest) {
                 registrationId: next.$id,
               });
             }
-            await databases.updateDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId, {
-              registered: nextRegistered + 1,
-            });
+            await databases.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.EVENTS,
+              eventId,
+              {
+                registered: nextRegistered + 1,
+              },
+            );
             promoted = true;
             // Step 10: audit the promotion.
             await recordAudit({
@@ -398,10 +521,17 @@ export async function DELETE(request: NextRequest) {
               details: { eventId, promotedUserId: String(next.userId ?? "") },
             });
           } catch (promotionError) {
-            console.error("Waitlist promotion ticket error:", promotionError);
-            await databases.updateDocument(DATABASE_ID, COLLECTIONS.REGISTRATIONS, next.$id, {
-              status: "waitlisted",
-            }).catch(() => null);
+            logError("Waitlist promotion ticket error:", promotionError);
+            await databases
+              .updateDocument(
+                DATABASE_ID,
+                COLLECTIONS.REGISTRATIONS,
+                next.$id,
+                {
+                  status: "waitlisted",
+                },
+              )
+              .catch(() => null);
           }
         }
       }
@@ -418,7 +548,8 @@ export async function DELETE(request: NextRequest) {
 
     return ok({ success: true, promoted });
   } catch (error) {
-    console.error("Event cancellation error:", error);
+    logError("Event cancellation error:", error);
+
     return fail("INTERNAL", "Failed to cancel registration", 500);
   }
 }
