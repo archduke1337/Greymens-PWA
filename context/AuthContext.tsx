@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  loginWithGithub: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<AppwriteUser | null>;
 }
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   loginWithGoogle: async () => {},
+  loginWithGithub: async () => {},
   logout: async () => {},
   refreshUser: async () => null,
 });
@@ -108,6 +110,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await authService.loginWithGoogle();
   };
 
+  const loginWithGithub = async () => {
+    // Token flow: createOAuth2Token navigates to GitHub; the /auth/success
+    // callback creates the session. Awaited so bootstrap failures surface.
+    await authService.loginWithGithub();
+  };
+
   const logout = async () => {
     await authService.logout();
     applyUser(null);
@@ -144,7 +152,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, loginWithGithub, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
