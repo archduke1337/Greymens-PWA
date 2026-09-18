@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import GitHubIcon from "@/components/auth/GitHubIcon";
 import {
   Alert,
   Button,
@@ -14,6 +15,7 @@ import {
   Input,
   Label,
   Link,
+  Spinner,
   TextField,
 } from "@heroui/react";
 
@@ -53,10 +55,8 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  // OAuth is not configured yet — Google sign-up stays disabled until the
-  // provider is set up. See the commented block below.
-  // const [googleLoading, setGoogleLoading] = useState(false);
-  const { register, user } = useAuth();
+  const [githubLoading, setGithubLoading] = useState(false);
+  const { register, loginWithGithub, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
@@ -94,18 +94,17 @@ function RegisterForm() {
     }
   };
 
-  /*
-  // TEMPORARILY DISABLED — enable once Google OAuth is configured.
-  const handleGoogleSignup = async () => {
+  const handleGithubSignup = async () => {
     setError("");
-    setGoogleLoading(true);
+    setGithubLoading(true);
     try {
       try {
         sessionStorage.setItem("post_auth_next", next);
       } catch {
-        // Storage unavailable: callback falls back to "/".
+        // Storage unavailable: callback falls back to "/dashboard".
       }
-      await loginWithGoogle();
+      // Token flow: navigates to GitHub; /auth/success creates the session.
+      await loginWithGithub();
     } catch (err: unknown) {
       try {
         sessionStorage.removeItem("post_auth_next");
@@ -113,12 +112,11 @@ function RegisterForm() {
         // Ignore storage errors on the failure path too.
       }
       const mapped = mapRegisterError(err);
-      console.error("Google signup failed:", mapped);
+      console.error("GitHub signup failed:", mapped);
       setError(mapped);
-      setGoogleLoading(false);
+      setGithubLoading(false);
     }
   };
-  */
 
   return (
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
@@ -159,7 +157,7 @@ function RegisterForm() {
           <Card.Content className="space-y-4">
             <TextField
               isRequired
-              isDisabled={loading}
+              isDisabled={loading || githubLoading}
               name="name"
               validate={(value) =>
                 value.trim().length >= 2 ? null : "Enter your full name"
@@ -173,7 +171,7 @@ function RegisterForm() {
             </TextField>
             <TextField
               isRequired
-              isDisabled={loading}
+              isDisabled={loading || githubLoading}
               name="email"
               type="email"
               validate={(value) =>
@@ -189,7 +187,7 @@ function RegisterForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 isRequired
-                isDisabled={loading}
+                isDisabled={loading || githubLoading}
                 name="password"
                 type="password"
                 validate={(value) =>
@@ -208,7 +206,7 @@ function RegisterForm() {
               </TextField>
               <TextField
                 isRequired
-                isDisabled={loading}
+                isDisabled={loading || githubLoading}
                 name="confirmPassword"
                 type="password"
                 validate={(value) =>
@@ -234,31 +232,44 @@ function RegisterForm() {
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
-              className="w-full rounded-full"
-              isDisabled={loading}
+              fullWidth
+              className="rounded-full"
+              isDisabled={loading || githubLoading}
               isPending={loading}
               type="submit"
             >
-              Create account
+              {({ isPending }) => (
+                <>
+                  {isPending ? <Spinner color="current" size="sm" /> : null}
+                  {isPending ? "Creating account…" : "Create account"}
+                </>
+              )}
             </Button>
 
-            {/*
-            TEMPORARILY DISABLED — Google OAuth is not configured yet.
             <div className="flex items-center gap-3" aria-hidden="true">
               <span className="h-px flex-1 bg-default-200" />
               <span className="text-xs text-muted">OR</span>
               <span className="h-px flex-1 bg-default-200" />
             </div>
             <Button
-              className="w-full rounded-full"
+              fullWidth
+              className="rounded-full"
               variant="secondary"
-              onPress={handleGoogleSignup}
-              isPending={googleLoading}
-              isDisabled={loading || googleLoading}
+              onPress={handleGithubSignup}
+              isPending={githubLoading}
+              isDisabled={loading || githubLoading}
             >
-              Continue with Google
+              {({ isPending }) => (
+                <>
+                  {isPending ? (
+                    <Spinner color="current" size="sm" />
+                  ) : (
+                    <GitHubIcon />
+                  )}
+                  {isPending ? "Connecting to GitHub…" : "Continue with GitHub"}
+                </>
+              )}
             </Button>
-            */}
 
             <p className="text-center text-sm text-muted">
               Already have an account?{" "}
