@@ -1,10 +1,24 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@heroui/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import FeaturedSection from "@/components/FeaturedSection";
 import GuitarStringDivider from "@/components/GuitarStringDivider";
+import LinkButton from "@/components/ui/LinkButton";
 import { HeroCta, JoinBand, ProofStrip } from "@/components/home/HomeClient";
+import { siteConfig } from "@/config/site";
+
+export const metadata: Metadata = {
+  title: "Greymens — ADYPU's student cybersecurity club",
+  description:
+    "Weekly workshops, real member projects, and people who pair with you from day one. Open to every branch at ADYPU — no experience needed.",
+  openGraph: {
+    title: "Greymens — ADYPU's student cybersecurity club",
+    description:
+      "Break things. Build things. Belong. Weekly workshops and real projects, open to every branch — no experience needed.",
+  },
+};
 
 const LEARN_ROW = {
   title: "Learn out loud",
@@ -38,53 +52,30 @@ const FIRST_MONTH = [
   {
     n: "03",
     title: "Decide if it's yours",
-    text: "One event is enough to know. The form takes a minute; review takes a few days.",
+    text: "One event is enough to know. Then a one-minute form and a few days of review.",
   },
 ];
 
 export default function Home() {
   return (
     <div className="w-full">
-      {/* Institutional marks — centered above the hero, both logos clearly visible.
-          White tiles preserve brand colors on either theme; logos share one
-          centered row, caption sits below so nothing crowds. */}
-      <section
-        aria-label="Institutional affiliation"
-        className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-4 px-4 pb-6 pt-4 text-center"
-      >
-        <div className="flex items-center justify-center gap-4">
-          <span className="flex h-16 items-center rounded-2xl bg-white px-5 shadow-sm ring-1 ring-black/10 sm:h-[72px]">
-            <img
-              src="/adypu-logo.png"
-              alt="Ajeenkya D Y Patil University"
-              className="h-10 w-auto object-contain sm:h-11"
-            />
-          </span>
-          <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/10 sm:h-[72px] sm:w-[72px]">
-            <img
-              src="/seamedu-logo.jpg"
-              alt="Seamedu"
-              className="h-12 w-12 object-contain sm:h-14 sm:w-14"
-            />
-          </span>
-        </div>
-        <p className="text-center text-xs text-muted sm:text-sm">
-          A student club of Ajeenkya D Y Patil University
-        </p>
-      </section>
-
       {/* Hero — the crowd is the hero, but it never reads as a pasted photo:
           four background-token gradients dissolve every edge into the page,
           so the image sits inside the UI like atmosphere. Type uses the
           theme's own foreground over a matching scrim — legible in both
-          themes. CSS-only entrance (motion-safe). */}
+          themes. CSS-only entrance (motion-safe); keyframes live in
+          styles/globals.css. next/image with priority: this is the LCP
+          element, with responsive sizes so mobile doesn't fetch desktop
+          weight. Institutional marks live in the footer, not here — the
+          headline is the first thing a visitor should read. */}
       <section className="relative flex h-[min(88vh,900px)] min-h-[560px] w-full items-end overflow-hidden">
-        <img
+        <Image
           src="/Assets/Banners/clut.jpg"
-          alt=""
-          aria-hidden="true"
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover"
+          alt="A crowd of students at a Greymens gathering"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
         />
         <div
           aria-hidden="true"
@@ -104,46 +95,32 @@ export default function Home() {
         />
         <div className="relative mx-auto w-full max-w-6xl space-y-6 px-4 pb-16 pt-32 sm:px-6 sm:pb-20 motion-safe:animate-[heroIn_0.7s_ease-out_both]">
           <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-balance text-foreground sm:text-6xl">
-            Curious minds. Secure tomorrows.
+            Break things. Build things. Belong.
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-muted">
-            Greymens is ADYPU&apos;s student cybersecurity club. Every branch,
-            no experience needed — just curiosity.
+            Greymens is ADYPU&apos;s student cybersecurity club. Weekly
+            workshops, real projects, and people who pair with you from day
+            one — no experience needed.
           </p>
           <div className="flex flex-col gap-3 pt-1 sm:flex-row">
             <HeroCta />
-            <Link
-              href="https://discord.gg/6v89E3SaZT"
+            <LinkButton
+              size="lg"
+              variant="secondary"
+              href={siteConfig.links.discord}
               target="_blank"
               rel="noopener noreferrer"
+              className="rounded-full px-8"
             >
-              <Button size="lg" variant="secondary" className="rounded-full px-8">
-                Join the Discord
-              </Button>
-            </Link>
+              Join the Discord
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </LinkButton>
           </div>
           <p className="text-sm text-muted">
-            Free workshops · Open to every branch · No experience needed
+            One open event is all it takes to know.
           </p>
         </div>
       </section>
-
-      <p className="mx-auto max-w-3xl px-4 pt-3 text-center text-xs text-muted sm:px-6">
-        One figure in that crowd is already lit up. That&apos;s the club.
-      </p>
-
-      <style>{`
-        @keyframes heroIn {
-          from {
-            opacity: 0;
-            transform: translateY(32px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
 
       <ProofStrip />
 
@@ -210,7 +187,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* First month — an ordered path, so the numbers are earned */}
+      {/* First month — an ordered path, so the numbers are earned.
+          Ends in a CTA: a funnel with no next step leaks everyone. */}
       <section
         id="first-month"
         className="mx-auto w-full max-w-5xl px-4 pt-20 sm:px-6 sm:pt-28"
@@ -221,8 +199,7 @@ export default function Home() {
             Your first month
           </h2>
           <p className="text-[15px] leading-relaxed text-muted">
-            One short form and a few days of review. Three steps, and the
-            second one is just walking through a door.
+            Three steps, and the second one is just walking through a door.
           </p>
         </div>
         <ol className="grid gap-8 pt-8 sm:grid-cols-3">
@@ -234,6 +211,15 @@ export default function Home() {
             </li>
           ))}
         </ol>
+        <div className="flex flex-col gap-3 pt-8 sm:flex-row">
+          <LinkButton href="/events" className="rounded-full px-6">
+            Start with step one
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </LinkButton>
+          <LinkButton href="/register" variant="secondary" className="rounded-full px-6">
+            Skip to the form
+          </LinkButton>
+        </div>
       </section>
 
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">

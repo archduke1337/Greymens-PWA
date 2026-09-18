@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
 
-import { blogService } from "@/lib/blog";
+import LinkButton from "@/components/ui/LinkButton";
 import { useAuth } from "@/context/AuthContext";
 
 /**
  * Hero primary action. Auth state resolves client-side; while it loads, a
  * same-size placeholder holds the space so the button never flashes between
- * "Join" and "Dashboard".
+ * "Join" and "Dashboard". Renders an anchor via href — never a button
+ * nested inside a link.
  */
 export function HeroCta() {
   const { user, loading } = useAuth();
@@ -26,31 +26,37 @@ export function HeroCta() {
   }
 
   return (
-    <Link href={user ? "/dashboard" : "/register"}>
-      <Button size="lg" className="rounded-full px-8">
-        {user ? "Go to dashboard" : "Join the club"}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Button>
-    </Link>
+    <LinkButton
+      size="lg"
+      href={user ? "/dashboard" : "/register"}
+      className="rounded-full px-8"
+    >
+      {user ? "Go to dashboard" : "Join the club"}
+      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+    </LinkButton>
   );
 }
+
+type HomeStats = {
+  upcomingEvents: number;
+  projects: number;
+  posts: number;
+};
 
 /**
  * Live proof strip: upcoming events, tracked projects, published posts.
  *
- * Every number comes from the same read APIs the product pages use, counted
- * at render time, and each one links to the page it was counted from. Only
+ * Every number comes from one aggregated /api/stats call — a single request
+ * instead of three (and no more downloading every published post body just
+ * to count it). Each metric links to the page it was counted from. Only
  * metrics above zero render — a strip of zeroes proves the opposite of what
  * it claims. While loading, a same-size skeleton holds the space so nothing
- * below jumps; if any source fails, the strip stays hidden — no proof beats
- * wrong proof.
+ * below jumps; if the source fails, the strip stays hidden — no proof beats
+ * wrong proof. If every count is zero, only the charter line renders: the
+ * empty state is a defined design, not a skeleton collapsing into nothing.
  */
 export function ProofStrip() {
-  const [counts, setCounts] = useState<{
-    events: number;
-    projects: number;
-    posts: number;
-  } | null>(null);
+  const [counts, setCounts] = useState<HomeStats | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -58,24 +64,14 @@ export function ProofStrip() {
 
     const load = async () => {
       try {
-        const [eventsRes, projectsRes, posts] = await Promise.all([
-          fetch("/api/events", { cache: "no-store" }).then((res) =>
-            res.ok ? res.json() : Promise.reject(new Error("events")),
-          ),
-          fetch("/api/projects", { cache: "no-store" }).then((res) =>
-            res.ok ? res.json() : Promise.reject(new Error("projects")),
-          ),
-          blogService.getPublishedBlogs(),
-        ]);
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        if (!res.ok) throw new Error("stats");
+        const data = (await res.json()) as HomeStats;
         if (cancelled) return;
-        const now = Date.now();
-        const upcoming = ((eventsRes.events ?? []) as Array<{ date?: string }>).filter(
-          (event) => !event.date || new Date(event.date).getTime() >= now,
-        ).length;
         setCounts({
-          events: upcoming,
-          projects: (projectsRes.projects ?? []).length,
-          posts: posts.length,
+          upcomingEvents: Math.max(0, Number(data.upcomingEvents) || 0),
+          projects: Math.max(0, Number(data.projects) || 0),
+          posts: Math.max(0, Number(data.posts) || 0),
         });
       } catch {
         // Stay hidden: no proof is better than wrong proof.
@@ -114,7 +110,7 @@ export function ProofStrip() {
   }
 
   const items = [
-    { value: counts.events, label: "Upcoming events", href: "/events" },
+    { value: counts.upcomingEvents, label: "Upcoming events", href: "/events" },
     { value: counts.projects, label: "Projects tracked", href: "/projects" },
     { value: counts.posts, label: "Posts published", href: "/blog" },
   ].filter((item) => item.value > 0);
@@ -124,7 +120,7 @@ export function ProofStrip() {
       aria-label="The club in numbers"
       className="mx-auto w-full max-w-5xl space-y-4 px-4 pt-14 sm:px-6"
     >
-      {items.length > 0 && (
+      {items.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 rounded-3xl border border-default-200/70 px-6 py-6 text-center sm:gap-8">
           {items.map((item) => (
             <div key={item.label} className="space-y-1">
@@ -141,8 +137,8 @@ export function ProofStrip() {
             </div>
           ))}
         </div>
-      )}
-      <p className="text-center font-serif text-[15px] italic text-muted">
+      ) : null}
+      <p className="text-center text-[15px] italic text-muted">
         “Technology should empower people, not control them.”{" "}
         <span className="not-italic">— the Greymens Charter</span>
       </p>
@@ -175,17 +171,13 @@ export function JoinBand() {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2.5">
-            <Link href="/events">
-              <Button className="rounded-full px-6">
-                Find an event
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="secondary" className="rounded-full px-6">
-                Join directly
-              </Button>
-            </Link>
+            <LinkButton href="/events" className="rounded-full px-6">
+              Find an event
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </LinkButton>
+            <LinkButton href="/register" variant="secondary" className="rounded-full px-6">
+              Join directly
+            </LinkButton>
           </div>
         </div>
       </div>

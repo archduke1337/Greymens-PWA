@@ -7,6 +7,7 @@ import { Separator } from "@heroui/react";
 
 import { FooterSponsors } from "./footer-sponsors";
 import { useAuth } from "@/context/AuthContext";
+import { siteConfig } from "@/config/site";
 
 const CLUB_LINKS = [
   { href: "/about", label: "About" },
@@ -38,7 +39,7 @@ const SOCIALS = [
   { label: "LinkedIn", href: "https://www.linkedin.com/company/greymens" },
   { label: "Instagram", href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh" },
   { label: "X", href: "https://twitter.com/GreymensADYPU" },
-  { label: "Discord", href: "https://discord.gg/6v89E3SaZT" },
+  { label: "Discord", href: siteConfig.links.discord },
 ];
 
 export const Footer = () => {
