@@ -12,10 +12,11 @@ derived membership tier            (resolveMembershipStatus, lib/server-auth.ts)
   ← memberships.status             (member / restriction)
   ← applications.status            (applicant / approved)
   ← user_roles.role                (admin / dev — the only source of that tier)
-  ← user_designations + designations.level  (lead / head)
-user_departments / user_designations / user_powers   (scoped grants)
+user_powers                        (legacy operational grants)
 role_templates / role_assignments  (capability bundles, with scope + expiry)
-office_assignments                 (constitutional office, with term)
+  ← a template with an `officeId` IS a charter office
+office_assignments                 (the term half of an office grant)
+designations / user_designations   (a title, plus any capabilities listed on it)
         ↓
 effective capabilities             (lib/access-control.ts)
         ↓
@@ -68,6 +69,11 @@ Precedence is deliberate and load-bearing:
 Tier grants coarse permissions (`lib/permissions.ts`). It is deliberately *not*
 used as the only source of authority for office-level actions.
 
+A designation level does **not** affect the tier. It used to (5 → `lead`,
+6 → `head`), which let a badge choose a dashboard; that lift was removed. A
+title's only route to authority is the explicit capability list on its catalogue
+row (§3.2).
+
 The first administrator cannot be created through the API — holding the
 capability to write `user_roles` is the thing being granted. Use
 `npm run grant-admin -- <email>`, which writes the role row and an audit entry
@@ -78,18 +84,95 @@ and needs the Appwrite API key. See §8.
 `lib/access-control.ts` resolves capabilities from:
 
 - role templates (`role_templates`) assigned through `role_assignments`
-- legacy `powers` / `user_powers` grants, kept working during migration
-- expiry (`expiresAt`) and scope (`global`, `department`, `team`, `project`)
+- charter offices (`office_assignments` + the template it points at) — see §3.1
+- designations, for the capabilities listed on the catalogue row — see §3.2
+- legacy `powers` / `user_powers` grants, translated through `POWER_CAPABILITIES`
+- expiry (`expiresAt`, `termEnd`) and scope (`global`, `department`, `team`, `project`)
 
 An assignment with a scope only satisfies a scoped check. Unscoped checks accept
 global assignments only — a department-scoped lead cannot act outside their
-department.
+department. An inactive template grants nothing, and neither does one with a past
+term end: time alone revokes an office, no human needed.
 
 Server routes use `requireCapability(capability, { scope })`. Notable rules:
 
 - an author can never approve or publish their own blog post
 - publishing is a separate capability from approving
 - role template creation and role assignment write an audit record
+- **no grant beyond hold**: `unheldCapabilities()` refuses to write a grant
+  carrying a capability the actor does not hold (admins hold `"*"` and bypass).
+  This applies to role templates, role assignments **and** office assignments —
+  the office route used to skip it, so the same grant was checked through one
+  door and unchecked through the other.
+
+### 3.1 Roles and offices are one thing
+
+They are the same grant — a bundle of capabilities given to an account — and
+this repository used to implement them twice, under two names:
+
+| | Role | Office (before) |
+|---|---|---|
+| Capabilities come from | `role_templates.capabilities` (editable) | `OFFICE_CAPABILITIES` in `lib/capabilities.ts` (compile-time) |
+| Assignment row | `role_assignments` + scope + `expiresAt` | `office_assignments` + `termStart`/`termEnd` + `selectionMethod` |
+| Console | `/admin/access` (Roles tab) | `/admin/positions` (Offices tab) |
+| Audit action | `access.role_assigned` | `office.assign` |
+| No-grant-beyond-hold | enforced | **not enforced** |
+
+The seed made the duplication literal: `scripts/seed-data.ts` wrote one
+`role_templates` row per office, id `office-<id>`, with
+`capabilities = OFFICE_CAPABILITIES[id]`. So the same authority existed twice,
+and the editable copy was the one that did *nothing* — editing the President
+template did not change what the President could do, because the resolver read
+the compile-time map.
+
+They are now one:
+
+- a template carrying an `officeId` **is** the office; office capabilities are
+  read from it, and `OFFICE_CAPABILITIES` is only the seed default used until
+  that row exists,
+- `office_assignments` survives as the **term**: who holds it, how they were
+  selected, when it started and ends. A role assignment cannot express a
+  single-holder invariant or a date-bounded term, so collapsing the table would
+  have traded a real invariant for tidiness,
+- both are administered in `/admin/access` (People / Roles / Offices / Powers),
+  and the People tab joins all three,
+- `/admin/positions` is titles only, because a designation grants no capability
+  and therefore is not access administration.
+
+Office templates are deliberately **not** offered in the Roles tab's assign
+picker: assigning one there would be a second, termless route to the same
+authority.
+
+### 3.2 A designation is an honour, unless it lists capabilities
+
+`designations.capabilities` is the fourth grant source. It exists because the
+previous mechanism for a title to carry authority was *implicit*: a level →
+permissions table (`5: approve_events_in_scope`, `6: manage_multiple_departments`,
+`7-9: manage_organization`, `10: ALL_PERMISSIONS`). That was deleted — it granted
+rights no console displayed and the Charter does not describe, and at level 6 it
+conferred the permission that gated power granting.
+
+Now:
+
+- a designation with an empty `capabilities` list grants nothing — the common
+  case, and the default,
+- a designation with a list is a real grant: same vocabulary, same authorizer and
+  same **no-grant-beyond-hold** rule as roles and offices,
+- the list is written only through `/api/admin/designations`, which rejects
+  unknown capability strings rather than dropping them (a typo must not read as
+  "granted"),
+- the Access console's People tab shows every title a person holds, and the
+  capabilities it carries, so a title-based grant is visible where grants are
+  inspected,
+- a title still confers no **tier** lift — level is now purely descriptive, and
+  `resolveMembershipStatus` no longer reads the designation tables at all.
+
+One consequence worth knowing: `designations` is in `PUBLIC_READ_TABLES`
+because the public team page renders titles. The capability list is therefore
+readable by anyone. It reveals the vocabulary, not who holds what — the
+assignments live in `user_designations` — but if the catalogue capability lists
+are ever considered sensitive, that table has to move behind an API route like
+the admin consoles did.
 
 ## 4. Native Appwrite Teams and labels
 
@@ -257,9 +340,13 @@ step 1 and 2, and should be removed once those migrate.
   derivation of governance status (restriction → explicit appointment →
   membership/application → designation level). The client consumes the same
   value from `/api/permissions` so the UI and the server cannot disagree.
-- `hasPower(userId, powerId)` (in `lib/access-control.ts`) — legacy
-  `user_powers` check for operational grants that the capability vocabulary does
-  not yet cover.
+- `unheldCapabilities(actorId, caps)` (in `lib/access-control.ts`) — the
+  no-grant-beyond-hold rule (§3), shared by the role and office routes.
+- `officeCapabilities(officeId, templates)` / `getOfficeCapabilities(officeId)`
+  (in `lib/access-control.ts`) — an office's capabilities, read from the
+  template that carries its `officeId`; `OFFICE_CAPABILITIES` is only the seed
+  default. The pure form takes an already-loaded template list so the resolver
+  does not re-read the table per office.
 - `findUserIdByEmail` / `getAccountNames` (in `lib/server-users.ts`) — account
   lookups through `node-appwrite`. Server-only: never import this from a client
   component.
@@ -289,8 +376,9 @@ step 1 and 2, and should be removed once those migrate.
   `lib/blog-format.ts`) — same reason: the authoring screens need the helpers
   without the browser SDK.
 - `requireCapability(request, capability, scope)` (in `lib/access-control.ts`)
-  — session plus resolved capability; used by governance, office, blog, and
-  access routes.
+  — session plus resolved capability. After the roles/offices merge there is no
+  second guard: office, role, gallery (`gallery.manage`) and door
+  (`tickets.verify`) checks all go through this one.
 - `consumeRateLimit(key, limit, windowMs)` (in `lib/rate-limit.ts`) — in-process
   limiter for unauthenticated and quota-spending endpoints. Note this is
   per-instance state: behind multiple serverless instances the effective limit is
@@ -325,14 +413,16 @@ it are:
   the tier from nothing, because it authenticates with the Appwrite API key
   instead of an application session.
 
-**Designation levels stop at 9.** Level 10 used to map to `ALL_PERMISSIONS`,
-and because designation management accepted any level from 1 to 10, "create a
-level-10 designation and assign it" was a second, unaudited route to total
-access that bypassed governance entirely. The wildcard now comes from exactly
-one place — `resolvePermissions` returning early for a governance role — so any
-level-10 row already in a database grants no more than level 9. The API caps the
-field at 9 and the console's number input is bounded to match, but the server
-check is the one that counts.
+**Designation levels grant nothing, and lift nothing.** `level` is descriptive
+seniority for display. `resolveMembershipStatus` used to read the designation
+tables to lift the tier (5 → `lead`, 6 → `head`), which made a badge choose a
+dashboard; those reads are gone, so a status resolution costs two fewer queries
+and a title cannot affect routing. Authority a title carries is the explicit
+`capabilities` list (§3.2).
+
+Level 10 previously mapped to `ALL_PERMISSIONS`, which made "create a level-10
+designation and assign it" a second, unaudited route to total access. The field
+is still capped at 9 by the API and by the console's number input.
 
 ## 9. Request interception
 

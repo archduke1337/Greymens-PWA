@@ -1,5 +1,12 @@
 # Greymens Club Operating System — Product Spec
 
+> **Access model superseded.** This spec's access sections (§2.2, §3, §4, §7,
+> §12.2, §12.4) originally described a status ladder plus scoped powers plus
+> designation levels. Authority is **capabilities** now: the shipped model is
+> [`ACCESS_MODEL.md`](./ACCESS_MODEL.md), and where the two disagree the code
+> wins. Those sections were rewritten on 2026-09-18. The rest of the spec —
+> events, tickets, resources, letters, schema — is unchanged.
+
 ## 1. Vision
 
 A full club operating system for a large multi-unit college tech club. Not a brochure site — a governed platform for onboarding, membership, events, tickets, resources, and leadership operations.
@@ -25,37 +32,41 @@ Signup (account) → Application Form → Applicant (pending review) → Member 
 - **Applicant:** can view basic club info, roadmaps, and public resources. Cannot register for member-only events.
 - **Member:** approved by admin/senior role. Full member access unlocked.
 
-### 2.2 Hybrid Roles + Powers
+### 2.2 Capabilities, and the four things that grant them
 
-Two-layer model:
+One vocabulary, one resolver. `lib/capabilities.ts` defines the capability
+strings (`blog.review`, `events.manage`, `audit.view`, …);
+`lib/access-control.ts` resolves who holds what, and `requireCapability()` gates
+every API route.
 
-1. **Status Ladder** (stable access model):
-   ```
-   applicant → member → core_member → lead → head → admin/dev
-   ```
-   - `admin`: god-level control over everything
-   - `dev`: system developer role (technical access)
+Four grant sources, all administered in the Access console (`/admin/access`)
+and all shown in its People tab:
 
-2. **Scoped Powers** (narrow operational permissions):
-   ```
-   membership_approver, event_manager, ticket_verifier,
-   blog_creator, blog_reviewer, gallery_manager, gallery_uploader,
-   resource_manager, department_head, operations_head,
-   profile_moderator, notification_admin, newsletter_manager,
-   social_media_manager, pr_manager, design_manager
-   ```
+1. **Role templates** (`role_templates` + `role_assignments`) — a capability
+   bundle with a scope (`global` / `department` / `team` / `project`) and an
+   optional expiry.
+2. **Charter offices** (`office_assignments`) — the same kind of bundle plus a
+   term: one active holder, selection method, start and end dates. An office's
+   capabilities are read from the role template marked with its `officeId`.
+3. **Designations** (`designations` + `user_designations`) — a title. It grants
+   nothing unless capabilities are listed on it; when they are, it is a grant
+   with the same rules as the rest. `level` is descriptive seniority only and no
+   longer moves the status tier.
+4. **Operational powers** (`powers` + `user_powers`) — the legacy grant, kept
+   working and translated to capabilities by `POWER_CAPABILITIES`.
 
-3. **Custom Designations** (admin-created badges):
-   ```
-   "CyberSec Lead", "AI/ML Lead", "Head of Technical Operations",
-   "Treasurer", "Secretary", "Social Media Lead", "Design Lead",
-   "Editorial Lead", "PR Lead", etc.
-   ```
-   - Created by admin
-   - Assigned to approved members
-   - Appear as profile badges
-   - Can be revoked
-   - Promotion/demotion triggers official letter (email + in-app)
+Rules that apply to all four:
+
+- **no grant beyond hold** — a manager can only hand out capability they hold
+  themselves (admins hold `"*"` and bypass). Otherwise any holder of a grant
+  capability could mint a superset for themselves.
+- expiry and term end revoke on their own, with no human action.
+- a restriction (ban / suspend / deactivate) outranks every grant.
+
+The **status ladder** still exists — `applicant → member → core_member → lead →
+head → admin/dev` — but it is derived and coarse (membership and application
+records, department seniority, and `user_roles` for `admin`/`dev`). It no longer
+grants operational authority, and designation levels no longer move it.
 
 ### 2.3 Organization Graph
 
@@ -203,6 +214,14 @@ Official approvals/promotions produce:
 - Any status → `banned`: admin action
 - Any status → `deactivated`: admin action or self-deactivation
 
+> **Update (2026-09-18):** the `lead` and `head` rungs are no longer produced by
+designation levels. `admin`/`dev` still come only from `user_roles`, and
+`core_member` from department seniority; `lead` and `head` are not derived at
+all. Dashboards are selected by capability (§7), so a member sees the lead or
+head view because they hold `events.create` / `departments.view` /
+`governance.manage` and so on — never because of a badge. See
+[ACCESS_MODEL.md](./ACCESS_MODEL.md) §3.2.
+
 **Letters sent on:**
 - Membership approval: Welcome letter with membership ID
 - Promotion to lead: Lead appointment letter
@@ -212,47 +231,37 @@ Official approvals/promotions produce:
 
 ---
 
-## 4. Permission Catalog
+## 4. Capability Catalog
 
-### 4.1 Base Permissions (tied to status)
+Authority is the capability vocabulary in `lib/capabilities.ts`: strings grouped
+as `blog.*`, `access.*`, `governance.*`, `events.*`, `registrations.*`,
+`tickets.*`, `membership.*`, `users.*`, `departments.*`, plus
+`designations.assign`, `powers.manage`, `resources.manage`, `gallery.manage`,
+`projects.manage`, `sponsors.manage`, `notifications.send`, `audit.view` and
+`security.*`. `requireCapability` enforces them; `lib/governance.ts` maps them to
+UI destinations.
 
-| Status | Base Permissions |
-|--------|-----------------|
-| applicant | view_public_content, view_resources, view_roadmaps, view_members |
-| member | + register_events, view_member_resources, manage_own_profile, view_all_members |
-| core_member | + manage_department_resources |
-| lead | + manage_department_team, draft_events |
-| head | + approve_events, manage_multiple_departments |
-| admin | ALL_PERMISSIONS (god-level, can access ALL dashboards) |
-| dev | ALL_PERMISSIONS + system_developer_access |
+### 4.1 Legacy permission strings (`lib/permissions.ts`)
 
-### 4.2 Scoped Powers (admin-assignable)
+The old flat vocabulary (`view_resources`, `approve_blogs`, `create_events`, …)
+still exists for **presentation only** — a handful of client gates and the
+display tier. No API route consults it. `docs/PERMISSIONS.md` records exactly
+what it does and does not do.
 
-| Power | Description | Scope |
-|-------|-------------|-------|
-| `membership_approver` | Can approve/reject membership applications | global or department |
-| `event_manager` | Can create/edit/publish events | global or department |
-| `ticket_verifier` | Can verify tickets at events | per-event |
-| `blog_creator` | Can create blog posts | global |
-| `blog_reviewer` | Can approve/reject blog submissions | global |
-| `gallery_manager` | Can manage gallery (approve/delete) | global |
-| `gallery_uploader` | Can upload gallery images | global or department |
-| `resource_manager` | Can manage resources in scope | global or department |
-| `department_head` | Can manage own department | own department |
-| `operations_head` | Can manage multiple departments | multiple departments |
-| `profile_moderator` | Can view/revert profile changes | global or department |
-| `notification_admin` | Can send system notifications | global |
-| `newsletter_manager` | Can manage newsletter/editorial content | global |
-| `social_media_manager` | Can manage social media content | global |
-| `pr_manager` | Can manage PR & outreach content | global |
-| `design_manager` | Can manage design assets | global |
-
-### 4.3 Permission Resolution
+### 4.2 Resolution
 
 ```
-effective_permissions = base_permissions(status) ∪ scoped_powers ∪ department_permissions
-admin bypass = true (always has ALL permissions, can access ALL dashboards)
+effective_capabilities = role/office capabilities ∪ designation capabilities
+                       ∪ power → capability translation
+
+effective_permissions  = base(status) ∪ legacy powers ∪ scoped department roles
+                         (client-side, presentation only)
+
+admin bypass = "*" (every capability, every dashboard)
 ```
+
+Status no longer contributes capabilities: `lead` / `head` are not operational
+tiers, they are labels. A grant is the only way to hold a capability.
 
 ---
 
@@ -419,6 +428,12 @@ interface Ticket {
 ---
 
 ## 7. Dashboard Modules
+
+Selection is capability-based: `/dashboard` picks the Applicant / Member / Lead /
+Head / Admin view from the caller's capabilities, using the same three-capability
+groups `/api/dashboard` uses to decide which view-models to build. `admin` and
+`dev` still get the admin view, and restricted accounts get none. A designation
+level does not influence this.
 
 ### 7.1 Applicant Dashboard
 
@@ -721,14 +736,24 @@ interface AuditLog {
 ### 12.1 Seeded Event Types — LOCKED
 All 8 event types seeded in v1: Workshop, Hackathon, Seminar, Competition, Bootcamp, Meetup, Guest Lecture, Certification Exam. Architecture is extensible for future types. All events support: docs, materials, external links, registration URLs, event websites.
 
-### 12.2 Permission Catalog — LOCKED
-All powers available in v1: membership_approver, event_manager, ticket_verifier, blog_creator, blog_reviewer, gallery_manager, gallery_uploader, resource_manager, department_head, operations_head, profile_moderator, notification_admin, newsletter_manager, social_media_manager, pr_manager, design_manager.
+### 12.2 Capability Catalog — LOCKED
+Capabilities are the vocabulary in `lib/capabilities.ts`. Authority is granted
+through role templates, charter offices, designations (only where capabilities
+are listed on them) and the 16 legacy operational powers, which
+`POWER_CAPABILITIES` translates. Four of those powers — `gallery_uploader`,
+`social_media_manager`, `pr_manager`, `design_manager` — have no capability
+equivalent yet and therefore grant nothing; they carry empty arrays so the gap
+stays visible rather than implied.
 
 ### 12.3 Dashboard Modules — LOCKED
 All 5 persona dashboards fully built in v1: Applicant, Member, Lead, Head, Admin. Admin can access ALL dashboards.
 
-### 12.4 Role Hierarchy — LOCKED
-applicant → member → core_member → lead → head → admin/dev
+### 12.4 Status Ladder — LOCKED (derived, and not authority)
+applicant → member → core_member → lead → head → admin/dev, resolved in
+`resolveMembershipStatus`. `admin`/`dev` come only from `user_roles`. `lead` and
+`head` are no longer derived from designation levels, and dashboard selection is
+capability-based (mirroring `/api/dashboard`), so no badge can choose a
+dashboard.
 
 ### 12.5 Department Structure — LOCKED
 Technical: AI/ML, Cybersecurity, DevOps, Web Development

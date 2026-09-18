@@ -1,238 +1,105 @@
-# Greymens — Permission Resolution System
+# Greymens — Permission Resolution (legacy presentation layer)
 
-## Overview
-
-Permissions in Greymens are resolved from three layers:
-
-```
-effective_permissions = base_permissions(status) ∪ scoped_powers ∪ department_permissions
-admin bypass = true (always has all permissions)
-```
+> **This file no longer describes authorization.** Authority is **capabilities**,
+> resolved server-side in `lib/access-control.ts` and enforced by
+> `requireCapability`. Read **[ACCESS_MODEL.md](./ACCESS_MODEL.md)** for that.
+>
+> `lib/permissions.ts` survives for two narrow jobs:
+> 1. the few client-side gates the capability vocabulary does not cover, and
+> 2. the client's *display* tier (`/api/permissions`), which is a convenience
+>    and proves nothing.
+>
+> No API route calls `hasPermission`. Every earlier draft of this document —
+> including the "API Route Protection" example, `requirePermission`, and the
+> designation-level permissions table — was never the shipped authority model.
+> The sections below describe what the legacy resolver actually does today, and
+> what it no longer does.
 
 ---
 
-## 1. Status → Base Permissions
+## 1. Status → base permissions (`STATUS_PERMISSIONS`)
 
-| Status | Base Permissions |
-|--------|-----------------|
-| `applicant` | `view_public_content`, `view_resources`, `view_roadmaps`, `submit_application`, `edit_own_application` |
-| `member` | + `register_events`, `view_member_resources`, `manage_own_profile`, `view_members`, `request_department_assignment` |
-| `core_member` | + `manage_department_resources`, `view_department_members`, `participate_in_department_events` |
-| `lead` | + `draft_events`, `manage_department_team`, `view_department_stats` |
+Real, and client-only. Used for presentation; the server derives the same tier in
+`resolveMembershipStatus` for its own coarse checks.
+
+| Status | Base permission strings |
+|--------|------------------------|
+| `applicant` | `view_public_content`, `view_resources`, `view_roadmaps`, `view_members`, `submit_application`, `edit_own_application` |
+| `member` | + `register_events`, `view_member_resources`, `manage_own_profile`, `view_all_members`, `request_department_assignment` |
+| `core_member` | + `manage_department_resources`, `participate_in_department_events` |
+| `lead` | + `view_department_stats` |
 | `head` | + `approve_events_in_scope`, `manage_multiple_departments`, `view_operations_stats` |
-| `officer` | + `manage_organization`, `view_reports`, `manage_announcements` |
-| `admin` | `ALL_PERMISSIONS` (bypass) |
+| `admin` / `dev` | `ALL_PERMISSIONS` (wildcard) |
+| `banned` / `suspended` / `deactivated` | none — a restriction outranks everything |
 
----
+## 2. Powers → capabilities, and the legacy strings
 
-## 2. Scoped Powers
+A `user_powers` grant is an **authority** grant. It reaches the server through
+`POWER_CAPABILITIES` in `lib/access-control.ts` (e.g. `event_manager` →
+`events.create`, `events.update`, `events.manage`, `events.approve`,
+`events.publish`, `registrations.view`, `registrations.manage`).
 
-Each power grants specific capabilities:
+The old `POWER_GRANTS` map in `lib/permissions.ts` translates the same grants into
+the **legacy** permission strings (`create_events`, `publish_events`, …). Those
+strings are consulted only by legacy client gates; no server route reads them.
+Four powers currently translate to nothing on the server — `gallery_uploader`
+(uploading is membership-open), `social_media_manager`, `pr_manager`,
+`design_manager` — because the capability vocabulary has no equivalent. They are
+listed in `POWER_CAPABILITIES` with empty arrays so the gap is visible.
 
-| Power | Grants | Scope |
-|-------|--------|-------|
-| `membership_approver` | `approve_applications`, `reject_applications`, `view_application_details` | global or department |
-| `event_manager` | `create_events`, `edit_events`, `publish_events`, `manage_registrations` | global or department |
-| `ticket_verifier` | `verify_tickets`, `manual_checkin`, `view_attendee_list` | per-event |
-| `blog_reviewer` | `approve_blogs`, `reject_blogs`, `edit_blogs` | global |
-| `resource_manager` | `upload_resources`, `edit_resources`, `delete_resources` | global or department |
-| `department_head` | `manage_department_team`, `assign_department_roles`, `view_department_data` | own department |
-| `operations_head` | `manage_multiple_departments`, `approve_department_events`, `view_operations_data` | multiple departments |
-| `profile_moderator` | `view_audit_logs`, `revert_profile_changes`, `view_sensitive_data` | global or department |
-| `notification_admin` | `send_notifications`, `manage_notification_templates` | global |
+## 3. Designations: the level grants nothing, the capability list does
 
----
+`DESIGNATION_LEVEL_PERMISSIONS` has been deleted. It used to hand real
+permissions to a badge by level (`5 → approve_events_in_scope`,
+`6 → manage_multiple_departments`, `7-9 → manage_organization`,
+`10 → ALL_PERMISSIONS`) — authority no console displayed, and at level 6 the very
+permission that gated power granting.
 
-## 3. Permission Resolution Algorithm
+A title's authority is now the explicit `capabilities` list on its catalogue row,
+read by `getEffectiveCapabilities` and written only through
+`/api/admin/designations`. Empty is the default and means an honour with no
+authority; anything listed obeys the same no-grant-beyond-hold rule as roles and
+offices. See ACCESS_MODEL.md §3.2.
 
-```typescript
-function resolvePermissions(user: User): PermissionSet {
-  // 1. Admin bypass
-  if (user.status === 'admin') {
-    return ALL_PERMISSIONS;
-  }
+`level` is descriptive seniority. It no longer raises the membership tier: the
+5 → `lead`, 6 → `head` lift was removed from `resolveMembershipStatus`, so a
+badge cannot choose a dashboard.
 
-  // 2. Base permissions from status
-  const base = STATUS_PERMISSIONS[user.status] || [];
+## 4. Department roles (`DEPARTMENT_ROLE_PERMISSIONS`)
 
-  // 3. Scoped powers
-  const powers = user.powers
-    .filter(p => p.isActive && (!p.expiresAt || new Date(p.expiresAt) > new Date()))
-    .flatMap(p => POWER_GRANTS[p.powerId]);
+Real, client-only, and **scoped** — `lib/permissions.ts` emits these as
+`<capability>:department:<id>` and `hasPermission` refuses a scoped capability
+asked without a scope.
 
-  // 4. Department permissions
-  const deptPerms = user.departments
-    .filter(ud => ud.isActive)
-    .flatMap(ud => {
-      const dept = getDepartment(ud.departmentId);
-      const rolePerms = DEPARTMENT_ROLE_PERMISSIONS[ud.role] || [];
-      return rolePerms.map(p => ({
-        ...p,
-        scope: `department:${ud.departmentId}`
-      }));
-    });
+| Department role | Scoped permission strings |
+|---|---|
+| `member` | — |
+| `core_member` | `manage_department_resources` |
+| `lead`, `head` | `manage_department_team`, `draft_events` |
 
-  // 5. Designation permissions (from designation level)
-  const designations = user.designations
-    .filter(ud => ud.isActive)
-    .map(ud => getDesignation(ud.designationId));
-  
-  const desigPerms = designations.flatMap(d => 
-    DESIGNATION_PERMISSIONS[d.level] || []
-  );
+`manage_department_team` and `draft_events` are listed in
+`SCOPED_CAPABILITIES`; they have **no capability equivalent**, so no server route
+enforces them. The two client gates that asked for them (`LeadDashboard`'s "New
+Event" and "Manage Team" buttons) now ask for `events.create` and
+`departments.manage` instead, because those are what the server actually checks —
+a button gated on a permission the server ignores disagrees with the server in
+both directions.
 
-  // 6. Merge all permissions
-  return mergePermissions([...base, ...powers, ...deptPerms, ...desigPerms]);
-}
+## 5. Where the real answers live
 
-function hasPermission(user: User, permission: string, scope?: string): boolean {
-  const perms = resolvePermissions(user);
-  
-  // Admin always has everything
-  if (perms.has('ALL')) return true;
-  
-  // Check exact permission
-  if (perms.has(permission)) return true;
-  
-  // Check scoped permission
-  if (scope && perms.has(`${permission}:${scope}`)) return true;
-  
-  // Check wildcard
-  if (perms.has(`${permission}:*`)) return true;
-  
-  return false;
-}
-```
+| Question | File |
+|---|---|
+| What capabilities exist? | `lib/capabilities.ts` (`CAPABILITIES`, `OFFICE_CAPABILITIES`) |
+| Who has which capability, and how? | `lib/access-control.ts` (`getEffectiveCapabilities`, `requireCapability`, `POWER_CAPABILITIES`, `officeCapabilities`) |
+| What does the model mean? | `docs/ACCESS_MODEL.md` |
+| What do the tables look like? | `scripts/setup-appwrite.js` |
 
----
+## 6. Superseded design sketch
 
-## 4. Permission Checking in Practice
-
-### 4.1 API Route Protection
-
-```typescript
-// app/api/members/approve/route.ts
-import { requirePermission } from '@/lib/permissions';
-
-export async function POST(request: Request) {
-  const user = await requirePermission(request, 'membership_approver');
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  
-  // Proceed with approval logic
-}
-```
-
-### 4.2 Component-Level Gating
-
-```tsx
-// components/EventActions.tsx
-import { usePermissions } from '@/context/PermissionContext';
-
-export function EventActions({ event }) {
-  const { hasPermission } = usePermissions();
-  
-  return (
-    <>
-      {hasPermission('edit_events', `department:${event.departmentId}`) && (
-        <Button onPress={() => editEvent(event)}>Edit</Button>
-      )}
-      {hasPermission('publish_events') && event.status === 'approved' && (
-        <Button onPress={() => publishEvent(event)}>Publish</Button>
-      )}
-    </>
-  );
-}
-```
-
-### 4.3 Data Filtering
-
-```typescript
-// lib/services/events.ts
-async function getEventsForUser(user: User) {
-  if (hasPermission(user, 'view_all_events')) {
-    return getAllEvents();
-  }
-  
-  const userDepts = user.departments.map(d => d.departmentId);
-  
-  return databases.listDocuments(
-    DATABASE_ID,
-    EVENTS_COLLECTION,
-    [
-      Query.or([
-        Query.equal('audience', 'public'),
-        Query.and([
-          Query.equal('audience', 'member_only'),
-          Query.equal('status', 'published'),
-        ]),
-        // Department-scoped events
-        Query.and([
-          Query.equal('audience', 'exclusive'),
-          Query.in('departmentId', userDepts),
-        ]),
-      ]),
-      Query.equal('status', 'published'),
-    ]
-  );
-}
-```
-
----
-
-## 5. Power Granting Rules
-
-### 5.1 Who Can Grant What
-
-| Power | Can Be Granted By |
-|-------|-------------------|
-| `membership_approver` | admin only |
-| `event_manager` | admin, operations_head |
-| `ticket_verifier` | admin, operations_head, department_head (own dept) |
-| `blog_reviewer` | admin |
-| `resource_manager` | admin, operations_head |
-| `department_head` | admin only |
-| `operations_head` | admin only |
-| `profile_moderator` | admin only |
-| `notification_admin` | admin only |
-
-### 5.2 Power Scoping
-
-Powers can be scoped to:
-- **Global:** applies to all departments
-- **Department:** applies to specific department(s)
-- **Event:** applies to specific event(s)
-
-```typescript
-interface PowerGrant {
-  powerId: string;
-  userId: string;
-  grantedBy: string;
-  scope: 'global' | 'department' | 'event';
-  scopeId?: string; // departmentId or eventId
-  expiresAt?: string;
-}
-```
-
----
-
-## 6. Department Permission Matrix
-
-| Role | own dept members | own dept events | own dept resources | cross-dept |
-|------|-----------------|-----------------|-------------------|------------|
-| member | view | register | view | - |
-| core_member | view | register | view, upload | - |
-| lead | view, manage | draft, manage | view, upload, edit | - |
-| head | view, manage | approve, manage | view, upload, edit | view (read) |
-
----
-
-## 7. Implementation Checklist
-
-- [ ] Create `lib/permissions.ts` with permission resolution logic
-- [ ] Create `context/PermissionContext.tsx` for client-side permission checking
-- [ ] Create `lib/hooks/usePermissions.ts` for component-level gating
-- [ ] Create `lib/middleware/requirePermission.ts` for API route protection
-- [ ] Seed `powers` collection with all 9 powers
-- [ ] Seed `departments` collection with initial departments
-- [ ] Update `profiles` collection to include status field
-- [ ] Create permission checking utility for Appwrite queries
+The original planning tables in this file — "Scoped Powers" with a
+`blog_reviewer → approve_blogs` column, "Who Can Grant What" (`canGrantPower`),
+the department/cross-department matrix, and the implementation checklist naming
+`requirePermission` and `lib/hooks/usePermissions.ts` — describe a design that was
+largely not built. `canGrantPower` still exists and is still tested, but the
+server grants powers through `requireCapability("powers.manage")` plus the
+no-grant-beyond-hold rule; the map is not the authority.

@@ -2,10 +2,16 @@
 
 ## Model
 
-Capabilities are the vocabulary (`lib/capabilities.ts`); offices, roles,
-powers, departments, and designations are how accounts earn them. `admin` /
-`dev` resolve to the `*` wildcard. Everything else resolves via powers,
-department roles, and designation levels — fail-closed and expiry-aware.
+Capabilities are the vocabulary (`lib/capabilities.ts`). Roles and charter
+offices are the same grant — a template bundling capabilities, plus (for an
+office) a term — and legacy powers translate into capabilities through
+`POWER_CAPABILITIES`. `admin` / `dev` resolve to the `*` wildcard. Resolutions
+are fail-closed and expiry-aware (assignment `expiresAt`, office `termEnd`).
+
+A designation is a title: it grants **nothing** unless capabilities are listed on
+its catalogue row, in which case it is a grant like the others and subject to the
+same no-grant-beyond-hold rule. Designation levels no longer derive a leadership
+tier, so a badge cannot choose a dashboard — see `docs/ACCESS_MODEL.md` §3.2.
 
 Entry points: `lib/capabilities.ts` (vocabulary) → `lib/governance.ts`
 (offices + governed pages) → enforced by `lib/access-control.ts` +
@@ -14,8 +20,8 @@ Entry points: `lib/capabilities.ts` (vocabulary) → `lib/governance.ts`
 ## Non-negotiables
 
 1. **Restriction outranks everything.** Banned/suspended/deactivated accounts
-   keep no capability and no power, even with stale grant rows
-   (`getEffectiveCapabilities`, `hasPower`, `requireCapability`).
+   keep no capability, even with stale grant rows (`getEffectiveCapabilities`,
+   `requireCapability`).
 2. **Never trust the client.** Ownership is re-checked server-side
    (`getOwnedEvent`, `getOwnedNotification`); uniform 404s avoid existence
    oracles.
