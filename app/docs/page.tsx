@@ -32,7 +32,7 @@ const GUIDES = [
     Icon: ScrollText,
     title: "Constitution",
     text: "The full governing charter: XVIII parts, 86 articles, 7 schedules.",
-    meta: "v0.9 draft",
+    meta: "In force",
   },
   {
     href: "/governance",
