@@ -7,7 +7,7 @@ import type { Event } from "@/lib/types";
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, XIcon, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
-import { Button, Card, CardContent, Chip, Input, Label, ListBox, Select, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
+import { Avatar, AvatarFallback, AvatarImage, Button, Card, CardContent, Chip, Input, Label, ListBox, Select, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Spinner, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
   const { user, loading } = useAuth();
@@ -291,7 +291,10 @@ export default function AdminEventsPage() {
   if (loading || loadingEvents) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading events">
+          <Spinner size="lg" />
+          <p className="text-default-500">Loading events...</p>
+        </div>
       </div>
     );
   }
@@ -330,12 +333,12 @@ export default function AdminEventsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Events</p>
-                <p className="text-2xl font-bold">{events.length}</p>
+                <p className="text-2xl font-bold tabular-nums">{events.length}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <CalendarIcon className="w-6 h-6 text-primary" />
@@ -344,49 +347,49 @@ export default function AdminEventsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Upcoming</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {events.filter(e => e.status === "active").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <TrendingUpIcon className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <TrendingUpIcon className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Registered</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {events.reduce((sum, e) => sum + e.registered, 0)}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Featured</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {events.filter(e => e.isFeatured).length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                <StarIcon className="w-6 h-6 text-yellow-600" />
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <StarIcon className="w-6 h-6 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -394,7 +397,7 @@ export default function AdminEventsPage() {
       </div>
 
       {/* Events Table */}
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -413,11 +416,10 @@ export default function AdminEventsPage() {
                   <TableRow key={event.$id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg flex-shrink-0"
-                        />
+                        <Avatar size="lg" className="flex-shrink-0">
+                          <AvatarImage src={event.image} alt={event.title} />
+                          <AvatarFallback>{event.title?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <p className="font-semibold text-sm md:text-base truncate">
                             {event.title}
@@ -442,7 +444,7 @@ export default function AdminEventsPage() {
                     <TableCell className="hidden sm:table-cell">
                       <div className="flex items-center gap-1">
                         <UsersIcon className="w-3 h-3 text-default-400" />
-                        <span className="text-sm">
+                        <span className="text-sm tabular-nums">
                           {event.registered}/{event.capacity}
                         </span>
                       </div>
@@ -462,7 +464,7 @@ export default function AdminEventsPage() {
                         {(event.status === "draft" || event.status === "review") && (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             isPending={lifecycleId === event.$id}
                             onPress={() => handleLifecycle(event.$id!, "approve")}
                           >
@@ -472,7 +474,7 @@ export default function AdminEventsPage() {
                         {event.status === "approved" && (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             isPending={lifecycleId === event.$id}
                             onPress={() => handleLifecycle(event.$id!, "publish")}
                           >
@@ -482,7 +484,7 @@ export default function AdminEventsPage() {
                         {event.status !== "cancelled" && event.status !== "completed" && (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="danger-soft"
                             isPending={lifecycleId === event.$id}
                             onPress={() => handleLifecycle(event.$id!, "reject")}
                           >
@@ -499,7 +501,7 @@ export default function AdminEventsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="danger-soft"
                           isIconOnly
                           isPending={deletingId === event.$id}
                           onPress={() => handleDelete(event.$id!)}
@@ -590,7 +592,7 @@ export default function AdminEventsPage() {
                         <div className="relative group w-full">
                           <img 
                             src={formData.image} 
-                            alt="Preview" 
+                            alt="Event image preview" 
                             className="w-full h-48 object-cover rounded-xl border-2 border-border"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
@@ -601,8 +603,8 @@ export default function AdminEventsPage() {
                           </div>
                         </div>
                       )}
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <div className="p-3 bg-primary/10 rounded-lg">
+                        <p className="text-xs text-primary">
                           Tip: use free image hosting services like Imgur, Cloudinary, or Unsplash for reliable image URLs
                         </p>
                       </div>
@@ -653,7 +655,7 @@ export default function AdminEventsPage() {
                             <Switch.Thumb />
                           </Switch.Control>
                           <div className="flex items-center gap-2">
-                            <StarIcon className="w-4 h-4 text-yellow-600" />
+                            <StarIcon className="w-4 h-4 text-warning" />
                             <span className="font-semibold text-sm">Featured</span>
                           </div>
                         </Switch.Content>
@@ -706,11 +708,11 @@ export default function AdminEventsPage() {
                       />
                     </div>
 
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    <div className="p-4 bg-primary/10 rounded-xl">
+                      <p className="text-sm font-semibold text-primary mb-2">
                         📍 Location Tips
                       </p>
-                      <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                      <ul className="text-sm text-muted space-y-1">
                         <li>• Be specific about the venue name</li>
                         <li>• Include city and state/country</li>
                         <li>• Add nearby landmarks if helpful</li>
@@ -743,11 +745,11 @@ export default function AdminEventsPage() {
                     </div>
 
                     {formData.price && formData.discountPrice && formData.discountPrice < formData.price && (
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                        <p className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                      <div className="p-4 bg-success/10 rounded-xl border border-success/20">
+                        <p className="text-sm font-semibold text-success mb-1">
                           💰 Discount Applied!
                         </p>
-                        <p className="text-sm text-green-700 dark:text-green-300">
+                        <p className="text-sm text-success tabular-nums">
                           Attendees save ${formData.price - formData.discountPrice} ({Math.round(((formData.price - formData.discountPrice) / formData.price) * 100)}% off)
                         </p>
                       </div>
@@ -787,14 +789,10 @@ export default function AdminEventsPage() {
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">
-                          <img 
-                            src={formData.organizerAvatar} 
-                            alt="Avatar preview" 
-                            className="w-12 h-12 rounded-full object-cover border-2 border-border"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
+                          <Avatar size="sm">
+                            <AvatarImage src={formData.organizerAvatar} alt={formData.organizerName || "Organizer avatar"} />
+                            <AvatarFallback>{formData.organizerName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || "OR"}</AvatarFallback>
+                          </Avatar>
                           <span className="text-sm text-default-600">Avatar Preview</span>
                         </div>
                       )}
@@ -845,11 +843,11 @@ export default function AdminEventsPage() {
                       )}
                     </div>
 
-                    <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                      <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                    <div className="p-4 bg-warning/10 rounded-xl">
+                      <p className="text-sm font-semibold text-warning mb-2">
                         🏷️ Tag Best Practices
                       </p>
-                      <ul className="text-sm text-orange-700 dark:text-orange-300 space-y-1">
+                      <ul className="text-sm text-muted space-y-1">
                         <li>• Use 3-5 relevant tags</li>
                         <li>• Include topics, skills, or themes</li>
                         <li>• Make tags searchable and specific</li>

@@ -33,6 +33,7 @@ import {
   Label,
   ListBox,
   Select,
+  Spinner,
   TextArea,
 } from "@heroui/react";
 import type { EventType, RegistrationConfig, TicketConfig, WorkflowConfig } from "@/lib/types/index";
@@ -354,7 +355,10 @@ export default function AdminCreateEventPage() {
   if (authLoading || loadingTypes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading event setup">
+          <Spinner size="lg" />
+          <p className="text-default-500">Loading event setup...</p>
+        </div>
       </div>
     );
   }
@@ -404,7 +408,7 @@ export default function AdminCreateEventPage() {
         })}
       </div>
 
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-6">
           {step === 1 && (
             <div className="space-y-6">
@@ -444,7 +448,7 @@ export default function AdminCreateEventPage() {
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-2">
-                            <Chip size="sm" variant="primary" className="text-xs">
+                            <Chip size="sm" variant="primary" className="text-xs tabular-nums">
                               {type.fields?.length || 0} fields
                             </Chip>
                             {type.registrationConfig?.requiresApproval && (
@@ -486,7 +490,7 @@ export default function AdminCreateEventPage() {
                     <div className="relative group w-full">
                       <img
                         src={formData.image}
-                        alt="Preview"
+                        alt="Event image preview"
                         className="w-full h-40 object-cover rounded-xl border-2 border-border"
                         onError={(e) => {
                           // Never swap in an external placeholder: it would be
@@ -500,7 +504,7 @@ export default function AdminCreateEventPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold">
-                    Title <span className="text-red-500">*</span>
+                    Title <span className="text-danger">*</span>
                   </label>
                   <Input
                     placeholder="Event title"
@@ -557,7 +561,7 @@ export default function AdminCreateEventPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">
-                      Date <span className="text-red-500">*</span>
+                      Date <span className="text-danger">*</span>
                     </label>
                     <Input
                       type="date"
@@ -567,7 +571,7 @@ export default function AdminCreateEventPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">
-                      Time <span className="text-red-500">*</span>
+                      Time <span className="text-danger">*</span>
                     </label>
                     <Input
                       placeholder="e.g., 09:00 AM - 06:00 PM"
@@ -589,7 +593,7 @@ export default function AdminCreateEventPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">
-                      Venue <span className="text-red-500">*</span>
+                      Venue <span className="text-danger">*</span>
                     </label>
                     <Input
                       placeholder="e.g., Grand Convention Center"
@@ -599,7 +603,7 @@ export default function AdminCreateEventPage() {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">
-                      Location <span className="text-red-500">*</span>
+                      Location <span className="text-danger">*</span>
                     </label>
                     <Input
                       placeholder="e.g., New York, NY"
@@ -672,7 +676,7 @@ export default function AdminCreateEventPage() {
                       )
                     }
                   >
-                    <Label>Audience <span className="text-red-500">*</span></Label>
+                    <Label>Audience <span className="text-danger">*</span></Label>
                     <Select.Trigger>
                       <Select.Value />
                       <Select.Indicator />
@@ -707,7 +711,7 @@ export default function AdminCreateEventPage() {
                           <Checkbox.Indicator />
                         </Checkbox.Control>
                         <div className="flex items-center gap-2">
-                          <StarIcon className="w-4 h-4 text-yellow-600" />
+                          <StarIcon className="w-4 h-4 text-warning" />
                           <span className="font-semibold text-sm">Featured</span>
                         </div>
                       </Checkbox.Content>
@@ -1240,16 +1244,16 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <UsersIcon className="w-4 h-4 text-primary" />
-                      <span>{formData.capacity} spots</span>
+                      <span className="tabular-nums">{formData.capacity} spots</span>
                     </div>
                   </div>
 
                   {formData.price > 0 && (
                     <div className="flex items-center gap-2 text-sm">
-                      <DollarSignIcon className="w-4 h-4 text-green-600" />
-                      <span className="font-semibold">${formData.price}</span>
+                      <DollarSignIcon className="w-4 h-4 text-success" />
+                      <span className="font-semibold tabular-nums">${formData.price}</span>
                       {formData.discountPrice && formData.discountPrice < formData.price && (
-                        <span className="text-green-600 line-through text-xs">
+                        <span className="text-success line-through text-xs tabular-nums">
                           ${formData.discountPrice}
                         </span>
                       )}
@@ -1294,7 +1298,7 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Team Size</span>
-                      <span>{formData.registrationConfig.maxTeamSize}</span>
+                      <span className="tabular-nums">{formData.registrationConfig.maxTeamSize}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Guests</span>
@@ -1324,7 +1328,7 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Max Entries</span>
-                      <span>{formData.ticketConfig.maxEntries}</span>
+                      <span className="tabular-nums">{formData.ticketConfig.maxEntries}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">QR Codes</span>
