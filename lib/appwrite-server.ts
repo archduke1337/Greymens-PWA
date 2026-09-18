@@ -10,7 +10,7 @@
 // database itself is provisioned through the TablesDB API
 // (`scripts/setup-appwrite.js`, `scripts/seed-data.ts`), so server reads go
 // through `TablesDB.listRows` here — the canonical endpoint for those tables.
-import { Client, Query, TablesDB } from "node-appwrite";
+import { Client, Query, Storage, TablesDB } from "node-appwrite";
 
 import { DATABASE_ID } from "@/lib/database";
 
@@ -96,6 +96,17 @@ export interface ServerDatabases {
     value?: number,
     min?: number,
   ): Promise<ServerRow>;
+}
+
+export function createServerStorage() {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
+  if (!endpoint || !projectId || !apiKey) {
+    throw new Error("Server Appwrite configuration is incomplete");
+  }
+  const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+  return { storage: new Storage(client) };
 }
 
 export function createServerDatabases(): { databases: ServerDatabases } {
