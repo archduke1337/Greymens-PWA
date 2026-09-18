@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, Input, TextArea } from "@heroui/react";
+import { readApiError } from "@/lib/errorHandler";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -35,8 +36,8 @@ export default function ContactPage() {
       });
 
       if (!response.ok) {
-        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "Failed to send message");
+        const payload = (await response.json().catch(() => null)) as unknown;
+        throw new Error(readApiError(payload, "Failed to send message"));
       }
 
       setSubmitStatus({

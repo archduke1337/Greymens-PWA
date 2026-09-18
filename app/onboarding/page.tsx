@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { toast } from "sonner";
+import { readApiError } from "@/lib/errorHandler";
 import { Button, Checkbox, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 import type { Department } from "@/lib/types";
 
@@ -396,14 +397,17 @@ export default function OnboardingPage() {
 
     setLoading(true);
     try {
+      // Trim copy-paste whitespace: a trailing space turns a valid URL or
+      // URN into a server 400 with no visible cause on the form.
+      const clean = (value: string) => value.trim();
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           profile: {
-            phone: formData.phone,
-            urn: formData.urn,
+            phone: clean(formData.phone),
+            urn: clean(formData.urn),
             dateOfBirth: formData.dateOfBirth,
             gender: formData.gender,
             address: formData.address,
@@ -416,10 +420,10 @@ export default function OnboardingPage() {
             experience: formData.experience,
             whyJoin: formData.whyJoin,
             availability: formData.availability,
-            githubUrl: formData.githubUrl,
-            linkedinUrl: formData.linkedinUrl,
-            portfolioUrl: formData.portfolioUrl,
-            instagramUrl: formData.instagramUrl,
+            githubUrl: clean(formData.githubUrl),
+            linkedinUrl: clean(formData.linkedinUrl),
+            portfolioUrl: clean(formData.portfolioUrl),
+            instagramUrl: clean(formData.instagramUrl),
             bio: formData.bio,
             profileVisibility: formData.profileVisibility,
           },
@@ -432,12 +436,29 @@ export default function OnboardingPage() {
         }),
       });
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      };
+      const payload = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        throw new Error(payload.error || "Failed to submit application");
+        // Route the caller somewhere useful instead of dead-ending on the
+        // form: an existing application belongs on the dashboard, an expired
+        // session belongs on login.
+        if (response.status === 409) {
+          toast.error("You already have an application under review — check your dashboard.");
+          router.push("/dashboard");
+          return;
+        }
+        if (response.status === 429) {
+          throw new Error("Too many attempts. Please wait a few minutes and try again.");
+        }
+        if (response.status === 401) {
+          toast.error("Your session expired. Please log in again.");
+          router.push("/login?next=%2Fonboarding");
+          return;
+        }
+        if (response.status === 403) {
+          throw new Error("This account can't submit applications right now. Contact an administrator.");
+        }
+        throw new Error(readApiError(payload, "Failed to submit application"));
       }
 
       toast.success("Application submitted successfully!");

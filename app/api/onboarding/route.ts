@@ -208,14 +208,24 @@ export async function POST(request: NextRequest) {
       ? (applicationInput.preferredDepartments as unknown[]).filter((v): v is string => typeof v === "string")
       : [];
     if (requestedDepts.length > 0) {
-      const catalogue = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-        Query.equal("isActive", true),
-        Query.limit(100),
-      ]).catch(() => ({ documents: [] as unknown[] }));
-      const found = new Set((catalogue as { documents: Array<{ $id: string }> }).documents.map((d) => d.$id));
-      const invalid = requestedDepts.filter((id) => !found.has(id));
-      if (invalid.length > 0) {
-        return fail("VALIDATION", `Unknown departments: ${invalid.slice(0, 3).join(", ")}`, 400);
+      let catalogueIds: Set<string> | null = null;
+      try {
+        const catalogue = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+          Query.equal("isActive", true),
+          Query.limit(100),
+        ]);
+        catalogueIds = new Set(catalogue.documents.map((d) => String((d as Record<string, unknown>).$id ?? "")));
+      } catch (error) {
+        // A catalogue read failure must not masquerade as bad user input:
+        // the client only offers catalogue IDs, so skip the check and log
+        // instead of 400ing every submit as "Unknown departments".
+        console.error("Department catalogue unreadable during submit; skipping scope check:", error);
+      }
+      if (catalogueIds) {
+        const invalid = requestedDepts.filter((id) => !catalogueIds.has(id));
+        if (invalid.length > 0) {
+          return fail("VALIDATION", `Unknown departments: ${invalid.slice(0, 3).join(", ")}`, 400);
+        }
       }
     }
 
