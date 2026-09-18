@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { readApiError } from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
+import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
 
@@ -68,9 +68,10 @@ export default function HelpFeedbackPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 tabIndex={-1} autoFocus className="text-2xl font-bold outline-none">Thank You!</h1>
+            <h1 tabIndex={-1} className="text-2xl font-bold">Heard. Thank you.</h1>
             <p className="text-default-500" role="status">
-              Your feedback has been submitted successfully. We&apos;ll get back to you as soon as possible.
+              Your message is with the volunteers who read every one. Bugs and
+              support requests get priority; ideas get argued about — fondly.
             </p>
             <Button variant="primary"
               onPress={() => {
@@ -97,10 +98,17 @@ export default function HelpFeedbackPage() {
           loading="lazy"
           className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
         />
-        <h1 className="text-3xl font-bold">Help & Feedback</h1>
+        <h1 className="text-3xl font-bold">Stuck? Spotted something? Tell us.</h1>
         <p className="text-default-500">
-          What&apos;s on your mind? Questions, bugs, ideas — a volunteer reads
-          every one.
+          Bugs, support, ideas, complaints — a volunteer reads every one.
+          Security issues go to{" "}
+          <a
+            href="/security/report"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            responsible disclosure
+          </a>{" "}
+          instead, so they&apos;re handled confidentially.
         </p>
       </div>
 
@@ -108,38 +116,53 @@ export default function HelpFeedbackPage() {
         <CardHeader className="px-6 pt-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Send us a message</h2>
-            <p className="text-sm text-default-500">Fill out the form below and the team will review it. Messages are read by volunteers — there is no guaranteed response time.</p>
+            <p className="text-sm text-default-500">No account needed. No response-time promises either — volunteers, remember?</p>
           </div>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <Form validationBehavior="aria" onSubmit={handleSubmit} className="space-y-5">
             {submitError && (
-              <div role="alert" className="p-3 rounded-lg bg-danger-50 dark:bg-danger-900/20 text-danger text-sm">
-                {submitError}
-              </div>
+              <Alert role="alert" status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t send it</Alert.Title>
+                  <Alert.Description>{submitError}</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label htmlFor="feedback-name" className="text-sm font-medium">Name</label>
-                <Input
-                  id="feedback-name"
-                  placeholder="Your name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="feedback-email" className="text-sm font-medium">Email</label>
-                <Input
-                  id="feedback-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
+              <TextField
+                isRequired
+                isDisabled={isSubmitting}
+                name="name"
+                validate={(value) =>
+                  value.trim().length >= 2 ? null : "Tell us what to call you"
+                }
+                value={formData.name}
+                onChange={(value) => setFormData({ ...formData, name: value })}
+              >
+                <Label>Name</Label>
+                <Input placeholder="Your name" autoComplete="name" />
+                <FieldError />
+              </TextField>
+              <TextField
+                isRequired
+                isDisabled={isSubmitting}
+                name="email"
+                type="email"
+                validate={(value) =>
+                  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
+                    ? null
+                    : "Enter a valid email address"
+                }
+                value={formData.email}
+                onChange={(value) => setFormData({ ...formData, email: value })}
+              >
+                <Label>Email</Label>
+                <Input placeholder="you@example.com" autoComplete="email" />
+                <Description>So we can reply. Nothing else.</Description>
+                <FieldError />
+              </TextField>
             </div>
 
             <div className="space-y-1">
@@ -166,38 +189,50 @@ export default function HelpFeedbackPage() {
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <label htmlFor="feedback-subject" className="text-sm font-medium">Subject</label>
-              <Input
-                id="feedback-subject"
-                placeholder="Brief description of your feedback"
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                required
-              />
-            </div>
+            <TextField
+              isRequired
+              isDisabled={isSubmitting}
+              name="subject"
+              validate={(value) =>
+                value.trim().length >= 4 ? null : "Sum it up in a few words"
+              }
+              value={formData.subject}
+              onChange={(value) => setFormData({ ...formData, subject: value })}
+            >
+              <Label>Subject</Label>
+              <Input placeholder="What is this about?" />
+              <FieldError />
+            </TextField>
 
-            <div className="space-y-1">
-              <label htmlFor="feedback-message" className="text-sm font-medium">Message</label>
+            <TextField
+              isRequired
+              isDisabled={isSubmitting}
+              name="message"
+              validate={(value) =>
+                value.trim().length >= 10 ? null : "Give us a little more to go on"
+              }
+              value={formData.message}
+              onChange={(value) => setFormData({ ...formData, message: value })}
+            >
+              <Label>Message</Label>
               <TextArea
-                id="feedback-message"
-                placeholder="Tell us more about your feedback..."
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                required
+                placeholder="What happened, what you expected, what you tried…"
+                rows={5}
               />
-            </div>
+              <FieldError />
+            </TextField>
 
             <div className="flex justify-end">
               <Button
-                type="submit"
-                isPending={isSubmitting}
                 className="min-w-[120px]"
+                isDisabled={isSubmitting}
+                isPending={isSubmitting}
+                type="submit"
               >
                 {isSubmitting ? 'Sending...' : 'Send Feedback'}
               </Button>
             </div>
-          </form>
+          </Form>
         </CardContent>
       </Card>
 
@@ -206,7 +241,7 @@ export default function HelpFeedbackPage() {
           You can also reach us at{' '}
           <a
             href="mailto:support@greymens.club"
-            className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
           >
             support@greymens.club
           </a>
