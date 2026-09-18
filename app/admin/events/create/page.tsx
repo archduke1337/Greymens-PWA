@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ChangeEvent, type KeyboardEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
@@ -197,10 +197,14 @@ export default function AdminCreateEventPage() {
   };
 
   const handleTitleChange = (value: string) => {
-    updateForm("title", value);
-    if (!formData.slug || formData.slug === generateSlug(formData.title)) {
-      updateForm("slug", generateSlug(value));
-    }
+    // Functional update: the slug check must read the latest title/slug,
+    // not the render-scope snapshot (rapid typing desynced the old version).
+    setFormData((prev) => {
+      if (!prev.slug || prev.slug === generateSlug(prev.title)) {
+        return { ...prev, title: value, slug: generateSlug(value) };
+      }
+      return { ...prev, title: value };
+    });
   };
 
   const handleAddTag = () => {
@@ -268,6 +272,24 @@ export default function AdminCreateEventPage() {
   const handleSubmit = async () => {
     if (!selectedType) {
       toast.error("Please select an event type");
+      return;
+    }
+    if (!formData.title.trim()) {
+      toast.error("Event title is required");
+      setStep(2);
+      return;
+    }
+    if (formData.endDate && formData.date && formData.endDate < formData.date) {
+      toast.error("End date cannot be before the start date");
+      setStep(2);
+      return;
+    }
+    if (
+      formData.discountPrice != null &&
+      formData.discountPrice >= formData.price
+    ) {
+      toast.error("Discount price must be less than the regular price");
+      setStep(2);
       return;
     }
 
@@ -457,7 +479,7 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="https://example.com/image.jpg"
                     value={formData.image}
-                    onChange={(e: any) => updateForm("image", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("image", e.target.value)}
                   />
                   {formData.image?.startsWith("http") && (
                     <div className="relative group w-full">
@@ -465,9 +487,10 @@ export default function AdminCreateEventPage() {
                         src={formData.image}
                         alt="Preview"
                         className="w-full h-40 object-cover rounded-xl border-2 border-border"
-                        onError={(e: any) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/400x200?text=Invalid+Image+URL";
+                        onError={(e) => {
+                          // Never swap in an external placeholder: it would be
+                          // submitted as the event image. Hide instead.
+                          e.currentTarget.style.display = "none";
                         }}
                       />
                     </div>
@@ -481,7 +504,7 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="Event title"
                     value={formData.title}
-                    onChange={(e: any) => handleTitleChange(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleTitleChange(e.target.value)}
                   />
                 </div>
 
@@ -490,7 +513,7 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="event-slug"
                     value={formData.slug}
-                    onChange={(e: any) => updateForm("slug", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("slug", e.target.value)}
                   />
                 </div>
 
@@ -538,7 +561,7 @@ export default function AdminCreateEventPage() {
                     <Input
                       type="date"
                       value={formData.date}
-                      onChange={(e: any) => updateForm("date", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("date", e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -548,7 +571,7 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., 09:00 AM - 06:00 PM"
                       value={formData.time}
-                      onChange={(e: any) => updateForm("time", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("time", e.target.value)}
                     />
                   </div>
                 </div>
@@ -558,7 +581,7 @@ export default function AdminCreateEventPage() {
                   <Input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e: any) => updateForm("endDate", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("endDate", e.target.value)}
                   />
                 </div>
 
@@ -570,7 +593,7 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., Grand Convention Center"
                       value={formData.venue}
-                      onChange={(e: any) => updateForm("venue", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("venue", e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -580,7 +603,7 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., New York, NY"
                       value={formData.location}
-                      onChange={(e: any) => updateForm("location", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("location", e.target.value)}
                     />
                   </div>
                 </div>
@@ -592,9 +615,13 @@ export default function AdminCreateEventPage() {
                       type="number"
                       placeholder="50"
                       value={formData.capacity?.toString()}
-                      onChange={(e: any) =>
-                        updateForm("capacity", parseInt(e.target.value) || 50)
-                      }
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        updateForm(
+                          "capacity",
+                          Number.isFinite(parsed) ? Math.max(1, parsed) : 50
+                        );
+                      }}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -603,9 +630,13 @@ export default function AdminCreateEventPage() {
                       type="number"
                       placeholder="0"
                       value={formData.price?.toString()}
-                      onChange={(e: any) =>
-                        updateForm("price", parseFloat(e.target.value) || 0)
-                      }
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const parsed = parseFloat(e.target.value);
+                        updateForm(
+                          "price",
+                          Number.isFinite(parsed) ? Math.max(0, parsed) : 0
+                        );
+                      }}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -614,12 +645,17 @@ export default function AdminCreateEventPage() {
                       type="number"
                       placeholder="Optional"
                       value={formData.discountPrice?.toString() || ""}
-                      onChange={(e: any) =>
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        if (!e.target.value) {
+                          updateForm("discountPrice", null);
+                          return;
+                        }
+                        const parsed = parseFloat(e.target.value);
                         updateForm(
                           "discountPrice",
-                          e.target.value ? parseFloat(e.target.value) : null
-                        )
-                      }
+                          Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+                        );
+                      }}
                     />
                   </div>
                 </div>
@@ -697,7 +733,7 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="Organizer name"
                     value={formData.organizerName}
-                    onChange={(e: any) => updateForm("organizerName", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("organizerName", e.target.value)}
                   />
                 </div>
 
@@ -707,8 +743,8 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="Add a tag"
                       value={tagInput}
-                      onChange={(e: any) => setTagInput(e.target.value)}
-                      onKeyPress={(e: any) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                      onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
                           handleAddTag();
@@ -813,12 +849,13 @@ export default function AdminCreateEventPage() {
                     type="number"
                     placeholder="1"
                     value={formData.registrationConfig.maxTeamSize?.toString() || "1"}
-                    onChange={(e: any) =>
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      const parsed = parseInt(e.target.value, 10);
                       updateForm("registrationConfig", {
                         ...formData.registrationConfig,
-                        maxTeamSize: parseInt(e.target.value) || 1,
-                      })
-                    }
+                        maxTeamSize: Number.isFinite(parsed) ? Math.max(1, parsed) : 1,
+                      });
+                    }}
                   />
                   <p className="text-xs text-default-400">
                     Set to 1 for individual events
@@ -996,12 +1033,13 @@ export default function AdminCreateEventPage() {
                         type="number"
                         placeholder="1"
                         value={formData.ticketConfig.maxEntries?.toString() || "1"}
-                        onChange={(e: any) =>
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          const parsed = parseInt(e.target.value, 10);
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            maxEntries: parseInt(e.target.value) || 1,
-                          })
-                        }
+                            maxEntries: Number.isFinite(parsed) ? Math.max(1, parsed) : 1,
+                          });
+                        }}
                       />
                     </div>
 
@@ -1155,9 +1193,8 @@ export default function AdminCreateEventPage() {
                     src={formData.image}
                     alt="Event preview"
                     className="w-full h-48 object-cover rounded-xl"
-                    onError={(e: any) => {
-                      e.currentTarget.src =
-                        "https://via.placeholder.com/800x200?text=Image+Unavailable";
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 )}
