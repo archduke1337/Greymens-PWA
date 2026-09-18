@@ -20,6 +20,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Spinner,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -128,8 +132,8 @@ export default function AdminMembershipApprovedPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading approved members">
+          <Spinner size="lg" />
           <p className="text-default-500">Loading approved members...</p>
         </div>
       </div>
@@ -145,7 +149,7 @@ export default function AdminMembershipApprovedPage() {
             <Button
               isIconOnly
               size="sm"
-              variant="ghost"
+              variant="secondary"
               onPress={() => router.push("/admin/membership")}
             >
               <ArrowLeftIcon className="w-5 h-5" />
@@ -169,46 +173,46 @@ export default function AdminMembershipApprovedPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Members</p>
-                <p className="text-2xl font-bold">{members.length}</p>
+                <p className="text-2xl font-bold tabular-nums">{members.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">With Departments</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {members.filter((m) => m.membership?.department).length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Building2Icon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <Building2Icon className="w-6 h-6 text-accent" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Active</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {members.filter((m) => m.membership?.status === "active").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <CheckCircleIcon className="w-6 h-6 text-primary" />
               </div>
             </div>
@@ -217,7 +221,7 @@ export default function AdminMembershipApprovedPage() {
       </div>
 
       {/* Members Table */}
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -272,16 +276,20 @@ export default function AdminMembershipApprovedPage() {
                       <TableRow key={member.application.$id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <img
-                              src={
-                                member.profile?.avatar ||
-                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  accountNames[member.application.userId] || member.profile?.urn || member.application.userId
-                                )}&background=16a34a&color=fff`
-                              }
-                              alt={accountNames[member.application.userId] || member.profile?.urn || "Member"}
-                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                            />
+                            <Avatar className="h-10 w-10 shrink-0">
+                              <AvatarImage
+                                src={
+                                  member.profile?.avatar ||
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    accountNames[member.application.userId] || member.profile?.urn || member.application.userId
+                                  )}&background=16a34a&color=fff`
+                                }
+                                alt={accountNames[member.application.userId] || member.profile?.urn || "Member"}
+                              />
+                              <AvatarFallback>
+                                {(accountNames[member.application.userId] || member.profile?.urn || "M").charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="min-w-0">
                               <p className="font-semibold text-sm truncate">
                                 {accountNames[member.application.userId] || member.profile?.urn || member.application.userId.slice(0, 12)}
@@ -301,7 +309,7 @@ export default function AdminMembershipApprovedPage() {
                         <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-1">
                             <HashIcon className="w-3 h-3 text-default-400" />
-                            <span className="text-sm font-mono">
+                            <span className="text-sm font-mono tabular-nums">
                               {membership.membershipNumber || "N/A"}
                             </span>
                           </div>
@@ -353,7 +361,7 @@ export default function AdminMembershipApprovedPage() {
                             </Chip>
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="secondary"
                               onPress={() => {
                                 setDetailsMember(member);
                                 openDetails();
@@ -412,7 +420,7 @@ export default function AdminMembershipApprovedPage() {
               </ModalBody>
               <ModalFooter className="border-t pt-4">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   onPress={() => {
                     closeDetails();
                     setDetailsMember(null);

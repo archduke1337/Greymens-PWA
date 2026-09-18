@@ -6,8 +6,8 @@ import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import { Button, Card, CardContent, Chip, Input } from "@heroui/react";
-import { Loader2, SearchIcon } from "lucide-react";
+import { Button, Card, CardContent, Chip, Input, Spinner } from "@heroui/react";
+import { SearchIcon } from "lucide-react";
 import DesignationsManager from "@/components/admin/DesignationsManager";
 import type { Department, Designation } from "@/lib/types";
 
@@ -97,7 +97,10 @@ export default function AdminDesignationsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading designations">
+          <Spinner size="lg" />
+          <p className="text-default-500">Loading designations...</p>
+        </div>
       </div>
     );
   }
@@ -105,7 +108,7 @@ export default function AdminDesignationsPage() {
   if (!canAssign) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-12">
-        <Card><CardContent className="p-8 text-center text-[var(--muted)]">
+        <Card><CardContent className="p-8 text-center text-muted">
           Designation management requires the designations.assign capability.
         </CardContent></Card>
       </main>
@@ -120,7 +123,7 @@ export default function AdminDesignationsPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Designations</h1>
-          <p className="text-[var(--muted)]">
+          <p className="text-muted">
             Titles and ranks. A designation grants nothing unless capabilities
             are listed on it — then it is an auditable grant, and it appears in
             the Access console alongside roles, offices and powers.
@@ -133,7 +136,7 @@ export default function AdminDesignationsPage() {
           <Button
             key={tab.key}
             size="sm"
-            variant={activeTab === tab.key ? "primary" : "ghost"}
+            variant={activeTab === tab.key ? "primary" : "secondary"}
             isDisabled={activeTab === tab.key}
             onPress={() => setActiveTab(tab.key)}
           >
@@ -151,7 +154,7 @@ export default function AdminDesignationsPage() {
             aria-label="Search title holders"
           />
           {filteredPeople.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-[var(--muted)]">
+            <Card><CardContent className="p-8 text-center text-muted">
               {searchQuery.trim() ? "No holders match your search." : "No designations are currently held."}
             </CardContent></Card>
           ) : (
@@ -160,13 +163,13 @@ export default function AdminDesignationsPage() {
                 <CardContent className="space-y-3 p-5">
                   <div>
                     <h3 className="font-semibold">{person.name}</h3>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="text-xs text-muted">
                       {person.urn || person.userId}
                     </p>
                   </div>
                   {person.designations.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Titles</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted">Titles</span>
                       {person.designations.map((desig) => (
                         <Chip key={desig.designationId} size="sm" variant="soft">
                           {desig.name}
@@ -178,7 +181,7 @@ export default function AdminDesignationsPage() {
               </Card>
             ))
           )}
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-xs text-muted">
             <SearchIcon className="mr-1 inline h-3 w-3" />
             A title with no capabilities listed is display-only. Anything that
             grants authority shows up in the Access console.

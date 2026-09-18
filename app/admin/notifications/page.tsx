@@ -23,6 +23,7 @@ import {
   ModalFooter,
   ModalHeader,
   useOverlayState,
+  Spinner,
 } from "@heroui/react";
 import {
   Bell,
@@ -31,7 +32,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Loader2,
 } from "lucide-react";
 
 export default function AdminNotificationsPage() {
@@ -150,20 +150,23 @@ export default function AdminNotificationsPage() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "membership_approved":
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-success" />;
       case "membership_rejected":
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-danger" />;
       case "promotion":
         return <CheckCircle className="w-4 h-4 text-primary" />;
       default:
-        return <Bell className="w-4 h-4 text-blue-500" />;
+        return <Bell className="w-4 h-4 text-accent" />;
     }
   };
 
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading notifications">
+          <Spinner size="lg" />
+          <p className="text-default-500">Loading notifications...</p>
+        </div>
       </div>
     );
   }
@@ -186,7 +189,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Search */}
-      <Card className="border-none shadow-md mb-6">
+      <Card className="mb-6">
         <CardContent className="p-4">
           <Input
             placeholder="Search notifications..."
@@ -199,7 +202,7 @@ export default function AdminNotificationsPage() {
 
       {/* Notifications List */}
       {filtered.length === 0 ? (
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-12 text-center">
             <Bell className="w-16 h-16 text-default-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No notifications</h3>
@@ -211,7 +214,7 @@ export default function AdminNotificationsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((notif) => (
-            <Card key={notif.$id} className="border-none shadow-md">
+            <Card key={notif.$id}>
               <CardContent className="p-4 flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                   {getNotificationIcon(notif.type)}
@@ -330,7 +333,7 @@ export default function AdminNotificationsPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="ghost" onPress={close}>Cancel</Button>
+                <Button variant="secondary" onPress={close}>Cancel</Button>
                 <Button
                   variant="primary"
                   onPress={handleSend}

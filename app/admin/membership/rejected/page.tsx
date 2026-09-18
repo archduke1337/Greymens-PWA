@@ -22,6 +22,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Spinner,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -125,8 +129,8 @@ export default function AdminMembershipRejectedPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading rejected applications">
+          <Spinner size="lg" />
           <p className="text-default-500">Loading rejected applications...</p>
         </div>
       </div>
@@ -142,7 +146,7 @@ export default function AdminMembershipRejectedPage() {
             <Button
               isIconOnly
               size="sm"
-              variant="ghost"
+              variant="secondary"
               onPress={() => router.push("/admin/membership")}
             >
               <ArrowLeftIcon className="w-5 h-5" />
@@ -166,31 +170,31 @@ export default function AdminMembershipRejectedPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{applications.length}</p>
+                <p className="text-2xl font-bold tabular-nums text-danger">{applications.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircleIcon className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                <XCircleIcon className="w-6 h-6 text-danger" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">With Reason Provided</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {applications.filter((a) => a.application.rejectionReason).length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <MessageSquareIcon className="w-6 h-6 text-amber-600" />
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <MessageSquareIcon className="w-6 h-6 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -198,7 +202,7 @@ export default function AdminMembershipRejectedPage() {
       </div>
 
       {/* Rejected Applications Table */}
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -239,16 +243,20 @@ export default function AdminMembershipRejectedPage() {
                         <TableCell>
                           <div className="space-y-2">
                             <div className="flex items-center gap-3">
-                              <img
-                                src={
-                                  item.profile?.avatar ||
-                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    accountNames[item.application.userId] || item.profile?.urn || item.application.userId
-                                  )}&background=dc2626&color=fff`
-                                }
-                                alt={accountNames[item.application.userId] || item.profile?.urn || "Applicant"}
-                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                              />
+                              <Avatar className="h-10 w-10 shrink-0">
+                                <AvatarImage
+                                  src={
+                                    item.profile?.avatar ||
+                                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                      accountNames[item.application.userId] || item.profile?.urn || item.application.userId
+                                    )}&background=dc2626&color=fff`
+                                  }
+                                  alt={accountNames[item.application.userId] || item.profile?.urn || "Applicant"}
+                                />
+                                <AvatarFallback>
+                                  {(accountNames[item.application.userId] || item.profile?.urn || "A").charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
                               <div className="min-w-0">
                                 <p className="font-semibold text-sm truncate">
                                   {accountNames[item.application.userId] || item.profile?.urn || item.application.userId.slice(0, 12)}
@@ -277,7 +285,7 @@ export default function AdminMembershipRejectedPage() {
                             </Button>
 
                             {isExpanded && (
-                              <div className="lg:hidden p-3 bg-default-50 dark:bg-default-100/10 rounded-lg text-xs space-y-2">
+                              <div className="lg:hidden p-3 bg-surface-secondary rounded-lg text-xs space-y-2">
                                 <p className="flex items-center gap-1">
                                   <CalendarIcon className="w-3 h-3" />
                                   Rejected:{" "}
@@ -295,7 +303,7 @@ export default function AdminMembershipRejectedPage() {
                                   </div>
                                 )}
                                 {item.application.rejectionReason && (
-                                  <p className="text-red-600 dark:text-red-400">
+                                  <p className="text-danger">
                                     {item.application.rejectionReason}
                                   </p>
                                 )}
@@ -330,7 +338,7 @@ export default function AdminMembershipRejectedPage() {
                         <TableCell>
                           {item.application.rejectionReason ? (
                             <div className="max-w-xs">
-                              <p className="text-sm text-red-600 dark:text-red-400 line-clamp-2">
+                              <p className="text-sm text-danger line-clamp-2">
                                 {item.application.rejectionReason}
                               </p>
                             </div>
@@ -342,7 +350,7 @@ export default function AdminMembershipRejectedPage() {
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             className="mt-1"
                             onPress={() => {
                               setDetailsApp(item);
@@ -401,7 +409,7 @@ export default function AdminMembershipRejectedPage() {
               </ModalBody>
               <ModalFooter className="border-t pt-4">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   onPress={() => {
                     closeDetails();
                     setDetailsApp(null);

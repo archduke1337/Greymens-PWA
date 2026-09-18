@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import type { Blog } from "@/lib/blog-format";
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Spinner, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
 import {
   CheckIcon,
   XIcon,
@@ -171,9 +171,9 @@ export default function AdminBlogsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4">Loading blogs...</p>
+        <div className="text-center space-y-4" role="status" aria-label="Loading blogs">
+          <Spinner size="lg" />
+          <p className="text-default-500">Loading blogs...</p>
         </div>
       </div>
     );
@@ -200,26 +200,26 @@ export default function AdminBlogsPage() {
             <Tab id="pending">
               <div className="flex items-center gap-2">
                 <ClockIcon className="w-4 h-4" />
-                <span>Pending ({blogs.filter((b) => b.status === "pending").length})</span>
+                <span className="tabular-nums">Pending ({blogs.filter((b) => b.status === "pending").length})</span>
               </div>
               <TabIndicator />
             </Tab>
             <Tab id="approved">
               <div className="flex items-center gap-2">
                 <CheckIcon className="w-4 h-4" />
-                <span>Approved ({blogs.filter((b) => b.status === "approved").length})</span>
+                <span className="tabular-nums">Approved ({blogs.filter((b) => b.status === "approved").length})</span>
               </div>
               <TabIndicator />
             </Tab>
             <Tab id="rejected">
               <div className="flex items-center gap-2">
                 <XIcon className="w-4 h-4" />
-                <span>Rejected ({blogs.filter((b) => b.status === "rejected").length})</span>
+                <span className="tabular-nums">Rejected ({blogs.filter((b) => b.status === "rejected").length})</span>
               </div>
               <TabIndicator />
             </Tab>
             <Tab id="all">
-              <span>All ({blogs.length})</span>
+              <span className="tabular-nums">All ({blogs.length})</span>
               <TabIndicator />
             </Tab>
           </TabList>
@@ -295,7 +295,7 @@ export default function AdminBlogsPage() {
                       <div>•</div>
                       <div>{blog.category}</div>
                       <div>•</div>
-                      <div>{blog.readTime} min read</div>
+                      <div className="tabular-nums">{blog.readTime} min read</div>
                       {blog.featured && (
                         <>
                           <div>•</div>
@@ -397,7 +397,7 @@ export default function AdminBlogsPage() {
 
                     <Button
                       size="sm"
-                      variant="danger"
+                      variant="danger-soft"
                       className="flex-1 md:flex-none"
                       isPending={processingBlog === blog.$id}
                       onPress={() => handleDelete(blog.$id!)}
@@ -435,7 +435,7 @@ export default function AdminBlogsPage() {
                     <Button variant="secondary" onPress={() => setRejectModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onPress={handleReject}
+                    <Button variant="danger-soft" onPress={handleReject}
                       isPending={processingBlog === rejectingBlog?.$id}
                     >
                       Reject Blog
