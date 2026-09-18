@@ -20,10 +20,14 @@ import {
   XIcon,
 } from "lucide-react";
 import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
   Button,
   Card,
   CardContent,
   Chip,
+  Label,
   Modal,
   ModalBackdrop,
   ModalContainer,
@@ -45,6 +49,7 @@ import {
   TabPanel,
   TextArea,
   Input,
+  Spinner,
   useOverlayState,
 } from "@heroui/react";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
@@ -226,8 +231,8 @@ export default function AdminMembershipPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-4" role="status" aria-label="Loading membership queue">
+          <Spinner size="lg" />
           <p className="text-default-500">Loading membership queue...</p>
         </div>
       </div>
@@ -250,43 +255,43 @@ export default function AdminMembershipPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Pending</p>
-                <p className="text-2xl font-bold text-amber-600">{counts.pending}</p>
+                <p className="text-2xl font-bold tabular-nums text-warning">{counts.pending}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <ClockIcon className="w-6 h-6 text-amber-600" />
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <ClockIcon className="w-6 h-6 text-warning" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{counts.approved}</p>
+                <p className="text-2xl font-bold tabular-nums text-success">{counts.approved}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <CheckCircleIcon className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{counts.rejected}</p>
+                <p className="text-2xl font-bold tabular-nums text-danger">{counts.rejected}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircleIcon className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                <XCircleIcon className="w-6 h-6 text-danger" />
               </div>
             </div>
           </CardContent>
@@ -294,7 +299,7 @@ export default function AdminMembershipPage() {
       </div>
 
       {/* Tabs */}
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="px-4 pt-4">
             <label htmlFor="membership-search" className="sr-only">
@@ -379,11 +384,18 @@ export default function AdminMembershipPage() {
                               <TableCell>
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-3">
-                                    <img
-                                      src={profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(accountNames[app.userId] || profile?.urn || app.userId)}&background=7c3aed&color=fff`}
-                                      alt={accountNames[app.userId] || profile?.urn || "Applicant"}
-                                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                    />
+                                    <Avatar className="h-10 w-10 shrink-0">
+                                      <AvatarImage
+                                        src={
+                                          profile?.avatar ||
+                                          `https://ui-avatars.com/api/?name=${encodeURIComponent(accountNames[app.userId] || profile?.urn || app.userId)}&background=7c3aed&color=fff`
+                                        }
+                                        alt={accountNames[app.userId] || profile?.urn || "Applicant"}
+                                      />
+                                      <AvatarFallback>
+                                        {(accountNames[app.userId] || profile?.urn || "A").charAt(0)}
+                                      </AvatarFallback>
+                                    </Avatar>
                                     <div className="min-w-0">
                                       <p className="font-semibold text-sm truncate">
                                         {accountNames[app.userId] || profile?.urn || app.userId.slice(0, 8)}
@@ -426,7 +438,7 @@ export default function AdminMembershipPage() {
                                   </Button>
 
                                   {isExpanded && (
-                                    <div className="md:hidden p-3 bg-default-50 dark:bg-default-100/10 rounded-lg text-xs space-y-1">
+                                    <div className="md:hidden p-3 bg-surface-secondary rounded-xl text-xs space-y-1">
                                       <p className="flex items-center gap-1">
                                         <MailIcon className="w-3 h-3" />
                                         {accountNames[app.userId] || app.userId}
@@ -483,7 +495,7 @@ export default function AdminMembershipPage() {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    variant="ghost"
+                                    variant="secondary"
                                     onPress={() => handleOpenAction(app, "approve")}
                                   >
                                     <CheckCircleIcon className="w-4 h-4" />
@@ -491,7 +503,7 @@ export default function AdminMembershipPage() {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    variant="ghost"
+                                    variant="danger-soft"
                                     onPress={() => handleOpenAction(app, "reject")}
                                   >
                                     <XIcon className="w-4 h-4" />
@@ -513,7 +525,7 @@ export default function AdminMembershipPage() {
 
             <TabPanel id="approved">
               <div className="p-4 text-center py-12">
-                <CheckCircleIcon className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                <CheckCircleIcon className="w-12 h-12 text-success/70 mx-auto mb-4" />
                 <p className="text-default-500 text-lg font-medium">
                   {counts.approved} approved members
                 </p>
@@ -527,7 +539,7 @@ export default function AdminMembershipPage() {
 
             <TabPanel id="rejected">
               <div className="p-4 text-center py-12">
-                <XCircleIcon className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <XCircleIcon className="w-12 h-12 text-danger/70 mx-auto mb-4" />
                 <p className="text-default-500 text-lg font-medium">
                   {counts.rejected} rejected applications
                 </p>
@@ -561,8 +573,8 @@ export default function AdminMembershipPage() {
                     <h2
                       className={`text-xl font-bold ${
                         actionType === "approve"
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-success"
+                          : "text-danger"
                       }`}
                     >
                       {actionType === "approve"
@@ -579,17 +591,21 @@ export default function AdminMembershipPage() {
                   <ModalBody className="py-6">
                     {actionTarget && (
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-default-50 dark:bg-default-100/10 rounded-lg">
-                          <img
-                            src={
-                              profiles[actionTarget.userId]?.avatar ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                profiles[actionTarget.userId]?.urn || actionTarget.userId
-                              )}&background=7c3aed&color=fff`
-                            }
-                            alt="Applicant"
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
+                        <div className="flex items-center gap-3 p-3 bg-surface-secondary rounded-xl">
+                          <Avatar className="h-12 w-12 shrink-0">
+                            <AvatarImage
+                              src={
+                                profiles[actionTarget.userId]?.avatar ||
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                  profiles[actionTarget.userId]?.urn || actionTarget.userId
+                                )}&background=7c3aed&color=fff`
+                              }
+                              alt="Applicant"
+                            />
+                            <AvatarFallback>
+                              {(profiles[actionTarget.userId]?.urn || "A").charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <p className="font-semibold">
                               {profiles[actionTarget.userId]?.urn || actionTarget.userId.slice(0, 12)}
@@ -622,10 +638,11 @@ export default function AdminMembershipPage() {
 
                         {actionType === "reject" && (
                           <div>
-                            <label className="block text-sm font-medium mb-2">
+                            <Label htmlFor="membership-reject-reason" className="mb-2 block text-sm font-medium">
                               Rejection Reason *
-                            </label>
+                            </Label>
                             <TextArea
+                              id="membership-reject-reason"
                               placeholder="Explain why this application is being rejected..."
                               value={rejectReason}
                               onChange={(e: any) => setRejectReason(e.target.value)}
