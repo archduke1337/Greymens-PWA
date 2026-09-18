@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button, Card } from "@heroui/react";
 import { ArrowRight, Check, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const FOCUS = [
   "Cybersecurity: the core craft",
@@ -21,6 +22,8 @@ const NOT_THAT = [
 ];
 
 export default function AboutPage() {
+  // Signed-in members already belong — the join button is for visitors.
+  const { user } = useAuth();
   return (
     <div className="mx-auto w-full max-w-3xl space-y-16 px-4 py-12 sm:px-6 sm:py-16">
       {/* Hero */}
@@ -149,12 +152,14 @@ export default function AboutPage() {
                 Meet the leadership
               </Button>
             </Link>
-            <Link href="/register">
-              <Button className="rounded-full px-6">
-                Join us
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </Link>
+            {!user && (
+              <Link href="/register">
+                <Button className="rounded-full px-6">
+                  Join us
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>

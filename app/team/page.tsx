@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
@@ -137,6 +138,10 @@ export default async function TeamPage() {
   let groups: TeamGroup[] = [];
   let failed = false;
 
+  // Signed-in members already belong — the join band is for visitors. The
+  // first-party session mirror is enough of a signal for marketing chrome.
+  const isAuthed = (await cookies()).has("gm_session");
+
   try {
     groups = await loadLeadership();
   } catch (error) {
@@ -190,15 +195,24 @@ export default async function TeamPage() {
       <Card variant="secondary">
         <Card.Content className="flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:text-left">
           <div className="min-w-0 flex-1 space-y-1.5">
-            <h2 className="text-lg font-bold tracking-tight">Want your name up there?</h2>
+            <h2 className="text-lg font-bold tracking-tight">
+              {isAuthed ? "Know someone who fits?" : "Want your name up there?"}
+            </h2>
             <p className="text-sm leading-relaxed text-muted">
-              Titles go to members who do the work first. Join, show up for a
-              few months, and the register takes care of itself.
+              {isAuthed
+                ? "Titles go to members who do the work first. Bring a friend to the next open event."
+                : "Titles go to members who do the work first. Join, show up for a few months, and the register takes care of itself."}
             </p>
           </div>
-          <Link href="/register" className="shrink-0">
-            <Button className="rounded-full px-6">Join the club</Button>
-          </Link>
+          {isAuthed ? (
+            <Link href="/events" className="shrink-0">
+              <Button className="rounded-full px-6">See events</Button>
+            </Link>
+          ) : (
+            <Link href="/register" className="shrink-0">
+              <Button className="rounded-full px-6">Join the club</Button>
+            </Link>
+          )}
         </Card.Content>
       </Card>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowUpRight } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -259,7 +260,20 @@ function isInternal(href: string) {
   return href.startsWith("/");
 }
 
-export default function LinksPage() {
+export default async function LinksPage() {
+  // Signed-in members already belong — the register card is for visitors.
+  // The first-party session mirror is enough of a signal for static chrome.
+  const isAuthed = (await cookies()).has("gm_session");
+  const sections = isAuthed
+    ? SECTIONS.map((section) =>
+        section.id === "start-here"
+          ? {
+              ...section,
+              links: section.links.filter((link) => link.href !== "/register"),
+            }
+          : section,
+      )
+    : SECTIONS;
   return (
     <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-10 sm:px-6 sm:py-14">
       <header className="max-w-2xl space-y-3">
@@ -274,7 +288,7 @@ export default function LinksPage() {
         </p>
       </header>
 
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <section
           key={section.id}
           aria-labelledby={section.id}

@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import FeaturedSection from "@/components/FeaturedSection";
 import GuitarStringDivider from "@/components/GuitarStringDivider";
 import { blogService } from "@/lib/blog";
+import { useAuth } from "@/context/AuthContext";
 
 const LEARN_ROW = {
   title: "Learn out loud",
@@ -123,6 +124,9 @@ function ProofStrip() {
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
+  // Signed-in members already belong — point them at the dashboard, and the
+  // recruitment band below stays for visitors only.
+  const { user } = useAuth();
 
   useEffect(() => {
     // Motion-sensitive visitors skip the entrance entirely.
@@ -154,12 +158,21 @@ export default function Home() {
             no experience needed — just curiosity.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row">
-            <Link href="/register">
-              <Button size="lg" className="rounded-full px-8">
-                Join the club
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="rounded-full px-8">
+                  Go to dashboard
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/register">
+                <Button size="lg" className="rounded-full px-8">
+                  Join the club
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            )}
             <Link href="/events">
               <Button size="lg" variant="secondary" className="rounded-full px-8">
                 See events
@@ -283,8 +296,9 @@ export default function Home() {
       </div>
       <FeaturedSection />
 
-      {/* Join band */}
-      <section className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6" aria-label="Join">
+      {/* Join band — visitors only */}
+      {!user && (
+        <section className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6" aria-label="Join">
         <Card>
           <Card.Content className="flex flex-col items-center gap-5 p-8 text-center sm:p-10">
             <img
@@ -318,7 +332,8 @@ export default function Home() {
             </div>
           </Card.Content>
         </Card>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

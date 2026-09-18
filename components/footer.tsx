@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Separator } from "@heroui/react";
 
 import { FooterSponsors } from "./footer-sponsors";
+import { useAuth } from "@/context/AuthContext";
 
 const CLUB_LINKS = [
   { href: "/about", label: "About" },
@@ -41,6 +42,8 @@ const SOCIALS = [
 ];
 
 export const Footer = () => {
+  // Signed-in members already belong — the register pitch is for visitors.
+  const { user } = useAuth();
   return (
     <footer className="w-full border-t border-default-200/60">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -52,13 +55,15 @@ export const Footer = () => {
             Curious about security? Come to one workshop.{" "}
             <span className="text-muted">No experience needed.</span>
           </p>
-          <Link
-            href="/register"
-            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline underline-offset-4"
-          >
-            Join the club
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
+          {!user && (
+            <Link
+              href="/register"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+            >
+              Join the club
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          )}
         </div>
 
         <Separator />
