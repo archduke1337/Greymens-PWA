@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import {
   Button,
   Card,
@@ -25,6 +23,10 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { PlusIcon, EditIcon, TrashIcon } from "lucide-react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
+import { logError } from "@/lib/logger";
 
 interface EventTypeDoc {
   $id?: string;
@@ -53,7 +55,12 @@ const EMPTY_FORM = {
   workflowConfig: "{}",
 };
 
-const JSON_FIELDS = ["fields", "registrationConfig", "ticketConfig", "workflowConfig"] as const;
+const JSON_FIELDS = [
+  "fields",
+  "registrationConfig",
+  "ticketConfig",
+  "workflowConfig",
+] as const;
 
 export default function AdminEventTypesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -71,12 +78,19 @@ export default function AdminEventTypesPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/event-types", { credentials: "include" });
-      const payload = (await response.json()) as { eventTypes?: EventTypeDoc[]; error?: string };
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load event types"));
+      const response = await fetch("/api/admin/event-types", {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as {
+        eventTypes?: EventTypeDoc[];
+        error?: string;
+      };
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load event types"));
       setEventTypes(payload.eventTypes ?? []);
     } catch (error) {
-      console.error("Error loading event types:", error);
+      logError("Error loading event types:", error);
       toast.error(getErrorMessage(error) || "Failed to load event types");
     } finally {
       setLoading(false);
@@ -86,6 +100,7 @@ export default function AdminEventTypesPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
+
       return;
     }
     loadData();
@@ -120,17 +135,20 @@ export default function AdminEventTypesPage() {
     e.preventDefault();
     if (!form.name.trim() || !form.displayName.trim()) {
       toast.error("Name and display name are required");
+
       return;
     }
     // Config columns are JSON strings server-side: reject malformed JSON here
     // so the failure message points at the offending field, not a 400.
     for (const key of JSON_FIELDS) {
       const raw = form[key].trim();
+
       if (raw) {
         try {
           JSON.parse(raw);
         } catch {
           toast.error(`Invalid JSON in ${key}`);
+
           return;
         }
       }
@@ -156,14 +174,18 @@ export default function AdminEventTypesPage() {
         credentials: "include",
         body: JSON.stringify(body),
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to save event type"));
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to save event type"));
       toast.success(editing ? "Event type updated" : "Event type created");
       close();
       setEditing(null);
       await loadData();
     } catch (error) {
-      console.error("Error saving event type:", error);
+      logError("Error saving event type:", error);
       toast.error(getErrorMessage(error) || "Failed to save event type");
     } finally {
       setSaving(false);
@@ -178,11 +200,20 @@ export default function AdminEventTypesPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ eventTypeId: type.$id, isActive: !type.isActive }),
+        body: JSON.stringify({
+          eventTypeId: type.$id,
+          isActive: !type.isActive,
+        }),
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to update event type"));
-      toast.success(type.isActive ? "Event type deactivated" : "Event type activated");
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to update event type"));
+      toast.success(
+        type.isActive ? "Event type deactivated" : "Event type activated",
+      );
       await loadData();
     } catch (error) {
       toast.error(getErrorMessage(error) || "Failed to update event type");
@@ -193,17 +224,29 @@ export default function AdminEventTypesPage() {
 
   const handleDelete = async (type: EventTypeDoc) => {
     if (!type.$id) return;
-    if (!window.confirm(`Delete "${type.displayName}"? Types in use by events cannot be deleted — deactivate them instead.`)) return;
+    if (
+      !window.confirm(
+        `Delete "${type.displayName}"? Types in use by events cannot be deleted — deactivate them instead.`,
+      )
+    )
+      return;
     setDeletingId(type.$id);
     try {
-      const response = await fetch(`/api/admin/event-types?eventTypeId=${encodeURIComponent(type.$id)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const response = await fetch(
+        `/api/admin/event-types?eventTypeId=${encodeURIComponent(type.$id)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
       // 409 carries the blocking event count — surface it so the admin knows
       // to deactivate instead of retrying delete.
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete event type"));
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to delete event type"));
       toast.success("Event type deleted");
       await loadData();
     } catch (error) {
@@ -216,7 +259,7 @@ export default function AdminEventTypesPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div role="status" aria-label="Loading event types">
+        <div aria-label="Loading event types" role="status">
           <Spinner size="lg" />
         </div>
       </div>
@@ -231,10 +274,11 @@ export default function AdminEventTypesPage() {
             Event Type Management
           </h1>
           <p className="text-default-500 mt-1 text-sm md:text-base">
-            Templates that define registration, ticketing, and approval workflows for events
+            Templates that define registration, ticketing, and approval
+            workflows for events
           </p>
         </div>
-        <Button onPress={openCreate} className="bg-primary" size="lg">
+        <Button className="bg-primary" size="lg" onPress={openCreate}>
           <PlusIcon aria-hidden="true" className="w-5 h-5" />
           <span className="ml-2">Add Event Type</span>
         </Button>
@@ -253,39 +297,54 @@ export default function AdminEventTypesPage() {
             <Card key={type.$id}>
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                  <div aria-hidden="true" className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center text-xl flex-shrink-0">
+                  <div
+                    aria-hidden="true"
+                    className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center text-xl flex-shrink-0"
+                  >
                     {type.icon || type.displayName.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold text-lg">{type.displayName}</h3>
-                      <Chip size="sm" variant="soft">{type.name}</Chip>
+                      <Chip size="sm" variant="soft">
+                        {type.name}
+                      </Chip>
                       {!type.isActive && (
-                        <Chip size="sm" color="default">Inactive</Chip>
+                        <Chip color="default" size="sm">
+                          Inactive
+                        </Chip>
                       )}
                     </div>
                     {type.description && (
-                      <p className="text-sm text-default-500 mt-1 line-clamp-1">{type.description}</p>
+                      <p className="text-sm text-default-500 mt-1 line-clamp-1">
+                        {type.description}
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button
+                      isPending={togglingId === type.$id}
                       size="sm"
                       variant="secondary"
                       onPress={() => handleToggleActive(type)}
-                      isPending={togglingId === type.$id}
                     >
                       {type.isActive ? "Deactivate" : "Activate"}
                     </Button>
-                    <Button size="sm" variant="secondary" isIconOnly aria-label={`Edit ${type.displayName}`} onPress={() => openEdit(type)}>
+                    <Button
+                      isIconOnly
+                      aria-label={`Edit ${type.displayName}`}
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => openEdit(type)}
+                    >
                       <EditIcon aria-hidden="true" className="w-4 h-4" />
                     </Button>
                     <Button
-                      size="sm"
-                      variant="danger-soft"
                       isIconOnly
                       aria-label={`Delete ${type.displayName}`}
                       isPending={deletingId === type.$id}
+                      size="sm"
+                      variant="danger-soft"
                       onPress={() => handleDelete(type)}
                     >
                       <TrashIcon aria-hidden="true" className="w-4 h-4" />
@@ -299,7 +358,12 @@ export default function AdminEventTypesPage() {
       )}
 
       <Modal>
-        <ModalBackdrop isOpen={isOpen} onOpenChange={(openState: boolean) => { if (!openState) close(); }}>
+        <ModalBackdrop
+          isOpen={isOpen}
+          onOpenChange={(openState: boolean) => {
+            if (!openState) close();
+          }}
+        >
           <ModalContainer>
             <ModalDialog>
               {() => (
@@ -311,30 +375,39 @@ export default function AdminEventTypesPage() {
                   </ModalHeader>
                   <ModalBody className="py-6 space-y-5">
                     <div>
-                      <Label>Name (unique key — renames are allowed; events link by ID, not name)</Label>
+                      <Label>
+                        Name (unique key — renames are allowed; events link by
+                        ID, not name)
+                      </Label>
                       <Input
+                        required
                         placeholder="e.g., workshop"
                         value={form.name}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
-                        required
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
                       />
                     </div>
                     <div>
                       <Label>Display Name</Label>
                       <Input
+                        required
                         placeholder="e.g., Workshop"
                         value={form.displayName}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, displayName: e.target.value })}
-                        required
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm({ ...form, displayName: e.target.value })
+                        }
                       />
                     </div>
                     <div>
                       <Label>Description</Label>
                       <TextArea
                         placeholder="What kinds of events use this template?"
-                        value={form.description}
-                        onChange={(e: any) => setForm({ ...form, description: e.target.value })}
                         rows={2}
+                        value={form.description}
+                        onChange={(e: any) =>
+                          setForm({ ...form, description: e.target.value })
+                        }
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -343,20 +416,29 @@ export default function AdminEventTypesPage() {
                         <Input
                           placeholder="Emoji or text"
                           value={form.icon}
-                          onChange={(e: any) => setForm({ ...form, icon: e.target.value })}
+                          onChange={(e: any) =>
+                            setForm({ ...form, icon: e.target.value })
+                          }
                         />
                       </div>
                       <div>
                         <Label>Display Order</Label>
                         <Input
+                          className="tabular-nums"
                           type="number"
                           value={form.displayOrder}
-                          onChange={(e: any) => setForm({ ...form, displayOrder: e.target.value })}
-                          className="tabular-nums"
+                          onChange={(e: any) =>
+                            setForm({ ...form, displayOrder: e.target.value })
+                          }
                         />
                       </div>
                     </div>
-                    <Switch isSelected={form.isActive} onChange={(checked: any) => setForm({ ...form, isActive: checked })}>
+                    <Switch
+                      isSelected={form.isActive}
+                      onChange={(checked: any) =>
+                        setForm({ ...form, isActive: checked })
+                      }
+                    >
                       <Switch.Content>
                         <Switch.Control>
                           <Switch.Thumb />
@@ -365,8 +447,14 @@ export default function AdminEventTypesPage() {
                       </Switch.Content>
                     </Switch>
                     <div>
-                      <Button size="sm" variant="secondary" onPress={() => setShowAdvanced((v) => !v)}>
-                        {showAdvanced ? "Hide advanced JSON configs" : "Show advanced JSON configs"}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => setShowAdvanced((v) => !v)}
+                      >
+                        {showAdvanced
+                          ? "Hide advanced JSON configs"
+                          : "Show advanced JSON configs"}
                       </Button>
                       {showAdvanced && (
                         <div className="space-y-4 mt-3">
@@ -374,16 +462,19 @@ export default function AdminEventTypesPage() {
                             <div key={key}>
                               <Label>{key}</Label>
                               <TextArea
-                                value={form[key]}
-                                onChange={(e: any) => setForm({ ...form, [key]: e.target.value })}
-                                rows={4}
                                 className="font-mono text-xs"
+                                rows={4}
+                                value={form[key]}
+                                onChange={(e: any) =>
+                                  setForm({ ...form, [key]: e.target.value })
+                                }
                               />
                             </div>
                           ))}
                           <p className="text-xs text-default-400">
-                            Must stay valid JSON — the save is rejected otherwise. Copy an
-                            existing type&apos;s configs as a starting point.
+                            Must stay valid JSON — the save is rejected
+                            otherwise. Copy an existing type&apos;s configs as a
+                            starting point.
                           </p>
                         </div>
                       )}
@@ -393,7 +484,7 @@ export default function AdminEventTypesPage() {
                     <Button variant="secondary" onPress={close}>
                       Cancel
                     </Button>
-                    <Button type="submit" isPending={saving}>
+                    <Button isPending={saving} type="submit">
                       {editing ? "Update Event Type" : "Create Event Type"}
                     </Button>
                   </ModalFooter>

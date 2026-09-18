@@ -1,26 +1,61 @@
 // app/admin/sponsors/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { 
-  PlusIcon, 
-  EditIcon, 
-  TrashIcon, 
-  ExternalLinkIcon,
-  CheckIcon,
-  XIcon 
-} from "lucide-react";
 import type { Sponsor } from "@/lib/sponsors";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { EditIcon, TrashIcon, CheckIcon, XIcon } from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
+  Input,
+  ListBox,
+  Select,
+  Spinner,
+  Switch,
+  TextArea,
+} from "@heroui/react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
+
 const sponsorTiers = {
-  platinum: { color: "from-slate-300 to-slate-400", label: "Platinum Partner", size: "large", maxWidth: "200px" },
-  gold: { color: "from-yellow-300 to-yellow-500", label: "Gold Sponsor", size: "medium", maxWidth: "160px" },
-  silver: { color: "from-gray-300 to-gray-400", label: "Silver Sponsor", size: "medium", maxWidth: "140px" },
-  bronze: { color: "from-orange-400 to-orange-600", label: "Bronze Sponsor", size: "small", maxWidth: "120px" },
-  partner: { color: "from-blue-400 to-blue-600", label: "Community Partner", size: "small", maxWidth: "100px" },
+  platinum: {
+    color: "from-slate-300 to-slate-400",
+    label: "Platinum Partner",
+    size: "large",
+    maxWidth: "200px",
+  },
+  gold: {
+    color: "from-yellow-300 to-yellow-500",
+    label: "Gold Sponsor",
+    size: "medium",
+    maxWidth: "160px",
+  },
+  silver: {
+    color: "from-gray-300 to-gray-400",
+    label: "Silver Sponsor",
+    size: "medium",
+    maxWidth: "140px",
+  },
+  bronze: {
+    color: "from-orange-400 to-orange-600",
+    label: "Bronze Sponsor",
+    size: "small",
+    maxWidth: "120px",
+  },
+  partner: {
+    color: "from-blue-400 to-blue-600",
+    label: "Community Partner",
+    size: "small",
+    maxWidth: "100px",
+  },
 };
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, Spinner, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -41,7 +76,7 @@ export default function AdminSponsorsPage() {
     isActive: true,
     displayOrder: 0,
     featured: false,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toISOString().split("T")[0],
     endDate: "",
   });
 
@@ -51,12 +86,19 @@ export default function AdminSponsorsPage() {
 
   const loadSponsors = async () => {
     try {
-      const response = await fetch("/api/admin/sponsors", { credentials: "include" });
-      const payload = (await response.json().catch(() => null)) as { sponsors?: Sponsor[]; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load sponsors"));
+      const response = await fetch("/api/admin/sponsors", {
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        sponsors?: Sponsor[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load sponsors"));
       setSponsors(payload?.sponsors ?? []);
     } catch (error) {
-      console.error("Error loading sponsors:", error);
+      logError("Error loading sponsors:", error);
       toast.error(getErrorMessage(error) || "Failed to load sponsors");
     } finally {
       setLoading(false);
@@ -73,6 +115,7 @@ export default function AdminSponsorsPage() {
       if (!formData.name.trim()) {
         toast.error("Sponsor name is required");
         setSaving(false);
+
         return;
       }
 
@@ -80,23 +123,31 @@ export default function AdminSponsorsPage() {
       if (!formData.logo) {
         toast.error("Logo URL is required");
         setSaving(false);
+
         return;
       }
 
       if (!formData.website) {
         toast.error("Website URL is required");
         setSaving(false);
+
         return;
       }
 
-      for (const [field, label] of [["logo", "Logo URL"], ["website", "Website URL"]] as const) {
+      for (const [field, label] of [
+        ["logo", "Logo URL"],
+        ["website", "Website URL"],
+      ] as const) {
         const value = formData[field].trim();
+
         try {
           const parsed = new URL(value);
+
           if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
         } catch {
           toast.error(`${label} must start with http(s)://`);
           setSaving(false);
+
           return;
         }
       }
@@ -109,8 +160,12 @@ export default function AdminSponsorsPage() {
           credentials: "include",
           body: JSON.stringify({ sponsorId: editingSponsor.$id, ...formData }),
         });
-        const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(readApiError(payload, "Unable to update sponsor"));
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok)
+          throw new Error(readApiError(payload, "Unable to update sponsor"));
         toast.success("Sponsor updated successfully!");
       } else {
         // Create new sponsor
@@ -120,8 +175,12 @@ export default function AdminSponsorsPage() {
           credentials: "include",
           body: JSON.stringify(formData),
         });
-        const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(readApiError(payload, "Unable to create sponsor"));
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok)
+          throw new Error(readApiError(payload, "Unable to create sponsor"));
         toast.success("Sponsor created successfully!");
       }
 
@@ -130,7 +189,8 @@ export default function AdminSponsorsPage() {
       await loadSponsors();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error saving sponsor:", message);
+
+      logError("Error saving sponsor:", message);
       toast.error(message || "Failed to save sponsor");
     } finally {
       setSaving(false);
@@ -156,19 +216,31 @@ export default function AdminSponsorsPage() {
   };
 
   const handleDelete = async (sponsorId: string) => {
-    if (!confirm("Are you sure you want to delete this sponsor? This cannot be undone.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this sponsor? This cannot be undone.",
+      )
+    )
+      return;
     setDeletingId(sponsorId);
     try {
-      const response = await fetch(`/api/admin/sponsors?sponsorId=${encodeURIComponent(sponsorId)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete sponsor"));
+      const response = await fetch(
+        `/api/admin/sponsors?sponsorId=${encodeURIComponent(sponsorId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to delete sponsor"));
       toast.success("Sponsor deleted successfully!");
       await loadSponsors();
     } catch (error) {
-      console.error("Error deleting sponsor:", error);
+      logError("Error deleting sponsor:", error);
       toast.error(getErrorMessage(error) || "Failed to delete sponsor");
     } finally {
       setDeletingId(null);
@@ -186,7 +258,7 @@ export default function AdminSponsorsPage() {
       isActive: true,
       displayOrder: 0,
       featured: false,
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split("T")[0],
       endDate: "",
     });
     setEditingSponsor(null);
@@ -196,8 +268,12 @@ export default function AdminSponsorsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div role="status" aria-label="Loading sponsors" className="text-center">
-          <Spinner size="lg" className="mx-auto" />
+        <div
+          aria-label="Loading sponsors"
+          className="text-center"
+          role="status"
+        >
+          <Spinner className="mx-auto" size="lg" />
           <p className="mt-4 text-muted">Loading sponsors...</p>
         </div>
       </div>
@@ -214,8 +290,9 @@ export default function AdminSponsorsPage() {
             Manage your club sponsors and partners
           </p>
         </div>
-        <Button size="lg"
-          onPress={() => showForm ? resetForm() : setShowForm(true)}
+        <Button
+          size="lg"
+          onPress={() => (showForm ? resetForm() : setShowForm(true))}
         >
           {showForm ? "Cancel" : "Add Sponsor"}
         </Button>
@@ -230,35 +307,46 @@ export default function AdminSponsorsPage() {
             </h2>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Basic Info */}
                 <Input
+                  required
                   placeholder="e.g., Google"
                   value={formData.name}
-                  onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
-                  required
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                 />
 
                 <Input
+                  required
                   placeholder="https://example.com/logo.png"
                   value={formData.logo}
-                  onChange={(e: any) => setFormData({ ...formData, logo: e.target.value })}
-                  required
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, logo: e.target.value })
+                  }
                 />
 
                 <Input
+                  required
                   placeholder="https://example.com"
                   value={formData.website}
-                  onChange={(e: any) => setFormData({ ...formData, website: e.target.value })}
-                  required
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, website: e.target.value })
+                  }
                 />
 
                 <Select
                   fullWidth
                   aria-label="Sponsor tier"
                   value={formData.tier}
-                  onChange={(value) => setFormData({ ...formData, tier: String(value ?? formData.tier) as Sponsor["tier"] })}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      tier: String(value ?? formData.tier) as Sponsor["tier"],
+                    })
+                  }
                 >
                   <Select.Trigger>
                     <Select.Value />
@@ -273,7 +361,11 @@ export default function AdminSponsorsPage() {
                         { value: "bronze", label: "Bronze Sponsor" },
                         { value: "partner", label: "Community Partner" },
                       ].map((tier) => (
-                        <ListBox.Item key={tier.value} id={tier.value} textValue={tier.label}>
+                        <ListBox.Item
+                          key={tier.value}
+                          id={tier.value}
+                          textValue={tier.label}
+                        >
                           {tier.label}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -286,7 +378,9 @@ export default function AdminSponsorsPage() {
                   fullWidth
                   placeholder="Select category"
                   value={formData.category === "" ? null : formData.category}
-                  onChange={(value) => setFormData({ ...formData, category: String(value ?? "") })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, category: String(value ?? "") })
+                  }
                 >
                   <Select.Trigger>
                     <Select.Value />
@@ -301,7 +395,11 @@ export default function AdminSponsorsPage() {
                         { value: "healthcare", label: "Healthcare" },
                         { value: "other", label: "Other" },
                       ].map((cat) => (
-                        <ListBox.Item key={cat.value} id={cat.value} textValue={cat.label}>
+                        <ListBox.Item
+                          key={cat.value}
+                          id={cat.value}
+                          textValue={cat.label}
+                        >
                           {cat.label}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -311,37 +409,50 @@ export default function AdminSponsorsPage() {
                 </Select>
 
                 <Input
-                  type="number"
                   placeholder="0"
+                  type="number"
                   value={formData.displayOrder.toString()}
-                  onChange={(e: any) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                  onChange={(e: any) =>
+                    setFormData({
+                      ...formData,
+                      displayOrder: parseInt(e.target.value) || 0,
+                    })
+                  }
                 />
 
                 <Input
+                  required
                   type="date"
                   value={formData.startDate}
-                  onChange={(e: any) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
                 />
 
                 <Input
                   type="date"
                   value={formData.endDate}
-                  onChange={(e: any) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={(e: any) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
                 />
               </div>
 
               <TextArea
                 placeholder="Brief description of the sponsor..."
-                value={formData.description}
-                onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
+                value={formData.description}
+                onChange={(e: any) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
               />
 
               <div className="flex gap-8">
                 <Switch
                   isSelected={formData.isActive}
-                  onChange={(value: any) => setFormData({ ...formData, isActive: value })}
+                  onChange={(value: any) =>
+                    setFormData({ ...formData, isActive: value })
+                  }
                 >
                   <Switch.Content>
                     <Switch.Control>
@@ -353,7 +464,9 @@ export default function AdminSponsorsPage() {
 
                 <Switch
                   isSelected={formData.featured}
-                  onChange={(value: any) => setFormData({ ...formData, featured: value })}
+                  onChange={(value: any) =>
+                    setFormData({ ...formData, featured: value })
+                  }
                 >
                   <Switch.Content>
                     <Switch.Control>
@@ -368,13 +481,18 @@ export default function AdminSponsorsPage() {
               {formData.logo && (
                 <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
                   <p className="text-sm font-semibold mb-2">Logo Preview:</p>
-                  <img 
-                    src={formData.logo} 
-                    alt="Logo preview" 
+                  <Image
+                    unoptimized
+                    alt="Logo preview"
                     className="max-h-32 object-contain"
+                    height={128}
+                    src={formData.logo}
+                    width={320}
                     onError={(e: any) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      toast.error("Invalid image URL. Please check the logo URL.");
+                      (e.target as HTMLImageElement).style.display = "none";
+                      toast.error(
+                        "Invalid image URL. Please check the logo URL.",
+                      );
                     }}
                   />
                 </div>
@@ -382,16 +500,16 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-4 justify-end">
                 <Button
-                  variant="secondary"
                   isDisabled={saving}
+                  variant="secondary"
                   onPress={resetForm}
                 >
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
-                  
                   isPending={saving}
+
+                  type="submit"
                 >
                   {editingSponsor ? "Update Sponsor" : "Create Sponsor"}
                 </Button>
@@ -411,9 +529,7 @@ export default function AdminSponsorsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
-              <Button
-                onPress={() => setShowForm(true)}
-              >
+              <Button onPress={() => setShowForm(true)}>
                 Add Your First Sponsor
               </Button>
             </CardContent>
@@ -423,8 +539,10 @@ export default function AdminSponsorsPage() {
             {sponsors.map((sponsor) => {
               // Unknown tier values (legacy rows, API drift) must degrade to a
               // plain badge — indexing blind would crash the whole grid.
-              const tierInfo = (sponsorTiers[sponsor.tier as keyof typeof sponsorTiers] ?? sponsorTiers.partner);
-              
+              const tierInfo =
+                sponsorTiers[sponsor.tier as keyof typeof sponsorTiers] ??
+                sponsorTiers.partner;
+
               return (
                 <Card key={sponsor.$id} className="relative">
                   <CardContent className="space-y-4">
@@ -436,33 +554,30 @@ export default function AdminSponsorsPage() {
                       >
                         {tierInfo.label}
                       </Chip>
-                      {sponsor.featured && (
-                        <Chip  size="sm">Featured</Chip>
-                      )}
+                      {sponsor.featured && <Chip size="sm">Featured</Chip>}
                       {sponsor.isActive ? (
-                        <Chip
-                        size="sm"
-                      >
-                        <CheckIcon className="w-3 h-3" />
-                        Active
-                      </Chip>
+                        <Chip size="sm">
+                          <CheckIcon className="w-3 h-3" />
+                          Active
+                        </Chip>
                       ) : (
-                        <Chip
-                        size="sm"
-                      >
-                        <XIcon className="w-3 h-3" />
-                        Inactive
-                      </Chip>
+                        <Chip size="sm">
+                          <XIcon className="w-3 h-3" />
+                          Inactive
+                        </Chip>
                       )}
                     </div>
 
                     {/* Logo */}
                     <div className="flex items-center justify-center h-24 bg-default-100 rounded-lg">
-                      <img
-                        src={sponsor.logo}
+                      <Image
+                        unoptimized
                         alt={`${sponsor.name} logo`}
-                        loading="lazy"
                         className="max-h-20 max-w-full object-contain"
+                        height={80}
+                        loading="lazy"
+                        src={sponsor.logo}
+                        width={240}
                       />
                     </div>
 
@@ -470,7 +585,9 @@ export default function AdminSponsorsPage() {
                     <div>
                       <h3 className="font-bold text-lg">{sponsor.name}</h3>
                       {sponsor.category && (
-                        <p className="text-sm text-default-600 capitalize">{sponsor.category}</p>
+                        <p className="text-sm text-default-600 capitalize">
+                          {sponsor.category}
+                        </p>
                       )}
                       {sponsor.description && (
                         <p className="text-sm text-default-600 mt-2 line-clamp-2">
@@ -481,30 +598,31 @@ export default function AdminSponsorsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="flex-1">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          className="w-full"
-                        >
+                      <a
+                        className="flex-1"
+                        href={sponsor.website}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <Button className="w-full" size="sm" variant="primary">
                           Visit
                         </Button>
                       </a>
                       <Button
-                        size="sm"
-                        variant="secondary"
                         isIconOnly
                         aria-label={`Edit ${sponsor.name}`}
+                        size="sm"
+                        variant="secondary"
                         onPress={() => handleEdit(sponsor)}
                       >
                         <EditIcon className="w-4 h-4" />
                       </Button>
                       <Button
-                        size="sm"
-                        variant="danger-soft"
                         isIconOnly
                         aria-label={`Delete ${sponsor.name}`}
                         isPending={deletingId === sponsor.$id}
+                        size="sm"
+                        variant="danger-soft"
                         onPress={() => handleDelete(sponsor.$id!)}
                       >
                         <TrashIcon className="w-4 h-4" />

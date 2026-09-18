@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { readApiError } from "@/lib/errorHandler";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Button,
@@ -25,21 +24,22 @@ import {
   useOverlayState,
   Spinner,
 } from "@heroui/react";
-import {
-  Bell,
-  Send,
-  Search,
-  CheckCircle,
-  XCircle,
-  Clock,
-} from "lucide-react";
+import { Bell, Send, CheckCircle, XCircle, Clock } from "lucide-react";
+
+import { useAuth } from "@/context/AuthContext";
+import { readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function AdminNotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [recipientNames, setRecipientNames] = useState<Record<string, string>>({});
-  const [members, setMembers] = useState<Array<{ userId: string; name: string; urn?: string }>>([]);
+  const [recipientNames, setRecipientNames] = useState<Record<string, string>>(
+    {},
+  );
+  const [members, setMembers] = useState<
+    Array<{ userId: string; name: string; urn?: string }>
+  >([]);
   const [membersAvailable, setMembersAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,13 +54,21 @@ export default function AdminNotificationsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/notifications?all=true&limit=200", { credentials: "include" });
-      const payload = (await response.json()) as { notifications?: Notification[]; accountNames?: Record<string, string>; error?: string };
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load notifications"));
+      const response = await fetch("/api/notifications?all=true&limit=200", {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as {
+        notifications?: Notification[];
+        accountNames?: Record<string, string>;
+        error?: string;
+      };
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load notifications"));
       setNotifications(payload.notifications ?? []);
       setRecipientNames(payload.accountNames ?? {});
     } catch (error) {
-      console.error("Error loading notifications:", error);
+      logError("Error loading notifications:", error);
       toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
@@ -71,20 +79,36 @@ export default function AdminNotificationsPage() {
     // Recipient picker directory. Best-effort: without users.view the admin
     // pastes a user ID instead of being blocked.
     try {
-      const response = await fetch("/api/admin/users?limit=200", { credentials: "include" });
+      const response = await fetch("/api/admin/users?limit=200", {
+        credentials: "include",
+      });
+
       if (!response.ok) throw new Error("member directory unavailable");
-      const data = await response.json() as {
-        users?: Array<{ profile?: { userId?: string; urn?: string }; membership?: { status?: string } | null }>;
+      const data = (await response.json()) as {
+        users?: Array<{
+          profile?: { userId?: string; urn?: string };
+          membership?: { status?: string } | null;
+        }>;
         accountNames?: Record<string, string>;
       };
       const options = (data.users ?? [])
         .map((entry): { userId: string; name: string; urn?: string } | null => {
           const userId = String(entry.profile?.userId ?? "");
+
           if (!userId || entry.membership?.status !== "active") return null;
-          return { userId, name: data.accountNames?.[userId] || userId, urn: entry.profile?.urn };
+
+          return {
+            userId,
+            name: data.accountNames?.[userId] || userId,
+            urn: entry.profile?.urn,
+          };
         })
-        .filter((option): option is { userId: string; name: string; urn?: string } => option !== null)
+        .filter(
+          (option): option is { userId: string; name: string; urn?: string } =>
+            option !== null,
+        )
         .sort((a, b) => a.name.localeCompare(b.name));
+
       setMembers(options);
       setMembersAvailable(true);
     } catch {
@@ -96,6 +120,7 @@ export default function AdminNotificationsPage() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
+
       return;
     }
     loadData();
@@ -106,6 +131,7 @@ export default function AdminNotificationsPage() {
     if (!user) return;
     if (!form.userId.trim() || !form.title.trim() || !form.body.trim()) {
       toast.error("Recipient, title, and body are all required");
+
       return;
     }
 
@@ -122,16 +148,24 @@ export default function AdminNotificationsPage() {
           body: form.body.trim(),
         }),
       });
-      const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to send notification"));
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
 
-      toast.success(`Notification sent to ${recipientNames[form.userId.trim()] || "member"}`);
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to send notification"));
+
+      toast.success(
+        `Notification sent to ${recipientNames[form.userId.trim()] || "member"}`,
+      );
       close();
       setForm({ userId: "", title: "", body: "", type: "admin_announcement" });
       await loadData();
     } catch (error) {
-      console.error("Error sending notification:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to send notification");
+      logError("Error sending notification:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send notification",
+      );
     } finally {
       setSending(false);
     }
@@ -140,6 +174,7 @@ export default function AdminNotificationsPage() {
   const filtered = notifications.filter((n) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
+
     return (
       n.title.toLowerCase().includes(q) ||
       n.body.toLowerCase().includes(q) ||
@@ -163,7 +198,11 @@ export default function AdminNotificationsPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Loading notifications">
+        <div
+          aria-label="Loading notifications"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Loading notifications...</p>
         </div>
@@ -195,7 +234,6 @@ export default function AdminNotificationsPage() {
             placeholder="Search notifications..."
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target.value)}
-
           />
         </CardContent>
       </Card>
@@ -207,7 +245,9 @@ export default function AdminNotificationsPage() {
             <Bell className="w-16 h-16 text-default-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No notifications</h3>
             <p className="text-default-500">
-              {searchQuery ? "Try a different search" : "No notifications in the system yet"}
+              {searchQuery
+                ? "Try a different search"
+                : "No notifications in the system yet"}
             </p>
           </CardContent>
         </Card>
@@ -226,14 +266,22 @@ export default function AdminNotificationsPage() {
                       <span className="w-2 h-2 rounded-full bg-primary" />
                     )}
                   </div>
-                  <p className="text-sm text-default-500 mt-1 line-clamp-2">{notif.body}</p>
+                  <p className="text-sm text-default-500 mt-1 line-clamp-2">
+                    {notif.body}
+                  </p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-default-400">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {notif.$createdAt ? new Date(notif.$createdAt).toLocaleString() : "-"}
+                      {notif.$createdAt
+                        ? new Date(notif.$createdAt).toLocaleString()
+                        : "-"}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-default-100">{notif.type}</span>
-                    <span>To: {recipientNames[notif.userId] || notif.userId}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-default-100">
+                      {notif.type}
+                    </span>
+                    <span>
+                      To: {recipientNames[notif.userId] || notif.userId}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -244,7 +292,12 @@ export default function AdminNotificationsPage() {
 
       {/* Send Notification Modal */}
       <Modal>
-        <ModalBackdrop isOpen={isOpen} onOpenChange={(o) => { if (!o) close(); }}>
+        <ModalBackdrop
+          isOpen={isOpen}
+          onOpenChange={(o) => {
+            if (!o) close();
+          }}
+        >
           <ModalContainer>
             <ModalDialog>
               <ModalHeader>Send Notification</ModalHeader>
@@ -255,7 +308,12 @@ export default function AdminNotificationsPage() {
                       <Select
                         fullWidth
                         value={form.userId === "" ? null : form.userId}
-                        onChange={(value) => setForm((p) => ({ ...p, userId: String(value ?? "") }))}
+                        onChange={(value) =>
+                          setForm((p) => ({
+                            ...p,
+                            userId: String(value ?? ""),
+                          }))
+                        }
                       >
                         <Label>Recipient</Label>
                         <Select.Trigger>
@@ -265,8 +323,13 @@ export default function AdminNotificationsPage() {
                         <Select.Popover>
                           <ListBox>
                             {members.map((member) => (
-                              <ListBox.Item key={member.userId} id={member.userId} textValue={member.name}>
-                                {member.name}{member.urn ? ` · ${member.urn}` : ""}
+                              <ListBox.Item
+                                key={member.userId}
+                                id={member.userId}
+                                textValue={member.name}
+                              >
+                                {member.name}
+                                {member.urn ? ` · ${member.urn}` : ""}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
                             ))}
@@ -276,36 +339,53 @@ export default function AdminNotificationsPage() {
                     </div>
                   ) : (
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Recipient User ID</label>
+                      <label className="text-sm font-medium mb-1 block">
+                        Recipient User ID
+                      </label>
                       <Input
                         placeholder="Member directory unavailable — enter the user's ID"
                         value={form.userId}
-                        onChange={(e: any) => setForm((p) => ({ ...p, userId: e.target.value }))}
+                        onChange={(e: any) =>
+                          setForm((p) => ({ ...p, userId: e.target.value }))
+                        }
                       />
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Title</label>
+                    <label className="text-sm font-medium mb-1 block">
+                      Title
+                    </label>
                     <Input
                       placeholder="Notification title"
                       value={form.title}
-                      onChange={(e: any) => setForm((p) => ({ ...p, title: e.target.value }))}
+                      onChange={(e: any) =>
+                        setForm((p) => ({ ...p, title: e.target.value }))
+                      }
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Body</label>
+                    <label className="text-sm font-medium mb-1 block">
+                      Body
+                    </label>
                     <TextArea
                       placeholder="Notification message..."
-                      value={form.body}
-                      onChange={(e: any) => setForm((p) => ({ ...p, body: e.target.value }))}
                       rows={3}
+                      value={form.body}
+                      onChange={(e: any) =>
+                        setForm((p) => ({ ...p, body: e.target.value }))
+                      }
                     />
                   </div>
                   <div>
                     <Select
                       fullWidth
                       value={form.type}
-                      onChange={(value) => setForm((p) => ({ ...p, type: String(value ?? "general") }))}
+                      onChange={(value) =>
+                        setForm((p) => ({
+                          ...p,
+                          type: String(value ?? "general"),
+                        }))
+                      }
                     >
                       <Label>Type</Label>
                       <Select.Trigger>
@@ -315,13 +395,23 @@ export default function AdminNotificationsPage() {
                       <Select.Popover>
                         <ListBox>
                           {[
-                            { value: "admin_announcement", label: "Admin Announcement" },
+                            {
+                              value: "admin_announcement",
+                              label: "Admin Announcement",
+                            },
                             { value: "system_update", label: "System Update" },
                             { value: "event_update", label: "Event Update" },
-                            { value: "event_reminder", label: "Event Reminder" },
+                            {
+                              value: "event_reminder",
+                              label: "Event Reminder",
+                            },
                             { value: "general", label: "General" },
                           ].map((type) => (
-                            <ListBox.Item key={type.value} id={type.value} textValue={type.label}>
+                            <ListBox.Item
+                              key={type.value}
+                              id={type.value}
+                              textValue={type.label}
+                            >
                               {type.label}
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
@@ -333,11 +423,13 @@ export default function AdminNotificationsPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="secondary" onPress={close}>Cancel</Button>
+                <Button variant="secondary" onPress={close}>
+                  Cancel
+                </Button>
                 <Button
+                  isPending={sending}
                   variant="primary"
                   onPress={handleSend}
-                  isPending={sending}
                 >
                   <Send className="w-4 h-4" />
                   Send

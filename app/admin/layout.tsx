@@ -20,10 +20,10 @@ import {
   ClipboardList,
   ArrowLeft,
 } from "lucide-react";
+import { Button, Header, Label, ListBox, Spinner } from "@heroui/react";
 
 import { usePermissions } from "@/context/PermissionContext";
 import { useAuth } from "@/context/AuthContext";
-import { Button, Header, Label, ListBox, Spinner } from "@heroui/react";
 
 /**
  * Every admin area that exists as a route, gated by capability (presentation only).
@@ -50,12 +50,14 @@ export function sectionMatches(
     : hasCapability(cap);
 }
 
-export const ADMIN_SECTIONS = [  {
+export const ADMIN_SECTIONS = [
+  {
     label: "Dashboard",
     href: "/admin",
     Icon: LayoutDashboard,
     cap: "governance.manage",
-  },  {
+  },
+  {
     label: "Membership",
     href: "/admin/membership",
     Icon: Users,
@@ -151,7 +153,10 @@ export const ADMIN_SECTIONS = [  {
  */
 const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
   { label: "Overview", hrefs: ["/admin"] },
-  { label: "People", hrefs: ["/admin/membership", "/admin/users", "/admin/positions"] },
+  {
+    label: "People",
+    hrefs: ["/admin/membership", "/admin/users", "/admin/positions"],
+  },
   {
     label: "Content",
     hrefs: [
@@ -167,7 +172,12 @@ const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
   { label: "Engage", hrefs: ["/admin/notifications"] },
   {
     label: "Govern",
-    hrefs: ["/admin/access", "/admin/departments", "/admin/governance", "/admin/audit"],
+    hrefs: [
+      "/admin/access",
+      "/admin/departments",
+      "/admin/governance",
+      "/admin/audit",
+    ],
   },
 ];
 
@@ -179,6 +189,7 @@ const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
  */
 export function isActiveSection(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -188,7 +199,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  const { status, hasCapability, loading: permLoading, error: permError, refresh: refreshPermissions } = usePermissions();
+  const {
+    status,
+    hasCapability,
+    loading: permLoading,
+    error: permError,
+    refresh: refreshPermissions,
+  } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
   const [admitted, setAdmitted] = useState<boolean | null>(null);
@@ -212,7 +229,9 @@ export default function AdminLayout({
       // beside it resolved a different vocabulary in the browser, and office
       // holders kept being bounced here because it knew none of these names.
       // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
-      const visible = ADMIN_SECTIONS.some((s) => sectionMatches(hasCapability, s.cap));
+      const visible = ADMIN_SECTIONS.some((s) =>
+        sectionMatches(hasCapability, s.cap),
+      );
 
       // Event proposers hold events.create without any section capability
       // (community/technical/security leads). They are admitted for the event
@@ -220,7 +239,12 @@ export default function AdminLayout({
       // possibly none — the dashboard and create page degrade accordingly.
       const canProposeEvents = hasCapability("events.create");
 
-      if (status === "admin" || status === "dev" || visible || canProposeEvents) {
+      if (
+        status === "admin" ||
+        status === "dev" ||
+        visible ||
+        canProposeEvents
+      ) {
         setAdmitted(true);
         setVerifyFailed(false);
 
@@ -261,12 +285,26 @@ export default function AdminLayout({
           router.push(`/unauthorized?from=${encodeURIComponent(pathname)}`);
         });
     }
-  }, [user, loading, permLoading, permError, router, pathname, status, hasCapability, admitted]);
+  }, [
+    user,
+    loading,
+    permLoading,
+    permError,
+    router,
+    pathname,
+    status,
+    hasCapability,
+    admitted,
+  ]);
 
   if (loading || permLoading || (admitted === null && !verifyFailed)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Verifying access">
+        <div
+          aria-label="Verifying access"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Verifying access...</p>
         </div>
@@ -285,7 +323,10 @@ export default function AdminLayout({
             safe.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Button variant="secondary" onPress={() => router.push("/dashboard")}>
+            <Button
+              variant="secondary"
+              onPress={() => router.push("/dashboard")}
+            >
               Back to Dashboard
             </Button>
             <Button
@@ -303,7 +344,9 @@ export default function AdminLayout({
     );
   }
 
-  const visibleSections = ADMIN_SECTIONS.filter((s) => sectionMatches(hasCapability, s.cap));
+  const visibleSections = ADMIN_SECTIONS.filter((s) =>
+    sectionMatches(hasCapability, s.cap),
+  );
   const byHref = new Map(visibleSections.map((s) => [s.href, s]));
   const visibleGroups = SECTION_GROUPS.map((group) => ({
     ...group,
@@ -329,9 +372,9 @@ export default function AdminLayout({
         </div>
         <ListBox
           aria-label="Console sections"
+          className="px-3 pb-2"
           selectionMode="none"
           onAction={(key) => router.push(String(key))}
-          className="px-3 pb-2"
         >
           {visibleGroups.map((group) => (
             <ListBox.Section key={group.label}>
@@ -340,12 +383,13 @@ export default function AdminLayout({
               </Header>
               {group.sections.map((section) => {
                 const active = isActiveSection(pathname, section.href);
+
                 return (
                   <ListBox.Item
                     key={section.href}
+                    className={`rounded-xl ${active ? "bg-primary/10 font-medium text-primary" : ""}`}
                     id={section.href}
                     textValue={section.label}
-                    className={`rounded-xl ${active ? "bg-primary/10 font-medium text-primary" : ""}`}
                   >
                     <section.Icon aria-hidden className="size-4 shrink-0" />
                     <Label>{section.label}</Label>
@@ -363,9 +407,9 @@ export default function AdminLayout({
           >
             <ListBox.Item
               key="/dashboard"
+              className="rounded-xl"
               id="/dashboard"
               textValue="Back to Dashboard"
-              className="rounded-xl"
             >
               <ArrowLeft aria-hidden className="size-4 shrink-0" />
               <Label>Back to Dashboard</Label>
@@ -387,17 +431,21 @@ export default function AdminLayout({
           <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Console{currentSection ? ` · ${currentSection.label}` : ""}
           </p>
-          <nav aria-label="Admin sections" className="flex gap-2 overflow-x-auto px-3 pb-3">
+          <nav
+            aria-label="Admin sections"
+            className="flex gap-2 overflow-x-auto px-3 pb-3"
+          >
             {visibleSections.map((section) => {
               const active = isActiveSection(pathname, section.href);
+
               return (
                 <Button
                   key={section.href}
+                  aria-current={active ? "page" : undefined}
+                  className="shrink-0 rounded-full"
                   size="sm"
                   variant={active ? "primary" : "secondary"}
                   onPress={() => router.push(section.href)}
-                  aria-current={active ? "page" : undefined}
-                  className="shrink-0 rounded-full"
                 >
                   <section.Icon aria-hidden className="size-3.5 shrink-0" />
                   {section.label}
@@ -411,11 +459,13 @@ export default function AdminLayout({
             of rendering an empty console whose every screen 403s. */}
         {bootstrapOnly && visibleSections.length === 0 && (
           <div className="m-4 md:m-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-            <h2 className="font-semibold text-amber-200">Finish the admin setup</h2>
+            <h2 className="font-semibold text-amber-200">
+              Finish the admin setup
+            </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Your account is recognised as a bootstrap administrator, but it has
-              no governance role yet, so the admin APIs will refuse it. Create one
-              with the bootstrap script, then reload:
+              Your account is recognised as a bootstrap administrator, but it
+              has no governance role yet, so the admin APIs will refuse it.
+              Create one with the bootstrap script, then reload:
             </p>
             <code className="block mt-3 text-xs font-mono bg-black/30 rounded-lg p-3 overflow-x-auto">
               npm run grant-admin -- you@example.com --role admin

@@ -1,31 +1,25 @@
 // app/admin/departments/page.tsx
 "use client";
 
+import type { Department, UserDepartment, Profile } from "@/lib/types";
+
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   PlusIcon,
   EditIcon,
   TrashIcon,
-  CheckIcon,
-  XIcon,
   UsersIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from "lucide-react";
-
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import MemberAvatar from "@/components/MemberAvatar";
 import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   Input,
-  Label,
   ListBox,
   Modal,
   ModalBackdrop,
@@ -40,7 +34,11 @@ import {
   Spinner,
   useOverlayState,
 } from "@heroui/react";
-import type { Department, UserDepartment, Profile } from "@/lib/types";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import MemberAvatar from "@/components/MemberAvatar";
+import { useAuth } from "@/context/AuthContext";
+import { logError } from "@/lib/logger";
 
 const CATEGORY_COLORS: Record<string, string> = {
   technical: "bg-accent/10 text-accent",
@@ -66,19 +64,26 @@ export default function AdminDepartmentsPage() {
 
   // Member view state
   const [expandedDept, setExpandedDept] = useState<string | null>(null);
-  const [deptMembers, setDeptMembers] = useState<Record<string, (UserDepartment & { profile?: Profile | null })[]>>({});
+  const [deptMembers, setDeptMembers] = useState<
+    Record<string, (UserDepartment & { profile?: Profile | null })[]>
+  >({});
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [loadingMembers, setLoadingMembers] = useState<string | null>(null);
   const [deletingDeptId, setDeletingDeptId] = useState<string | null>(null);
   const [addingMemberDept, setAddingMemberDept] = useState<string | null>(null);
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
-  const [addMemberForm, setAddMemberForm] = useState({ userId: "", role: "member" });
+  const [addMemberForm, setAddMemberForm] = useState({
+    userId: "",
+    role: "member",
+  });
 
   // Member counts
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
 
   // Form state
-  const [formData, setFormData] = useState<Omit<Department, "$id" | "$createdAt" | "$updatedAt">>({
+  const [formData, setFormData] = useState<
+    Omit<Department, "$id" | "$createdAt" | "$updatedAt">
+  >({
     name: "",
     slug: "",
     description: "",
@@ -100,18 +105,23 @@ export default function AdminDepartmentsPage() {
 
   const loadDepartments = async () => {
     try {
-      const response = await fetch("/api/admin/departments", { credentials: "include" });
+      const response = await fetch("/api/admin/departments", {
+        credentials: "include",
+      });
       const payload = (await response.json()) as {
         departments?: Department[];
         memberCounts?: Record<string, number>;
         error?: string;
       };
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to load departments"));
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to load departments"));
       setDepartments(payload.departments ?? []);
       setMemberCounts(payload.memberCounts ?? {});
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error loading departments:", message);
+
+      logError("Error loading departments:", message);
       toast.error(message || "Failed to load departments");
     } finally {
       setLoading(false);
@@ -126,6 +136,7 @@ export default function AdminDepartmentsPage() {
       if (!formData.name.trim()) {
         toast.error("Department name is required");
         setSubmitting(false);
+
         return;
       }
 
@@ -135,9 +146,13 @@ export default function AdminDepartmentsPage() {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
+
       if (!slug) {
-        toast.error("Department name must contain at least one letter or number");
+        toast.error(
+          "Department name must contain at least one letter or number",
+        );
         setSubmitting(false);
+
         return;
       }
 
@@ -151,8 +166,12 @@ export default function AdminDepartmentsPage() {
           editingDept ? { departmentId: editingDept.$id, ...payload } : payload,
         ),
       });
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(result, "Failed to save department"));
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(result, "Failed to save department"));
 
       if (editingDept) {
         toast.success("Department updated successfully!");
@@ -164,7 +183,8 @@ export default function AdminDepartmentsPage() {
       await loadDepartments();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error saving department:", message);
+
+      logError("Error saving department:", message);
       toast.error(message || "Failed to save department");
     } finally {
       setSubmitting(false);
@@ -193,23 +213,31 @@ export default function AdminDepartmentsPage() {
     // so the admin knows reactivation via Edit is possible.
     if (
       !confirm(
-        "Deactivate this department? Members keep their history and it can be reactivated via Edit."
+        "Deactivate this department? Members keep their history and it can be reactivated via Edit.",
       )
     )
       return;
     setDeletingDeptId(deptId);
     try {
-      const response = await fetch(`/api/admin/departments?departmentId=${encodeURIComponent(deptId)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(result, "Failed to delete department"));
+      const response = await fetch(
+        `/api/admin/departments?departmentId=${encodeURIComponent(deptId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(result, "Failed to delete department"));
       toast.success("Department deactivated. Reactivate it via Edit.");
       await loadDepartments();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error deleting department:", message);
+
+      logError("Error deleting department:", message);
       toast.error(message || "Failed to delete department");
     } finally {
       setDeletingDeptId(null);
@@ -219,6 +247,7 @@ export default function AdminDepartmentsPage() {
   const handleToggleMembers = async (dept: Department) => {
     if (expandedDept === dept.$id) {
       setExpandedDept(null);
+
       return;
     }
 
@@ -228,16 +257,32 @@ export default function AdminDepartmentsPage() {
     if (!deptMembers[dept.$id!]) {
       setLoadingMembers(dept.$id!);
       try {
-        const response = await fetch(`/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`, {
-          credentials: "include",
-        });
-        const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
-        if (!response.ok) throw new Error(readApiError(payload, "Failed to load department members"));
-        setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
-        if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
+        const response = await fetch(
+          `/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`,
+          {
+            credentials: "include",
+          },
+        );
+        const payload = (await response.json()) as {
+          members?: Array<UserDepartment & { profile?: Profile | null }>;
+          accountNames?: Record<string, string>;
+          error?: string;
+        };
+
+        if (!response.ok)
+          throw new Error(
+            readApiError(payload, "Failed to load department members"),
+          );
+        setDeptMembers((prev) => ({
+          ...prev,
+          [dept.$id!]: payload.members ?? [],
+        }));
+        if (payload.accountNames)
+          setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
       } catch (error) {
         const message = getErrorMessage(error);
-        console.error("Error loading members:", message);
+
+        logError("Error loading members:", message);
         toast.error(message || "Failed to load department members");
       } finally {
         setLoadingMembers(null);
@@ -248,6 +293,7 @@ export default function AdminDepartmentsPage() {
   const handleAddMember = async (deptId: string) => {
     if (!addMemberForm.userId.trim()) {
       toast.error("Enter the member's user ID");
+
       return;
     }
     setAddingMemberDept(deptId);
@@ -256,25 +302,42 @@ export default function AdminDepartmentsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ userId: addMemberForm.userId.trim(), departmentId: deptId, role: addMemberForm.role }),
+        body: JSON.stringify({
+          userId: addMemberForm.userId.trim(),
+          departmentId: deptId,
+          role: addMemberForm.role,
+        }),
       });
-      const payload = (await response.json().catch(() => null)) as { reactivated?: boolean; error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        reactivated?: boolean;
+        error?: string;
+      } | null;
+
       // 404 (unknown department) and 409 (already assigned) carry the reason.
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to add member"));
-      toast.success(payload?.reactivated ? "Member reinstated in department" : "Member added to department");
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to add member"));
+      toast.success(
+        payload?.reactivated
+          ? "Member reinstated in department"
+          : "Member added to department",
+      );
       setAddMemberForm({ userId: "", role: "member" });
       // Refresh the cached roster for this department.
       setDeptMembers((prev) => {
         const next = { ...prev };
+
         delete next[deptId];
+
         return next;
       });
       const dept = departments.find((d) => d.$id === deptId);
+
       if (dept) await handleToggleMembersRefresh(dept);
       await loadDepartments();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error adding member:", message);
+
+      logError("Error adding member:", message);
       toast.error(message || "Failed to add member");
     } finally {
       setAddingMemberDept(null);
@@ -284,16 +347,32 @@ export default function AdminDepartmentsPage() {
   const handleToggleMembersRefresh = async (dept: Department) => {
     setLoadingMembers(dept.$id!);
     try {
-      const response = await fetch(`/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`, {
-        credentials: "include",
-      });
-      const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to load department members"));
-      setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
-      if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
+      const response = await fetch(
+        `/api/admin/departments/members?departmentId=${encodeURIComponent(dept.$id!)}`,
+        {
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json()) as {
+        members?: Array<UserDepartment & { profile?: Profile | null }>;
+        accountNames?: Record<string, string>;
+        error?: string;
+      };
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "Failed to load department members"),
+        );
+      setDeptMembers((prev) => ({
+        ...prev,
+        [dept.$id!]: payload.members ?? [],
+      }));
+      if (payload.accountNames)
+        setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error loading members:", message);
+
+      logError("Error loading members:", message);
       toast.error(message || "Failed to load department members");
     } finally {
       setLoadingMembers(null);
@@ -302,24 +381,40 @@ export default function AdminDepartmentsPage() {
 
   const handleRemoveMember = async (deptId: string, userId: string) => {
     const name = memberNames[userId] || userId;
-    if (!confirm(`Remove ${name} from this department? Their history is kept and they can be re-added.`)) return;
+
+    if (
+      !confirm(
+        `Remove ${name} from this department? Their history is kept and they can be re-added.`,
+      )
+    )
+      return;
     setRemovingUserId(userId);
     try {
-      const response = await fetch(`/api/admin/departments/members?${new URLSearchParams({ userId, departmentId: deptId })}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to remove member"));
+      const response = await fetch(
+        `/api/admin/departments/members?${new URLSearchParams({ userId, departmentId: deptId })}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to remove member"));
       toast.success(`${name} removed from department`);
       setDeptMembers((prev) => ({
         ...prev,
-        [deptId]: (prev[deptId] ?? []).filter((member) => member.userId !== userId),
+        [deptId]: (prev[deptId] ?? []).filter(
+          (member) => member.userId !== userId,
+        ),
       }));
       await loadDepartments();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error removing member:", message);
+
+      logError("Error removing member:", message);
       toast.error(message || "Failed to remove member");
     } finally {
       setRemovingUserId(null);
@@ -345,7 +440,11 @@ export default function AdminDepartmentsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Loading departments">
+      <div
+        aria-label="Loading departments"
+        className="flex items-center justify-center min-h-screen"
+        role="status"
+      >
         <div className="text-center">
           <Spinner size="lg" />
           <p className="mt-4">Loading departments...</p>
@@ -366,11 +465,7 @@ export default function AdminDepartmentsPage() {
             Manage club departments and their members
           </p>
         </div>
-        <Button
-          onPress={open}
-          className="bg-primary"
-          size="lg"
-        >
+        <Button className="bg-primary" size="lg" onPress={open}>
           <PlusIcon className="w-5 h-5" />
           <span className="ml-2">Add Department</span>
         </Button>
@@ -383,7 +478,9 @@ export default function AdminDepartmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Departments</p>
-                <p className="text-2xl font-bold tabular-nums">{departments.length}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {departments.length}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
                 <UsersIcon className="w-6 h-6 text-accent" />
@@ -430,7 +527,10 @@ export default function AdminDepartmentsPage() {
               <div>
                 <p className="text-sm text-default-500">Operations</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  {departments.filter((d) => d.category === "operations").length}
+                  {
+                    departments.filter((d) => d.category === "operations")
+                      .length
+                  }
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
@@ -475,11 +575,14 @@ export default function AdminDepartmentsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-lg">{dept.name}</h3>
-                        <Chip size="sm" className={CATEGORY_COLORS[dept.category]}>
+                        <Chip
+                          className={CATEGORY_COLORS[dept.category]}
+                          size="sm"
+                        >
                           {dept.category}
                         </Chip>
                         {!dept.isActive && (
-                          <Chip size="sm" className="bg-danger/10 text-danger">
+                          <Chip className="bg-danger/10 text-danger" size="sm">
                             Inactive
                           </Chip>
                         )}
@@ -493,8 +596,8 @@ export default function AdminDepartmentsPage() {
 
                     {/* Member Count */}
                     <button
-                      onClick={() => handleToggleMembers(dept)}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-default-100 hover:bg-default-200 transition-colors cursor-pointer"
+                      onClick={() => handleToggleMembers(dept)}
                     >
                       <UsersIcon className="w-4 h-4 text-default-500" />
                       <span className="text-sm font-semibold tabular-nums">
@@ -510,18 +613,18 @@ export default function AdminDepartmentsPage() {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <Button
+                        isIconOnly
                         size="sm"
                         variant="primary"
-                        isIconOnly
                         onPress={() => handleEdit(dept)}
                       >
                         <EditIcon className="w-4 h-4" />
                       </Button>
                       <Button
-                        size="sm"
-                        variant="danger-soft"
                         isIconOnly
                         isPending={deletingDeptId === dept.$id}
+                        size="sm"
+                        variant="danger-soft"
                         onPress={() => handleDelete(dept.$id!)}
                       >
                         <TrashIcon className="w-4 h-4" />
@@ -537,19 +640,32 @@ export default function AdminDepartmentsPage() {
                       </h4>
                       <form
                         className="flex flex-col sm:flex-row gap-2 mb-4"
-                        onSubmit={(e) => { e.preventDefault(); void handleAddMember(dept.$id!); }}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          void handleAddMember(dept.$id!);
+                        }}
                       >
                         <Input
+                          aria-label="User ID to add to department"
                           placeholder="User ID to add"
                           value={addMemberForm.userId}
-                          onChange={(e: any) => setAddMemberForm({ ...addMemberForm, userId: e.target.value })}
-                          aria-label="User ID to add to department"
+                          onChange={(e: any) =>
+                            setAddMemberForm({
+                              ...addMemberForm,
+                              userId: e.target.value,
+                            })
+                          }
                         />
                         <Select
-                          fullWidth={false}
                           aria-label="Role for new member"
+                          fullWidth={false}
                           value={addMemberForm.role}
-                          onChange={(value) => setAddMemberForm({ ...addMemberForm, role: String(value ?? "member") })}
+                          onChange={(value) =>
+                            setAddMemberForm({
+                              ...addMemberForm,
+                              role: String(value ?? "member"),
+                            })
+                          }
                         >
                           <Select.Trigger>
                             <Select.Value />
@@ -561,7 +677,10 @@ export default function AdminDepartmentsPage() {
                                 Member
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
-                              <ListBox.Item id="core_member" textValue="Core member">
+                              <ListBox.Item
+                                id="core_member"
+                                textValue="Core member"
+                              >
                                 Core member
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
@@ -572,12 +691,21 @@ export default function AdminDepartmentsPage() {
                             </ListBox>
                           </Select.Popover>
                         </Select>
-                        <Button type="submit" size="sm" variant="primary" isPending={addingMemberDept === dept.$id}>
+                        <Button
+                          isPending={addingMemberDept === dept.$id}
+                          size="sm"
+                          type="submit"
+                          variant="primary"
+                        >
                           Add
                         </Button>
                       </form>
                       {loadingMembers === dept.$id ? (
-                        <div className="flex items-center gap-2 py-4" role="status" aria-label="Loading members">
+                        <div
+                          aria-label="Loading members"
+                          className="flex items-center gap-2 py-4"
+                          role="status"
+                        >
                           <Spinner size="lg" />
                           <span className="text-sm text-default-500">
                             Loading members...
@@ -596,42 +724,55 @@ export default function AdminDepartmentsPage() {
                             >
                               <div className="flex items-center gap-3">
                                 <MemberAvatar
-                                  src={member.profile?.avatar}
-                                  name={memberNames[member.userId] || member.profile?.urn || member.userId}
                                   className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                                  name={
+                                    memberNames[member.userId] ||
+                                    member.profile?.urn ||
+                                    member.userId
+                                  }
+                                  src={member.profile?.avatar}
                                 />
                                 <div>
                                   <p className="text-sm font-medium">
-                                    {memberNames[member.userId] || member.profile?.urn || member.userId}
+                                    {memberNames[member.userId] ||
+                                      member.profile?.urn ||
+                                      member.userId}
                                   </p>
                                   {(() => {
                                     const sub = [
-                                      memberNames[member.userId] ? member.profile?.urn : null,
+                                      memberNames[member.userId]
+                                        ? member.profile?.urn
+                                        : null,
                                       member.profile?.branch,
                                     ].filter(Boolean);
+
                                     return sub.length > 0 ? (
-                                      <p className="text-xs text-default-400">{sub.join(" · ")}</p>
+                                      <p className="text-xs text-default-400">
+                                        {sub.join(" · ")}
+                                      </p>
                                     ) : null;
                                   })()}
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Chip
-                                  size="sm"
                                   className={ROLE_BADGES[member.role]}
+                                  size="sm"
                                 >
                                   {member.role.replace("_", " ")}
                                 </Chip>
                                 <span className="text-xs text-default-400">
                                   {new Date(
-                                    member.assignedAt
+                                    member.assignedAt,
                                   ).toLocaleDateString()}
                                 </span>
                                 <Button
+                                  isPending={removingUserId === member.userId}
                                   size="sm"
                                   variant="danger-soft"
-                                  isPending={removingUserId === member.userId}
-                                  onPress={() => handleRemoveMember(dept.$id!, member.userId)}
+                                  onPress={() =>
+                                    handleRemoveMember(dept.$id!, member.userId)
+                                  }
                                 >
                                   Remove
                                 </Button>
@@ -659,7 +800,7 @@ export default function AdminDepartmentsPage() {
         >
           <ModalContainer>
             <ModalDialog>
-              {({ close: dialogClose }: { close: () => void }) => (
+              {() => (
                 <form onSubmit={handleSubmit}>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                     <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -674,26 +815,33 @@ export default function AdminDepartmentsPage() {
 
                   <ModalBody className="py-6 space-y-5">
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Department Name</label>
+                      <label className="text-sm font-medium mb-1 block">
+                        Department Name
+                      </label>
                       <Input
+                        required
                         placeholder="e.g., Web Development"
                         value={formData.name}
                         onChange={(e: any) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
-                        required
                       />
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Description</label>
+                      <label className="text-sm font-medium mb-1 block">
+                        Description
+                      </label>
                       <TextArea
                         placeholder="Brief description of the department..."
+                        rows={3}
                         value={formData.description}
                         onChange={(e: any) =>
-                          setFormData({ ...formData, description: e.target.value })
+                          setFormData({
+                            ...formData,
+                            description: e.target.value,
+                          })
                         }
-                        rows={3}
                       />
                     </div>
 
@@ -705,7 +853,9 @@ export default function AdminDepartmentsPage() {
                         onChange={(value) =>
                           setFormData({
                             ...formData,
-                            category: String(value ?? "technical") as Department["category"],
+                            category: String(
+                              value ?? "technical",
+                            ) as Department["category"],
                           })
                         }
                       >
@@ -723,7 +873,10 @@ export default function AdminDepartmentsPage() {
                               Content
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
-                            <ListBox.Item id="operations" textValue="Operations">
+                            <ListBox.Item
+                              id="operations"
+                              textValue="Operations"
+                            >
                               Operations
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
@@ -734,19 +887,21 @@ export default function AdminDepartmentsPage() {
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium">Color</label>
                         <input
+                          className="w-10 h-10 rounded-lg border border-default-300 cursor-pointer"
                           type="color"
                           value={formData.color || "#6366f1"}
                           onChange={(e) =>
                             setFormData({ ...formData, color: e.target.value })
                           }
-                          className="w-10 h-10 rounded-lg border border-default-300 cursor-pointer"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Icon</label>
+                        <label className="text-sm font-medium mb-1 block">
+                          Icon
+                        </label>
                         <Input
                           placeholder="Emoji or text"
                           value={formData.icon}
@@ -757,10 +912,12 @@ export default function AdminDepartmentsPage() {
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Display Order</label>
+                        <label className="text-sm font-medium mb-1 block">
+                          Display Order
+                        </label>
                         <Input
-                          type="number"
                           placeholder="0"
+                          type="number"
                           value={formData.displayOrder?.toString()}
                           onChange={(e: any) =>
                             setFormData({
@@ -773,7 +930,9 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Parent Department (optional)</label>
+                      <label className="text-sm font-medium mb-1 block">
+                        Parent Department (optional)
+                      </label>
                       <Select
                         fullWidth
                         aria-label="Parent department"
@@ -798,7 +957,11 @@ export default function AdminDepartmentsPage() {
                             {departments
                               .filter((dept) => dept.$id !== editingDept?.$id)
                               .map((dept) => (
-                                <ListBox.Item key={dept.$id} id={dept.$id!} textValue={dept.name}>
+                                <ListBox.Item
+                                  key={dept.$id}
+                                  id={dept.$id!}
+                                  textValue={dept.name}
+                                >
                                   {dept.name}
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
@@ -809,7 +972,9 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Head User ID (optional)</label>
+                      <label className="text-sm font-medium mb-1 block">
+                        Head User ID (optional)
+                      </label>
                       <Input
                         placeholder="User ID of the department head"
                         value={formData.headId || ""}
@@ -839,16 +1004,16 @@ export default function AdminDepartmentsPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="secondary"
                       className="w-full sm:w-auto"
+                      variant="secondary"
                       onPress={resetForm}
                     >
                       Cancel
                     </Button>
                     <Button
-                      type="submit"
-                      isPending={submitting}
                       className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                      isPending={submitting}
+                      type="submit"
                     >
                       {editingDept ? "Update Department" : "Create Department"}
                     </Button>

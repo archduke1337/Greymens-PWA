@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import { toast } from "sonner";
 import type { Application, Profile, Department } from "@/lib/types";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
-  UsersIcon,
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -39,7 +37,9 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader, TableContent, TableScrollContainer,
+  TableHeader,
+  TableContent,
+  TableScrollContainer,
   TableRow,
   Tabs,
   Tab,
@@ -52,7 +52,11 @@ import {
   Spinner,
   useOverlayState,
 } from "@heroui/react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
+import { logError } from "@/lib/logger";
 
 type TabKey = "pending" | "approved" | "rejected";
 
@@ -64,7 +68,11 @@ export default function AdminMembershipPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
+  const [counts, setCounts] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("pending");
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,8 +99,10 @@ export default function AdminMembershipPage() {
    */
   const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/membership", { cache: "no-store" });
-      const payload = await response.json().catch(() => null) as {
+      const response = await fetch("/api/admin/membership", {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
         applications?: Application[];
         profiles?: Profile[];
         departments?: Department[];
@@ -100,7 +110,11 @@ export default function AdminMembershipPage() {
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to load membership data"));
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "Failed to load membership data"),
+        );
 
       setApplications(payload?.applications ?? []);
       setDepartments(payload?.departments ?? []);
@@ -108,10 +122,12 @@ export default function AdminMembershipPage() {
       setCounts(payload?.counts ?? { pending: 0, approved: 0, rejected: 0 });
 
       const profileMap: Record<string, Profile> = {};
-      for (const profile of payload?.profiles ?? []) profileMap[profile.userId] = profile;
+
+      for (const profile of payload?.profiles ?? [])
+        profileMap[profile.userId] = profile;
       setProfiles(profileMap);
     } catch (error) {
-      console.error("Error loading membership data:", error);
+      logError("Error loading membership data:", error);
       toast.error(getErrorMessage(error) || "Failed to load membership data");
     } finally {
       setLoading(false);
@@ -122,6 +138,7 @@ export default function AdminMembershipPage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+
       return;
     }
     loadData();
@@ -129,10 +146,12 @@ export default function AdminMembershipPage() {
 
   const getFilteredApps = () => {
     const q = searchQuery.trim().toLowerCase();
+
     return applications.filter((a) => {
       if (a.status !== activeTab) return false;
       if (!q) return true;
       const profile = profiles[a.userId];
+
       return (
         accountNames[a.userId]?.toLowerCase().includes(q) ||
         profile?.urn?.toLowerCase().includes(q) ||
@@ -144,6 +163,7 @@ export default function AdminMembershipPage() {
 
   const getDepartmentNames = (ids?: string[]) => {
     if (!ids || ids.length === 0) return [];
+
     return ids
       .map((id) => departments.find((d) => d.$id === id)?.name)
       .filter(Boolean) as string[];
@@ -167,6 +187,7 @@ export default function AdminMembershipPage() {
 
     if (actionType === "reject" && !rejectReason.trim()) {
       toast.error("Please provide a rejection reason");
+
       return;
     }
 
@@ -178,17 +199,25 @@ export default function AdminMembershipPage() {
         body: JSON.stringify(
           actionType === "approve"
             ? { action: "approve", applicationId: actionTarget.$id }
-            : { action: "reject", applicationId: actionTarget.$id, reason: rejectReason.trim() }
+            : {
+                action: "reject",
+                applicationId: actionTarget.$id,
+                reason: rejectReason.trim(),
+              },
         ),
       });
-      const payload = await response.json().catch(() => null) as {
+      const payload = (await response.json().catch(() => null)) as {
         assignedDepartments?: number;
         membershipCreated?: boolean;
         alreadyApproved?: boolean;
         alreadyRejected?: boolean;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Action failed. Please try again."));
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "Action failed. Please try again."),
+        );
 
       if (actionType === "approve") {
         // A double-submit can win the race after a colleague already approved:
@@ -196,24 +225,35 @@ export default function AdminMembershipPage() {
         // fresh approval.
         if (payload?.alreadyApproved) {
           toast.info("Already approved.", {
-            description: "This application was approved earlier. No changes made.",
+            description:
+              "This application was approved earlier. No changes made.",
           });
         } else {
           const assigned = payload?.assignedDepartments ?? 0;
+
           toast.success("Application approved.", {
             description: [
-              payload?.membershipCreated ? "Membership created" : "Existing membership reactivated",
-              assigned > 0 ? `${assigned} department ${assigned === 1 ? "assignment" : "assignments"} added` : null,
+              payload?.membershipCreated
+                ? "Membership created"
+                : "Existing membership reactivated",
+              assigned > 0
+                ? `${assigned} department ${assigned === 1 ? "assignment" : "assignments"} added`
+                : null,
               "Applicant notified",
-            ].filter(Boolean).join(" \u00b7 "),
+            ]
+              .filter(Boolean)
+              .join(" \u00b7 "),
           });
         }
       } else if (payload?.alreadyRejected) {
         toast.info("Already rejected.", {
-          description: "This application was rejected earlier. No changes made.",
+          description:
+            "This application was rejected earlier. No changes made.",
         });
       } else {
-        toast.success("Application rejected.", { description: "The applicant has been notified." });
+        toast.success("Application rejected.", {
+          description: "The applicant has been notified.",
+        });
       }
 
       close();
@@ -221,7 +261,8 @@ export default function AdminMembershipPage() {
       await loadData();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Action failed:", message);
+
+      logError("Action failed:", message);
       toast.error(message || "Action failed. Please try again.");
     } finally {
       setProcessing(false);
@@ -231,7 +272,11 @@ export default function AdminMembershipPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Loading membership queue">
+        <div
+          aria-label="Loading membership queue"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Loading membership queue...</p>
         </div>
@@ -260,7 +305,9 @@ export default function AdminMembershipPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Pending</p>
-                <p className="text-2xl font-bold tabular-nums text-warning">{counts.pending}</p>
+                <p className="text-2xl font-bold tabular-nums text-warning">
+                  {counts.pending}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
                 <ClockIcon className="w-6 h-6 text-warning" />
@@ -274,7 +321,9 @@ export default function AdminMembershipPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Approved</p>
-                <p className="text-2xl font-bold tabular-nums text-success">{counts.approved}</p>
+                <p className="text-2xl font-bold tabular-nums text-success">
+                  {counts.approved}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircleIcon className="w-6 h-6 text-success" />
@@ -288,7 +337,9 @@ export default function AdminMembershipPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Rejected</p>
-                <p className="text-2xl font-bold tabular-nums text-danger">{counts.rejected}</p>
+                <p className="text-2xl font-bold tabular-nums text-danger">
+                  {counts.rejected}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
                 <XCircleIcon className="w-6 h-6 text-danger" />
@@ -302,7 +353,7 @@ export default function AdminMembershipPage() {
       <Card>
         <CardContent className="p-0">
           <div className="px-4 pt-4">
-            <label htmlFor="membership-search" className="sr-only">
+            <label className="sr-only" htmlFor="membership-search">
               Search applications by name, URN, branch, or user ID
             </label>
             <Input
@@ -313,9 +364,9 @@ export default function AdminMembershipPage() {
             />
           </div>
           <Tabs
+            aria-label="Membership application status"
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key as TabKey)}
-            aria-label="Membership application status"
           >
             <TabListContainer>
               <TabList>
@@ -324,7 +375,7 @@ export default function AdminMembershipPage() {
                     <ClockIcon className="w-4 h-4" />
                     <span>Pending</span>
                     {counts.pending > 0 && (
-                      <Chip size="sm" color="warning" variant="soft">
+                      <Chip color="warning" size="sm" variant="soft">
                         {counts.pending}
                       </Chip>
                     )}
@@ -354,7 +405,9 @@ export default function AdminMembershipPage() {
                   <div className="text-center py-12">
                     <ClockIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
                     <p className="text-default-500 text-lg font-medium">
-                      {searchQuery.trim() ? "No matching applications" : "No pending applications"}
+                      {searchQuery.trim()
+                        ? "No matching applications"
+                        : "No pending applications"}
                     </p>
                     <p className="text-default-400 text-sm mt-1">
                       {searchQuery.trim()
@@ -367,154 +420,208 @@ export default function AdminMembershipPage() {
                     <Table>
                       <TableScrollContainer>
                         <TableContent aria-label="Pending applications table">
-                      <TableHeader>
-                        <TableColumn>APPLICANT</TableColumn>
-                        <TableColumn className="hidden md:table-cell">SUBMITTED</TableColumn>
-                        <TableColumn className="hidden lg:table-cell">DEPARTMENTS</TableColumn>
-                        <TableColumn>ACTIONS</TableColumn>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredApps.map((app) => {
-                          const profile = profiles[app.userId];
-                          const deptNames = getDepartmentNames(app.preferredDepartments);
-                          const isExpanded = expandedId === app.$id;
+                          <TableHeader>
+                            <TableColumn>APPLICANT</TableColumn>
+                            <TableColumn className="hidden md:table-cell">
+                              SUBMITTED
+                            </TableColumn>
+                            <TableColumn className="hidden lg:table-cell">
+                              DEPARTMENTS
+                            </TableColumn>
+                            <TableColumn>ACTIONS</TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredApps.map((app) => {
+                              const profile = profiles[app.userId];
+                              const deptNames = getDepartmentNames(
+                                app.preferredDepartments,
+                              );
+                              const isExpanded = expandedId === app.$id;
 
-                          return (
-                            <TableRow key={app.$id}>
-                              <TableCell>
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10 shrink-0">
-                                      <AvatarImage
-                                        src={
-                                          profile?.avatar ||
-                                          `https://ui-avatars.com/api/?name=${encodeURIComponent(accountNames[app.userId] || profile?.urn || app.userId)}&background=7c3aed&color=fff`
+                              return (
+                                <TableRow key={app.$id}>
+                                  <TableCell>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10 shrink-0">
+                                          <AvatarImage
+                                            alt={
+                                              accountNames[app.userId] ||
+                                              profile?.urn ||
+                                              "Applicant"
+                                            }
+                                            src={
+                                              profile?.avatar ||
+                                              `https://ui-avatars.com/api/?name=${encodeURIComponent(accountNames[app.userId] || profile?.urn || app.userId)}&background=7c3aed&color=fff`
+                                            }
+                                          />
+                                          <AvatarFallback>
+                                            {(
+                                              accountNames[app.userId] ||
+                                              profile?.urn ||
+                                              "A"
+                                            ).charAt(0)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="min-w-0">
+                                          <p className="font-semibold text-sm truncate">
+                                            {accountNames[app.userId] ||
+                                              profile?.urn ||
+                                              app.userId.slice(0, 8)}
+                                          </p>
+                                          <p className="text-xs text-default-400 truncate">
+                                            {profile?.branch ||
+                                              profile?.program ||
+                                              "No program info"}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Mobile-only details */}
+                                      <div className="md:hidden space-y-1">
+                                        <p className="text-xs text-default-400 flex items-center gap-1">
+                                          <CalendarIcon className="w-3 h-3" />
+                                          {new Date(
+                                            app.submittedAt,
+                                          ).toLocaleDateString()}
+                                        </p>
+                                        {deptNames.length > 0 && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {deptNames.map((name) => (
+                                              <Chip
+                                                key={name}
+                                                className="text-xs"
+                                                color="accent"
+                                                size="sm"
+                                                variant="soft"
+                                              >
+                                                {name}
+                                              </Chip>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <Button
+                                        className="p-0 h-auto text-xs text-default-400 md:hidden"
+                                        size="sm"
+                                        variant="ghost"
+                                        onPress={() =>
+                                          setExpandedId(
+                                            isExpanded ? null : app.$id!,
+                                          )
                                         }
-                                        alt={accountNames[app.userId] || profile?.urn || "Applicant"}
-                                      />
-                                      <AvatarFallback>
-                                        {(accountNames[app.userId] || profile?.urn || "A").charAt(0)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="min-w-0">
-                                      <p className="font-semibold text-sm truncate">
-                                        {accountNames[app.userId] || profile?.urn || app.userId.slice(0, 8)}
+                                      >
+                                        {isExpanded ? "Less" : "More"} details
+                                        {isExpanded ? (
+                                          <ChevronUpIcon className="w-3 h-3 ml-1" />
+                                        ) : (
+                                          <ChevronDownIcon className="w-3 h-3 ml-1" />
+                                        )}
+                                      </Button>
+
+                                      {isExpanded && (
+                                        <div className="md:hidden p-3 bg-surface-secondary rounded-xl text-xs space-y-1">
+                                          <p className="flex items-center gap-1">
+                                            <MailIcon className="w-3 h-3" />
+                                            {accountNames[app.userId] ||
+                                              app.userId}
+                                          </p>
+                                          <p className="flex items-center gap-1">
+                                            <Building2Icon className="w-3 h-3" />
+                                            {profile?.branch || "N/A"} - Year{" "}
+                                            {profile?.year || "N/A"}
+                                          </p>
+                                          <p className="flex items-center gap-1">
+                                            <ShieldCheckIcon className="w-3 h-3" />
+                                            Oath:{" "}
+                                            {app.oathAccepted
+                                              ? "Accepted"
+                                              : "Not accepted"}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TableCell>
+
+                                  <TableCell className="hidden md:table-cell">
+                                    <div className="space-y-1">
+                                      <p className="text-sm">
+                                        {new Date(
+                                          app.submittedAt,
+                                        ).toLocaleDateString()}
                                       </p>
-                                      <p className="text-xs text-default-400 truncate">
-                                        {profile?.branch || profile?.program || "No program info"}
+                                      <p className="text-xs text-default-400">
+                                        {new Date(
+                                          app.submittedAt,
+                                        ).toLocaleTimeString()}
                                       </p>
                                     </div>
-                                  </div>
+                                  </TableCell>
 
-                                  {/* Mobile-only details */}
-                                  <div className="md:hidden space-y-1">
-                                    <p className="text-xs text-default-400 flex items-center gap-1">
-                                      <CalendarIcon className="w-3 h-3" />
-                                      {new Date(app.submittedAt).toLocaleDateString()}
-                                    </p>
-                                    {deptNames.length > 0 && (
-                                      <div className="flex flex-wrap gap-1">
-                                        {deptNames.map((name) => (
-                                          <Chip key={name} size="sm" variant="soft" color="accent" className="text-xs">
+                                  <TableCell className="hidden lg:table-cell">
+                                    <div className="flex flex-wrap gap-1">
+                                      {deptNames.length > 0 ? (
+                                        deptNames.map((name) => (
+                                          <Chip
+                                            key={name}
+                                            color="accent"
+                                            size="sm"
+                                            variant="soft"
+                                          >
                                             {name}
                                           </Chip>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="p-0 h-auto text-xs text-default-400 md:hidden"
-                                    onPress={() => setExpandedId(isExpanded ? null : app.$id!)}
-                                  >
-                                    {isExpanded ? "Less" : "More"} details
-                                    {isExpanded ? (
-                                      <ChevronUpIcon className="w-3 h-3 ml-1" />
-                                    ) : (
-                                      <ChevronDownIcon className="w-3 h-3 ml-1" />
-                                    )}
-                                  </Button>
-
-                                  {isExpanded && (
-                                    <div className="md:hidden p-3 bg-surface-secondary rounded-xl text-xs space-y-1">
-                                      <p className="flex items-center gap-1">
-                                        <MailIcon className="w-3 h-3" />
-                                        {accountNames[app.userId] || app.userId}
-                                      </p>
-                                      <p className="flex items-center gap-1">
-                                        <Building2Icon className="w-3 h-3" />
-                                        {profile?.branch || "N/A"} - Year {profile?.year || "N/A"}
-                                      </p>
-                                      <p className="flex items-center gap-1">
-                                        <ShieldCheckIcon className="w-3 h-3" />
-                                        Oath: {app.oathAccepted ? "Accepted" : "Not accepted"}
-                                      </p>
+                                        ))
+                                      ) : (
+                                        <span className="text-xs text-default-400">
+                                          No preference
+                                        </span>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                              </TableCell>
+                                  </TableCell>
 
-                              <TableCell className="hidden md:table-cell">
-                                <div className="space-y-1">
-                                  <p className="text-sm">
-                                    {new Date(app.submittedAt).toLocaleDateString()}
-                                  </p>
-                                  <p className="text-xs text-default-400">
-                                    {new Date(app.submittedAt).toLocaleTimeString()}
-                                  </p>
-                                </div>
-                              </TableCell>
-
-                              <TableCell className="hidden lg:table-cell">
-                                <div className="flex flex-wrap gap-1">
-                                  {deptNames.length > 0 ? (
-                                    deptNames.map((name) => (
-                                      <Chip key={name} size="sm" variant="soft" color="accent">
-                                        {name}
-                                      </Chip>
-                                    ))
-                                  ) : (
-                                    <span className="text-xs text-default-400">No preference</span>
-                                  )}
-                                </div>
-                              </TableCell>
-
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onPress={() => {
-                                      setDetailsApp(app);
-                                      openDetails();
-                                    }}
-                                  >
-                                    Details
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onPress={() => handleOpenAction(app, "approve")}
-                                  >
-                                    <CheckCircleIcon className="w-4 h-4" />
-                                    <span className="hidden sm:inline ml-1">Approve</span>
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="danger-soft"
-                                    onPress={() => handleOpenAction(app, "reject")}
-                                  >
-                                    <XIcon className="w-4 h-4" />
-                                    <span className="hidden sm:inline ml-1">Reject</span>
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
+                                  <TableCell>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onPress={() => {
+                                          setDetailsApp(app);
+                                          openDetails();
+                                        }}
+                                      >
+                                        Details
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onPress={() =>
+                                          handleOpenAction(app, "approve")
+                                        }
+                                      >
+                                        <CheckCircleIcon className="w-4 h-4" />
+                                        <span className="hidden sm:inline ml-1">
+                                          Approve
+                                        </span>
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="danger-soft"
+                                        onPress={() =>
+                                          handleOpenAction(app, "reject")
+                                        }
+                                      >
+                                        <XIcon className="w-4 h-4" />
+                                        <span className="hidden sm:inline ml-1">
+                                          Reject
+                                        </span>
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
                         </TableContent>
                       </TableScrollContainer>
                     </Table>
@@ -530,7 +637,10 @@ export default function AdminMembershipPage() {
                   {counts.approved} approved members
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a href="/admin/membership/approved" className="text-primary hover:underline">
+                  <a
+                    className="text-primary hover:underline"
+                    href="/admin/membership/approved"
+                  >
                     View all approved members
                   </a>
                 </p>
@@ -544,7 +654,10 @@ export default function AdminMembershipPage() {
                   {counts.rejected} rejected applications
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a href="/admin/membership/rejected" className="text-primary hover:underline">
+                  <a
+                    className="text-primary hover:underline"
+                    href="/admin/membership/rejected"
+                  >
                     View all rejected applications
                   </a>
                 </p>
@@ -594,21 +707,25 @@ export default function AdminMembershipPage() {
                         <div className="flex items-center gap-3 p-3 bg-surface-secondary rounded-xl">
                           <Avatar className="h-12 w-12 shrink-0">
                             <AvatarImage
+                              alt="Applicant"
                               src={
                                 profiles[actionTarget.userId]?.avatar ||
                                 `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                  profiles[actionTarget.userId]?.urn || actionTarget.userId
+                                  profiles[actionTarget.userId]?.urn ||
+                                    actionTarget.userId,
                                 )}&background=7c3aed&color=fff`
                               }
-                              alt="Applicant"
                             />
                             <AvatarFallback>
-                              {(profiles[actionTarget.userId]?.urn || "A").charAt(0)}
+                              {(
+                                profiles[actionTarget.userId]?.urn || "A"
+                              ).charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-semibold">
-                              {profiles[actionTarget.userId]?.urn || actionTarget.userId.slice(0, 12)}
+                              {profiles[actionTarget.userId]?.urn ||
+                                actionTarget.userId.slice(0, 12)}
                             </p>
                             <p className="text-sm text-default-400">
                               {profiles[actionTarget.userId]?.branch ||
@@ -625,29 +742,38 @@ export default function AdminMembershipPage() {
                                 Preferred Departments:
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {getDepartmentNames(actionTarget.preferredDepartments).map(
-                                  (name) => (
-                                    <Chip key={name} variant="soft" color="accent">
-                                      {name}
-                                    </Chip>
-                                  )
-                                )}
+                                {getDepartmentNames(
+                                  actionTarget.preferredDepartments,
+                                ).map((name) => (
+                                  <Chip
+                                    key={name}
+                                    color="accent"
+                                    variant="soft"
+                                  >
+                                    {name}
+                                  </Chip>
+                                ))}
                               </div>
                             </div>
                           )}
 
                         {actionType === "reject" && (
                           <div>
-                            <Label htmlFor="membership-reject-reason" className="mb-2 block text-sm font-medium">
+                            <Label
+                              className="mb-2 block text-sm font-medium"
+                              htmlFor="membership-reject-reason"
+                            >
                               Rejection Reason *
                             </Label>
                             <TextArea
+                              className="w-full"
                               id="membership-reject-reason"
                               placeholder="Explain why this application is being rejected..."
-                              value={rejectReason}
-                              onChange={(e: any) => setRejectReason(e.target.value)}
                               rows={3}
-                              className="w-full"
+                              value={rejectReason}
+                              onChange={(e: any) =>
+                                setRejectReason(e.target.value)
+                              }
                             />
                           </div>
                         )}
@@ -657,22 +783,24 @@ export default function AdminMembershipPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
+                      isDisabled={processing}
                       variant="ghost"
                       onPress={() => {
                         dialogClose();
                         close();
                         setActionTarget(null);
                       }}
-                      isDisabled={processing}
                     >
                       Cancel
                     </Button>
                     <Button
+                      isPending={processing}
                       variant={actionType === "approve" ? "primary" : "danger"}
                       onPress={handleConfirmAction}
-                      isPending={processing}
                     >
-                      {actionType === "approve" ? "Confirm Approval" : "Confirm Rejection"}
+                      {actionType === "approve"
+                        ? "Confirm Approval"
+                        : "Confirm Rejection"}
                     </Button>
                   </ModalFooter>
                 </>
@@ -697,7 +825,9 @@ export default function AdminMembershipPage() {
             <ModalDialog className="sm:max-w-2xl">
               <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                 <h2 className="text-xl font-bold">
-                  {detailsApp ? accountNames[detailsApp.userId] || "Applicant details" : "Applicant details"}
+                  {detailsApp
+                    ? accountNames[detailsApp.userId] || "Applicant details"
+                    : "Applicant details"}
                 </h2>
                 <p className="text-sm text-default-500 font-normal">
                   Everything the applicant submitted
@@ -706,10 +836,12 @@ export default function AdminMembershipPage() {
               <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
                 {detailsApp && (
                   <ApplicantDetails
-                    profile={profiles[detailsApp.userId] ?? null}
-                    application={detailsApp}
                     accountName={accountNames[detailsApp.userId]}
-                    departmentNames={getDepartmentNames(detailsApp.preferredDepartments)}
+                    application={detailsApp}
+                    departmentNames={getDepartmentNames(
+                      detailsApp.preferredDepartments,
+                    )}
+                    profile={profiles[detailsApp.userId] ?? null}
                   />
                 )}
               </ModalBody>
@@ -731,4 +863,3 @@ export default function AdminMembershipPage() {
     </div>
   );
 }
-

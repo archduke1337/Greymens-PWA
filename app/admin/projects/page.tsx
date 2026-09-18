@@ -1,11 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { Project } from "@/lib/types";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
-import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, Slider, Spinner, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import {
+  PlusIcon,
+  Edit2Icon,
+  TrashIcon,
+  Loader2Icon,
+  ImageIcon,
+  StarIcon,
+  FolderIcon,
+  LightbulbIcon,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  Slider,
+  Spinner,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableContent,
+  TableScrollContainer,
+  TableRow,
+  TextArea,
+  useOverlayState,
+} from "@heroui/react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -56,19 +99,26 @@ export default function AdminProjectsPage() {
     "Feature important projects to highlight them on the homepage",
     "Use commas to separate technologies and team members for better organization",
     "Update project status regularly to keep members informed",
-    "Add demo and repository links to showcase live projects"
+    "Add demo and repository links to showcase live projects",
   ];
 
   // Fetch projects
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/admin/projects", { credentials: "include" });
-      const payload = (await response.json().catch(() => null)) as { projects?: Project[]; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load projects"));
+      const response = await fetch("/api/admin/projects", {
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        projects?: Project[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load projects"));
       setProjects(payload?.projects ?? []);
     } catch (error) {
-      console.error("Error fetching projects:", error);
+      logError("Error fetching projects:", error);
       toast.error(getErrorMessage(error) || "Failed to fetch projects");
     } finally {
       setLoading(false);
@@ -119,7 +169,9 @@ export default function AdminProjectsPage() {
       category: project.category,
       status: project.status,
       progress: project.progress,
-      technologies: Array.isArray(project.technologies) ? project.technologies.join(", ") : "",
+      technologies: Array.isArray(project.technologies)
+        ? project.technologies.join(", ")
+        : "",
       stars: project.stars,
       forks: project.forks,
       contributors: project.contributors,
@@ -127,7 +179,9 @@ export default function AdminProjectsPage() {
       isFeatured: project.isFeatured,
       demoUrl: project.demoUrl || "",
       repoUrl: project.repoUrl || "",
-      teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.join(", ") : "",
+      teamMembers: Array.isArray(project.teamMembers)
+        ? project.teamMembers.join(", ")
+        : "",
     });
     open();
   };
@@ -136,22 +190,27 @@ export default function AdminProjectsPage() {
   const validateForm = () => {
     if (!formData.title.trim()) {
       toast.error("Please enter a project title");
+
       return false;
     }
     if (!formData.description.trim()) {
       toast.error("Please enter a project description");
+
       return false;
     }
     if (!formData.image.trim()) {
       toast.error("Please enter an image URL");
+
       return false;
     }
     if (!/^https?:\/\/.+/i.test(formData.image.trim())) {
       toast.error("Image must be a valid http(s) URL");
+
       return false;
     }
     if (!formData.duration.trim()) {
       toast.error("Please enter project duration");
+
       return false;
     }
     // Number inputs yield NaN for garbage and 0 for a cleared field; the
@@ -162,17 +221,21 @@ export default function AdminProjectsPage() {
       ["forks", "Forks", 0, Number.MAX_SAFE_INTEGER],
       ["contributors", "Contributors", 0, Number.MAX_SAFE_INTEGER],
     ] as const;
+
     for (const [field, label, min, max] of numericFields) {
       const value = formData[field];
+
       if (!Number.isFinite(value) || value < min || value > max) {
         toast.error(
           max === Number.MAX_SAFE_INTEGER
             ? `${label} must be ${min} or more`
-            : `${label} must be between ${min} and ${max}`
+            : `${label} must be between ${min} and ${max}`,
         );
+
         return false;
       }
     }
+
     return true;
   };
 
@@ -192,8 +255,8 @@ export default function AdminProjectsPage() {
         progress: Number(formData.progress),
         technologies: formData.technologies
           .split(",")
-          .map(t => t.trim())
-          .filter(t => t),
+          .map((t) => t.trim())
+          .filter((t) => t),
         stars: Number(formData.stars),
         forks: Number(formData.forks),
         contributors: Number(formData.contributors),
@@ -203,9 +266,11 @@ export default function AdminProjectsPage() {
         repoUrl: formData.repoUrl.trim(),
         teamMembers: formData.teamMembers
           .split(",")
-          .map(t => t.trim())
-          .filter(t => t),
-        createdAt: isEditing ? selectedProject?.createdAt || new Date().toISOString() : new Date().toISOString(),
+          .map((t) => t.trim())
+          .filter((t) => t),
+        createdAt: isEditing
+          ? selectedProject?.createdAt || new Date().toISOString()
+          : new Date().toISOString(),
       };
 
       if (isEditing && selectedProject?.$id) {
@@ -213,10 +278,17 @@ export default function AdminProjectsPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ projectId: selectedProject.$id, ...projectData }),
+          body: JSON.stringify({
+            projectId: selectedProject.$id,
+            ...projectData,
+          }),
         });
-        const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(readApiError(payload, "Unable to update project"));
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok)
+          throw new Error(readApiError(payload, "Unable to update project"));
         toast.success("Project updated successfully!");
       } else {
         const response = await fetch("/api/admin/projects", {
@@ -225,8 +297,12 @@ export default function AdminProjectsPage() {
           credentials: "include",
           body: JSON.stringify(projectData),
         });
-        const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(readApiError(payload, "Unable to create project"));
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok)
+          throw new Error(readApiError(payload, "Unable to create project"));
         toast.success("Project created successfully!");
       }
 
@@ -235,7 +311,8 @@ export default function AdminProjectsPage() {
       resetForm();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error saving project:", message);
+
+      logError("Error saving project:", message);
       toast.error(`Failed to save project: ${message}`);
     } finally {
       setSaving(false);
@@ -244,20 +321,33 @@ export default function AdminProjectsPage() {
 
   // Delete project
   const handleDelete = async (projectId: string) => {
-    if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this project? This action cannot be undone.",
+      )
+    )
+      return;
     setDeletingId(projectId);
     try {
-      const response = await fetch(`/api/admin/projects?projectId=${encodeURIComponent(projectId)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete project"));
+      const response = await fetch(
+        `/api/admin/projects?projectId=${encodeURIComponent(projectId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to delete project"));
       toast.success("Project deleted successfully!");
       fetchProjects();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error deleting project:", message);
+
+      logError("Error deleting project:", message);
       toast.error(`Failed to delete project: ${message}`);
     } finally {
       setDeletingId(null);
@@ -266,10 +356,14 @@ export default function AdminProjectsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "success";
-      case "in-progress": return "accent";
-      case "planning": return "warning";
-      default: return "default";
+      case "completed":
+        return "success";
+      case "in-progress":
+        return "accent";
+      case "planning":
+        return "warning";
+      default:
+        return "default";
     }
   };
 
@@ -301,9 +395,14 @@ export default function AdminProjectsPage() {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {adminTips.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm text-muted">
-                      <span className="flex-shrink-0 mt-0.5">{tip.split(' ')[0]}</span>
-                      <span>{tip.split(' ').slice(1).join(' ')}</span>
+                    <div
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-muted"
+                    >
+                      <span className="flex-shrink-0 mt-0.5">
+                        {tip.split(" ")[0]}
+                      </span>
+                      <span>{tip.split(" ").slice(1).join(" ")}</span>
                     </div>
                   ))}
                 </div>
@@ -319,14 +418,17 @@ export default function AdminProjectsPage() {
             <Card>
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">Projects</h2>
+                  <h2 className="text-xl font-bold text-foreground">
+                    Projects
+                  </h2>
                   <p className="text-muted text-sm mt-1 tabular-nums">
-                    {projects.length} project{projects.length !== 1 ? 's' : ''} total
+                    {projects.length} project{projects.length !== 1 ? "s" : ""}{" "}
+                    total
                   </p>
                 </div>
                 <Button
-                  size="lg"
                   className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                  size="lg"
                   onPress={handleAdd}
                 >
                   New Project
@@ -334,8 +436,12 @@ export default function AdminProjectsPage() {
               </CardHeader>
               <CardContent className="p-6">
                 {loading ? (
-                  <div role="status" aria-label="Loading projects" className="flex flex-col items-center justify-center py-16">
-                    <Spinner size="lg" className="mb-4" />
+                  <div
+                    aria-label="Loading projects"
+                    className="flex flex-col items-center justify-center py-16"
+                    role="status"
+                  >
+                    <Spinner className="mb-4" size="lg" />
                     <p className="text-muted">Loading projects...</p>
                   </div>
                 ) : projects.length === 0 ? (
@@ -343,13 +449,16 @@ export default function AdminProjectsPage() {
                     <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
                       <FolderIcon className="w-12 h-12 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-bold text-foreground mb-2">No projects yet</h3>
+                    <h3 className="text-2xl font-bold text-foreground mb-2">
+                      No projects yet
+                    </h3>
                     <p className="text-muted mb-6 max-w-md mx-auto">
-                      Start by creating your first project to showcase your work and attract more contributors
+                      Start by creating your first project to showcase your work
+                      and attract more contributors
                     </p>
                     <Button
-                      size="lg"
                       className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                      size="lg"
                       onPress={handleAdd}
                     >
                       Create First Project
@@ -363,106 +472,142 @@ export default function AdminProjectsPage() {
                           aria-label="Projects table"
                           className="min-w-full"
                         >
-                      <TableHeader>
-                        <TableColumn className="text-sm">PROJECT</TableColumn>
-                        <TableColumn className="text-sm">CATEGORY</TableColumn>
-                        <TableColumn className="text-sm">STATUS</TableColumn>
-                        <TableColumn className="text-sm">PROGRESS</TableColumn>
-                        <TableColumn className="text-sm">FEATURED</TableColumn>
-                        <TableColumn className="text-sm">ACTIONS</TableColumn>
-                      </TableHeader>
-                      <TableBody>
-                        {projects.map((project) => (
-                          <TableRow key={project.$id} className="hover:bg-surface-secondary transition-colors">
-                            <TableCell>
-                              <div className="flex items-center gap-4">
-                                <div className="relative flex-shrink-0">
-                                  <img
-                                    src={project.image}
-                                    alt={project.title}
-                                    className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                                    onError={(event) => {
-                                      // Hide the broken image instead of swapping in a
-                                      // placeholder URL; the fallback block below the
-                                      // column already conveys "no image".
-                                      event.currentTarget.style.visibility = "hidden";
-                                    }}
-                                  />
-                                  <div aria-hidden="true" className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-background flex items-center justify-center">
-                                    <ImageIcon className="w-3 h-3 text-white" />
-                                  </div>
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-foreground text-sm truncate">{project.title}</p>
-                                  <p className="text-xs text-muted line-clamp-1 mt-1">
-                                    {project.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Chip size="sm" variant="soft">
-                                {project.category.replace('-', ' ')}
-                              </Chip>
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                size="sm"
-                                color={getStatusColor(project.status) as "success" | "accent" | "warning" | "default"}
-                                variant="soft"
+                          <TableHeader>
+                            <TableColumn className="text-sm">
+                              PROJECT
+                            </TableColumn>
+                            <TableColumn className="text-sm">
+                              CATEGORY
+                            </TableColumn>
+                            <TableColumn className="text-sm">
+                              STATUS
+                            </TableColumn>
+                            <TableColumn className="text-sm">
+                              PROGRESS
+                            </TableColumn>
+                            <TableColumn className="text-sm">
+                              FEATURED
+                            </TableColumn>
+                            <TableColumn className="text-sm">
+                              ACTIONS
+                            </TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {projects.map((project) => (
+                              <TableRow
+                                key={project.$id}
+                                className="hover:bg-surface-secondary transition-colors"
                               >
-                                {project.status.replace('-', ' ')}
-                              </Chip>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-20 bg-surface-secondary rounded-full h-2 flex-1">
-                                  <div
-                                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${project.progress}%` }}
-                                  />
-                                </div>
-                                <span className="text-sm font-medium text-muted min-w-8 tabular-nums">{project.progress}%</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {project.isFeatured ? (
-                                <Chip 
-                                  size="sm" 
-                                  variant="primary" 
-                                >
-                                  Featured
-                                </Chip>
-                              ) : (
-                                <span aria-hidden="true" className="text-muted text-sm">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="secondary"
-                                  aria-label={`Edit ${project.title}`}
-                                  onPress={() => handleEdit(project)}
-                                >
-                                  <Edit2Icon className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  isIconOnly
-                                  size="sm"
-                                  variant="danger-soft"
-                                  aria-label={`Delete ${project.title}`}
-                                  isPending={deletingId === project.$id}
-                                  onPress={() => handleDelete(project.$id!)}
-                                >
-                                  <TrashIcon className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
+                                <TableCell>
+                                  <div className="flex items-center gap-4">
+                                    <div className="relative flex-shrink-0">
+                                      <Image
+                                        unoptimized
+                                        alt={project.title}
+                                        className="w-14 h-14 rounded-xl object-cover shadow-sm"
+                                        height={56}
+                                        src={project.image}
+                                        width={56}
+                                        onError={(event) => {
+                                          // Hide the broken image instead of swapping in a
+                                          // placeholder URL; the fallback block below the
+                                          // column already conveys "no image".
+                                          event.currentTarget.style.visibility =
+                                            "hidden";
+                                        }}
+                                      />
+                                      <div
+                                        aria-hidden="true"
+                                        className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-background flex items-center justify-center"
+                                      >
+                                        <ImageIcon className="w-3 h-3 text-white" />
+                                      </div>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-semibold text-foreground text-sm truncate">
+                                        {project.title}
+                                      </p>
+                                      <p className="text-xs text-muted line-clamp-1 mt-1">
+                                        {project.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip size="sm" variant="soft">
+                                    {project.category.replace("-", " ")}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    color={
+                                      getStatusColor(project.status) as
+                                        | "success"
+                                        | "accent"
+                                        | "warning"
+                                        | "default"
+                                    }
+                                    size="sm"
+                                    variant="soft"
+                                  >
+                                    {project.status.replace("-", " ")}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-20 bg-surface-secondary rounded-full h-2 flex-1">
+                                      <div
+                                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                                        style={{
+                                          width: `${project.progress}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-medium text-muted min-w-8 tabular-nums">
+                                      {project.progress}%
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {project.isFeatured ? (
+                                    <Chip size="sm" variant="primary">
+                                      Featured
+                                    </Chip>
+                                  ) : (
+                                    <span
+                                      aria-hidden="true"
+                                      className="text-muted text-sm"
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      isIconOnly
+                                      aria-label={`Edit ${project.title}`}
+                                      size="sm"
+                                      variant="secondary"
+                                      onPress={() => handleEdit(project)}
+                                    >
+                                      <Edit2Icon className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      isIconOnly
+                                      aria-label={`Delete ${project.title}`}
+                                      isPending={deletingId === project.$id}
+                                      size="sm"
+                                      variant="danger-soft"
+                                      onPress={() => handleDelete(project.$id!)}
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
                         </TableContent>
                       </TableScrollContainer>
                     </Table>
@@ -477,13 +622,17 @@ export default function AdminProjectsPage() {
             {/* Quick Stats */}
             <Card>
               <CardHeader className="px-6 pt-6 pb-0">
-                <h3 className="text-lg font-bold text-foreground">Project Overview</h3>
+                <h3 className="text-lg font-bold text-foreground">
+                  Project Overview
+                </h3>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border">
                   <div>
                     <p className="text-sm text-muted">Total Projects</p>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">{projects.length}</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      {projects.length}
+                    </p>
                   </div>
                   <FolderIcon className="w-8 h-8 text-primary" />
                 </div>
@@ -491,7 +640,10 @@ export default function AdminProjectsPage() {
                   <div>
                     <p className="text-sm text-muted">In progress</p>
                     <p className="text-2xl font-bold text-foreground tabular-nums">
-                      {projects.filter(p => p.status === 'in-progress').length}
+                      {
+                        projects.filter((p) => p.status === "in-progress")
+                          .length
+                      }
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -502,12 +654,17 @@ export default function AdminProjectsPage() {
                   <div>
                     <p className="text-sm text-muted">Completed</p>
                     <p className="text-2xl font-bold text-foreground tabular-nums">
-                      {projects.filter(p => p.status === 'completed').length}
+                      {projects.filter((p) => p.status === "completed").length}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <svg aria-hidden="true" className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    <svg
+                      aria-hidden="true"
+                      className="w-4 h-4 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                     </svg>
                   </div>
                 </div>
@@ -515,7 +672,7 @@ export default function AdminProjectsPage() {
                   <div>
                     <p className="text-sm text-muted">Featured</p>
                     <p className="text-2xl font-bold text-foreground tabular-nums">
-                      {projects.filter(p => p.isFeatured).length}
+                      {projects.filter((p) => p.isFeatured).length}
                     </p>
                   </div>
                   <StarIcon className="w-8 h-8 text-warning" />
@@ -526,216 +683,316 @@ export default function AdminProjectsPage() {
         </div>
         {/* Add/Edit Modal */}
         <Modal>
-          <ModalBackdrop isOpen={isOpen} onOpenChange={(open: boolean) => { if (!open) { close(); resetForm(); } }}>
+          <ModalBackdrop
+            isOpen={isOpen}
+            onOpenChange={(open: boolean) => {
+              if (!open) {
+                close();
+                resetForm();
+              }
+            }}
+          >
             <ModalContainer>
               <ModalDialog>
-                {({close: dialogClose}: {close: () => void}) => (
-              <>
-            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  {isEditing ? (
-                    <Edit2Icon className="w-5 h-5 text-white" />
-                  ) : (
-                    <PlusIcon className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">
-                    {isEditing ? "Edit Project" : "Create New Project"}
-                  </h2>
-                  <p className="text-sm text-muted">
-                    {isEditing ? "Update project details and progress" : "Add a new project to showcase your work"}
-                  </p>
-                </div>
-              </div>
-            </ModalHeader>
-            <ModalBody className="p-6 gap-6">
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Enter project title"
-                    value={formData.title}
-                    onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                  <Input
-                    placeholder="3 months"
-                    value={formData.duration}
-                    onChange={(e: any) => setFormData({ ...formData, duration: e.target.value })}
-                    required
-                  />
-                </div>
+                {() => (
+                  <>
+                    <ModalHeader className="flex flex-col gap-1 p-6 border-b border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                          {isEditing ? (
+                            <Edit2Icon className="w-5 h-5 text-white" />
+                          ) : (
+                            <PlusIcon className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold text-foreground">
+                            {isEditing ? "Edit Project" : "Create New Project"}
+                          </h2>
+                          <p className="text-sm text-muted">
+                            {isEditing
+                              ? "Update project details and progress"
+                              : "Add a new project to showcase your work"}
+                          </p>
+                        </div>
+                      </div>
+                    </ModalHeader>
+                    <ModalBody className="p-6 gap-6">
+                      <div className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Input
+                            required
+                            placeholder="Enter project title"
+                            value={formData.title}
+                            onChange={(e: any) =>
+                              setFormData({
+                                ...formData,
+                                title: e.target.value,
+                              })
+                            }
+                          />
+                          <Input
+                            required
+                            placeholder="3 months"
+                            value={formData.duration}
+                            onChange={(e: any) =>
+                              setFormData({
+                                ...formData,
+                                duration: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
 
-                <TextArea
-                  placeholder="Describe your project goals, features, and impact..."
-                  value={formData.description}
-                  onChange={(e: any) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
+                        <TextArea
+                          required
+                          placeholder="Describe your project goals, features, and impact..."
+                          value={formData.description}
+                          onChange={(e: any) =>
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
+                          }
+                        />
 
-                <Input
-                  placeholder="https://images.unsplash.com/photo-..."
-                  value={formData.image}
-                  onChange={(e: any) => setFormData({ ...formData, image: e.target.value })}
-                  required
-                />
+                        <Input
+                          required
+                          placeholder="https://images.unsplash.com/photo-..."
+                          value={formData.image}
+                          onChange={(e: any) =>
+                            setFormData({ ...formData, image: e.target.value })
+                          }
+                        />
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Select
-                    fullWidth
-                    aria-label="Project category"
-                    value={formData.category}
-                    onChange={(value) => setFormData({ ...formData, category: String(value ?? formData.category) })}
-                  >
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {categories.map((cat) => (
-                          <ListBox.Item key={cat.key} id={cat.key} textValue={cat.label}>
-                            {cat.label}
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Select
+                            fullWidth
+                            aria-label="Project category"
+                            value={formData.category}
+                            onChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                category: String(value ?? formData.category),
+                              })
+                            }
+                          >
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {categories.map((cat) => (
+                                  <ListBox.Item
+                                    key={cat.key}
+                                    id={cat.key}
+                                    textValue={cat.label}
+                                  >
+                                    {cat.label}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
 
-                  <Select
-                    fullWidth
-                    aria-label="Project status"
-                    value={formData.status}
-                    onChange={(value) => setFormData({ ...formData, status: String(value ?? formData.status) })}
-                  >
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {statuses.map((status) => (
-                          <ListBox.Item key={status.key} id={status.key} textValue={status.label}>
-                            {status.label}
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </div>
+                          <Select
+                            fullWidth
+                            aria-label="Project status"
+                            value={formData.status}
+                            onChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                status: String(value ?? formData.status),
+                              })
+                            }
+                          >
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                {statuses.map((status) => (
+                                  <ListBox.Item
+                                    key={status.key}
+                                    id={status.key}
+                                    textValue={status.label}
+                                  >
+                                    {status.label}
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                        </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <Slider
-                        value={formData.progress}
-                        minValue={0}
-                        maxValue={100}
-                        onChange={(value) => setFormData({ ...formData, progress: typeof value === "number" ? value : value[0] ?? 0 })}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Slider
+                                maxValue={100}
+                                minValue={0}
+                                value={formData.progress}
+                                onChange={(value) =>
+                                  setFormData({
+                                    ...formData,
+                                    progress:
+                                      typeof value === "number"
+                                        ? value
+                                        : (value[0] ?? 0),
+                                  })
+                                }
+                              >
+                                <Label>Progress: {formData.progress}%</Label>
+                                <Slider.Output />
+                                <Slider.Track>
+                                  <Slider.Fill />
+                                  <Slider.Thumb />
+                                </Slider.Track>
+                              </Slider>
+                            </div>
+                            <Input
+                              className="w-20"
+                              max="100"
+                              min="0"
+                              type="number"
+                              value={formData.progress.toString()}
+                              onChange={(e: any) =>
+                                setFormData({
+                                  ...formData,
+                                  progress: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <Input
+                              min="0"
+                              type="number"
+                              value={formData.stars.toString()}
+                              onChange={(e: any) =>
+                                setFormData({
+                                  ...formData,
+                                  stars: Number(e.target.value),
+                                })
+                              }
+                            />
+                            <Input
+                              min="0"
+                              type="number"
+                              value={formData.forks.toString()}
+                              onChange={(e: any) =>
+                                setFormData({
+                                  ...formData,
+                                  forks: Number(e.target.value),
+                                })
+                              }
+                            />
+                            <Input
+                              min="1"
+                              type="number"
+                              value={formData.contributors.toString()}
+                              onChange={(e: any) =>
+                                setFormData({
+                                  ...formData,
+                                  contributors: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <TextArea
+                          placeholder="React, Node.js, MongoDB, TypeScript..."
+                          value={formData.technologies}
+                          onChange={(e: any) =>
+                            setFormData({
+                              ...formData,
+                              technologies: e.target.value,
+                            })
+                          }
+                        />
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <Input
+                            placeholder="https://demo.example.com"
+                            value={formData.demoUrl}
+                            onChange={(e: any) =>
+                              setFormData({
+                                ...formData,
+                                demoUrl: e.target.value,
+                              })
+                            }
+                          />
+
+                          <Input
+                            placeholder="https://github.com/username/repo"
+                            value={formData.repoUrl}
+                            onChange={(e: any) =>
+                              setFormData({
+                                ...formData,
+                                repoUrl: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <TextArea
+                          placeholder="John Doe, Jane Smith, Alex Johnson..."
+                          value={formData.teamMembers}
+                          onChange={(e: any) =>
+                            setFormData({
+                              ...formData,
+                              teamMembers: e.target.value,
+                            })
+                          }
+                        />
+
+                        <Switch
+                          isSelected={formData.isFeatured}
+                          onChange={(value: any) =>
+                            setFormData({ ...formData, isFeatured: value })
+                          }
+                        >
+                          <Switch.Content>
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                            Feature this project on the homepage
+                          </Switch.Content>
+                        </Switch>
+                      </div>
+                    </ModalBody>
+                    <ModalFooter className="p-6 border-t border-border">
+                      <Button
+                        isDisabled={saving}
+                        variant="secondary"
+                        onPress={close}
                       >
-                        <Label>Progress: {formData.progress}%</Label>
-                        <Slider.Output />
-                        <Slider.Track>
-                          <Slider.Fill />
-                          <Slider.Thumb />
-                        </Slider.Track>
-                      </Slider>
-                    </div>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.progress.toString()}
-                      onChange={(e: any) => setFormData({ ...formData, progress: Number(e.target.value) })}
-                      className="w-20"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.stars.toString()}
-                      onChange={(e: any) => setFormData({ ...formData, stars: Number(e.target.value) })}
-                    />
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.forks.toString()}
-                      onChange={(e: any) => setFormData({ ...formData, forks: Number(e.target.value) })}
-                    />
-                    <Input
-                      type="number"
-                      min="1"
-                      value={formData.contributors.toString()}
-                      onChange={(e: any) => setFormData({ ...formData, contributors: Number(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <TextArea
-                  placeholder="React, Node.js, MongoDB, TypeScript..."
-                  value={formData.technologies}
-                  onChange={(e: any) => setFormData({ ...formData, technologies: e.target.value })}
-                />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input
-                    placeholder="https://demo.example.com"
-                    value={formData.demoUrl}
-                    onChange={(e: any) => setFormData({ ...formData, demoUrl: e.target.value })}
-                  />
-
-                  <Input
-                    placeholder="https://github.com/username/repo"
-                    value={formData.repoUrl}
-                    onChange={(e: any) => setFormData({ ...formData, repoUrl: e.target.value })}
-                  />
-                </div>
-
-                <TextArea
-                  placeholder="John Doe, Jane Smith, Alex Johnson..."
-                  value={formData.teamMembers}
-                  onChange={(e: any) => setFormData({ ...formData, teamMembers: e.target.value })}
-                />
-
-                <Switch
-                  isSelected={formData.isFeatured}
-                  onChange={(value: any) => setFormData({ ...formData, isFeatured: value })}
-                >
-                  <Switch.Content>
-                    <Switch.Control>
-                      <Switch.Thumb />
-                    </Switch.Control>
-                    Feature this project on the homepage
-                  </Switch.Content>
-                </Switch>
-              </div>
-            </ModalBody>
-            <ModalFooter className="p-6 border-t border-border">
-              <Button
-                variant="secondary"
-                onPress={close}
-                isDisabled={saving}
-              >
-                Cancel
-              </Button>
-              <Button onPress={handleSave}
-                isPending={saving}
-                className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
-              >
-                {saving ? "Saving..." : isEditing ? "Update Project" : "Create Project"}
-              </Button>
-            </ModalFooter>
-              </>
-              )}
-            </ModalDialog>
-          </ModalContainer>
-        </ModalBackdrop>
-      </Modal>
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                        isPending={saving}
+                        onPress={handleSave}
+                      >
+                        {saving
+                          ? "Saving..."
+                          : isEditing
+                            ? "Update Project"
+                            : "Create Project"}
+                      </Button>
+                    </ModalFooter>
+                  </>
+                )}
+              </ModalDialog>
+            </ModalContainer>
+          </ModalBackdrop>
+        </Modal>
       </div>
 
       <style jsx>{`
@@ -749,7 +1006,7 @@ export default function AdminProjectsPage() {
           border: 2px solid #ffffff;
           box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
         }
-        
+
         .slider::-moz-range-thumb {
           height: 18px;
           width: 18px;

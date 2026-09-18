@@ -56,17 +56,27 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader, TableContent, TableScrollContainer,
+  TableHeader,
+  TableContent,
+  TableScrollContainer,
   TableRow,
   useOverlayState,
 } from "@heroui/react";
 
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import { auditService } from "@/lib/audit";
 import { useAuth } from "@/context/AuthContext";
+import { logError } from "@/lib/logger";
 
-type StatusFilter = "all" | "active" | "inactive" | "banned" | "suspended" | "deactivated" | "no_account";
+type StatusFilter =
+  | "all"
+  | "active"
+  | "inactive"
+  | "banned"
+  | "suspended"
+  | "deactivated"
+  | "no_account";
 type ChipColor = "accent" | "danger" | "default" | "success" | "warning";
 
 interface EnrichedUser {
@@ -78,8 +88,15 @@ interface EnrichedUser {
 }
 
 /** Label used in confirmations. Prefers the account name; a raw 36-character account id is not readable. */
-function userLabel(user: EnrichedUser, names: Record<string, string> = {}): string {
-  return names[user.profile.userId] || user.profile.urn?.trim() || user.profile.userId.slice(0, 8);
+function userLabel(
+  user: EnrichedUser,
+  names: Record<string, string> = {},
+): string {
+  return (
+    names[user.profile.userId] ||
+    user.profile.urn?.trim() ||
+    user.profile.userId.slice(0, 8)
+  );
 }
 
 export default function AdminUsersPage() {
@@ -121,6 +138,7 @@ export default function AdminUsersPage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+
       return;
     }
     loadAllData();
@@ -158,10 +176,12 @@ export default function AdminUsersPage() {
       setAllPowers(payload?.powers ?? []);
       setAccountNames(payload?.accountNames ?? {});
       setEnrichedUsers(payload?.users ?? []);
+
       return payload?.users ?? [];
     } catch (error) {
-      console.error("Error loading users:", error);
+      logError("Error loading users:", error);
       toast.error(getErrorMessage(error) || "Failed to load users");
+
       return [];
     } finally {
       setLoadingUsers(false);
@@ -284,7 +304,7 @@ export default function AdminUsersPage() {
 
       setAuditLogs(logs);
     } catch (error) {
-      console.error("Error loading audit logs:", error);
+      logError("Error loading audit logs:", error);
       toast.error("Failed to load audit logs");
       setAuditLogs([]);
     } finally {
@@ -323,7 +343,9 @@ export default function AdminUsersPage() {
         } | null;
 
         if (!response.ok)
-          throw new Error(readApiError(payload, "The change could not be applied"));
+          throw new Error(
+            readApiError(payload, "The change could not be applied"),
+          );
 
         toast.success(successMessage);
         await loadAllData();
@@ -370,7 +392,9 @@ export default function AdminUsersPage() {
 
   const handleReactivateUser = async (eu: EnrichedUser) => {
     if (
-      !confirm(`Reactivate ${userLabel(eu, accountNames)}? Member access will be restored.`)
+      !confirm(
+        `Reactivate ${userLabel(eu, accountNames)}? Member access will be restored.`,
+      )
     )
       return;
     await applyUserAction(
@@ -390,6 +414,7 @@ export default function AdminUsersPage() {
     async (userId: string) => {
       const users = await loadAllData();
       const fresh = users.find((eu) => eu.profile.userId === userId);
+
       if (fresh) {
         setSelectedUser(fresh);
         setEditForm({ ...fresh.profile });
@@ -401,6 +426,7 @@ export default function AdminUsersPage() {
   const handleGrantDesignation = async () => {
     if (!selectedUser || !grantDesigId) return;
     const userId = selectedUser.profile.userId;
+
     setGrantBusy(`desig-grant`);
     try {
       const response = await fetch("/api/admin/designations/assign", {
@@ -408,11 +434,17 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, designationId: grantDesigId }),
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
       // 404 (deactivated designation) and 409 (maxHolders cap reached) carry
       // the real reason — surface it instead of a generic failure.
-      if (!response.ok) throw new Error(readApiError(payload, "Could not grant designation"));
-      toast.success(`Designation granted to ${userLabel(selectedUser, accountNames)}`);
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Could not grant designation"));
+      toast.success(
+        `Designation granted to ${userLabel(selectedUser, accountNames)}`,
+      );
       setGrantDesigId("");
       await refreshSelectedUser(userId);
     } catch (error) {
@@ -422,19 +454,34 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleRevokeDesignation = async (designationId: string, designationName: string) => {
+  const handleRevokeDesignation = async (
+    designationId: string,
+    designationName: string,
+  ) => {
     if (!selectedUser) return;
-    if (!confirm(`Revoke "${designationName}" from ${userLabel(selectedUser, accountNames)}?`)) return;
+    if (
+      !confirm(
+        `Revoke "${designationName}" from ${userLabel(selectedUser, accountNames)}?`,
+      )
+    )
+      return;
     const userId = selectedUser.profile.userId;
+
     setGrantBusy(`desig-${designationId}`);
     try {
       const response = await fetch(
         `/api/admin/designations/assign?${new URLSearchParams({ userId, designationId })}`,
         { method: "DELETE" },
       );
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Could not revoke designation"));
-      toast.success(`Designation revoked from ${userLabel(selectedUser, accountNames)}`);
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Could not revoke designation"));
+      toast.success(
+        `Designation revoked from ${userLabel(selectedUser, accountNames)}`,
+      );
       await refreshSelectedUser(userId);
     } catch (error) {
       toast.error(getErrorMessage(error) || "Could not revoke designation");
@@ -446,15 +493,25 @@ export default function AdminUsersPage() {
   const handleGrantPower = async () => {
     if (!selectedUser || !grantPowerId) return;
     const userId = selectedUser.profile.userId;
+
     setGrantBusy(`power-grant`);
     try {
       const response = await fetch("/api/admin/powers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "grant", userId, powerId: grantPowerId }),
+        body: JSON.stringify({
+          action: "grant",
+          userId,
+          powerId: grantPowerId,
+        }),
       });
-      const payload = (await response.json().catch(() => null)) as { alreadyGranted?: boolean; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Could not grant power"));
+      const payload = (await response.json().catch(() => null)) as {
+        alreadyGranted?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Could not grant power"));
       toast.success(
         payload?.alreadyGranted
           ? `${userLabel(selectedUser, accountNames)} already holds this power — no duplicate created`
@@ -471,8 +528,14 @@ export default function AdminUsersPage() {
 
   const handleRevokePower = async (powerId: string, powerName: string) => {
     if (!selectedUser) return;
-    if (!confirm(`Revoke "${powerName}" from ${userLabel(selectedUser, accountNames)}? They lose this privilege immediately.`)) return;
+    if (
+      !confirm(
+        `Revoke "${powerName}" from ${userLabel(selectedUser, accountNames)}? They lose this privilege immediately.`,
+      )
+    )
+      return;
     const userId = selectedUser.profile.userId;
+
     setGrantBusy(`power-${powerId}`);
     try {
       const response = await fetch("/api/admin/powers", {
@@ -480,9 +543,16 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "revoke", userId, powerId }),
       });
-      const payload = (await response.json().catch(() => null)) as { revoked?: number; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Could not revoke power"));
-      toast.success(`Power revoked from ${userLabel(selectedUser, accountNames)}`);
+      const payload = (await response.json().catch(() => null)) as {
+        revoked?: number;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Could not revoke power"));
+      toast.success(
+        `Power revoked from ${userLabel(selectedUser, accountNames)}`,
+      );
       await refreshSelectedUser(userId);
     } catch (error) {
       toast.error(getErrorMessage(error) || "Could not revoke power");
@@ -568,7 +638,9 @@ export default function AdminUsersPage() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "N/A";
     const parsed = new Date(dateStr);
+
     if (Number.isNaN(parsed.getTime())) return "N/A";
+
     return parsed.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -579,7 +651,9 @@ export default function AdminUsersPage() {
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) return "N/A";
     const parsed = new Date(dateStr);
+
     if (Number.isNaN(parsed.getTime())) return "N/A";
+
     return parsed.toLocaleString("en-US", {
       year: "numeric",
       month: "short",
@@ -591,7 +665,11 @@ export default function AdminUsersPage() {
 
   if (authLoading || loadingUsers) {
     return (
-      <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Loading users">
+      <div
+        aria-label="Loading users"
+        className="flex items-center justify-center min-h-screen"
+        role="status"
+      >
         <div className="text-center space-y-4">
           <Spinner size="lg" />
           <p className="text-muted">Loading users...</p>
@@ -633,7 +711,9 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Active Members</p>
-                <p className="text-2xl font-bold tabular-nums">{stats.active}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {stats.active}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
                 <CheckCircleIcon className="w-6 h-6 text-success" />
@@ -647,7 +727,9 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Inactive</p>
-                <p className="text-2xl font-bold tabular-nums">{stats.inactive}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {stats.inactive}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
                 <UserMinusIcon className="w-6 h-6 text-warning" />
@@ -661,7 +743,9 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Banned</p>
-                <p className="text-2xl font-bold tabular-nums">{stats.banned}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {stats.banned}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
                 <ShieldOffIcon className="w-6 h-6 text-danger" />
@@ -675,8 +759,12 @@ export default function AdminUsersPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-default-500">Other / No membership</p>
-                  <p className="text-2xl font-bold tabular-nums">{stats.other + stats.noMembership}</p>
+                  <p className="text-sm text-default-500">
+                    Other / No membership
+                  </p>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {stats.other + stats.noMembership}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-default-100 dark:bg-default-900/30 flex items-center justify-center">
                   <UsersIcon className="w-6 h-6 text-default-500" />
@@ -738,139 +826,152 @@ export default function AdminUsersPage() {
             <Table>
               <TableScrollContainer>
                 <TableContent aria-label="Users table" className="min-w-full">
-              <TableHeader>
-                <TableColumn>USER</TableColumn>
-                <TableColumn className="hidden md:table-cell">URN</TableColumn>
-                <TableColumn className="hidden lg:table-cell">
-                  BRANCH
-                </TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn className="hidden lg:table-cell">
-                  DEPARTMENTS
-                </TableColumn>
-                <TableColumn>ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <div className="text-center py-12">
-                        <UsersIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
-                        <p className="text-default-500">
-                          {searchQuery
-                            ? "No users match your search"
-                            : "No users found"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((eu) => (
-                    <TableRow key={eu.profile.userId}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <MemberAvatar
-                            src={eu.profile.avatar}
-                            name={accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}
-                            className="w-10 h-10 text-sm font-bold flex-shrink-0"
-                          />
-                           <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate max-w-[150px]">
-                              {accountNames[eu.profile.userId] || eu.profile.userId}
+                  <TableHeader>
+                    <TableColumn>USER</TableColumn>
+                    <TableColumn className="hidden md:table-cell">
+                      URN
+                    </TableColumn>
+                    <TableColumn className="hidden lg:table-cell">
+                      BRANCH
+                    </TableColumn>
+                    <TableColumn>STATUS</TableColumn>
+                    <TableColumn className="hidden lg:table-cell">
+                      DEPARTMENTS
+                    </TableColumn>
+                    <TableColumn>ACTIONS</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <div className="text-center py-12">
+                            <UsersIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
+                            <p className="text-default-500">
+                              {searchQuery
+                                ? "No users match your search"
+                                : "No users found"}
                             </p>
-                            {eu.profile.phone && (
-                              <p className="text-xs text-default-400 truncate">
-                                {eu.profile.phone}
-                              </p>
-                            )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <span className="text-sm font-mono">
-                          {eu.profile.urn || "N/A"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className="text-sm">
-                          {eu.profile.branch || "N/A"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          className="text-xs"
-                          color={getRoleColor(eu.membership?.status || "none")}
-                          size="sm"
-                          variant="primary"
-                        >
-                          {getRoleLabel(eu.membership?.status || "none")}
-                        </Chip>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {eu.departments.length === 0 ? (
-                            <span className="text-xs text-default-400">
-                              None
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredUsers.map((eu) => (
+                        <TableRow key={eu.profile.userId}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <MemberAvatar
+                                className="w-10 h-10 text-sm font-bold flex-shrink-0"
+                                name={
+                                  accountNames[eu.profile.userId] ||
+                                  eu.profile.urn ||
+                                  eu.profile.userId
+                                }
+                                src={eu.profile.avatar}
+                              />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm truncate max-w-[150px]">
+                                  {accountNames[eu.profile.userId] ||
+                                    eu.profile.userId}
+                                </p>
+                                {eu.profile.phone && (
+                                  <p className="text-xs text-default-400 truncate">
+                                    {eu.profile.phone}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <span className="text-sm font-mono">
+                              {eu.profile.urn || "N/A"}
                             </span>
-                          ) : (
-                            eu.departments.slice(0, 2).map((ud) => (
-                              <Chip
-                                key={ud.$id}
-                                className="text-xs"
-                                color={getDepartmentRoleColor(ud.role)}
-                                size="sm"
-                                variant="soft"
-                              >
-                                {getDepartmentName(ud.departmentId)}
-                              </Chip>
-                            ))
-                          )}
-                          {eu.departments.length > 2 && (
-                            <Chip className="text-xs tabular-nums" size="sm" variant="soft">
-                              +{eu.departments.length - 2}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <span className="text-sm">
+                              {eu.profile.branch || "N/A"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              className="text-xs"
+                              color={getRoleColor(
+                                eu.membership?.status || "none",
+                              )}
+                              size="sm"
+                              variant="primary"
+                            >
+                              {getRoleLabel(eu.membership?.status || "none")}
                             </Chip>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`View profile of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
-                            onPress={() => handleViewProfile(eu)}
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`View audit trail of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
-                            onPress={() => handleViewAudit(eu)}
-                          >
-                            <HistoryIcon className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="ghost"
-                            aria-label={`${expandedRows.has(eu.profile.userId) ? "Collapse" : "Expand"} row for ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
-                            onPress={() => toggleRow(eu.profile.userId)}
-                          >
-                            {expandedRows.has(eu.profile.userId) ? (
-                              <ChevronUpIcon className="w-4 h-4" />
-                            ) : (
-                              <ChevronDownIcon className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="flex flex-wrap gap-1">
+                              {eu.departments.length === 0 ? (
+                                <span className="text-xs text-default-400">
+                                  None
+                                </span>
+                              ) : (
+                                eu.departments.slice(0, 2).map((ud) => (
+                                  <Chip
+                                    key={ud.$id}
+                                    className="text-xs"
+                                    color={getDepartmentRoleColor(ud.role)}
+                                    size="sm"
+                                    variant="soft"
+                                  >
+                                    {getDepartmentName(ud.departmentId)}
+                                  </Chip>
+                                ))
+                              )}
+                              {eu.departments.length > 2 && (
+                                <Chip
+                                  className="text-xs tabular-nums"
+                                  size="sm"
+                                  variant="soft"
+                                >
+                                  +{eu.departments.length - 2}
+                                </Chip>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                isIconOnly
+                                aria-label={`View profile of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
+                                size="sm"
+                                variant="ghost"
+                                onPress={() => handleViewProfile(eu)}
+                              >
+                                <EyeIcon className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                isIconOnly
+                                aria-label={`View audit trail of ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
+                                size="sm"
+                                variant="ghost"
+                                onPress={() => handleViewAudit(eu)}
+                              >
+                                <HistoryIcon className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                isIconOnly
+                                aria-label={`${expandedRows.has(eu.profile.userId) ? "Collapse" : "Expand"} row for ${accountNames[eu.profile.userId] || eu.profile.urn || eu.profile.userId}`}
+                                size="sm"
+                                variant="ghost"
+                                onPress={() => toggleRow(eu.profile.userId)}
+                              >
+                                {expandedRows.has(eu.profile.userId) ? (
+                                  <ChevronUpIcon className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDownIcon className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
                 </TableContent>
               </TableScrollContainer>
             </Table>
@@ -911,7 +1012,8 @@ export default function AdminUsersPage() {
                     </Button>
                   </div>
                   <p className="text-sm text-default-500 font-normal">
-                    {accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
+                    {accountNames[selectedUser.profile.userId] ||
+                      selectedUser.profile.userId}
                   </p>
                 </ModalHeader>
 
@@ -919,13 +1021,18 @@ export default function AdminUsersPage() {
                   <div className="space-y-6">
                     <div className="flex items-center gap-4 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
                       <MemberAvatar
-                        src={selectedUser.profile.avatar}
-                        name={accountNames[selectedUser.profile.userId] || selectedUser.profile.urn || selectedUser.profile.userId}
                         className="w-16 h-16 text-xl font-bold"
+                        name={
+                          accountNames[selectedUser.profile.userId] ||
+                          selectedUser.profile.urn ||
+                          selectedUser.profile.userId
+                        }
+                        src={selectedUser.profile.avatar}
                       />
                       <div className="flex-1">
                         <p className="font-bold text-lg">
-                          {accountNames[selectedUser.profile.userId] || selectedUser.profile.userId}
+                          {accountNames[selectedUser.profile.userId] ||
+                            selectedUser.profile.userId}
                         </p>
                         <p className="text-sm text-default-500">
                           {selectedUser.profile.urn || "No URN"}
@@ -943,7 +1050,11 @@ export default function AdminUsersPage() {
                             )}
                           </Chip>
                           {selectedUser.membership?.membershipNumber && (
-                            <Chip className="tabular-nums" size="sm" variant="soft">
+                            <Chip
+                              className="tabular-nums"
+                              size="sm"
+                              variant="soft"
+                            >
                               {selectedUser.membership.membershipNumber}
                             </Chip>
                           )}
@@ -1204,7 +1315,9 @@ export default function AdminUsersPage() {
                         </h3>
                         <div className="space-y-2">
                           {selectedUser.designations.length === 0 && (
-                            <p className="text-xs text-default-400">No designations held.</p>
+                            <p className="text-xs text-default-400">
+                              No designations held.
+                            </p>
                           )}
                           {selectedUser.designations.map((ud) => (
                             <div
@@ -1219,10 +1332,17 @@ export default function AdminUsersPage() {
                                   {formatDate(ud.assignedAt)}
                                 </span>
                                 <Button
+                                  isPending={
+                                    grantBusy === `desig-${ud.designationId}`
+                                  }
                                   size="sm"
                                   variant="danger-soft"
-                                  isPending={grantBusy === `desig-${ud.designationId}`}
-                                  onPress={() => handleRevokeDesignation(ud.designationId, getDesignationName(ud.designationId))}
+                                  onPress={() =>
+                                    handleRevokeDesignation(
+                                      ud.designationId,
+                                      getDesignationName(ud.designationId),
+                                    )
+                                  }
                                 >
                                   Revoke
                                 </Button>
@@ -1235,7 +1355,9 @@ export default function AdminUsersPage() {
                             fullWidth
                             aria-label="Designation to grant"
                             value={grantDesigId === "" ? null : grantDesigId}
-                            onChange={(value) => setGrantDesigId(String(value ?? ""))}
+                            onChange={(value) =>
+                              setGrantDesigId(String(value ?? ""))
+                            }
                           >
                             <Label>Grant designation</Label>
                             <Select.Trigger>
@@ -1245,7 +1367,11 @@ export default function AdminUsersPage() {
                             <Select.Popover>
                               <ListBox>
                                 {allDesignations.map((desig) => (
-                                  <ListBox.Item key={desig.$id} id={desig.$id!} textValue={desig.name}>
+                                  <ListBox.Item
+                                    key={desig.$id}
+                                    id={desig.$id!}
+                                    textValue={desig.name}
+                                  >
                                     {desig.name}
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
@@ -1254,10 +1380,10 @@ export default function AdminUsersPage() {
                             </Select.Popover>
                           </Select>
                           <Button
+                            isDisabled={!grantDesigId}
+                            isPending={grantBusy === "desig-grant"}
                             size="sm"
                             variant="primary"
-                            isPending={grantBusy === "desig-grant"}
-                            isDisabled={!grantDesigId}
                             onPress={handleGrantDesignation}
                           >
                             Grant
@@ -1274,7 +1400,9 @@ export default function AdminUsersPage() {
                         </h3>
                         <div className="space-y-2">
                           {selectedUser.powers.length === 0 && (
-                            <p className="text-xs text-default-400">No powers granted.</p>
+                            <p className="text-xs text-default-400">
+                              No powers granted.
+                            </p>
                           )}
                           {selectedUser.powers.map((up) => (
                             <div
@@ -1294,10 +1422,17 @@ export default function AdminUsersPage() {
                                   {formatDate(up.grantedAt)}
                                 </span>
                                 <Button
+                                  isPending={
+                                    grantBusy === `power-${up.powerId}`
+                                  }
                                   size="sm"
                                   variant="danger-soft"
-                                  isPending={grantBusy === `power-${up.powerId}`}
-                                  onPress={() => handleRevokePower(up.powerId, getPowerName(up.powerId))}
+                                  onPress={() =>
+                                    handleRevokePower(
+                                      up.powerId,
+                                      getPowerName(up.powerId),
+                                    )
+                                  }
                                 >
                                   Revoke
                                 </Button>
@@ -1310,7 +1445,9 @@ export default function AdminUsersPage() {
                             fullWidth
                             aria-label="Power to grant"
                             value={grantPowerId === "" ? null : grantPowerId}
-                            onChange={(value) => setGrantPowerId(String(value ?? ""))}
+                            onChange={(value) =>
+                              setGrantPowerId(String(value ?? ""))
+                            }
                           >
                             <Label>Grant power</Label>
                             <Select.Trigger>
@@ -1320,7 +1457,11 @@ export default function AdminUsersPage() {
                             <Select.Popover>
                               <ListBox>
                                 {allPowers.map((power) => (
-                                  <ListBox.Item key={power.$id} id={power.$id!} textValue={power.displayName || power.name}>
+                                  <ListBox.Item
+                                    key={power.$id}
+                                    id={power.$id!}
+                                    textValue={power.displayName || power.name}
+                                  >
                                     {power.displayName || power.name}
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
@@ -1329,10 +1470,10 @@ export default function AdminUsersPage() {
                             </Select.Popover>
                           </Select>
                           <Button
+                            isDisabled={!grantPowerId}
+                            isPending={grantBusy === "power-grant"}
                             size="sm"
                             variant="primary"
-                            isPending={grantBusy === "power-grant"}
-                            isDisabled={!grantPowerId}
                             onPress={handleGrantPower}
                           >
                             Grant
@@ -1617,7 +1758,11 @@ export default function AdminUsersPage() {
 
                 <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
                   {loadingAudit ? (
-                    <div className="flex items-center justify-center py-12" role="status" aria-label="Loading audit trail">
+                    <div
+                      aria-label="Loading audit trail"
+                      className="flex items-center justify-center py-12"
+                      role="status"
+                    >
                       <div className="text-center space-y-4">
                         <Spinner size="lg" />
                         <p className="text-muted">Loading audit trail...</p>

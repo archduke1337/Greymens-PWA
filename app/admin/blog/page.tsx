@@ -1,19 +1,38 @@
 // app/admin/blogs/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import type { Blog } from "@/lib/blog-format";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Spinner, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
 import {
-  CheckIcon,
-  XIcon,
-  EyeIcon,
-  TrashIcon,
-  ClockIcon,
-  StarIcon,
-} from "lucide-react";
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  Spinner,
+  Tab,
+  TabListContainer,
+  TabList,
+  TabIndicator,
+  Tabs,
+  TextArea,
+} from "@heroui/react";
+import { CheckIcon, XIcon, ClockIcon, StarIcon } from "lucide-react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function AdminBlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -37,12 +56,20 @@ export default function AdminBlogsPage() {
 
   const loadBlogs = async () => {
     try {
-      const response = await fetch("/api/blogs?scope=all", { cache: "no-store", credentials: "include" });
-      const payload = await response.json().catch(() => null) as { blogs?: Blog[]; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to load blogs"));
+      const response = await fetch("/api/blogs?scope=all", {
+        cache: "no-store",
+        credentials: "include",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        blogs?: Blog[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to load blogs"));
       setBlogs(payload?.blogs ?? []);
     } catch (error) {
-      console.error("Error loading blogs:", error);
+      logError("Error loading blogs:", error);
       toast.error(getErrorMessage(error) || "Failed to load blogs");
     } finally {
       setLoading(false);
@@ -54,14 +81,22 @@ export default function AdminBlogsPage() {
    * each action needs and records an audit entry. The browser cannot write to the
    * blogs table, so these calls previously always failed.
    */
-  const applyBlogAction = async (blogId: string, action: string, body: Record<string, unknown> = {}) => {
+  const applyBlogAction = async (
+    blogId: string,
+    action: string,
+    body: Record<string, unknown> = {},
+  ) => {
     const response = await fetch("/api/blogs", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ blogId, action, ...body }),
     });
-    const payload = await response.json().catch(() => null) as { error?: string } | null;
-    if (!response.ok) throw new Error(readApiError(payload, "The change could not be applied"));
+    const payload = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+
+    if (!response.ok)
+      throw new Error(readApiError(payload, "The change could not be applied"));
   };
 
   const filterBlogsByTab = () => {
@@ -85,14 +120,17 @@ export default function AdminBlogsPage() {
   };
 
   const handleApprove = async (blogId: string) => {
-    if (!confirm("Approve this post? It becomes publicly readable immediately.")) return;
+    if (
+      !confirm("Approve this post? It becomes publicly readable immediately.")
+    )
+      return;
     setProcessingBlog(blogId);
     try {
       await applyBlogAction(blogId, "approve");
       toast.success("Post published");
       await loadBlogs();
     } catch (error) {
-      console.error("Error approving blog:", error);
+      logError("Error approving blog:", error);
       toast.error(getErrorMessage(error) || "Failed to approve blog");
     } finally {
       setProcessingBlog(null);
@@ -109,17 +147,22 @@ export default function AdminBlogsPage() {
     if (!rejectingBlog) return;
     if (!rejectionReason.trim()) {
       toast.error("Please provide a reason for rejection");
+
       return;
     }
 
     setProcessingBlog(rejectingBlog.$id!);
     try {
-      await applyBlogAction(rejectingBlog.$id!, "reject", { reason: rejectionReason.trim() });
-      toast.success("Post rejected", { description: "The reason is visible to the author." });
+      await applyBlogAction(rejectingBlog.$id!, "reject", {
+        reason: rejectionReason.trim(),
+      });
+      toast.success("Post rejected", {
+        description: "The reason is visible to the author.",
+      });
       await loadBlogs();
       setRejectModalOpen(false);
     } catch (error) {
-      console.error("Error rejecting blog:", error);
+      logError("Error rejecting blog:", error);
       toast.error(getErrorMessage(error) || "Failed to reject blog");
     } finally {
       setProcessingBlog(null);
@@ -127,16 +170,24 @@ export default function AdminBlogsPage() {
   };
 
   const handleDelete = async (blogId: string) => {
-    if (!confirm("Permanently delete this post? This cannot be undone.")) return;
+    if (!confirm("Permanently delete this post? This cannot be undone."))
+      return;
     setProcessingBlog(blogId);
     try {
-      const response = await fetch(`/api/blogs?blogId=${encodeURIComponent(blogId)}`, { method: "DELETE" });
-      const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to delete blog"));
+      const response = await fetch(
+        `/api/blogs?blogId=${encodeURIComponent(blogId)}`,
+        { method: "DELETE" },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to delete blog"));
       toast.success("Post deleted");
       await loadBlogs();
     } catch (error) {
-      console.error("Error deleting blog:", error);
+      logError("Error deleting blog:", error);
       toast.error(getErrorMessage(error) || "Failed to delete blog");
     } finally {
       setProcessingBlog(null);
@@ -151,7 +202,7 @@ export default function AdminBlogsPage() {
       toast.success(blog.featured ? "Post unfeatured" : "Post featured");
       await loadBlogs();
     } catch (error) {
-      console.error("Error toggling featured:", error);
+      logError("Error toggling featured:", error);
       toast.error(getErrorMessage(error) || "Failed to update blog");
     } finally {
       setProcessingBlog(null);
@@ -171,7 +222,11 @@ export default function AdminBlogsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Loading blogs">
+        <div
+          aria-label="Loading blogs"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Loading blogs...</p>
         </div>
@@ -191,30 +246,38 @@ export default function AdminBlogsPage() {
 
       {/* Tabs */}
       <Tabs
+        className="mb-8"
         selectedKey={selectedTab}
         onSelectionChange={(key: any) => setSelectedTab(key as string)}
-        className="mb-8"
       >
         <TabListContainer>
           <TabList>
             <Tab id="pending">
               <div className="flex items-center gap-2">
                 <ClockIcon className="w-4 h-4" />
-                <span className="tabular-nums">Pending ({blogs.filter((b) => b.status === "pending").length})</span>
+                <span className="tabular-nums">
+                  Pending ({blogs.filter((b) => b.status === "pending").length})
+                </span>
               </div>
               <TabIndicator />
             </Tab>
             <Tab id="approved">
               <div className="flex items-center gap-2">
                 <CheckIcon className="w-4 h-4" />
-                <span className="tabular-nums">Approved ({blogs.filter((b) => b.status === "approved").length})</span>
+                <span className="tabular-nums">
+                  Approved (
+                  {blogs.filter((b) => b.status === "approved").length})
+                </span>
               </div>
               <TabIndicator />
             </Tab>
             <Tab id="rejected">
               <div className="flex items-center gap-2">
                 <XIcon className="w-4 h-4" />
-                <span className="tabular-nums">Rejected ({blogs.filter((b) => b.status === "rejected").length})</span>
+                <span className="tabular-nums">
+                  Rejected (
+                  {blogs.filter((b) => b.status === "rejected").length})
+                </span>
               </div>
               <TabIndicator />
             </Tab>
@@ -250,10 +313,13 @@ export default function AdminBlogsPage() {
                 <div className="grid md:grid-cols-12 gap-6">
                   {/* Cover Image */}
                   <div className="md:col-span-3">
-                    <img
-                      src={blog.coverImage}
+                    <Image
+                      unoptimized
                       alt={blog.title}
                       className="w-full h-32 object-cover rounded-lg"
+                      height={128}
+                      src={blog.coverImage}
+                      width={480}
                     />
                   </div>
 
@@ -267,8 +333,8 @@ export default function AdminBlogsPage() {
                           blog.status === "approved"
                             ? "success"
                             : blog.status === "rejected"
-                            ? "danger"
-                            : "warning"
+                              ? "danger"
+                              : "warning"
                         }
                         variant="primary"
                       >
@@ -284,18 +350,28 @@ export default function AdminBlogsPage() {
                     {/* Meta */}
                     <div className="flex items-center gap-4 text-sm text-default-500">
                       <div className="flex items-center gap-2">
-                        <Avatar
-                          size="sm"
-                        >
-                          <AvatarImage src={blog.authorAvatar} alt={blog.authorName} />
-                          <AvatarFallback>{blog.authorName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}</AvatarFallback>
+                        <Avatar size="sm">
+                          <AvatarImage
+                            alt={blog.authorName}
+                            src={blog.authorAvatar}
+                          />
+                          <AvatarFallback>
+                            {blog.authorName
+                              ?.split(" ")
+                              .map((n: string) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
+                          </AvatarFallback>
                         </Avatar>
                         <span>{blog.authorName}</span>
                       </div>
                       <div>•</div>
                       <div>{blog.category}</div>
                       <div>•</div>
-                      <div className="tabular-nums">{blog.readTime} min read</div>
+                      <div className="tabular-nums">
+                        {blog.readTime} min read
+                      </div>
                       {blog.featured && (
                         <>
                           <div>•</div>
@@ -329,34 +405,30 @@ export default function AdminBlogsPage() {
 
                     {/* Dates */}
                     <div className="text-xs text-default-400">
-                      Submitted: {blog.$createdAt && formatDate(blog.$createdAt)}
-                      {blog.publishedAt && ` • Published: ${formatDate(blog.publishedAt)}`}
+                      Submitted:{" "}
+                      {blog.$createdAt && formatDate(blog.$createdAt)}
+                      {blog.publishedAt &&
+                        ` • Published: ${formatDate(blog.publishedAt)}`}
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="md:col-span-3 flex md:flex-col gap-2">
                     <a
+                      className="flex-1 md:flex-none"
                       href={`/blog/${blog.slug}`}
                       target="_blank"
-                      className="flex-1 md:flex-none"
                     >
-                      <Button
-                        size="sm"
-                        variant="primary"
-                      >
+                      <Button size="sm" variant="primary">
                         View
                       </Button>
                     </a>
 
                     <a
-                      href={`/blog/write?edit=${blog.$id}`}
                       className="flex-1 md:flex-none"
+                      href={`/blog/write?edit=${blog.$id}`}
                     >
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                      >
+                      <Button size="sm" variant="secondary">
                         Edit
                       </Button>
                     </a>
@@ -364,18 +436,18 @@ export default function AdminBlogsPage() {
                     {blog.status === "pending" && (
                       <>
                         <Button
+                          className="flex-1 md:flex-none"
+                          isPending={processingBlog === blog.$id}
                           size="sm"
                           variant="primary"
-                          isPending={processingBlog === blog.$id}
-                          className="flex-1 md:flex-none"
                           onPress={() => handleApprove(blog.$id!)}
                         >
                           Approve
                         </Button>
                         <Button
+                          className="flex-1 md:flex-none"
                           size="sm"
                           variant="secondary"
-                          className="flex-1 md:flex-none"
                           onPress={() => openRejectModal(blog)}
                         >
                           Reject
@@ -385,10 +457,10 @@ export default function AdminBlogsPage() {
 
                     {blog.status === "approved" && (
                       <Button
-                        size="sm"
-                        variant="primary"
                         className="flex-1 md:flex-none"
                         isPending={processingBlog === blog.$id}
+                        size="sm"
+                        variant="primary"
                         onPress={() => toggleFeatured(blog)}
                       >
                         {blog.featured ? "Unfeature" : "Feature"}
@@ -396,10 +468,10 @@ export default function AdminBlogsPage() {
                     )}
 
                     <Button
-                      size="sm"
-                      variant="danger-soft"
                       className="flex-1 md:flex-none"
                       isPending={processingBlog === blog.$id}
+                      size="sm"
+                      variant="danger-soft"
                       onPress={() => handleDelete(blog.$id!)}
                     >
                       Delete
@@ -414,10 +486,13 @@ export default function AdminBlogsPage() {
 
       {/* Rejection Modal */}
       <Modal>
-        <ModalBackdrop isOpen={rejectModalOpen} onOpenChange={(open: boolean) => setRejectModalOpen(open)}>
+        <ModalBackdrop
+          isOpen={rejectModalOpen}
+          onOpenChange={(open: boolean) => setRejectModalOpen(open)}
+        >
           <ModalContainer>
             <ModalDialog>
-              {({close}: {close: () => void}) => (
+              {() => (
                 <>
                   <ModalHeader>Reject Blog</ModalHeader>
                   <ModalBody>
@@ -426,17 +501,22 @@ export default function AdminBlogsPage() {
                     </p>
                     <TextArea
                       placeholder="E.g., Content doesn't meet quality standards, inappropriate content, etc."
+                      rows={4}
                       value={rejectionReason}
                       onChange={(e: any) => setRejectionReason(e.target.value)}
-                      rows={4}
                     />
                   </ModalBody>
                   <ModalFooter>
-                    <Button variant="secondary" onPress={() => setRejectModalOpen(false)}>
+                    <Button
+                      variant="secondary"
+                      onPress={() => setRejectModalOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button variant="danger-soft" onPress={handleReject}
+                    <Button
                       isPending={processingBlog === rejectingBlog?.$id}
+                      variant="danger-soft"
+                      onPress={handleReject}
                     >
                       Reject Blog
                     </Button>

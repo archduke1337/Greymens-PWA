@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Card, CardContent, Chip, Input, Spinner } from "@heroui/react";
 import { ArrowLeft, SearchIcon } from "lucide-react";
+
 import MemberAvatar from "@/components/MemberAvatar";
 import RolesManager from "@/components/admin/RolesManager";
 import PowersManager from "@/components/admin/PowersManager";
@@ -112,7 +113,12 @@ interface AccessPayload {
 }
 
 interface PowersPayload {
-  powers?: Array<{ $id: string; displayName?: unknown; name?: unknown; scope?: string }>;
+  powers?: Array<{
+    $id: string;
+    displayName?: unknown;
+    name?: unknown;
+    scope?: string;
+  }>;
   grants?: Array<{
     $id: string;
     userId?: string;
@@ -133,31 +139,44 @@ interface UsersPayload {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { credentials: "include", cache: "no-store" });
+  const response = await fetch(url, {
+    credentials: "include",
+    cache: "no-store",
+  });
   const data = await response.json().catch(() => null);
+
   if (!response.ok) {
     const message =
-      data && typeof data === "object" && "error" in data ? String((data as { error?: string }).error ?? "") : "";
+      data && typeof data === "object" && "error" in data
+        ? String((data as { error?: string }).error ?? "")
+        : "";
+
     throw new Error(message || `Request failed (${response.status})`);
   }
+
   return data as T;
 }
 
 /** Expiry is enforced server-side on every check; mirror that here. */
 function isLive(entry: { isActive?: boolean; expiresAt?: string }) {
   if (entry.isActive === false) return false;
+
   return !entry.expiresAt || new Date(entry.expiresAt).getTime() > Date.now();
 }
 
 /** A term that has already ended stops granting, exactly like the resolver. */
 function isOfficeLive(entry: { status?: string; termEnd?: string }) {
   if (entry.status !== "active") return false;
-  return !entry.termEnd || entry.termEnd >= new Date().toISOString().slice(0, 10);
+
+  return (
+    !entry.termEnd || entry.termEnd >= new Date().toISOString().slice(0, 10)
+  );
 }
 
 function formatDate(value?: string) {
   if (!value) return "";
   const parsed = new Date(value);
+
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString();
 }
 
@@ -168,11 +187,15 @@ function AccessConsole() {
 
   const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<TabKey>(() =>
-    TABS.some((tab) => tab.key === requestedTab) ? (requestedTab as TabKey) : "people",
+    TABS.some((tab) => tab.key === requestedTab)
+      ? (requestedTab as TabKey)
+      : "people",
   );
 
   const [people, setPeople] = useState<PersonAccess[]>([]);
-  const [officeAssignments, setOfficeAssignments] = useState<OfficeAssignment[]>([]);
+  const [officeAssignments, setOfficeAssignments] = useState<
+    OfficeAssignment[]
+  >([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<string[]>([]);
@@ -183,7 +206,9 @@ function AccessConsole() {
   const visibleTabs = useMemo(
     () =>
       TABS.filter((tab) =>
-        Array.isArray(tab.cap) ? tab.cap.some((cap) => hasCapability(cap)) : hasCapability(tab.cap),
+        Array.isArray(tab.cap)
+          ? tab.cap.some((cap) => hasCapability(cap))
+          : hasCapability(tab.cap),
       ),
     [hasCapability],
   );
@@ -201,21 +226,31 @@ function AccessConsole() {
       // Three independent reads, joined client-side. Each can be refused
       // without taking the page down: an admin with only powers.manage still
       // sees who holds powers and is told why the other halves are missing.
-      const [accessResult, powersResult, usersResult] = await Promise.allSettled([
-        fetchJson<AccessPayload>("/api/access"),
-        fetchJson<PowersPayload>("/api/admin/powers"),
-        fetchJson<UsersPayload>("/api/admin/users?limit=500"),
-      ]);
+      const [accessResult, powersResult, usersResult] =
+        await Promise.allSettled([
+          fetchJson<AccessPayload>("/api/access"),
+          fetchJson<PowersPayload>("/api/admin/powers"),
+          fetchJson<UsersPayload>("/api/admin/users?limit=500"),
+        ]);
 
-      const accessPayload = accessResult.status === "fulfilled" ? accessResult.value : null;
-      const powersPayload = powersResult.status === "fulfilled" ? powersResult.value : null;
-      const usersPayload = usersResult.status === "fulfilled" ? usersResult.value : null;
+      const accessPayload =
+        accessResult.status === "fulfilled" ? accessResult.value : null;
+      const powersPayload =
+        powersResult.status === "fulfilled" ? powersResult.value : null;
+      const usersPayload =
+        usersResult.status === "fulfilled" ? usersResult.value : null;
 
       const nextNotes: string[] = [];
+
       if (accessResult.status === "rejected") {
-        nextNotes.push(`Roles, offices and assignments could not be read: ${accessResult.reason?.message ?? "unknown error"}.`);
+        nextNotes.push(
+          `Roles, offices and assignments could not be read: ${accessResult.reason?.message ?? "unknown error"}.`,
+        );
       } else {
-        if (!Array.isArray(accessPayload?.roles) || !Array.isArray(accessPayload?.assignments)) {
+        if (
+          !Array.isArray(accessPayload?.roles) ||
+          !Array.isArray(accessPayload?.assignments)
+        ) {
           nextNotes.push(
             "Roles and role assignments are hidden here because this account does not hold access.assign_roles.",
           );
@@ -232,22 +267,37 @@ function AccessConsole() {
         }
       }
       if (powersResult.status === "rejected") {
-        nextNotes.push(`Powers could not be read: ${powersResult.reason?.message ?? "unknown error"}.`);
+        nextNotes.push(
+          `Powers could not be read: ${powersResult.reason?.message ?? "unknown error"}.`,
+        );
       }
       if (usersResult.status === "rejected") {
-        nextNotes.push("Member names and photos are unavailable, so this list falls back to URNs and user IDs.");
+        nextNotes.push(
+          "Member names and photos are unavailable, so this list falls back to URNs and user IDs.",
+        );
       }
       setNotes(nextNotes);
 
-      const roleById = new Map((accessPayload?.roles ?? []).map((role) => [role.$id, role]));
-      const powerById = new Map((powersPayload?.powers ?? []).map((power) => [power.$id, power]));
-      const departmentById = new Map((powersPayload?.departments ?? []).map((dept) => [dept.$id, dept]));
-      const titleByOffice = new Map(GOVERNANCE_OFFICES.map((office) => [office.id, office.title]));
+      const roleById = new Map(
+        (accessPayload?.roles ?? []).map((role) => [role.$id, role]),
+      );
+      const powerById = new Map(
+        (powersPayload?.powers ?? []).map((power) => [power.$id, power]),
+      );
+      const departmentById = new Map(
+        (powersPayload?.departments ?? []).map((dept) => [dept.$id, dept]),
+      );
+      const titleByOffice = new Map(
+        GOVERNANCE_OFFICES.map((office) => [office.id, office.title]),
+      );
       const designationById = new Map(
         (accessPayload?.designations ?? []).map((entry) => [entry.$id, entry]),
       );
       const profileByUser = new Map(
-        (usersPayload?.users ?? []).map((entry) => [String(entry.profile?.userId ?? ""), entry.profile ?? {}]),
+        (usersPayload?.users ?? []).map((entry) => [
+          String(entry.profile?.userId ?? ""),
+          entry.profile ?? {},
+        ]),
       );
       const nameByUser: Record<string, string> = {
         ...(accessPayload?.accountNames ?? {}),
@@ -260,7 +310,9 @@ function AccessConsole() {
         (usersPayload?.users ?? [])
           .map((entry): MemberOption | null => {
             const userId = String(entry.profile?.userId ?? "");
+
             if (!userId) return null;
+
             return {
               userId,
               name: nameByUser[userId] || entry.profile?.urn || userId,
@@ -274,6 +326,7 @@ function AccessConsole() {
       const peopleByUser = new Map<string, PersonAccess>();
       const ensurePerson = (userId: string): PersonAccess => {
         const existing = peopleByUser.get(userId);
+
         if (existing) return existing;
         const profile = profileByUser.get(userId);
         const person: PersonAccess = {
@@ -286,26 +339,41 @@ function AccessConsole() {
           titles: [],
           powers: [],
         };
+
         peopleByUser.set(userId, person);
+
         return person;
       };
 
       for (const assignment of accessPayload?.assignments ?? []) {
         const userId = String(assignment.userId ?? "");
+
         if (!userId || !isLive(assignment)) continue;
-        const role = assignment.roleId ? roleById.get(assignment.roleId) : undefined;
+        const role = assignment.roleId
+          ? roleById.get(assignment.roleId)
+          : undefined;
+
         ensurePerson(userId).roles.push({
           assignmentId: assignment.$id,
-          name: typeof role?.name === "string" && role.name ? role.name : "Unnamed role",
+          name:
+            typeof role?.name === "string" && role.name
+              ? role.name
+              : "Unnamed role",
           capabilities: Array.isArray(role?.capabilities)
-            ? role.capabilities.filter((capability): capability is string => typeof capability === "string")
+            ? role.capabilities.filter(
+                (capability): capability is string =>
+                  typeof capability === "string",
+              )
             : [],
-          scope: [assignment.scopeType || "global", assignment.scopeId].filter(Boolean).join(":"),
+          scope: [assignment.scopeType || "global", assignment.scopeId]
+            .filter(Boolean)
+            .join(":"),
           expiresAt: assignment.expiresAt,
         });
       }
 
       const offices: OfficeAssignment[] = [];
+
       for (const row of accessPayload?.officeAssignments ?? []) {
         const officeId = String(row.officeId ?? "");
         const assignment: OfficeAssignment = {
@@ -317,6 +385,7 @@ function AccessConsole() {
           termEnd: row.termEnd,
           status: String(row.status ?? ""),
         };
+
         offices.push(assignment);
         if (!assignment.userId || !isOfficeLive(assignment)) continue;
         ensurePerson(assignment.userId).offices.push({
@@ -331,15 +400,18 @@ function AccessConsole() {
 
       for (const assignment of accessPayload?.designationAssignments ?? []) {
         const userId = String(assignment.userId ?? "");
+
         if (!userId || !isLive(assignment)) continue;
         const entry = assignment.designationId
           ? designationById.get(String(assignment.designationId))
           : undefined;
         const capabilities = Array.isArray(entry?.capabilities)
           ? entry.capabilities.filter(
-              (capability): capability is string => typeof capability === "string",
+              (capability): capability is string =>
+                typeof capability === "string",
             )
           : [];
+
         ensurePerson(userId).titles.push({
           assignmentId: assignment.$id,
           name:
@@ -352,9 +424,13 @@ function AccessConsole() {
 
       for (const grant of powersPayload?.grants ?? []) {
         const userId = String(grant.userId ?? "");
+
         if (!userId || !isLive(grant)) continue;
         const power = grant.powerId ? powerById.get(grant.powerId) : undefined;
-        const departmentName = grant.departmentId ? departmentById.get(grant.departmentId)?.name : undefined;
+        const departmentName = grant.departmentId
+          ? departmentById.get(grant.departmentId)?.name
+          : undefined;
+
         ensurePerson(userId).powers.push({
           grantId: grant.$id,
           name:
@@ -363,7 +439,8 @@ function AccessConsole() {
             grant.powerId ||
             "Unknown power",
           scope: power?.scope || "global",
-          department: typeof departmentName === "string" ? departmentName : undefined,
+          department:
+            typeof departmentName === "string" ? departmentName : undefined,
           expiresAt: grant.expiresAt,
         });
       }
@@ -374,7 +451,11 @@ function AccessConsole() {
         ),
       );
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Unable to load the access overview");
+      setLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load the access overview",
+      );
     } finally {
       setLoadingPeople(false);
     }
@@ -386,7 +467,9 @@ function AccessConsole() {
 
   const filteredPeople = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+
     if (!q) return people;
+
     return people.filter((person) =>
       [
         person.name,
@@ -399,9 +482,18 @@ function AccessConsole() {
           office.termStart,
           office.termEnd ?? "",
         ]),
-        ...person.titles.flatMap((title) => [title.name, ...title.capabilities]),
-        ...person.powers.map((power) => `${power.name} ${power.department ?? ""}`),
-      ].some((value) => String(value ?? "").toLowerCase().includes(q)),
+        ...person.titles.flatMap((title) => [
+          title.name,
+          ...title.capabilities,
+        ]),
+        ...person.powers.map(
+          (power) => `${power.name} ${power.department ?? ""}`,
+        ),
+      ].some((value) =>
+        String(value ?? "")
+          .toLowerCase()
+          .includes(q),
+      ),
     );
   }, [people, searchQuery]);
 
@@ -410,7 +502,8 @@ function AccessConsole() {
       <main className="mx-auto max-w-6xl px-4 py-12">
         <Card>
           <CardContent className="p-8 text-center text-default-500">
-            The access console requires access.assign_roles, governance.manage_offices, or powers.manage.
+            The access console requires access.assign_roles,
+            governance.manage_offices, or powers.manage.
           </CardContent>
         </Card>
       </main>
@@ -422,28 +515,36 @@ function AccessConsole() {
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
         <Button variant="secondary" onPress={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-1" aria-hidden />
+          <ArrowLeft aria-hidden className="w-4 h-4 mr-1" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Access &amp; Powers</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+            Access &amp; Powers
+          </h1>
           <p className="text-default-500 mt-1 text-sm md:text-base max-w-3xl">
-            Who can do what, in one place. A role bundles capabilities on a scope with an optional expiry; a
-            charter office is the same bundle plus a term; a designation carries capabilities only when they
-            are listed on it; operational powers are fixed grants. The People tab joins all four.
+            Who can do what, in one place. A role bundles capabilities on a
+            scope with an optional expiry; a charter office is the same bundle
+            plus a term; a designation carries capabilities only when they are
+            listed on it; operational powers are fixed grants. The People tab
+            joins all four.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="Access console sections">
+      <div
+        aria-label="Access console sections"
+        className="flex flex-wrap gap-2 mb-6"
+        role="tablist"
+      >
         {visibleTabs.map((tab) => (
           <Button
             key={tab.key}
-            size="sm"
-            variant={activeTab === tab.key ? "primary" : "ghost"}
             aria-selected={activeTab === tab.key}
             isDisabled={activeTab === tab.key}
+            size="sm"
+            variant={activeTab === tab.key ? "primary" : "ghost"}
             onPress={() => setActiveTab(tab.key)}
           >
             {tab.label}
@@ -460,22 +561,31 @@ function AccessConsole() {
       )}
 
       {activeTab === "people" && (
-        <section className="space-y-4" aria-label="Members with roles, offices, or powers">
+        <section
+          aria-label="Members with roles, offices, or powers"
+          className="space-y-4"
+        >
           <div className="flex flex-wrap items-center gap-3">
             <Input
+              aria-label="Search members, roles, offices, and powers"
               className="max-w-md"
               placeholder="Search by name, URN, role, office, or power..."
-              aria-label="Search members, roles, offices, and powers"
               value={searchQuery}
               onChange={(event: any) => setSearchQuery(event.target.value)}
             />
             <span className="text-sm tabular-nums text-default-500">
-              {loadingPeople ? "Loading…" : `${filteredPeople.length} member${filteredPeople.length === 1 ? "" : "s"}`}
+              {loadingPeople
+                ? "Loading…"
+                : `${filteredPeople.length} member${filteredPeople.length === 1 ? "" : "s"}`}
             </span>
           </div>
 
           {loadingPeople ? (
-            <div className="flex items-center justify-center py-16" role="status" aria-label="Joining roles, offices and powers">
+            <div
+              aria-label="Joining roles, offices and powers"
+              className="flex items-center justify-center py-16"
+              role="status"
+            >
               <div className="text-center">
                 <Spinner size="lg" />
                 <p className="mt-4">Joining roles, offices and powers...</p>
@@ -504,14 +614,17 @@ function AccessConsole() {
                 <CardContent className="space-y-3 p-5">
                   <div className="flex items-center gap-3">
                     <MemberAvatar
-                      src={person.avatar}
-                      name={person.name}
                       className="w-10 h-10 text-sm font-bold flex-shrink-0"
+                      name={person.name}
+                      src={person.avatar}
                     />
                     <div className="min-w-0">
                       <h2 className="truncate font-semibold">{person.name}</h2>
                       <p className="truncate text-xs text-default-500">
-                        {[person.urn, person.name === person.userId ? null : person.userId]
+                        {[
+                          person.urn,
+                          person.name === person.userId ? null : person.userId,
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
@@ -519,22 +632,26 @@ function AccessConsole() {
                     <div className="ml-auto hidden flex-shrink-0 gap-1.5 sm:flex">
                       {person.roles.length > 0 && (
                         <Chip size="sm" variant="soft">
-                          {person.roles.length} role{person.roles.length === 1 ? "" : "s"}
+                          {person.roles.length} role
+                          {person.roles.length === 1 ? "" : "s"}
                         </Chip>
                       )}
                       {person.offices.length > 0 && (
                         <Chip size="sm" variant="soft">
-                          {person.offices.length} office{person.offices.length === 1 ? "" : "s"}
+                          {person.offices.length} office
+                          {person.offices.length === 1 ? "" : "s"}
                         </Chip>
                       )}
                       {person.titles.length > 0 && (
                         <Chip size="sm" variant="soft">
-                          {person.titles.length} title{person.titles.length === 1 ? "" : "s"}
+                          {person.titles.length} title
+                          {person.titles.length === 1 ? "" : "s"}
                         </Chip>
                       )}
                       {person.powers.length > 0 && (
                         <Chip size="sm" variant="soft">
-                          {person.powers.length} power{person.powers.length === 1 ? "" : "s"}
+                          {person.powers.length} power
+                          {person.powers.length === 1 ? "" : "s"}
                         </Chip>
                       )}
                     </div>
@@ -542,15 +659,21 @@ function AccessConsole() {
 
                   {person.roles.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Roles</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">
+                        Roles
+                      </span>
                       {person.roles.map((role) => (
                         <Chip
                           key={role.assignmentId}
                           size="sm"
-                          variant="soft"
-                          title={[role.capabilities.join(", "), role.scope, formatDate(role.expiresAt)]
+                          title={[
+                            role.capabilities.join(", "),
+                            role.scope,
+                            formatDate(role.expiresAt),
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
+                          variant="soft"
                         >
                           {role.name}
                         </Chip>
@@ -560,12 +683,18 @@ function AccessConsole() {
 
                   {person.offices.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Offices</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">
+                        Offices
+                      </span>
                       {person.offices.map((office) => (
                         <Chip
                           key={office.assignmentId}
                           size="sm"
-                          title={[office.selectionMethod, `from ${office.termStart}`, formatDate(office.termEnd)]
+                          title={[
+                            office.selectionMethod,
+                            `from ${office.termStart}`,
+                            formatDate(office.termEnd),
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         >
@@ -577,17 +706,19 @@ function AccessConsole() {
 
                   {person.titles.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Titles</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">
+                        Titles
+                      </span>
                       {person.titles.map((title) => (
                         <Chip
                           key={title.assignmentId}
                           size="sm"
-                          variant="soft"
                           title={
                             title.capabilities.length > 0
                               ? title.capabilities.join(", ")
                               : "Honour only — grants no capabilities"
                           }
+                          variant="soft"
                         >
                           {title.name}
                         </Chip>
@@ -597,12 +728,18 @@ function AccessConsole() {
 
                   {person.powers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Powers</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">
+                        Powers
+                      </span>
                       {person.powers.map((power) => (
                         <Chip
                           key={power.grantId}
                           size="sm"
-                          title={[power.scope, power.department, formatDate(power.expiresAt)]
+                          title={[
+                            power.scope,
+                            power.department,
+                            formatDate(power.expiresAt),
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         >
@@ -617,8 +754,9 @@ function AccessConsole() {
           )}
 
           <p className="flex items-center gap-1 text-xs text-default-400">
-            <SearchIcon className="h-3 w-3" aria-hidden />
-            Revoked and expired grants are omitted here; the Roles, Offices and Powers tabs keep the full trail.
+            <SearchIcon aria-hidden className="h-3 w-3" />
+            Revoked and expired grants are omitted here; the Roles, Offices and
+            Powers tabs keep the full trail.
           </p>
         </section>
       )}
@@ -626,9 +764,9 @@ function AccessConsole() {
       {activeTab === "roles" && <RolesManager />}
       {activeTab === "offices" && (
         <OfficesManager
+          accountNames={accountNames}
           assignments={officeAssignments}
           members={members}
-          accountNames={accountNames}
           membersAvailable={members.length > 0}
           onChanged={loadPeople}
         />
@@ -642,7 +780,11 @@ export default function AdminAccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-label="Loading access console">
+        <div
+          aria-label="Loading access console"
+          className="flex items-center justify-center min-h-[50vh]"
+          role="status"
+        >
           <Spinner size="lg" />
         </div>
       }

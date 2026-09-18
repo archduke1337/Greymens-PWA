@@ -1,12 +1,21 @@
 "use client";
-import { useEffect, useState, useCallback, type ChangeEvent, type KeyboardEvent } from "react";
-import { readApiError } from "@/lib/errorHandler";
-import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/context/PermissionContext";
+import type {
+  EventType,
+  RegistrationConfig,
+  TicketConfig,
+  WorkflowConfig,
+} from "@/lib/types/index";
+
+import {
+  useEffect,
+  useState,
+  useCallback,
+  type ChangeEvent,
+  type KeyboardEvent,
+} from "react";
 import { useRouter } from "next/navigation";
-import { eventTypeService } from "@/lib/eventTypes";
+import Image from "next/image";
 import { toast } from "sonner";
-import DynamicEventFields from "@/components/events/DynamicEventFields";
 import {
   ChevronRightIcon,
   ChevronLeftIcon,
@@ -36,7 +45,13 @@ import {
   Spinner,
   TextArea,
 } from "@heroui/react";
-import type { EventType, RegistrationConfig, TicketConfig, WorkflowConfig } from "@/lib/types/index";
+
+import { readApiError } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
+import { eventTypeService } from "@/lib/eventTypes";
+import DynamicEventFields from "@/components/events/DynamicEventFields";
+import { logError } from "@/lib/logger";
 
 const STEPS = [
   { id: 1, label: "Event Type", icon: FileTextIcon },
@@ -142,7 +157,9 @@ export default function AdminCreateEventPage() {
     workflowConfig: { ...defaultWorkflowConfig },
   });
 
-  const [typeFieldValues, setTypeFieldValues] = useState<Record<string, any>>({});
+  const [typeFieldValues, setTypeFieldValues] = useState<Record<string, any>>(
+    {},
+  );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -165,9 +182,10 @@ export default function AdminCreateEventPage() {
   const loadEventTypes = async () => {
     try {
       const types = await eventTypeService.getAll();
+
       setEventTypes(types);
     } catch (error) {
-      console.error("Error loading event types:", error);
+      logError("Error loading event types:", error);
       toast.error("Failed to load event types");
     } finally {
       setLoadingTypes(false);
@@ -183,7 +201,10 @@ export default function AdminCreateEventPage() {
     setFormData((prev) => ({
       ...prev,
       eventTypeId: type.$id!,
-      registrationConfig: { ...defaultRegistrationConfig, ...type.registrationConfig },
+      registrationConfig: {
+        ...defaultRegistrationConfig,
+        ...type.registrationConfig,
+      },
       ticketConfig: { ...defaultTicketConfig, ...type.ticketConfig },
       workflowConfig: { ...defaultWorkflowConfig, ...type.workflowConfig },
     }));
@@ -205,12 +226,14 @@ export default function AdminCreateEventPage() {
       if (!prev.slug || prev.slug === generateSlug(prev.title)) {
         return { ...prev, title: value, slug: generateSlug(value) };
       }
+
       return { ...prev, title: value };
     });
   };
 
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
+
     if (trimmed && !formData.tags.includes(trimmed)) {
       updateForm("tags", [...formData.tags, trimmed]);
       setTagInput("");
@@ -220,7 +243,7 @@ export default function AdminCreateEventPage() {
   const handleRemoveTag = (tag: string) => {
     updateForm(
       "tags",
-      formData.tags.filter((t) => t !== tag)
+      formData.tags.filter((t) => t !== tag),
     );
   };
 
@@ -237,12 +260,15 @@ export default function AdminCreateEventPage() {
           formData.location
         );
       case 3: {
-        if (!selectedType?.fields || selectedType.fields.length === 0) return true;
+        if (!selectedType?.fields || selectedType.fields.length === 0)
+          return true;
         const errors: Record<string, string> = {};
         let valid = true;
+
         for (const field of selectedType.fields) {
           if (field.required) {
             const val = typeFieldValues[field.name];
+
             if (val === undefined || val === null || val === "") {
               errors[field.name] = `${field.label} is required`;
               valid = false;
@@ -250,6 +276,7 @@ export default function AdminCreateEventPage() {
           }
         }
         setFieldErrors(errors);
+
         return valid;
       }
       case 4:
@@ -274,16 +301,19 @@ export default function AdminCreateEventPage() {
   const handleSubmit = async () => {
     if (!selectedType) {
       toast.error("Please select an event type");
+
       return;
     }
     if (!formData.title.trim()) {
       toast.error("Event title is required");
       setStep(2);
+
       return;
     }
     if (formData.endDate && formData.date && formData.endDate < formData.date) {
       toast.error("End date cannot be before the start date");
       setStep(2);
+
       return;
     }
     if (
@@ -292,6 +322,7 @@ export default function AdminCreateEventPage() {
     ) {
       toast.error("Discount price must be less than the regular price");
       setStep(2);
+
       return;
     }
 
@@ -299,11 +330,13 @@ export default function AdminCreateEventPage() {
     try {
       // The self-service endpoint requires slug + eventTypeId (the admin one
       // derives/defaults them), so always send both.
-      const slug = formData.slug.trim() || formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 255);
+      const slug =
+        formData.slug.trim() ||
+        formData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 255);
       const eventData = {
         title: formData.title,
         description: formData.description,
@@ -333,19 +366,30 @@ export default function AdminCreateEventPage() {
       // (which forces draft/review and derives ownership from the session).
       // Without this, the lead-tier create capability was API-only with no UI.
       const managesEvents = hasCapability("events.manage");
-      const response = await fetch(managesEvents ? "/api/admin/events" : "/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(eventData),
-      });
-      const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to create event"));
+      const response = await fetch(
+        managesEvents ? "/api/admin/events" : "/api/events",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(eventData),
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
 
-      toast.success(managesEvents ? "Event created successfully!" : "Event proposal submitted for review!");
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to create event"));
+
+      toast.success(
+        managesEvents
+          ? "Event created successfully!"
+          : "Event proposal submitted for review!",
+      );
       router.push(managesEvents ? "/admin/events" : "/events");
     } catch (error) {
-      console.error("Error creating event:", error);
+      logError("Error creating event:", error);
       toast.error("Failed to create event");
     } finally {
       setSubmitting(false);
@@ -355,7 +399,11 @@ export default function AdminCreateEventPage() {
   if (authLoading || loadingTypes) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Loading event setup">
+        <div
+          aria-label="Loading event setup"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Loading event setup...</p>
         </div>
@@ -379,19 +427,20 @@ export default function AdminCreateEventPage() {
           const Icon = s.icon;
           const isActive = step === s.id;
           const isCompleted = step > s.id;
+
           return (
             <div key={s.id} className="flex items-center">
               <button
-                onClick={() => {
-                  if (s.id < step) setStep(s.id);
-                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? "bg-primary text-white"
                     : isCompleted
-                    ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
-                    : "bg-default-100 text-default-400"
+                      ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
+                      : "bg-default-100 text-default-400"
                 }`}
+                onClick={() => {
+                  if (s.id < step) setStep(s.id);
+                }}
               >
                 {isCompleted ? (
                   <CheckIcon className="w-4 h-4" />
@@ -415,7 +464,8 @@ export default function AdminCreateEventPage() {
               <div>
                 <h2 className="text-lg font-bold mb-1">Select Event Type</h2>
                 <p className="text-sm text-default-500">
-                  Choose the type of event you want to create. This determines available fields and registration settings.
+                  Choose the type of event you want to create. This determines
+                  available fields and registration settings.
                 </p>
               </div>
               {eventTypes.length === 0 ? (
@@ -428,31 +478,41 @@ export default function AdminCreateEventPage() {
                   {eventTypes.map((type) => (
                     <button
                       key={type.$id}
-                      type="button"
-                      onClick={() => handleSelectType(type)}
                       className={`text-left p-4 rounded-xl border-2 transition-all ${
                         selectedType?.$id === type.$id
                           ? "border-primary bg-primary/5 shadow-md"
                           : "border-default-200 hover:border-primary/50 hover:bg-default-50"
                       }`}
+                      type="button"
+                      onClick={() => handleSelectType(type)}
                     >
                       <div className="flex items-start gap-3">
                         {type.icon && (
                           <span className="text-2xl">{type.icon}</span>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm">{type.displayName}</p>
+                          <p className="font-semibold text-sm">
+                            {type.displayName}
+                          </p>
                           {type.description && (
                             <p className="text-xs text-default-500 mt-1 line-clamp-2">
                               {type.description}
                             </p>
                           )}
                           <div className="flex items-center gap-2 mt-2">
-                            <Chip size="sm" variant="primary" className="text-xs tabular-nums">
+                            <Chip
+                              className="text-xs tabular-nums"
+                              size="sm"
+                              variant="primary"
+                            >
                               {type.fields?.length || 0} fields
                             </Chip>
                             {type.registrationConfig?.requiresApproval && (
-                              <Chip size="sm" variant="primary" className="text-xs">
+                              <Chip
+                                className="text-xs"
+                                size="sm"
+                                variant="primary"
+                              >
                                 Requires Approval
                               </Chip>
                             )}
@@ -480,18 +540,25 @@ export default function AdminCreateEventPage() {
 
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">Event Image URL</label>
+                  <label className="text-sm font-semibold">
+                    Event Image URL
+                  </label>
                   <Input
                     placeholder="https://example.com/image.jpg"
                     value={formData.image}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("image", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      updateForm("image", e.target.value)
+                    }
                   />
                   {formData.image?.startsWith("http") && (
                     <div className="relative group w-full">
-                      <img
-                        src={formData.image}
+                      <Image
+                        unoptimized
                         alt="Event image preview"
                         className="w-full h-40 object-cover rounded-xl border-2 border-border"
+                        height={160}
+                        src={formData.image}
+                        width={800}
                         onError={(e) => {
                           // Never swap in an external placeholder: it would be
                           // submitted as the event image. Hide instead.
@@ -509,7 +576,9 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="Event title"
                     value={formData.title}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => handleTitleChange(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      handleTitleChange(e.target.value)
+                    }
                   />
                 </div>
 
@@ -518,19 +587,21 @@ export default function AdminCreateEventPage() {
                   <Input
                     placeholder="event-slug"
                     value={formData.slug}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("slug", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      updateForm("slug", e.target.value)
+                    }
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="event-description">Description</Label>
                   <TextArea
-                    id="event-description"
                     fullWidth
+                    id="event-description"
                     placeholder="Describe your event"
+                    rows={4}
                     value={formData.description}
                     onChange={(e) => updateForm("description", e.target.value)}
-                    rows={4}
                   />
                 </div>
 
@@ -538,7 +609,9 @@ export default function AdminCreateEventPage() {
                   <Select
                     fullWidth
                     value={formData.category}
-                    onChange={(value) => updateForm("category", String(value ?? "conference"))}
+                    onChange={(value) =>
+                      updateForm("category", String(value ?? "conference"))
+                    }
                   >
                     <Label>Category</Label>
                     <Select.Trigger>
@@ -547,9 +620,28 @@ export default function AdminCreateEventPage() {
                     </Select.Trigger>
                     <Select.Popover>
                       <ListBox>
-                        {["conference", "workshop", "masterclass", "competition", "bootcamp", "forum", "hackathon", "meetup", "seminar", "other"].map((category) => (
-                          <ListBox.Item key={category} id={category} textValue={category.charAt(0).toUpperCase() + category.slice(1)}>
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                        {[
+                          "conference",
+                          "workshop",
+                          "masterclass",
+                          "competition",
+                          "bootcamp",
+                          "forum",
+                          "hackathon",
+                          "meetup",
+                          "seminar",
+                          "other",
+                        ].map((category) => (
+                          <ListBox.Item
+                            key={category}
+                            id={category}
+                            textValue={
+                              category.charAt(0).toUpperCase() +
+                              category.slice(1)
+                            }
+                          >
+                            {category.charAt(0).toUpperCase() +
+                              category.slice(1)}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
                         ))}
@@ -566,7 +658,9 @@ export default function AdminCreateEventPage() {
                     <Input
                       type="date"
                       value={formData.date}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("date", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        updateForm("date", e.target.value)
+                      }
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -576,7 +670,9 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., 09:00 AM - 06:00 PM"
                       value={formData.time}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("time", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        updateForm("time", e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -586,7 +682,9 @@ export default function AdminCreateEventPage() {
                   <Input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("endDate", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      updateForm("endDate", e.target.value)
+                    }
                   />
                 </div>
 
@@ -598,7 +696,9 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., Grand Convention Center"
                       value={formData.venue}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("venue", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        updateForm("venue", e.target.value)
+                      }
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -608,7 +708,9 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="e.g., New York, NY"
                       value={formData.location}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("location", e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        updateForm("location", e.target.value)
+                      }
                     />
                   </div>
                 </div>
@@ -617,14 +719,15 @@ export default function AdminCreateEventPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">Capacity</label>
                     <Input
-                      type="number"
                       placeholder="50"
+                      type="number"
                       value={formData.capacity?.toString()}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         const parsed = parseInt(e.target.value, 10);
+
                         updateForm(
                           "capacity",
-                          Number.isFinite(parsed) ? Math.max(1, parsed) : 50
+                          Number.isFinite(parsed) ? Math.max(1, parsed) : 50,
                         );
                       }}
                     />
@@ -632,33 +735,40 @@ export default function AdminCreateEventPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold">Price ($)</label>
                     <Input
-                      type="number"
                       placeholder="0"
+                      type="number"
                       value={formData.price?.toString()}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         const parsed = parseFloat(e.target.value);
+
                         updateForm(
                           "price",
-                          Number.isFinite(parsed) ? Math.max(0, parsed) : 0
+                          Number.isFinite(parsed) ? Math.max(0, parsed) : 0,
                         );
                       }}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold">Discount Price ($)</label>
+                    <label className="text-sm font-semibold">
+                      Discount Price ($)
+                    </label>
                     <Input
-                      type="number"
                       placeholder="Optional"
+                      type="number"
                       value={formData.discountPrice?.toString() || ""}
                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!e.target.value) {
                           updateForm("discountPrice", null);
+
                           return;
                         }
                         const parsed = parseFloat(e.target.value);
+
                         updateForm(
                           "discountPrice",
-                          Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+                          Number.isFinite(parsed) && parsed >= 0
+                            ? parsed
+                            : null,
                         );
                       }}
                     />
@@ -672,11 +782,14 @@ export default function AdminCreateEventPage() {
                     onChange={(value) =>
                       updateForm(
                         "audience",
-                        String(value ?? "public") as "public" | "member_only" | "exclusive"
+                        String(value ?? "public") as
+                          "public" | "member_only" | "exclusive",
                       )
                     }
                   >
-                    <Label>Audience <span className="text-danger">*</span></Label>
+                    <Label>
+                      Audience <span className="text-danger">*</span>
+                    </Label>
                     <Select.Trigger>
                       <Select.Value />
                       <Select.Indicator />
@@ -701,44 +814,52 @@ export default function AdminCreateEventPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
-                    <Checkbox
-                      isSelected={formData.isFeatured}
-                      onChange={(selected: boolean) => updateForm("isFeatured", selected)}
-                      aria-label="Featured"
-                    >
-                      <Checkbox.Content>
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
-                        <div className="flex items-center gap-2">
-                          <StarIcon className="w-4 h-4 text-warning" />
-                          <span className="font-semibold text-sm">Featured</span>
-                        </div>
-                      </Checkbox.Content>
-                    </Checkbox>
-                    <Checkbox
-                      isSelected={formData.isPremium}
-                      onChange={(selected: boolean) => updateForm("isPremium", selected)}
-                      aria-label="Premium"
-                    >
-                      <Checkbox.Content>
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
-                        <div className="flex items-center gap-2">
-                          <CrownIcon className="w-4 h-4 text-primary" />
-                          <span className="font-semibold text-sm">Premium</span>
-                        </div>
-                      </Checkbox.Content>
-                    </Checkbox>
+                  <Checkbox
+                    aria-label="Featured"
+                    isSelected={formData.isFeatured}
+                    onChange={(selected: boolean) =>
+                      updateForm("isFeatured", selected)
+                    }
+                  >
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      <div className="flex items-center gap-2">
+                        <StarIcon className="w-4 h-4 text-warning" />
+                        <span className="font-semibold text-sm">Featured</span>
+                      </div>
+                    </Checkbox.Content>
+                  </Checkbox>
+                  <Checkbox
+                    aria-label="Premium"
+                    isSelected={formData.isPremium}
+                    onChange={(selected: boolean) =>
+                      updateForm("isPremium", selected)
+                    }
+                  >
+                    <Checkbox.Content>
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      <div className="flex items-center gap-2">
+                        <CrownIcon className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-sm">Premium</span>
+                      </div>
+                    </Checkbox.Content>
+                  </Checkbox>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold">Organizer Name</label>
+                  <label className="text-sm font-semibold">
+                    Organizer Name
+                  </label>
                   <Input
                     placeholder="Organizer name"
                     value={formData.organizerName}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateForm("organizerName", e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      updateForm("organizerName", e.target.value)
+                    }
                   />
                 </div>
 
@@ -748,7 +869,9 @@ export default function AdminCreateEventPage() {
                     <Input
                       placeholder="Add a tag"
                       value={tagInput}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setTagInput(e.target.value)
+                      }
                       onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -756,7 +879,11 @@ export default function AdminCreateEventPage() {
                         }
                       }}
                     />
-                    <Button type="button" variant="primary" onPress={handleAddTag}>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onPress={handleAddTag}
+                    >
                       Add
                     </Button>
                   </div>
@@ -765,9 +892,9 @@ export default function AdminCreateEventPage() {
                       {formData.tags.map((tag) => (
                         <button
                           key={tag}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                         >
                           {tag}
                           <XIcon className="w-3 h-3" />
@@ -792,12 +919,15 @@ export default function AdminCreateEventPage() {
               </div>
               {selectedType && (
                 <DynamicEventFields
+                  errors={fieldErrors}
                   fields={selectedType.fields || []}
                   values={typeFieldValues}
                   onChange={(fieldName, value) =>
-                    setTypeFieldValues((prev) => ({ ...prev, [fieldName]: value }))
+                    setTypeFieldValues((prev) => ({
+                      ...prev,
+                      [fieldName]: value,
+                    }))
                   }
-                  errors={fieldErrors}
                 />
               )}
             </div>
@@ -820,7 +950,9 @@ export default function AdminCreateEventPage() {
                     onChange={(value) =>
                       updateForm("registrationConfig", {
                         ...formData.registrationConfig,
-                        defaultAudience: String(value ?? "public") as RegistrationConfig["defaultAudience"],
+                        defaultAudience: String(
+                          value ?? "public",
+                        ) as RegistrationConfig["defaultAudience"],
                       })
                     }
                   >
@@ -851,14 +983,19 @@ export default function AdminCreateEventPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-semibold">Max Team Size</label>
                   <Input
-                    type="number"
                     placeholder="1"
-                    value={formData.registrationConfig.maxTeamSize?.toString() || "1"}
+                    type="number"
+                    value={
+                      formData.registrationConfig.maxTeamSize?.toString() || "1"
+                    }
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
                       const parsed = parseInt(e.target.value, 10);
+
                       updateForm("registrationConfig", {
                         ...formData.registrationConfig,
-                        maxTeamSize: Number.isFinite(parsed) ? Math.max(1, parsed) : 1,
+                        maxTeamSize: Number.isFinite(parsed)
+                          ? Math.max(1, parsed)
+                          : 1,
                       });
                     }}
                   />
@@ -870,27 +1007,31 @@ export default function AdminCreateEventPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                     <div>
-                      <p className="text-sm font-semibold">Allow Guest Registration</p>
+                      <p className="text-sm font-semibold">
+                        Allow Guest Registration
+                      </p>
                       <p className="text-xs text-default-500">
                         Allow non-members to register
                       </p>
                     </div>
-                      <Checkbox
-                        isSelected={formData.registrationConfig.allowGuestRegistration}
-                        onChange={(selected: boolean) =>
-                          updateForm("registrationConfig", {
-                            ...formData.registrationConfig,
-                            allowGuestRegistration: selected,
-                          })
-                        }
-                        aria-label="Allow Guest Registration"
-                      >
-                        <Checkbox.Content>
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox.Content>
-                      </Checkbox>
+                    <Checkbox
+                      aria-label="Allow Guest Registration"
+                      isSelected={
+                        formData.registrationConfig.allowGuestRegistration
+                      }
+                      onChange={(selected: boolean) =>
+                        updateForm("registrationConfig", {
+                          ...formData.registrationConfig,
+                          allowGuestRegistration: selected,
+                        })
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -900,22 +1041,22 @@ export default function AdminCreateEventPage() {
                         Registrations need admin approval
                       </p>
                     </div>
-                      <Checkbox
-                        isSelected={formData.registrationConfig.requiresApproval}
-                        onChange={(selected: boolean) =>
-                          updateForm("registrationConfig", {
-                            ...formData.registrationConfig,
-                            requiresApproval: selected,
-                          })
-                        }
-                        aria-label="Requires Approval"
-                      >
-                        <Checkbox.Content>
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox.Content>
-                      </Checkbox>
+                    <Checkbox
+                      aria-label="Requires Approval"
+                      isSelected={formData.registrationConfig.requiresApproval}
+                      onChange={(selected: boolean) =>
+                        updateForm("registrationConfig", {
+                          ...formData.registrationConfig,
+                          requiresApproval: selected,
+                        })
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
@@ -925,72 +1066,81 @@ export default function AdminCreateEventPage() {
                         Waitlist when event is full
                       </p>
                     </div>
-                      <Checkbox
-                        isSelected={formData.registrationConfig.waitlistEnabled}
-                        onChange={(selected: boolean) =>
-                          updateForm("registrationConfig", {
-                            ...formData.registrationConfig,
-                            waitlistEnabled: selected,
-                          })
-                        }
-                        aria-label="Enable Waitlist"
-                      >
-                        <Checkbox.Content>
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox.Content>
-                      </Checkbox>
+                    <Checkbox
+                      aria-label="Enable Waitlist"
+                      isSelected={formData.registrationConfig.waitlistEnabled}
+                      onChange={(selected: boolean) =>
+                        updateForm("registrationConfig", {
+                          ...formData.registrationConfig,
+                          waitlistEnabled: selected,
+                        })
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                     <div>
-                      <p className="text-sm font-semibold">Allow Cancellation</p>
+                      <p className="text-sm font-semibold">
+                        Allow Cancellation
+                      </p>
                       <p className="text-xs text-default-500">
                         Allow users to cancel registration
                       </p>
                     </div>
-                      <Checkbox
-                        isSelected={formData.registrationConfig.cancellationAllowed}
-                        onChange={(selected: boolean) =>
-                          updateForm("registrationConfig", {
-                            ...formData.registrationConfig,
-                            cancellationAllowed: selected,
-                          })
-                        }
-                        aria-label="Allow Cancellation"
-                      >
-                        <Checkbox.Content>
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox.Content>
-                      </Checkbox>
+                    <Checkbox
+                      aria-label="Allow Cancellation"
+                      isSelected={
+                        formData.registrationConfig.cancellationAllowed
+                      }
+                      onChange={(selected: boolean) =>
+                        updateForm("registrationConfig", {
+                          ...formData.registrationConfig,
+                          cancellationAllowed: selected,
+                        })
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                     <div>
-                      <p className="text-sm font-semibold">Enable Team Formation</p>
+                      <p className="text-sm font-semibold">
+                        Enable Team Formation
+                      </p>
                       <p className="text-xs text-default-500">
                         Allow participants to form teams
                       </p>
                     </div>
-                      <Checkbox
-                        isSelected={formData.registrationConfig.teamFormationEnabled || false}
-                        onChange={(selected: boolean) =>
-                          updateForm("registrationConfig", {
-                            ...formData.registrationConfig,
-                            teamFormationEnabled: selected,
-                          })
-                        }
-                        aria-label="Enable Team Formation"
-                      >
-                        <Checkbox.Content>
-                          <Checkbox.Control>
-                            <Checkbox.Indicator />
-                          </Checkbox.Control>
-                        </Checkbox.Content>
-                      </Checkbox>
+                    <Checkbox
+                      aria-label="Enable Team Formation"
+                      isSelected={
+                        formData.registrationConfig.teamFormationEnabled ||
+                        false
+                      }
+                      onChange={(selected: boolean) =>
+                        updateForm("registrationConfig", {
+                          ...formData.registrationConfig,
+                          teamFormationEnabled: selected,
+                        })
+                      }
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
                 </div>
 
@@ -1004,7 +1154,9 @@ export default function AdminCreateEventPage() {
                         onChange={(value) =>
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            ticketType: String(value ?? "standard") as TicketConfig["ticketType"],
+                            ticketType: String(
+                              value ?? "standard",
+                            ) as TicketConfig["ticketType"],
                           })
                         }
                       >
@@ -1033,16 +1185,23 @@ export default function AdminCreateEventPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold">Max Entries</label>
+                      <label className="text-sm font-semibold">
+                        Max Entries
+                      </label>
                       <Input
-                        type="number"
                         placeholder="1"
-                        value={formData.ticketConfig.maxEntries?.toString() || "1"}
+                        type="number"
+                        value={
+                          formData.ticketConfig.maxEntries?.toString() || "1"
+                        }
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           const parsed = parseInt(e.target.value, 10);
+
                           updateForm("ticketConfig", {
                             ...formData.ticketConfig,
-                            maxEntries: Number.isFinite(parsed) ? Math.max(1, parsed) : 1,
+                            maxEntries: Number.isFinite(parsed)
+                              ? Math.max(1, parsed)
+                              : 1,
                           });
                         }}
                       />
@@ -1056,6 +1215,7 @@ export default function AdminCreateEventPage() {
                         </p>
                       </div>
                       <Checkbox
+                        aria-label="QR Enabled"
                         isSelected={formData.ticketConfig.qrEnabled}
                         onChange={(selected: boolean) =>
                           updateForm("ticketConfig", {
@@ -1063,7 +1223,6 @@ export default function AdminCreateEventPage() {
                             qrEnabled: selected,
                           })
                         }
-                        aria-label="QR Enabled"
                       >
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1075,12 +1234,15 @@ export default function AdminCreateEventPage() {
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                       <div>
-                        <p className="text-sm font-semibold">Transfer Allowed</p>
+                        <p className="text-sm font-semibold">
+                          Transfer Allowed
+                        </p>
                         <p className="text-xs text-default-500">
                           Allow ticket transfers between users
                         </p>
                       </div>
                       <Checkbox
+                        aria-label="Transfer Allowed"
                         isSelected={formData.ticketConfig.transferAllowed}
                         onChange={(selected: boolean) =>
                           updateForm("ticketConfig", {
@@ -1088,7 +1250,6 @@ export default function AdminCreateEventPage() {
                             transferAllowed: selected,
                           })
                         }
-                        aria-label="Transfer Allowed"
                       >
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1105,12 +1266,15 @@ export default function AdminCreateEventPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                       <div>
-                        <p className="text-sm font-semibold">Approval Required</p>
+                        <p className="text-sm font-semibold">
+                          Approval Required
+                        </p>
                         <p className="text-xs text-default-500">
                           Events need admin approval before publishing
                         </p>
                       </div>
                       <Checkbox
+                        aria-label="Approval Required"
                         isSelected={formData.workflowConfig.approvalRequired}
                         onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
@@ -1118,7 +1282,6 @@ export default function AdminCreateEventPage() {
                             approvalRequired: selected,
                           })
                         }
-                        aria-label="Approval Required"
                       >
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1130,20 +1293,24 @@ export default function AdminCreateEventPage() {
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                       <div>
-                        <p className="text-sm font-semibold">Auto Activate at Event Time</p>
+                        <p className="text-sm font-semibold">
+                          Auto Activate at Event Time
+                        </p>
                         <p className="text-xs text-default-500">
                           Automatically activate event when date/time arrives
                         </p>
                       </div>
                       <Checkbox
-                        isSelected={formData.workflowConfig.autoActivateAtEventTime}
+                        aria-label="Auto Activate at Event Time"
+                        isSelected={
+                          formData.workflowConfig.autoActivateAtEventTime
+                        }
                         onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
                             ...formData.workflowConfig,
                             autoActivateAtEventTime: selected,
                           })
                         }
-                        aria-label="Auto Activate at Event Time"
                       >
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1155,20 +1322,24 @@ export default function AdminCreateEventPage() {
 
                     <div className="flex items-center justify-between p-3 bg-default-50 dark:bg-default-100/5 rounded-lg">
                       <div>
-                        <p className="text-sm font-semibold">Publish After Approval</p>
+                        <p className="text-sm font-semibold">
+                          Publish After Approval
+                        </p>
                         <p className="text-xs text-default-500">
                           Auto-publish once approved
                         </p>
                       </div>
                       <Checkbox
-                        isSelected={formData.workflowConfig.publishAfterApproval}
+                        aria-label="Publish After Approval"
+                        isSelected={
+                          formData.workflowConfig.publishAfterApproval
+                        }
                         onChange={(selected: boolean) =>
                           updateForm("workflowConfig", {
                             ...formData.workflowConfig,
                             publishAfterApproval: selected,
                           })
                         }
-                        aria-label="Publish After Approval"
                       >
                         <Checkbox.Content>
                           <Checkbox.Control>
@@ -1194,10 +1365,13 @@ export default function AdminCreateEventPage() {
 
               <div className="space-y-4">
                 {formData.image && (
-                  <img
-                    src={formData.image}
+                  <Image
+                    unoptimized
                     alt="Event preview"
                     className="w-full h-48 object-cover rounded-xl"
+                    height={192}
+                    src={formData.image}
+                    width={800}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
@@ -1206,27 +1380,33 @@ export default function AdminCreateEventPage() {
 
                 <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl space-y-3">
                   <div className="flex items-center gap-2">
-                    {selectedType?.icon && <span className="text-lg">{selectedType.icon}</span>}
-                    <Chip color="success" variant="primary" size="sm">
+                    {selectedType?.icon && (
+                      <span className="text-lg">{selectedType.icon}</span>
+                    )}
+                    <Chip color="success" size="sm" variant="primary">
                       {selectedType?.displayName || "No Type"}
                     </Chip>
                     {formData.isFeatured && (
-                      <Chip color="warning" variant="primary" size="sm">
+                      <Chip color="warning" size="sm" variant="primary">
                         <StarIcon className="w-3 h-3 mr-1" />
                         Featured
                       </Chip>
                     )}
                     {formData.isPremium && (
-                      <Chip color="danger" variant="primary" size="sm">
+                      <Chip color="danger" size="sm" variant="primary">
                         <CrownIcon className="w-3 h-3 mr-1" />
                         Premium
                       </Chip>
                     )}
                   </div>
 
-                  <h3 className="text-xl font-bold">{formData.title || "Untitled Event"}</h3>
+                  <h3 className="text-xl font-bold">
+                    {formData.title || "Untitled Event"}
+                  </h3>
                   {formData.description && (
-                    <p className="text-sm text-default-600 line-clamp-3">{formData.description}</p>
+                    <p className="text-sm text-default-600 line-clamp-3">
+                      {formData.description}
+                    </p>
                   )}
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -1240,30 +1420,37 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPinIcon className="w-4 h-4 text-primary" />
-                      <span className="truncate">{formData.venue || "TBD"}</span>
+                      <span className="truncate">
+                        {formData.venue || "TBD"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <UsersIcon className="w-4 h-4 text-primary" />
-                      <span className="tabular-nums">{formData.capacity} spots</span>
+                      <span className="tabular-nums">
+                        {formData.capacity} spots
+                      </span>
                     </div>
                   </div>
 
                   {formData.price > 0 && (
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSignIcon className="w-4 h-4 text-success" />
-                      <span className="font-semibold tabular-nums">${formData.price}</span>
-                      {formData.discountPrice && formData.discountPrice < formData.price && (
-                        <span className="text-success line-through text-xs tabular-nums">
-                          ${formData.discountPrice}
-                        </span>
-                      )}
+                      <span className="font-semibold tabular-nums">
+                        ${formData.price}
+                      </span>
+                      {formData.discountPrice &&
+                        formData.discountPrice < formData.price && (
+                          <span className="text-success line-through text-xs tabular-nums">
+                            ${formData.discountPrice}
+                          </span>
+                        )}
                     </div>
                   )}
 
                   {formData.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {formData.tags.map((tag) => (
-                        <Chip key={tag} variant="primary" size="sm">
+                        <Chip key={tag} size="sm" variant="primary">
                           {tag}
                         </Chip>
                       ))}
@@ -1273,7 +1460,9 @@ export default function AdminCreateEventPage() {
 
                 {Object.keys(typeFieldValues).length > 0 && (
                   <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
-                    <h4 className="font-semibold text-sm mb-2">Type-Specific Data</h4>
+                    <h4 className="font-semibold text-sm mb-2">
+                      Type-Specific Data
+                    </h4>
                     <div className="space-y-1 text-sm">
                       {Object.entries(typeFieldValues).map(([key, val]) => (
                         <div key={key} className="flex justify-between">
@@ -1281,7 +1470,9 @@ export default function AdminCreateEventPage() {
                             {key.replace(/([A-Z])/g, " $1").trim()}
                           </span>
                           <span className="font-medium">
-                            {typeof val === "object" ? JSON.stringify(val) : String(val)}
+                            {typeof val === "object"
+                              ? JSON.stringify(val)
+                              : String(val)}
                           </span>
                         </div>
                       ))}
@@ -1290,7 +1481,9 @@ export default function AdminCreateEventPage() {
                 )}
 
                 <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
-                  <h4 className="font-semibold text-sm mb-2">Registration Settings</h4>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Registration Settings
+                  </h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-default-500">Audience</span>
@@ -1298,29 +1491,49 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Team Size</span>
-                      <span className="tabular-nums">{formData.registrationConfig.maxTeamSize}</span>
+                      <span className="tabular-nums">
+                        {formData.registrationConfig.maxTeamSize}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Guests</span>
-                      <span>{formData.registrationConfig.allowGuestRegistration ? "Yes" : "No"}</span>
+                      <span>
+                        {formData.registrationConfig.allowGuestRegistration
+                          ? "Yes"
+                          : "No"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Approval</span>
-                      <span>{formData.registrationConfig.requiresApproval ? "Required" : "None"}</span>
+                      <span>
+                        {formData.registrationConfig.requiresApproval
+                          ? "Required"
+                          : "None"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Waitlist</span>
-                      <span>{formData.registrationConfig.waitlistEnabled ? "Enabled" : "Disabled"}</span>
+                      <span>
+                        {formData.registrationConfig.waitlistEnabled
+                          ? "Enabled"
+                          : "Disabled"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Cancellation</span>
-                      <span>{formData.registrationConfig.cancellationAllowed ? "Allowed" : "Not Allowed"}</span>
+                      <span>
+                        {formData.registrationConfig.cancellationAllowed
+                          ? "Allowed"
+                          : "Not Allowed"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
-                  <h4 className="font-semibold text-sm mb-2">Ticket Settings</h4>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Ticket Settings
+                  </h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-default-500">Type</span>
@@ -1328,15 +1541,25 @@ export default function AdminCreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Max Entries</span>
-                      <span className="tabular-nums">{formData.ticketConfig.maxEntries}</span>
+                      <span className="tabular-nums">
+                        {formData.ticketConfig.maxEntries}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">QR Codes</span>
-                      <span>{formData.ticketConfig.qrEnabled ? "Enabled" : "Disabled"}</span>
+                      <span>
+                        {formData.ticketConfig.qrEnabled
+                          ? "Enabled"
+                          : "Disabled"}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-default-500">Transfer</span>
-                      <span>{formData.ticketConfig.transferAllowed ? "Allowed" : "Not Allowed"}</span>
+                      <span>
+                        {formData.ticketConfig.transferAllowed
+                          ? "Allowed"
+                          : "Not Allowed"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1347,28 +1570,24 @@ export default function AdminCreateEventPage() {
       </Card>
 
       <div className="flex justify-between mt-6">
-        <Button
-          variant="ghost"
-          onPress={prevStep}
-          isDisabled={step === 1}
-        >
+        <Button isDisabled={step === 1} variant="ghost" onPress={prevStep}>
           <ChevronLeftIcon className="w-4 h-4 mr-1" />
           Previous
         </Button>
 
         {step < 5 ? (
           <Button
-            onPress={nextStep}
             className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+            onPress={nextStep}
           >
             Next
             <ChevronRightIcon className="w-4 h-4 ml-1" />
           </Button>
         ) : (
           <Button
-            onPress={handleSubmit}
-            isPending={submitting}
             className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+            isPending={submitting}
+            onPress={handleSubmit}
           >
             <CheckIcon className="w-4 h-4 mr-1" />
             Create Event

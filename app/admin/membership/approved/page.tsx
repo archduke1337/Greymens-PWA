@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import { toast } from "sonner";
 import type { Application, Membership, Profile, Department } from "@/lib/types";
+
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   CheckCircleIcon,
   UsersIcon,
   Building2Icon,
   CalendarIcon,
-  SearchIcon,
   ArrowLeftIcon,
   HashIcon,
 } from "lucide-react";
@@ -35,12 +33,18 @@ import {
   TableBody,
   TableCell,
   TableColumn,
-  TableHeader, TableContent, TableScrollContainer,
+  TableHeader,
+  TableContent,
+  TableScrollContainer,
   TableRow,
   Input,
   useOverlayState,
 } from "@heroui/react";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
+import { logError } from "@/lib/logger";
 
 interface ApprovedMember {
   application: Application;
@@ -57,7 +61,9 @@ export default function AdminMembershipApprovedPage() {
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [detailsMember, setDetailsMember] = useState<ApprovedMember | null>(null);
+  const [detailsMember, setDetailsMember] = useState<ApprovedMember | null>(
+    null,
+  );
   const {
     isOpen: isDetailsOpen,
     open: openDetails,
@@ -66,8 +72,10 @@ export default function AdminMembershipApprovedPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/membership?status=approved", { cache: "no-store" });
-      const payload = await response.json().catch(() => null) as {
+      const response = await fetch("/api/admin/membership?status=approved", {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
         applications?: Application[];
         profiles?: Profile[];
         memberships?: Membership[];
@@ -75,25 +83,36 @@ export default function AdminMembershipApprovedPage() {
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to load approved members"));
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "Failed to load approved members"),
+        );
 
       const approvedApps = payload?.applications ?? [];
+
       setDepartments(payload?.departments ?? []);
       setAccountNames(payload?.accountNames ?? {});
 
       const membershipMap: Record<string, Membership> = {};
-      for (const membership of payload?.memberships ?? []) membershipMap[membership.applicationId] = membership;
+
+      for (const membership of payload?.memberships ?? [])
+        membershipMap[membership.applicationId] = membership;
 
       const profileMap: Record<string, Profile> = {};
-      for (const profile of payload?.profiles ?? []) profileMap[profile.userId] = profile;
 
-      setMembers(approvedApps.map((application) => ({
-        application,
-        membership: membershipMap[application.$id ?? ""],
-        profile: profileMap[application.userId] ?? null,
-      })));
+      for (const profile of payload?.profiles ?? [])
+        profileMap[profile.userId] = profile;
+
+      setMembers(
+        approvedApps.map((application) => ({
+          application,
+          membership: membershipMap[application.$id ?? ""],
+          profile: profileMap[application.userId] ?? null,
+        })),
+      );
     } catch (error) {
-      console.error("Error loading approved members:", error);
+      logError("Error loading approved members:", error);
       toast.error(getErrorMessage(error) || "Failed to load approved members");
     } finally {
       setLoading(false);
@@ -104,6 +123,7 @@ export default function AdminMembershipApprovedPage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+
       return;
     }
     loadData();
@@ -111,6 +131,7 @@ export default function AdminMembershipApprovedPage() {
 
   const getDepartmentNames = (ids?: string[]) => {
     if (!ids || ids.length === 0) return [];
+
     return ids
       .map((id) => departments.find((d) => d.$id === id)?.name)
       .filter(Boolean) as string[];
@@ -120,6 +141,7 @@ export default function AdminMembershipApprovedPage() {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     const profile = m.profile;
+
     return (
       accountNames[m.application.userId]?.toLowerCase().includes(q) ||
       profile?.urn?.toLowerCase().includes(q) ||
@@ -132,7 +154,11 @@ export default function AdminMembershipApprovedPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4" role="status" aria-label="Loading approved members">
+        <div
+          aria-label="Loading approved members"
+          className="text-center space-y-4"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-default-500">Loading approved members...</p>
         </div>
@@ -178,7 +204,9 @@ export default function AdminMembershipApprovedPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Members</p>
-                <p className="text-2xl font-bold tabular-nums">{members.length}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {members.length}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
                 <UsersIcon className="w-6 h-6 text-success" />
@@ -209,7 +237,10 @@ export default function AdminMembershipApprovedPage() {
               <div>
                 <p className="text-sm text-default-500">Active</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  {members.filter((m) => m.membership?.status === "active").length}
+                  {
+                    members.filter((m) => m.membership?.status === "active")
+                      .length
+                  }
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -226,156 +257,201 @@ export default function AdminMembershipApprovedPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableScrollContainer>
-                <TableContent aria-label="Approved members table" className="min-w-full">
-              <TableHeader>
-                <TableColumn>MEMBER</TableColumn>
-                <TableColumn className="hidden md:table-cell">MEMBERSHIP #</TableColumn>
-                <TableColumn className="hidden lg:table-cell">DEPARTMENT</TableColumn>
-                <TableColumn className="hidden sm:table-cell">APPROVED</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {filteredMembers.length === 0 ? (
-                  <TableRow key="empty">
-                    <TableCell>
-                      <div className="text-center py-12">
-                        <CheckCircleIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
-                        <p className="text-default-500 text-lg font-medium">
-                          {searchQuery ? "No matching members" : "No approved members yet"}
-                        </p>
-                        <p className="text-default-400 text-sm mt-1">
-                          {searchQuery
-                            ? "Try a different search term"
-                            : "Approved members will appear here"}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMembers.map((member) => {
-                    if (!member.membership) {
-                      return (
-                        <TableRow key={member.application.$id}>
-                          <TableCell>
-                            <span className="text-sm text-default-400">
-                              Membership missing for application {member.application.$id}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }
-                    const membership = member.membership;
-                    const deptName = membership.department
-                      ? departments.find((d) => d.$id === membership.department)?.name
-                      : null;
-                    const preferredDepts = getDepartmentNames(
-                      member.application.preferredDepartments
-                    );
-
-                    return (
-                      <TableRow key={member.application.$id}>
+                <TableContent
+                  aria-label="Approved members table"
+                  className="min-w-full"
+                >
+                  <TableHeader>
+                    <TableColumn>MEMBER</TableColumn>
+                    <TableColumn className="hidden md:table-cell">
+                      MEMBERSHIP #
+                    </TableColumn>
+                    <TableColumn className="hidden lg:table-cell">
+                      DEPARTMENT
+                    </TableColumn>
+                    <TableColumn className="hidden sm:table-cell">
+                      APPROVED
+                    </TableColumn>
+                    <TableColumn>STATUS</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMembers.length === 0 ? (
+                      <TableRow key="empty">
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 shrink-0">
-                              <AvatarImage
-                                src={
-                                  member.profile?.avatar ||
-                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                    accountNames[member.application.userId] || member.profile?.urn || member.application.userId
-                                  )}&background=16a34a&color=fff`
-                                }
-                                alt={accountNames[member.application.userId] || member.profile?.urn || "Member"}
-                              />
-                              <AvatarFallback>
-                                {(accountNames[member.application.userId] || member.profile?.urn || "M").charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-sm truncate">
-                                {accountNames[member.application.userId] || member.profile?.urn || member.application.userId.slice(0, 12)}
-                              </p>
-                              <p className="text-xs text-default-400 truncate">
-                                {member.profile?.branch || member.profile?.program || "N/A"}
-                              </p>
-                              {/* Mobile-only membership # */}
-                              <p className="text-xs text-default-400 md:hidden flex items-center gap-1">
-                                <HashIcon className="w-3 h-3" />
-                                {membership.membershipNumber || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-1">
-                            <HashIcon className="w-3 h-3 text-default-400" />
-                            <span className="text-sm font-mono tabular-nums">
-                              {membership.membershipNumber || "N/A"}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="flex flex-wrap gap-1">
-                            {deptName ? (
-                              <Chip size="sm" variant="soft" color="success">
-                                {deptName}
-                              </Chip>
-                            ) : preferredDepts.length > 0 ? (
-                              preferredDepts.map((name) => (
-                                <Chip key={name} size="sm" variant="soft" color="accent">
-                                  {name}
-                                </Chip>
-                              ))
-                            ) : (
-                              <span className="text-xs text-default-400">Unassigned</span>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="flex items-center gap-1 text-sm text-default-500">
-                            <CalendarIcon className="w-3 h-3" />
-                            {membership.approvedAt
-                              ? new Date(membership.approvedAt).toLocaleDateString()
-                              : member.application.reviewedAt
-                                ? new Date(member.application.reviewedAt).toLocaleDateString()
-                                : "N/A"}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Chip
-                              color={
-                                membership.status === "active"
-                                  ? "success"
-                                  : membership.status === "banned"
-                                    ? "danger"
-                                    : "default"
-                              }
-                              variant="soft"
-                              size="sm"
-                            >
-                              {membership.status}
-                            </Chip>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onPress={() => {
-                                setDetailsMember(member);
-                                openDetails();
-                              }}
-                            >
-                              Details
-                            </Button>
+                          <div className="text-center py-12">
+                            <CheckCircleIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
+                            <p className="text-default-500 text-lg font-medium">
+                              {searchQuery
+                                ? "No matching members"
+                                : "No approved members yet"}
+                            </p>
+                            <p className="text-default-400 text-sm mt-1">
+                              {searchQuery
+                                ? "Try a different search term"
+                                : "Approved members will appear here"}
+                            </p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
+                    ) : (
+                      filteredMembers.map((member) => {
+                        if (!member.membership) {
+                          return (
+                            <TableRow key={member.application.$id}>
+                              <TableCell>
+                                <span className="text-sm text-default-400">
+                                  Membership missing for application{" "}
+                                  {member.application.$id}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                        const membership = member.membership;
+                        const deptName = membership.department
+                          ? departments.find(
+                              (d) => d.$id === membership.department,
+                            )?.name
+                          : null;
+                        const preferredDepts = getDepartmentNames(
+                          member.application.preferredDepartments,
+                        );
+
+                        return (
+                          <TableRow key={member.application.$id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 shrink-0">
+                                  <AvatarImage
+                                    alt={
+                                      accountNames[member.application.userId] ||
+                                      member.profile?.urn ||
+                                      "Member"
+                                    }
+                                    src={
+                                      member.profile?.avatar ||
+                                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                        accountNames[
+                                          member.application.userId
+                                        ] ||
+                                          member.profile?.urn ||
+                                          member.application.userId,
+                                      )}&background=16a34a&color=fff`
+                                    }
+                                  />
+                                  <AvatarFallback>
+                                    {(
+                                      accountNames[member.application.userId] ||
+                                      member.profile?.urn ||
+                                      "M"
+                                    ).charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-sm truncate">
+                                    {accountNames[member.application.userId] ||
+                                      member.profile?.urn ||
+                                      member.application.userId.slice(0, 12)}
+                                  </p>
+                                  <p className="text-xs text-default-400 truncate">
+                                    {member.profile?.branch ||
+                                      member.profile?.program ||
+                                      "N/A"}
+                                  </p>
+                                  {/* Mobile-only membership # */}
+                                  <p className="text-xs text-default-400 md:hidden flex items-center gap-1">
+                                    <HashIcon className="w-3 h-3" />
+                                    {membership.membershipNumber || "N/A"}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="hidden md:table-cell">
+                              <div className="flex items-center gap-1">
+                                <HashIcon className="w-3 h-3 text-default-400" />
+                                <span className="text-sm font-mono tabular-nums">
+                                  {membership.membershipNumber || "N/A"}
+                                </span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="hidden lg:table-cell">
+                              <div className="flex flex-wrap gap-1">
+                                {deptName ? (
+                                  <Chip
+                                    color="success"
+                                    size="sm"
+                                    variant="soft"
+                                  >
+                                    {deptName}
+                                  </Chip>
+                                ) : preferredDepts.length > 0 ? (
+                                  preferredDepts.map((name) => (
+                                    <Chip
+                                      key={name}
+                                      color="accent"
+                                      size="sm"
+                                      variant="soft"
+                                    >
+                                      {name}
+                                    </Chip>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-default-400">
+                                    Unassigned
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="hidden sm:table-cell">
+                              <div className="flex items-center gap-1 text-sm text-default-500">
+                                <CalendarIcon className="w-3 h-3" />
+                                {membership.approvedAt
+                                  ? new Date(
+                                      membership.approvedAt,
+                                    ).toLocaleDateString()
+                                  : member.application.reviewedAt
+                                    ? new Date(
+                                        member.application.reviewedAt,
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Chip
+                                  color={
+                                    membership.status === "active"
+                                      ? "success"
+                                      : membership.status === "banned"
+                                        ? "danger"
+                                        : "default"
+                                  }
+                                  size="sm"
+                                  variant="soft"
+                                >
+                                  {membership.status}
+                                </Chip>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onPress={() => {
+                                    setDetailsMember(member);
+                                    openDetails();
+                                  }}
+                                >
+                                  Details
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
                 </TableContent>
               </TableScrollContainer>
             </Table>
@@ -399,7 +475,8 @@ export default function AdminMembershipApprovedPage() {
               <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                 <h2 className="text-xl font-bold">
                   {detailsMember
-                    ? accountNames[detailsMember.application.userId] || "Member details"
+                    ? accountNames[detailsMember.application.userId] ||
+                      "Member details"
                     : "Member details"}
                 </h2>
                 <p className="text-sm text-default-500 font-normal">
@@ -409,12 +486,12 @@ export default function AdminMembershipApprovedPage() {
               <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
                 {detailsMember && (
                   <ApplicantDetails
-                    profile={detailsMember.profile}
-                    application={detailsMember.application}
                     accountName={accountNames[detailsMember.application.userId]}
+                    application={detailsMember.application}
                     departmentNames={getDepartmentNames(
-                      detailsMember.application.preferredDepartments
+                      detailsMember.application.preferredDepartments,
                     )}
+                    profile={detailsMember.profile}
                   />
                 )}
               </ModalBody>
