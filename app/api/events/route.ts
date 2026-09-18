@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { getMembershipStatus, isAdminUser, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
+import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
+import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, isConflict } from "@/lib/api";
 
@@ -63,12 +64,15 @@ function validateEvent(body: Record<string, unknown>) {
 }
 
 export async function POST(request: NextRequest) {
-  const authenticated = await requireAuthenticatedUser(request);
+  // The self-service proposal path. The UI offers it to `events.create`
+  // holders — the console nav item, the events page button and the create page
+  // all check that capability, and the create page sends non-managers here
+  // rather than to /api/admin/events. The endpoint used to ask for a
+  // `lead`-or-above membership status instead, which after the designation
+  // tier lift was retired resolves for nobody but an administrator: every
+  // proposal from the people the button was shown to came back 403.
+  const authenticated = await requireCapability(request, "events.create");
   if (!authenticated.user) return authenticated.response;
-  const status = await getMembershipStatus(authenticated.user);
-  if (!isMemberStatus(status) || ["member", "core_member"].includes(status)) {
-    return fail("FORBIDDEN", "Event creation requires lead access", 403);
-  }
 
   try {
     const body = await request.json() as Record<string, unknown>;

@@ -189,12 +189,13 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authenticated = await requireAuthenticatedUser(request);
+  // Same capability as its siblings: the console page lists through
+  // `?all=true` (resources.manage) and PATCH/DELETE require it, but upload
+  // asked for a `lead`-or-above membership status — a rung that no longer
+  // resolves for anyone but an administrator. Office holders such as
+  // documentation_lead could see and manage the library yet never add to it.
+  const authenticated = await requireCapability(request, "resources.manage");
   if (!authenticated.user) return authenticated.response;
-  const status = await getMembershipStatus(authenticated.user);
-  if (!isMemberStatus(status) || ["member", "core_member"].includes(status)) {
-    return fail("FORBIDDEN", "Resource uploads require lead access", 403);
-  }
   // 50 MB uploads spend storage fast: throttle per uploader.
   const limited = consumeRateLimit(`resource-upload:${authenticated.user.$id}`, 10, 60 * 60 * 1000);
   if (!limited.allowed) {
