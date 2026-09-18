@@ -43,7 +43,8 @@ const RESOURCE_TYPES = [
   { value: "link", label: "Link", icon: LinkIcon },
   { value: "video", label: "Video", icon: Video },
   { value: "file", label: "File", icon: FolderOpen },
-  { value: "announcement", label: "Announcement", icon: Bell },
+  // NOTE: no "announcement" option — the server allowlist is
+  // document/link/video/file and rejects anything else.
 ] as const;
 
 const LAYERS = [
@@ -64,6 +65,8 @@ export default function AdminResourcesPage() {
   const [editTarget, setEditTarget] = useState<Resource | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Create-only attachment: PATCH edits metadata, the upload lane is POST.
+  const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -111,17 +114,37 @@ export default function AdminResourcesPage() {
       toast.error("Choose the department this resource belongs to");
       return;
     }
+    const url = form.url.trim();
+    // The server requires a URL or an uploaded file on create, and the
+    // modal previously offered neither check nor picker — every URL-less
+    // create 400d. File uploads only exist on the create lane.
+    if (!editTarget?.$id && !url && !file) {
+      toast.error("Add a URL or attach a file");
+      return;
+    }
+    if (url) {
+      try {
+        const parsed = new URL(url);
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+      } catch {
+        toast.error("URL must start with http(s)://");
+        return;
+      }
+    }
     setSaving(true);
     try {
       const data = {
         title: form.title.trim(),
         description: form.description,
         type: form.type,
-        url: form.url || undefined,
+        url: url || undefined,
         layer: form.layer,
-        departmentId: form.layer === "department" ? form.departmentId || undefined : undefined,
+        // Explicit null clears a previously linked department; undefined
+        // would be dropped from the JSON and the old link would persist.
+        departmentId: form.layer === "department" ? form.departmentId || undefined : null,
         tags: form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-        isActive: true,
+        // Never flip activation as a side effect of editing metadata.
+        isActive: editTarget?.$id ? (editTarget.isActive ?? true) : true,
       };
 
       const response = await fetch("/api/resources", {
@@ -136,8 +159,9 @@ export default function AdminResourcesPage() {
               const formData = new FormData();
               Object.entries(data).forEach(([key, value]) => {
                 if (Array.isArray(value)) formData.set(key, value.join(","));
-                else if (value !== undefined) formData.set(key, String(value));
+                else if (value !== undefined && value !== null) formData.set(key, String(value));
               });
+              if (file) formData.set("file", file);
               return formData;
             })(),
       });
@@ -181,6 +205,7 @@ export default function AdminResourcesPage() {
 
   const openEdit = (resource: Resource) => {
     setEditTarget(resource);
+    setFile(null);
     setForm({
       title: resource.title,
       description: resource.description || "",
@@ -195,6 +220,7 @@ export default function AdminResourcesPage() {
 
   const openCreate = () => {
     setEditTarget(null);
+    setFile(null);
     setForm({ title: "", description: "", type: "document", url: "", layer: "common", departmentId: "", tags: "" });
     open();
   };
@@ -340,7 +366,7 @@ export default function AdminResourcesPage() {
                     <Input
                       placeholder="Resource title"
                       value={form.title}
-                      onChange={(e: any) => setForm((p) => ({ ...p, title: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, title: e.target.value }))}
                     />
                   </div>
                   <div>
@@ -348,7 +374,7 @@ export default function AdminResourcesPage() {
                     <TextArea
                       placeholder="Brief description"
                       value={form.description}
-                      onChange={(e: any) => setForm((p) => ({ ...p, description: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, description: e.target.value }))}
                       rows={2}
                     />
                   </div>
@@ -427,19 +453,37 @@ export default function AdminResourcesPage() {
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-medium mb-1 block">URL (optional)</label>
+                    <label className="text-sm font-medium mb-1 block">URL</label>
                     <Input
                       placeholder="https://..."
                       value={form.url}
-                      onChange={(e: any) => setForm((p) => ({ ...p, url: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, url: e.target.value }))}
                     />
                   </div>
+                  {!editTarget?.$id && (
+                    <div>
+                      <label htmlFor="resource-file" className="text-sm font-medium mb-1 block">
+                        Or attach a file <span className="font-normal text-default-400">(create only, max 50MB)</span>
+                      </label>
+                      <input
+                        id="resource-file"
+                        type="file"
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                        className="block w-full text-sm text-default-600 file:mr-3 file:rounded-lg file:border file:border-default-300 file:bg-default-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
+                      />
+                      {file && (
+                        <p className="text-xs text-default-500 mt-1">
+                          {file.name} ({Math.round(file.size / 1024)} KB)
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium mb-1 block">Tags (comma separated)</label>
                     <Input
                       placeholder="tag1, tag2, tag3"
                       value={form.tags}
-                      onChange={(e: any) => setForm((p) => ({ ...p, tags: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, tags: e.target.value }))}
                     />
                   </div>
                 </div>

@@ -146,13 +146,32 @@ export default function AdminProjectsPage() {
       toast.error("Please enter an image URL");
       return false;
     }
+    if (!/^https?:\/\/.+/i.test(formData.image.trim())) {
+      toast.error("Image must be a valid http(s) URL");
+      return false;
+    }
     if (!formData.duration.trim()) {
       toast.error("Please enter project duration");
       return false;
     }
-    if (formData.progress < 0 || formData.progress > 100) {
-      toast.error("ProgressBar must be between 0 and 100");
-      return false;
+    // Number inputs yield NaN for garbage and 0 for a cleared field; the
+    // server 400s on NaN and persists a silent zero, so verify here.
+    const numericFields = [
+      ["progress", "Progress", 0, 100],
+      ["stars", "Stars", 0, Number.MAX_SAFE_INTEGER],
+      ["forks", "Forks", 0, Number.MAX_SAFE_INTEGER],
+      ["contributors", "Contributors", 0, Number.MAX_SAFE_INTEGER],
+    ] as const;
+    for (const [field, label, min, max] of numericFields) {
+      const value = formData[field];
+      if (!Number.isFinite(value) || value < min || value > max) {
+        toast.error(
+          max === Number.MAX_SAFE_INTEGER
+            ? `${label} must be ${min} or more`
+            : `${label} must be between ${min} and ${max}`
+        );
+        return false;
+      }
     }
     return true;
   };
