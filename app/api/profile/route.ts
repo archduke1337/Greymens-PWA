@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
-import { createServerDatabases } from "@/lib/appwrite-server";
+import { createServerDatabases, createServerStorage } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { MEMBER_FILE_PERMISSIONS, PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
     }
 
-    const { storage } = createAdminClient();
+    const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
     const existing = await getOwnProfile(authenticated.user.$id);
     const previousFileId = extractFileIdFromUrl((existing as Record<string, unknown> | null)?.avatar);
