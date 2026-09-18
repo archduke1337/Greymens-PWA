@@ -132,9 +132,19 @@ export function isBootstrapAdmin(email: string): boolean {
  *     them fully privileged.
  *  2. An explicit governance appointment in `user_roles` is next. That table is
  *     the only legitimate source of the `admin`/`dev` tier.
- *  3. Otherwise derive it from membership and application records, then
- *     elevate it from designation levels (5 → lead, 6 → head), which is the
- *     same ladder the client applies for display purposes only.
+ *  3. Otherwise derive it from membership and application records.
+ *
+ * A designation level deliberately does NOT raise the tier any more. It used to
+ * (5 → `lead`, 6 → `head`), which made a badge choose a dashboard — implicit
+ * authority that no console could show and the Charter does not describe. A
+ * designation now carries an explicit capability list instead (empty by
+ * default), which is auditable and administered where every other grant is.
+ *
+ * The trade-off is visible and accepted: an account whose only leadership
+ * signal was a badge now resolves to `member` and lands on the member
+ * dashboard. If it should see the lead/head view, that signal has to become an
+ * office or a role assignment — the same move required for the authority it
+ * used to imply.
  *
  * `profiles.status` is deliberately not consulted even though a leftover read
  * of it survived here for a while. The column is not provisioned, so the read
@@ -160,15 +170,8 @@ export async function resolveMembershipStatus(userId: string): Promise<string> {
 
 async function resolveMembershipStatusInner(userId: string): Promise<string> {
   const { databases } = createServerDatabases();
-  const [
-    profiles,
-    memberships,
-    applications,
-    userDesignations,
-    designations,
-    userRoles,
-    userDepartments,
-  ] = await Promise.all([
+  const [profiles, memberships, applications, userRoles, userDepartments] =
+    await Promise.all([
     databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
       Query.equal("userId", [userId]),
       Query.limit(1),
@@ -180,15 +183,6 @@ async function resolveMembershipStatusInner(userId: string): Promise<string> {
     databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
       Query.equal("userId", [userId]),
       Query.limit(1),
-    ]),
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-      Query.equal("userId", [userId]),
-      Query.equal("isActive", [true]),
-      Query.limit(50),
-    ]),
-    databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
-      Query.equal("isActive", [true]),
-      Query.limit(200),
     ]),
     // `user_roles` is provisioned separately from the original tables. On an
     // installation that predates it the query throws, and because this function
@@ -257,27 +251,8 @@ async function resolveMembershipStatusInner(userId: string): Promise<string> {
   }
 
   if (base === "member") {
-    const levelByDesignation = new Map(
-      designations.documents.map((designation) => [
-        designation.$id,
-        Number(designation.level) || 0,
-      ]),
-    );
-    const highestLevel = userDesignations.documents.reduce(
-      (highest, assignment) =>
-        Math.max(
-          highest,
-          levelByDesignation.get(String(assignment.designationId)) ?? 0,
-        ),
-      0,
-    );
-
-    if (highestLevel >= 6) return "head";
-    if (highestLevel >= 5) return "lead";
-    // Department seniority without a governance designation: an active
-    // core/lead department role makes the member a core_member. This is the
-    // only path that produces the status, which the dashboards, the client
-    // permission ladder, and the resource gates all already handle.
+    // Department seniority: an active core/lead department role makes the
+    // member a core_member. This is the only derived lift left.
     const holdsDeptSeniority = userDepartments.documents.some((row) =>
       ["core_member", "lead"].includes(
         String((row as Record<string, unknown>).role ?? ""),

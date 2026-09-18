@@ -10,10 +10,32 @@ import LeadDashboard from "@/components/dashboards/LeadDashboard";
 import HeadDashboard from "@/components/dashboards/HeadDashboard";
 import AdminDashboard from "@/components/dashboards/AdminDashboard";
 
+/**
+ * Dashboard selection.
+ *
+ * Which view a member gets used to follow the `lead` / `head` status tier, and
+ * that tier was derived from designation levels — so a badge picked a dashboard.
+ * The tier lift is gone (see `resolveMembershipStatus`), which would have left
+ * the lead and head views unreachable, so selection is now capability-based and
+ * mirrors `/api/dashboard`.
+ *
+ * The server decides which view-models to build from the *same* three-capability
+ * groups below. Keeping the two in step is the whole point: if they disagree, the
+ * client renders a dashboard whose payload was never sent.
+ */
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
-  const { status, loading: permLoading } = usePermissions();
+  const { status, loading: permLoading, hasCapability } = usePermissions();
   const router = useRouter();
+
+  const canLead =
+    hasCapability("events.create") ||
+    hasCapability("membership.view_applications") ||
+    hasCapability("departments.view");
+  const canGovern =
+    hasCapability("governance.manage") ||
+    hasCapability("audit.view") ||
+    hasCapability("users.view");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,41 +56,33 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  // Route to the appropriate dashboard based on user status
-  switch (status) {
-    case "admin":
-    case "dev":
-      return <AdminDashboard />;
-    case "head":
-      return <HeadDashboard />;
-    case "lead":
-      return <LeadDashboard />;
-    case "core_member":
-    case "member":
-      // Core members hold department seniority but no pipeline ownership, so
-      // they get the member view (their extra grants are enforced server-side
-      // wherever they act). Routing them to LeadDashboard showed an empty
-      // department grid with no actions.
-      return <MemberDashboard />;
-    case "applicant":
-      return <ApplicantDashboard />;
-    case "banned":
-    case "suspended":
-    case "deactivated":
-      // Restricted accounts get a 403 from the dashboard API — never render
-      // the applicant funnel for them.
-      return (
-        <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
-          <h1 className="text-2xl font-bold tracking-tight">Account Restricted</h1>
-          <p className="text-muted">
-            Your account is currently {status}. Access to the dashboard is
-            unavailable. If you believe this is a mistake, please contact support.
-          </p>
-        </div>
-      );
-    case "account":
-    default:
-      // Users with just an account but no application yet
-      return <ApplicantDashboard />;
+  // Restricted accounts get a 403 from the dashboard API — never render the
+  // applicant funnel for them.
+  if (status === "banned" || status === "suspended" || status === "deactivated") {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight">Account Restricted</h1>
+        <p className="text-muted">
+          Your account is currently {status}. Access to the dashboard is
+          unavailable. If you believe this is a mistake, please contact support.
+        </p>
+      </div>
+    );
   }
+
+  if (status === "admin" || status === "dev") return <AdminDashboard />;
+
+  // No membership yet: the applicant funnel, and no capabilities to route on.
+  if (
+    status === "applicant" ||
+    status === "account" ||
+    status === "no_account"
+  ) {
+    return <ApplicantDashboard />;
+  }
+
+  if (canGovern) return <HeadDashboard />;
+  if (canLead) return <LeadDashboard />;
+
+  return <MemberDashboard />;
 }

@@ -23,8 +23,9 @@ import type {
 /**
  * Capabilities that are only ever granted inside a department scope.
  *
- * These are deliberately absent from STATUS_PERMISSIONS and
- * DESIGNATION_LEVEL_PERMISSIONS. `resolvePermissions` emits them in the scoped
+ * These are deliberately absent from STATUS_PERMISSIONS, and no designation
+ * level can widen them either — designations grant nothing at all.
+ * `resolvePermissions` emits them in the scoped
  * form `${capability}:department:${departmentId}`, and `hasPermission` checks
  * the exact key before the scoped one — so if the same capability were also
  * granted globally, the scoped grant would be unreachable and the scope would
@@ -186,31 +187,35 @@ const DEPARTMENT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
 // ============================================================
 
 /**
- * Designation levels grant seniority, never the wildcard.
+ * Designations grant NOTHING. They are an honour: a badge shown on a profile.
  *
- * Level 10 used to map to `ALL_PERMISSIONS`. Because the designation management
- * endpoint accepts any level from 1 to 10, that made "create a designation at
- * level 10 and assign it" a second, unaudited route to total access — one that
- * bypassed the governance tier entirely, since `user_roles` is meant to be the
- * only thing that can confer `admin`/`dev`.
+ * This used to be a level -> permissions table (`5: approve_events_in_scope`,
+ * `6: manage_multiple_departments`, `7-9: manage_organization`, ...). Two things
+ * were wrong with it:
  *
- * The wildcard now comes from exactly one place: `resolvePermissions` returning
- * early for a governance role. Any level-10 row already in a database therefore
- * grants nothing beyond level 9, which is the safe way to retire it — no data
- * migration, and no silently privileged rows left behind.
+ * 1. It contradicted the model the app documents and shows. `lib/governance.ts`
+ *    and the Positions page both tell administrators that offices grant
+ *    capabilities and designations grant none — while the engine quietly handed
+ *    authority to any badge at level 3 or above.
+ * 2. It granted authority invisibly. `manage_multiple_departments` is the gate
+ *    `canGrantPower` uses to let someone grant `event_manager`,
+ *    `ticket_verifier` and `resource_manager` powers, so a level-6 badge
+ *    conferred power-granting rights — and the Access console could not show it,
+ *    because its People tab joins only roles and powers.
+ *
+ * Level 10 also previously mapped to `ALL_PERMISSIONS`, which made "create a
+ * level-10 designation and assign it" a second, unaudited route to total access.
+ *
+ * Authority now has three sources, all of them explicit and all of them visible
+ * in the Access console: a role assignment (or office) granting capabilities, a
+ * designation whose catalogue row lists capabilities, and a legacy power grant.
+ *
+ * A designation level grants nothing and no longer raises the membership tier
+ * either — that lift (5 -> lead, 6 -> head) was removed from
+ * `resolveMembershipStatus`, so a badge cannot choose a dashboard. A title
+ * carries authority only through the capability list an administrator wrote on
+ * it, which `getEffectiveCapabilities` reads.
  */
-const DESIGNATION_LEVEL_PERMISSIONS: Record<number, Permission[]> = {
-  1: [], // entry-level designations
-  2: [],
-  3: ["view_department_stats"],
-  4: ["view_department_stats"],
-  5: ["view_department_stats", "approve_events_in_scope"],
-  6: ["view_operations_stats", "manage_multiple_departments"],
-  7: ["view_reports", "manage_organization"],
-  8: ["view_reports", "manage_organization"],
-  9: ["view_reports", "manage_organization"],
-  10: ["view_reports", "manage_organization"],
-};
 
 // ============================================================
 // Core Permission Resolution
@@ -312,20 +317,9 @@ function computePermissions(user: UserContext): Set<string> {
       rolePerms.forEach((p) => perms.add(`${p}:department:${ud.departmentId}`));
     });
 
-  // 4. Designation level permissions
-  user.designations
-    .filter((ud) => ud.isActive)
-    .forEach((ud) => {
-      const desig = user.allDesignations?.find(
-        (d) => d.$id === ud.designationId,
-      );
-
-      if (desig) {
-        const levelPerms = DESIGNATION_LEVEL_PERMISSIONS[desig.level] || [];
-
-        levelPerms.forEach((p) => perms.add(p));
-      }
-    });
+  // 4. Designations — deliberately not consulted. See the note above: a
+  // designation is a badge, and the only things that grant authority are a
+  // role/office capability and a legacy power grant.
 
   return perms;
 }
