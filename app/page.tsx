@@ -203,19 +203,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The club in one illustration — same hand, same ink as the story */}
+      {/* The handshake — people first, tools second */}
       <section className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6 sm:pt-20">
         <figure className="space-y-3">
-          <div className="overflow-hidden rounded-3xl border border-default-200/70 bg-black">
+          <div className="overflow-hidden rounded-3xl border border-default-200/70">
             <img
-              src="/Assets/Objects/intro.png"
-              alt="Hand-drawn Greymens scene: a member at a login screen under a watching eye, security books, a trust-no-one mug, and the club charter"
+              src="/Assets/Banners/about.webp"
+              alt="A painted robot hand reaching toward a human hand"
               loading="lazy"
               className="w-full object-cover"
             />
           </div>
           <figcaption className="text-center text-sm text-muted">
-            Observe. Learn. Build. Operate. The whole club in one illustration.
+            People first, tools second. That order is the whole club.
           </figcaption>
         </figure>
       </section>
