@@ -128,11 +128,17 @@ export default function AdminDepartmentsPage() {
         return;
       }
 
-      // Auto-generate slug from name
+      // Auto-generate slug from name. A symbol-only name ("!!!")
+      // derives to "" and 400s server-side — block it here instead.
       const slug = formData.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
+      if (!slug) {
+        toast.error("Department name must contain at least one letter or number");
+        setSubmitting(false);
+        return;
+      }
 
       const payload = { ...formData, slug };
 

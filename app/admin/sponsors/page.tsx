@@ -68,6 +68,14 @@ export default function AdminSponsorsPage() {
     setSaving(true);
 
     try {
+      // The server 400s on an empty name and on non-http(s) logo/website
+      // URLs — check all three here with the fields in view.
+      if (!formData.name.trim()) {
+        toast.error("Sponsor name is required");
+        setSaving(false);
+        return;
+      }
+
       // Validate URL
       if (!formData.logo) {
         toast.error("Logo URL is required");
@@ -79,6 +87,18 @@ export default function AdminSponsorsPage() {
         toast.error("Website URL is required");
         setSaving(false);
         return;
+      }
+
+      for (const [field, label] of [["logo", "Logo URL"], ["website", "Website URL"]] as const) {
+        const value = formData[field].trim();
+        try {
+          const parsed = new URL(value);
+          if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+        } catch {
+          toast.error(`${label} must start with http(s)://`);
+          setSaving(false);
+          return;
+        }
       }
 
       if (editingSponsor) {
