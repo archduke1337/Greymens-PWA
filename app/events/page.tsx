@@ -285,21 +285,6 @@ export default function EventsPage() {
         )}
       </div>
 
-      {/* The crowd, from the back row */}
-      <figure className="space-y-2">
-        <div className="overflow-hidden rounded-3xl border border-default-200/70">
-            <img
-              src="/Assets/Objects/crowd.jpg"
-              alt="A crowd of members seen from behind, watching together"
-              loading="lazy"
-              className="h-40 w-full object-cover object-bottom sm:h-52"
-            />
-        </div>
-        <figcaption className="text-center text-sm text-muted">
-          Room for one more. Usually you.
-        </figcaption>
-      </figure>
-
       {/* Filters and Search */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <Card variant="secondary" className="border-none shadow-lg">
