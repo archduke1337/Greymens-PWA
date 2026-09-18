@@ -27,6 +27,8 @@ const db = vi.hoisted(() => ({
   assignments: [] as Array<Record<string, unknown>>,
   roles: [] as Array<Record<string, unknown>>,
   offices: [] as Array<Record<string, unknown>>,
+  userDesignations: [] as Array<Record<string, unknown>>,
+  designations: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/lib/appwrite", () => ({
@@ -55,6 +57,10 @@ vi.mock("@/lib/appwrite-server", () => ({
           return { documents: db.roles };
         if (table === COLLECTIONS.OFFICE_ASSIGNMENTS)
           return { documents: db.offices };
+        if (table === COLLECTIONS.USER_DESIGNATIONS)
+          return { documents: db.userDesignations };
+        if (table === COLLECTIONS.DESIGNATIONS)
+          return { documents: db.designations };
         if (table === COLLECTIONS.POWERS) return { documents: [] };
 
         return { documents: [] };
@@ -66,6 +72,7 @@ vi.mock("@/lib/appwrite-server", () => ({
 import {
   getEffectiveCapabilities,
   hasServerCapability,
+  officeCapabilities,
   requireCapability,
 } from "@/lib/access-control";
 
@@ -83,12 +90,24 @@ const activeAssignment = {
   isActive: true,
 };
 
+/** A live presidential term. OFFICE_CAPABILITIES.president includes membership.approve. */
+const presidentOffice = {
+  $id: "oa-1",
+  userId: "u1",
+  officeId: "president",
+  status: "active",
+  termStart: "2026-01-01",
+  termEnd: "2099-01-01",
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   db.powers = [];
   db.assignments = [{ ...activeAssignment }];
   db.roles = [{ ...grantingRole }];
   db.offices = [];
+  db.userDesignations = [];
+  db.designations = [];
 });
 
 describe("restricted statuses keep no capabilities", () => {
@@ -145,5 +164,148 @@ describe("grant Hygiene", () => {
     expect(caps.has("events.manage")).toBe(true);
     expect(caps.has("*")).toBe(false);
     expect(caps.has("not_a_cap")).toBe(false);
+  });
+
+  it("grants nothing from a switched-off template", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.roles = [{ ...grantingRole, isActive: false }];
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.size).toBe(0);
+  });
+});
+
+describe("an office is a role template plus a term", () => {
+  it("reads the office's capabilities from its template", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [
+      {
+        $id: "office-president",
+        officeId: "president",
+        capabilities: ["events.publish"],
+        isActive: true,
+      },
+    ];
+    db.offices = [{ ...presidentOffice }];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.has("events.publish")).toBe(true);
+    // The compile-time map is a seed default only — it must not also apply, or
+    // editing the template would not actually change the office.
+    expect(caps.has("membership.approve")).toBe(false);
+  });
+
+  it("grants nothing when the office template is switched off", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [
+      {
+        $id: "office-president",
+        officeId: "president",
+        capabilities: ["events.publish"],
+        isActive: false,
+      },
+    ];
+    db.offices = [{ ...presidentOffice }];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.has("events.publish")).toBe(false);
+    // Not the seed default either: "inactive" must not fall back to "absent".
+    expect(caps.has("membership.approve")).toBe(false);
+  });
+
+  it("falls back to the seed default when no template exists", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [];
+    db.offices = [{ ...presidentOffice }];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.has("membership.approve")).toBe(true);
+  });
+
+  it("an ended term grants nothing, template or not", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [];
+    db.offices = [{ ...presidentOffice, termEnd: "2000-01-01" }];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.size).toBe(0);
+  });
+
+  it("a designation carries only the capabilities listed on it", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [];
+    db.userDesignations = [
+      { $id: "ud-1", userId: "u1", designationId: "d-1", isActive: true },
+    ];
+    db.designations = [
+      { $id: "d-1", name: "Head of Web", level: 4, capabilities: ["events.manage"] },
+    ];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.has("events.manage")).toBe(true);
+    // The level must not grant anything: 4 is just seniority for display.
+    expect(caps.has("view_department_stats")).toBe(false);
+  });
+
+  it("a title with no capabilities grants nothing", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [];
+    db.userDesignations = [
+      { $id: "ud-1", userId: "u1", designationId: "d-1", isActive: true },
+    ];
+    db.designations = [
+      { $id: "d-1", name: "Member of the Month", level: 2, capabilities: [] },
+    ];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.size).toBe(0);
+  });
+
+  it("a title cannot smuggle a non-vocabulary capability", async () => {
+    resolveMembershipStatus.mockResolvedValue("member");
+    db.assignments = [];
+    db.roles = [];
+    db.userDesignations = [
+      { $id: "ud-1", userId: "u1", designationId: "d-1", isActive: true },
+    ];
+    db.designations = [
+      { $id: "d-1", name: "Sneaky", level: 9, capabilities: ["*", "not_a_cap"] },
+    ];
+
+    const caps = await getEffectiveCapabilities("u1");
+
+    expect(caps.has("*")).toBe(false);
+    expect(caps.has("not_a_cap")).toBe(false);
+  });
+
+  it("officeCapabilities prefers the template and honours its off switch", () => {
+    const template = [
+      {
+        officeId: "president",
+        capabilities: ["audit.view"],
+        isActive: true,
+      },
+    ];
+
+    expect(officeCapabilities("president", template)).toEqual(["audit.view"]);
+    expect(
+      officeCapabilities("president", [{ ...template[0], isActive: false }]),
+    ).toEqual([]);
+    // No template at all: the seeded default, which is a superset of audit.view.
+    expect(officeCapabilities("president", []).length).toBeGreaterThan(1);
+    // Unknown office: nothing.
+    expect(officeCapabilities("not_an_office", [])).toEqual([]);
   });
 });

@@ -2,7 +2,12 @@ import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import {
+  getOfficeCapabilities,
+  requireCapability,
+  unheldCapabilities,
+} from "@/lib/access-control";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { recordAudit } from "@/lib/server-audit";
 import { GOVERNANCE_OFFICES } from "@/lib/governance";
 import { isIsoDate } from "@/lib/validation";
@@ -29,6 +34,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "governance.manage_offices");
   if (!authenticated.user) return authenticated.response;
+  if (!consumeRateLimit(`office-mutate:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = await request.json() as Record<string, unknown>;
     const officeId = typeof body.officeId === "string" ? body.officeId.trim() : "";
@@ -41,6 +49,21 @@ export async function POST(request: NextRequest) {
     if (termEnd && termEnd <= termStart) return fail("VALIDATION", "Term end must follow term start", 400);
     const nameMap = await getAccountNames([userId]);
     if (!nameMap.has(userId)) return fail("NOT_FOUND", "User not found", 404);
+    // Parity with /api/access: no grant beyond hold. An office is a capability
+    // bundle (its role template), so assigning one must pass the same check as
+    // assigning a role — otherwise the same grant was checked through one door
+    // and unchecked through the other.
+    const unheld = await unheldCapabilities(
+      authenticated.user.$id,
+      await getOfficeCapabilities(officeId),
+    );
+    if (unheld.length > 0) {
+      return fail(
+        "FORBIDDEN",
+        `Cannot assign an office whose capabilities you do not hold: ${unheld.slice(0, 5).join(", ")}`,
+        403,
+      );
+    }
     const { databases } = createServerDatabases();
     const active = await databases.listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [Query.equal("officeId", [officeId]), Query.equal("status", ["active"]), Query.limit(1)]);
     if (active.documents.length > 0) return fail("CONFLICT", "That office already has an active assignment", 409);

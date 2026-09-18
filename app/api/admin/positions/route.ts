@@ -2,13 +2,10 @@ import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireAuthenticatedUser } from "@/lib/server-auth";
-import { hasServerCapability } from "@/lib/access-control";
+import { requireCapability } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
-import { GOVERNANCE_OFFICES } from "@/lib/governance";
 import { ok, fail } from "@/lib/api";
 
-const OFFICE_CAP = "governance.manage_offices";
 const DESIGNATION_CAP = "designations.assign";
 
 function chunk<T>(values: T[], size: number): T[][] {
@@ -18,85 +15,49 @@ function chunk<T>(values: T[], size: number): T[][] {
 }
 
 /**
- * Unified read model for position management (offices + designations).
+ * Read model for the designations console.
  *
- * The two systems stay separate tables with separate mutation endpoints —
- * single-holder offices with terms and multi-holder designations with
- * maxHolders caps have genuinely different invariants — but administration
- * happens on one page, so the page needs one call, not five. Each section of
- * the response is filtered by the caller's own capabilities: an
- * offices-only manager never sees the designation catalogue and vice versa.
- * Callers with neither capability get 403, same as the underlying endpoints.
+ * Offices used to share this endpoint's page and payload. They moved to the
+ * Access console because an office *is* a capability bundle: it is administered
+ * where capabilities are. A designation grants nothing — it is a title — so it
+ * stays here, alone, and an office manager no longer needs this endpoint to
+ * have rights over titles.
  */
 export async function GET(request: NextRequest) {
-  const authenticated = await requireAuthenticatedUser(request);
+  const authenticated = await requireCapability(request, DESIGNATION_CAP);
   if (!authenticated.user) return authenticated.response;
-  const userId = authenticated.user.$id;
-
-  const [canManageOffices, canAssignDesignations] = await Promise.all([
-    hasServerCapability(userId, OFFICE_CAP),
-    hasServerCapability(userId, DESIGNATION_CAP),
-  ]);
-  if (!canManageOffices && !canAssignDesignations) {
-    return fail("FORBIDDEN", "Position management access is required", 403);
-  }
 
   try {
     const { databases } = createServerDatabases();
 
-    const [assignmentsRes, designationsRes, grantsRes, membershipsRes, departmentsRes] = await Promise.all([
-      canManageOffices
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [
-            Query.orderDesc("termStart"),
-            Query.limit(200),
-          ])
-        : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
-      canAssignDesignations
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
-            Query.equal("isActive", [true]),
-            Query.orderAsc("level"),
-            Query.limit(100),
-          ])
-        : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
-      canAssignDesignations
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-            Query.equal("isActive", [true]),
-            Query.limit(500),
-          ])
-        : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
-      canManageOffices
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
-            Query.equal("status", ["active"]),
-            Query.limit(500),
-          ])
-        : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
-      canAssignDesignations
-        ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-            Query.orderAsc("displayOrder"),
-            Query.limit(200),
-          ])
-        : Promise.resolve({ documents: [] as Array<Record<string, unknown>>, total: 0 }),
+    const [designationsRes, grantsRes, departmentsRes] = await Promise.all([
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+        Query.equal("isActive", [true]),
+        Query.orderAsc("level"),
+        Query.limit(100),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+        Query.equal("isActive", [true]),
+        Query.limit(500),
+      ]),
+      databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+        Query.orderAsc("displayOrder"),
+        Query.limit(200),
+      ]),
     ]);
 
-    const assignments = assignmentsRes.documents as Array<Record<string, unknown>>;
     const catalogue = designationsRes.documents as Array<Record<string, unknown>>;
     const grants = grantsRes.documents as Array<Record<string, unknown>>;
-    const activeMemberships = membershipsRes.documents as Array<Record<string, unknown>>;
+    const nameByDesignation = new Map(
+      catalogue.map((entry) => [String(entry.$id ?? ""), String(entry.name ?? "")]),
+    );
 
-    const titleByOffice = new Map(GOVERNANCE_OFFICES.map((office) => [office.id, office.title]));
-    const nameByDesignation = new Map(catalogue.map((entry) => [String(entry.$id ?? ""), String(entry.name ?? "")]));
+    const holderIds = [...new Set(grants.map((row) => String(row.userId ?? "")).filter(Boolean))];
 
-    const holderIds = [
-      ...assignments.map((row) => String(row.userId ?? "")),
-      ...grants.map((row) => String(row.userId ?? "")),
-      ...activeMemberships.map((row) => String(row.userId ?? "")),
-    ].filter(Boolean);
-    const uniqueIds = [...new Set(holderIds)];
-
-    // Profiles resolve URN/branch for display. Chunked so a large member
-    // directory never builds a query string Appwrite rejects.
+    // Profiles resolve URN for display. Chunked so a large member directory
+    // never builds a query string Appwrite rejects.
     const profileRows: Array<Record<string, unknown>> = [];
-    for (const ids of chunk(uniqueIds, 100)) {
+    for (const ids of chunk(holderIds, 100)) {
       if (ids.length === 0) continue;
       const page = await databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
         Query.equal("userId", ids),
@@ -104,82 +65,46 @@ export async function GET(request: NextRequest) {
       ]);
       profileRows.push(...(page.documents as Array<Record<string, unknown>>));
     }
-    const profileByUser = new Map(profileRows.map((profile) => [String(profile.userId ?? ""), profile]));
+    const profileByUser = new Map(
+      profileRows.map((profile) => [String(profile.userId ?? ""), profile]),
+    );
 
     // Names live on the auth record — best-effort so a lookup failure never
-    // fails the whole positions console.
-    const accountNames = await getAccountNames(uniqueIds).then(
+    // fails the console.
+    const accountNames = await getAccountNames(holderIds).then(
       (names) => Object.fromEntries(names) as Record<string, string>,
       () => ({}) as Record<string, string>,
     );
 
-    const displayName = (id: string) =>
-      accountNames[id] || String(profileByUser.get(id)?.urn ?? "") || id;
-
-    // Per-person union of everything position-like they hold. Offices and
-    // designations stay labelled by source system — merging the labels would
-    // lie about which one grants real capabilities (offices do, titles don't).
-    const peopleById = new Map<string, {
-      userId: string;
-      name: string;
-      urn?: string;
-      branch?: string;
-      offices: Array<{ officeId: string; title: string; assignmentId: string; selectionMethod: string; termStart: string; termEnd?: string; status: string }>;
-      designations: Array<{ designationId: string; name: string }>;
-    }>();
-    const person = (id: string) => {
-      const existing = peopleById.get(id);
-      if (existing) return existing;
-      const profile = profileByUser.get(id);
-      const created = {
-        userId: id,
-        name: displayName(id),
-        urn: typeof profile?.urn === "string" ? profile.urn : undefined,
-        branch: typeof profile?.branch === "string" ? profile.branch : undefined,
-        offices: [] as Array<{ officeId: string; title: string; assignmentId: string; selectionMethod: string; termStart: string; termEnd?: string; status: string }>,
-        designations: [] as Array<{ designationId: string; name: string }>,
-      };
-      peopleById.set(id, created);
-      return created;
-    };
-
-    for (const row of assignments) {
-      const id = String(row.userId ?? "");
-      if (!id || String(row.status ?? "") !== "active") continue;
-      const officeId = String(row.officeId ?? "");
-      person(id).offices.push({
-        officeId,
-        title: titleByOffice.get(officeId) || officeId,
-        assignmentId: String(row.$id ?? ""),
-        selectionMethod: String(row.selectionMethod ?? ""),
-        termStart: String(row.termStart ?? ""),
-        termEnd: typeof row.termEnd === "string" ? row.termEnd : undefined,
-        status: String(row.status ?? ""),
-      });
-    }
+    const peopleById = new Map<
+      string,
+      {
+        userId: string;
+        name: string;
+        urn?: string;
+        designations: Array<{ designationId: string; name: string }>;
+      }
+    >();
     for (const row of grants) {
       const id = String(row.userId ?? "");
       if (!id) continue;
+      let person = peopleById.get(id);
+      if (!person) {
+        const profile = profileByUser.get(id);
+        person = {
+          userId: id,
+          name: accountNames[id] || String(profile?.urn ?? "") || id,
+          urn: typeof profile?.urn === "string" ? profile.urn : undefined,
+          designations: [],
+        };
+        peopleById.set(id, person);
+      }
       const designationId = String(row.designationId ?? "");
-      person(id).designations.push({
+      person.designations.push({
         designationId,
         name: nameByDesignation.get(designationId) || designationId,
       });
     }
-
-    // Active-member directory for the office assignment picker. Built from
-    // memberships + profiles + names so offices-only managers — who may lack
-    // users.view — get a picker instead of a raw ID field.
-    const directory = activeMemberships
-      .map((row) => String(row.userId ?? ""))
-      .filter(Boolean)
-      .filter((id, index, all) => all.indexOf(id) === index)
-      .map((id) => ({
-        userId: id,
-        name: displayName(id),
-        urn: typeof profileByUser.get(id)?.urn === "string" ? (profileByUser.get(id)?.urn as string) : undefined,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
 
     const holderCounts = new Map<string, number>();
     for (const row of grants) {
@@ -188,10 +113,6 @@ export async function GET(request: NextRequest) {
     }
 
     return ok({
-      canManageOffices,
-      canAssignDesignations,
-      assignments,
-      members: directory,
       designations: catalogue.map((entry) => ({
         ...entry,
         holderCount: holderCounts.get(String(entry.$id ?? "")) ?? 0,
@@ -201,7 +122,7 @@ export async function GET(request: NextRequest) {
       accountNames,
     });
   } catch (error) {
-    console.error("Positions read-model error:", error);
-    return fail("INTERNAL", "Unable to load positions", 500);
+    console.error("Designations read-model error:", error);
+    return fail("INTERNAL", "Unable to load designations", 500);
   }
 }

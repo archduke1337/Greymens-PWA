@@ -46,6 +46,62 @@ export interface RoleAssignment {
 
 const ADMIN_STATUSES = new Set(["admin", "dev"]);
 
+/**
+ * Operational power -> the capabilities it confers.
+ *
+ * The console has always offered both a Roles tab (capabilities on a role
+ * template) and a Powers tab (legacy `user_powers` grants), but only two power
+ * names were ever translated into capabilities — so 14 of the 16 seeded powers
+ * looked authoritative in the UI and satisfied no `requireCapability` check.
+ *
+ * This table is the translation the Powers tab was missing: a power is now a
+ * named bundle of capabilities, exactly like a role, and a grant made there
+ * reaches the same server checks a role grant does.
+ *
+ * A power with an empty list is honest, not an oversight: the capability
+ * vocabulary has no equivalent for it (`gallery_uploader` — uploading is
+ * membership-open; `social_media_manager`, `pr_manager`, `design_manager` —
+ * still legacy-only). Such a grant confers nothing today; the four are listed
+ * here so the gap is visible instead of implied.
+ */
+export const POWER_CAPABILITIES: Record<string, Capability[]> = {
+  membership_approver: [
+    "membership.view_applications",
+    "membership.approve",
+    "membership.reject",
+  ],
+  event_manager: [
+    "events.create",
+    "events.update",
+    "events.manage",
+    "events.approve",
+    "events.publish",
+    "registrations.view",
+    "registrations.manage",
+  ],
+  ticket_verifier: ["tickets.view", "tickets.verify", "tickets.invalidate"],
+  blog_creator: ["blog.create", "blog.submit"],
+  blog_reviewer: ["blog.review", "blog.approve", "blog.request_revision"],
+  gallery_manager: ["gallery.manage"],
+  gallery_uploader: [],
+  resource_manager: ["resources.manage"],
+  // No department-scoped capability exists yet, so these two map to the
+  // global department views rather than inventing a wider grant.
+  department_head: ["departments.view"],
+  operations_head: [
+    "departments.manage",
+    "events.approve",
+    "designations.assign",
+    "registrations.view",
+  ],
+  profile_moderator: ["users.view", "users.update", "audit.view"],
+  notification_admin: ["notifications.send"],
+  newsletter_manager: ["notifications.send"],
+  social_media_manager: [],
+  pr_manager: [],
+  design_manager: [],
+};
+
 function activeDate(expiresAt: unknown): boolean {
   return (
     typeof expiresAt !== "string" ||
@@ -62,7 +118,7 @@ export async function getEffectiveCapabilities(
   const { databases } = createServerDatabases();
 
   // Admin has all and every power — single wildcard, enforced in
-  // hasServerCapability + hasPower. No office, role, or power row can add
+  // hasServerCapability. No office, role, or power row can add
   // beyond this, and none is needed for admin.
   // Status is resolved once: restriction outranks every grant, so a banned,
   // suspended, or deactivated user keeps no capability even when stale
@@ -88,24 +144,40 @@ export async function getEffectiveCapabilities(
   let offices: { documents: Array<Record<string, unknown>> } = {
     documents: [],
   };
+  let userDesignations: { documents: Array<Record<string, unknown>> } = {
+    documents: [],
+  };
 
   try {
-    const [assignmentResponse, roleResponse, officeResponse] =
-      await Promise.all([
+    const [
+      assignmentResponse,
+      roleResponse,
+      officeResponse,
+      designationResponse,
+    ] = await Promise.all([
         databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [
           Query.equal("userId", [userId]),
           Query.equal("isActive", [true]),
           Query.limit(100),
         ]),
+        // Not filtered on isActive: an office's capabilities come from its
+        // template, and "template exists but is switched off" (grant nothing)
+        // must stay distinguishable from "no template yet" (seed default).
         databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [
-          Query.equal("isActive", [true]),
-          Query.limit(100),
+          Query.limit(200),
         ]),
         databases
           .listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [
             Query.equal("userId", [userId]),
             Query.equal("status", ["active"]),
             Query.limit(100),
+          ])
+          .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
+        databases
+          .listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(50),
           ])
           .catch(() => ({ documents: [] as Array<Record<string, unknown>> })),
       ]);
@@ -121,34 +193,102 @@ export async function getEffectiveCapabilities(
         (officeResponse as { documents: Array<Record<string, unknown>> })
           .documents ?? [],
     };
+    userDesignations = {
+      documents:
+        (designationResponse as { documents: Array<Record<string, unknown>> })
+          .documents ?? [],
+    };
   } catch {
     // Existing installations may not have the role tables yet; legacy powers remain valid.
   }
 
   const capabilities = new Set<string>();
 
+  // A title can carry capabilities, but only when an administrator listed them
+  // explicitly (see the `capabilities` column on `designations`). The catalogue
+  // is read only when the account actually holds a title: the common case pays
+  // nothing, and a request that never touches a designation pays no extra read.
+  if (userDesignations.documents.length > 0) {
+    try {
+      const catalogue = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.DESIGNATIONS,
+        [Query.equal("isActive", [true]), Query.limit(200)],
+      );
+      const heldIds = new Set(
+        userDesignations.documents.map((row) => String(row.designationId ?? "")),
+      );
+
+      for (const row of catalogue.documents) {
+        if (!heldIds.has(String(row.$id ?? ""))) continue;
+        const values = Array.isArray(row.capabilities) ? row.capabilities : [];
+
+        for (const value of values) {
+          if (isCapability(value)) capabilities.add(value);
+        }
+      }
+    } catch {
+      // Catalogue unreadable — a held title grants nothing rather than
+      // everything. Fail closed.
+    }
+  }
+
+  // Grants may store either the catalogue row id or the power name: the seed
+  // writes the name as the row id, older rows hold a generated id. Resolve
+  // both, or the bridge below is silently inert for one of the two forms.
+  const powerNameById = new Map<string, string>();
+
+  try {
+    const catalog = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.POWERS,
+      [Query.limit(200)],
+    );
+
+    for (const row of catalog.documents) {
+      const power = row as Record<string, unknown> & {
+        $id: string;
+        name?: unknown;
+      };
+
+      powerNameById.set(
+        power.$id,
+        typeof power.name === "string" && power.name ? power.name : power.$id,
+      );
+    }
+  } catch {
+    // Catalog unreadable — name-keyed grants still resolve below.
+  }
+
   // Charter offices grant capabilities (Option B). Active assignment only,
   // and the term must not have ended: time alone revokes charter powers, no
   // human needed. Only well-formed past dates count — a garbage termEnd must
   // never silently strip (or extend) authority; fix the row instead.
+  //
+  // The capabilities are read from the office's role template, not from the
+  // compile-time map: offices and roles are the same grant (a capability
+  // bundle), so they share one table and one editable source. The map is only
+  // the seed default, used until the template exists.
   for (const o of offices.documents) {
     const officeId = String(o.officeId ?? "");
     const termEnd = typeof o.termEnd === "string" ? o.termEnd : "";
     if (/^\d{4}-\d{2}-\d{2}$/.test(termEnd) && termEnd < new Date().toISOString().slice(0, 10)) continue;
-    const caps = OFFICE_CAPABILITIES[officeId] ?? [];
 
-    caps.forEach((c) => capabilities.add(c));
+    officeCapabilities(officeId, roles.documents).forEach((c) =>
+      capabilities.add(c),
+    );
   }
   for (const power of powers.documents) {
-    if (activeDate((power as Record<string, unknown>).expiresAt)) {
-      const powerId = String((power as Record<string, unknown>).powerId || "");
+    const row = power as Record<string, unknown>;
 
-      if (powerId === "blog_creator") capabilities.add("blog.create");
-      if (powerId === "blog_reviewer") {
-        capabilities.add("blog.review");
-        capabilities.add("blog.approve");
-        capabilities.add("blog.request_revision");
-      }
+    if (!activeDate(row.expiresAt)) continue;
+    const powerId = String(row.powerId || "");
+    const name = POWER_CAPABILITIES[powerId]
+      ? powerId
+      : (powerNameById.get(powerId) ?? powerId);
+
+    for (const capability of POWER_CAPABILITIES[name] ?? []) {
+      capabilities.add(capability);
     }
   }
 
@@ -185,6 +325,10 @@ export async function getEffectiveCapabilities(
     const role = roleMap.get(String(row.roleId));
 
     if (!role) continue;
+    // Template list is unfiltered (see the query above) so inactive templates
+    // can be told apart from missing ones — a role assignment must still grant
+    // nothing when its template is switched off.
+    if (role.isActive !== true) continue;
     const values = Array.isArray(role.capabilities) ? role.capabilities : [];
 
     // Only known vocabulary becomes a capability. A role-template writer must
@@ -208,75 +352,77 @@ export async function hasServerCapability(
 }
 
 /**
- * Check a legacy `user_powers` grant.
+ * The capabilities an office confers.
  *
- * Admin has every power by definition — returns true before any table lookup.
- * The capability vocabulary covers governance and content workflows, while the
- * operational powers (`ticket_verifier`, `gallery_manager`, ...) still live in
- * the powers table. Both are needed until that migration completes, so the check
- * is shared here rather than re-implemented inside each route.
+ * An office IS a role: a bundle of capabilities. Its template carries them, so
+ * editing the template changes what the office can do — no code change, no
+ * redeploy. `OFFICE_CAPABILITIES` is only the seed default, used when no
+ * template carries this `officeId` yet (fresh install before seeding, or a
+ * template that was deleted).
+ *
+ * A template that exists but is switched off grants nothing, which is why the
+ * caller must pass the *unfiltered* template list: "inactive" and "absent" must
+ * not collapse into the same answer.
  */
-export async function hasPower(
-  userId: string,
-  powerId: string,
-): Promise<boolean> {
-  // Admin wildcard: all and every power, no row required.
-  // Restriction outranks grants here too: a banned user keeps no power even
-  // when the grant row has not been cleaned up yet.
-  try {
-    const status = await resolveMembershipStatus(userId);
+export function officeCapabilities(
+  officeId: string,
+  templates: Array<Record<string, unknown>>,
+): Capability[] {
+  const template = templates.find((row) => row.officeId === officeId);
 
-    if (ADMIN_STATUSES.has(status)) return true;
-    if (RESTRICTED_STATUSES.has(status)) return false;
-  } catch {
-    // Fall through to table check on status resolution failure.
+  if (template) {
+    if (template.isActive !== true) return [];
+    const values = Array.isArray(template.capabilities)
+      ? template.capabilities
+      : [];
+
+    return values.filter(isCapability);
   }
+
+  return OFFICE_CAPABILITIES[officeId] ?? [];
+}
+
+/** `officeCapabilities` against a live template read, for route-side checks. */
+export async function getOfficeCapabilities(
+  officeId: string,
+): Promise<Capability[]> {
   const { databases } = createServerDatabases();
-  // Resolve both id and name: grants may store either (see permissions.ts dual
-  // resolution). Fetch catalog once to map.
-  let acceptedIds = new Set<string>([powerId]);
 
   try {
-    const catalog = await databases.listDocuments(
+    const templates = await databases.listDocuments(
       DATABASE_ID,
-      COLLECTIONS.POWERS,
-      [Query.limit(200)],
+      COLLECTIONS.ROLE_TEMPLATES,
+      [Query.equal("officeId", [officeId]), Query.limit(1)],
     );
 
-    for (const p of catalog.documents) {
-      const row = p as Record<string, unknown> & {
-        $id: string;
-        name?: unknown;
-      };
-
-      if (row.$id === powerId && typeof row.name === "string")
-        acceptedIds.add(row.name);
-      if (typeof row.name === "string" && row.name === powerId)
-        acceptedIds.add(row.$id);
-    }
+    return officeCapabilities(
+      officeId,
+      templates.documents as Array<Record<string, unknown>>,
+    );
   } catch {
-    // Catalog unreadable — fall back to exact match.
+    // Column or table missing (pre-migration database): seed default.
+    return OFFICE_CAPABILITIES[officeId] ?? [];
   }
-  const response = await databases.listDocuments(
-    DATABASE_ID,
-    COLLECTIONS.USER_POWERS,
-    [
-      Query.equal("userId", [userId]),
-      Query.equal("powerId", [...acceptedIds]),
-      Query.equal("isActive", [true]),
-      Query.limit(10),
-    ],
-  );
+}
 
-  return response.documents.some((document) => {
-    const expiresAt = (document as Record<string, unknown>).expiresAt;
+/**
+ * Capabilities in `caps` that `actorId` does not hold.
+ *
+ * "No grant beyond hold": a manager may only hand out capability they hold
+ * themselves, otherwise any holder of `access.assign_roles` could mint a
+ * superset for themselves. Admins hold `"*"` and bypass. Shared so the office
+ * route applies the same rule the role route does — they used to differ, which
+ * meant the same grant was checked through one door and unchecked through the
+ * other.
+ */
+export async function unheldCapabilities(
+  actorId: string,
+  caps: readonly string[],
+): Promise<string[]> {
+  const held = await getEffectiveCapabilities(actorId);
 
-    return (
-      typeof expiresAt !== "string" ||
-      !expiresAt ||
-      new Date(expiresAt).getTime() > Date.now()
-    );
-  });
+  if (held.has("*")) return [];
+  return caps.filter((cap) => !held.has(cap));
 }
 
 export async function requireCapability(

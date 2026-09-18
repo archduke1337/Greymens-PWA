@@ -177,6 +177,11 @@ export interface Designation {
   slug: string;
   description?: string;
   level: number;
+  /**
+   * Capabilities this title confers. Empty by default — a designation is an
+   * honour, and it carries authority only when an administrator lists it here.
+   */
+  capabilities?: string[];
   category: "department" | "operations" | "executive" | "special";
   departmentId?: string;
   badgeIcon?: string;

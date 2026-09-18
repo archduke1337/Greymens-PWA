@@ -3,7 +3,11 @@ import { ID, Query } from "appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import {
+  isCapability,
+  requireCapability,
+  unheldCapabilities,
+} from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, ApiError } from "@/lib/api";
 
@@ -27,10 +31,10 @@ function validate(body: Record<string, unknown>) {
   )
     return "Invalid designation slug";
   // Levels are capped at 9 because level 10 was the reserved "everything" tier.
-  // The wildcard now comes only from the governance role in `user_roles`, so a
-  // designation can never be a route to full access. Raise this ceiling only if
-  // `DESIGNATION_LEVEL_PERMISSIONS` gains a level 10 that grants something
-  // bounded.
+  // A level no longer grants anything at all (see the capabilities column), so
+  // the ceiling is descriptive — seniority for display, not a privilege
+  // boundary. Authority a title carries must be listed explicitly and is
+  // checked against no-grant-beyond-hold below.
   if (
     !Number.isInteger(body.level) ||
     Number(body.level) < 1 ||
@@ -102,7 +106,21 @@ function pickDesignationFields(body: Record<string, unknown>) {
   if (Number.isInteger(body.displayOrder) && Number(body.displayOrder) >= 0) {
     out.displayOrder = Number(body.displayOrder);
   }
+  // Always written, so an empty list is a deliberate revocation rather than an
+  // omitted field that silently leaves the previous grant in place.
+  out.capabilities = (Array.isArray(body.capabilities) ? body.capabilities : []).filter(
+    isCapability,
+  );
   return out;
+}
+
+/** Unknown strings are rejected, not dropped: a typo must not read as "granted". */
+function unknownCapabilities(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : [];
+
+  return raw
+    .filter((entry) => !isCapability(entry))
+    .map((entry) => String(entry).slice(0, 60));
 }
 
 export async function GET(request: NextRequest) {
@@ -142,12 +160,37 @@ export async function POST(request: NextRequest) {
 
     if (validationError)
       return fail("VALIDATION", validationError, 400);
+    const unknown = unknownCapabilities(body.capabilities);
+
+    if (unknown.length > 0) {
+      return fail(
+        "VALIDATION",
+        `Unknown capabilities: ${unknown.slice(0, 5).join(", ")}`,
+        400,
+      );
+    }
+    const fields = pickDesignationFields(body);
+    // A title can now carry authority, so it obeys the same
+    // no-grant-beyond-hold rule as a role template or an office: a designation
+    // manager cannot mint capability they do not hold.
+    const unheld = await unheldCapabilities(
+      authenticated.user.$id,
+      Array.isArray(fields.capabilities) ? fields.capabilities : [],
+    );
+
+    if (unheld.length > 0) {
+      return fail(
+        "FORBIDDEN",
+        `Cannot grant capabilities you do not hold: ${unheld.slice(0, 5).join(", ")}`,
+        403,
+      );
+    }
     const { databases } = createServerDatabases();
     const designation = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
       ID.unique(),
-      { ...pickDesignationFields(body), isActive: true },
+      { ...fields, isActive: true },
     );
 
     await recordAudit({
@@ -156,7 +199,11 @@ export async function POST(request: NextRequest) {
       action: "designation.create",
       entityType: "designation",
       entityId: designation.$id,
-      details: { slug: designation.slug, level: designation.level },
+      details: {
+        slug: designation.slug,
+        level: designation.level,
+        capabilities: fields.capabilities,
+      },
     });
 
     return ok({ designation }, 201);
@@ -183,12 +230,34 @@ export async function PATCH(request: NextRequest) {
 
     if (validationError)
       return fail("VALIDATION", validationError, 400);
+    const unknown = unknownCapabilities(rest.capabilities);
+
+    if (unknown.length > 0) {
+      return fail(
+        "VALIDATION",
+        `Unknown capabilities: ${unknown.slice(0, 5).join(", ")}`,
+        400,
+      );
+    }
+    const fields = pickDesignationFields(rest);
+    const unheld = await unheldCapabilities(
+      authenticated.user.$id,
+      Array.isArray(fields.capabilities) ? fields.capabilities : [],
+    );
+
+    if (unheld.length > 0) {
+      return fail(
+        "FORBIDDEN",
+        `Cannot grant capabilities you do not hold: ${unheld.slice(0, 5).join(", ")}`,
+        403,
+      );
+    }
     const { databases } = createServerDatabases();
     const designation = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.DESIGNATIONS,
       designationId,
-      pickDesignationFields(rest),
+      fields,
     );
 
     await recordAudit({
@@ -197,7 +266,7 @@ export async function PATCH(request: NextRequest) {
       action: "designation.update",
       entityType: "designation",
       entityId: designationId,
-      details: { slug: pickDesignationFields(rest).slug },
+      details: { slug: fields.slug, capabilities: fields.capabilities },
     });
 
     return ok({ designation });

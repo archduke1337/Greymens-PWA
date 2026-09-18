@@ -596,6 +596,12 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "departmentId", type: "string", size: 36 },
     { key: "badgeIcon", type: "string", size: 100 },
     { key: "badgeColor", type: "string", size: 20 },
+    // Capabilities a designation confers. Empty by default: a designation is an
+    // honour, and it only carries authority when an administrator lists it
+    // explicitly — the alternative (the old level -> permissions table) granted
+    // authority nobody could see. Same vocabulary and same authorizer as roles
+    // and offices, so it is subject to the same no-grant-beyond-hold rule.
+    { key: "capabilities", type: "string", size: 100, array: true },
     { key: "isActive", type: "boolean", required: true },
     { key: "maxHolders", type: "integer" },
     { key: "displayOrder", type: "integer" },
@@ -629,7 +635,8 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "scope", type: "string", size: 50, required: true },
   ], [
     // Power names are the grant vocabulary: duplicates would make id-vs-name
-    // resolution ambiguous (see hasPower dual resolution).
+    // resolution ambiguous (see the POWER_CAPABILITIES lookup, which accepts
+    // either the row id or the name).
     { key: "idx_name", type: "unique", columns: ["name"] },
     { key: "idx_category", type: "key", columns: ["category"] },
   ]);
@@ -674,11 +681,17 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "teamId", type: "string", size: 100 },
     { key: "teamRole", type: "string", size: 100 },
     { key: "label", type: "string", size: 100 },
+    // Non-null when this template *is* a charter office (value: office id from
+    // GOVERNANCE_OFFICES). Offices and roles are the same grant — a bundle of
+    // capabilities — so they share one table; office_assignments keeps only the
+    // term, which is the part a role cannot express. See lib/access-control.ts.
+    { key: "officeId", type: "string", size: 100 },
     { key: "isActive", type: "boolean", required: true },
   ], [
     { key: "idx_slug", type: "unique", columns: ["slug"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_name", type: "key", columns: ["name"] },
+    { key: "idx_office", type: "key", columns: ["officeId"] },
   ]);
 
   await createTable("role_assignments", "Role Assignments", [

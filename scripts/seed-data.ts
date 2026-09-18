@@ -330,8 +330,11 @@ async function seedDesignations() {
 }
 
 async function seedRoleTemplates() {
-  // Option B: one role_template per Charter office, seeded from
-  // OFFICE_CAPABILITIES (single source). Deterministic IDs make reruns
+  // Option B: one role_template per Charter office, marked with `officeId` so
+  // the authorizer can read an office's capabilities from its template instead
+  // of the compile-time OFFICE_CAPABILITIES map. OFFICE_CAPABILITIES is now the
+  // *seed* value, not the source of truth: editing the template in the console
+  // is what changes what an office can do. Deterministic IDs make reruns
   // idempotent: create office-<id>, on conflict update capabilities.
   // Admin needs no template (wildcard "*"), so no admin template is seeded.
   console.log("\n=== Seeding Role Templates (offices) ===");
@@ -351,6 +354,7 @@ async function seedRoleTemplates() {
       description: `${office.title} — ${office.layer}${office.elected ? " (elected)" : " (appointed)"} per Charter`,
       capabilities: caps,
       label: office.layer,
+      officeId: office.id,
       isActive: true,
     };
     await upsertRow("role_templates", docId, payload, office.title);
