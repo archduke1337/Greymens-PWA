@@ -594,85 +594,9 @@ export interface ApprovalStep {
 // Permission System Types
 // ============================================================
 
-export type Permission =
-  // Base status permissions
-  | "view_public_content"
-  | "view_resources"
-  | "view_roadmaps"
-  | "view_members"
-  | "submit_application"
-  | "edit_own_application"
-  | "register_events"
-  | "view_member_resources"
-  | "manage_own_profile"
-  | "view_all_members"
-  | "request_department_assignment"
-  // Department permissions
-  | "manage_department_resources"
-  | "manage_department_team"
-  | "participate_in_department_events"
-  | "view_department_stats"
-  // Event permissions
-  | "draft_events"
-  | "approve_events"
-  | "approve_events_in_scope"
-  // Operations permissions
-  | "manage_multiple_departments"
-  | "view_operations_stats"
-  | "view_reports"
-  | "manage_organization"
-  // Power-granted permissions
-  | "approve_applications"
-  | "reject_applications"
-  | "view_application_details"
-  | "create_events"
-  | "edit_events"
-  | "publish_events"
-  | "manage_registrations"
-  | "verify_tickets"
-  | "manual_checkin"
-  | "view_attendee_list"
-  | "create_blogs"
-  | "approve_blogs"
-  | "reject_blogs"
-  | "edit_blogs"
-  | "approve_gallery"
-  | "reject_gallery"
-  | "delete_gallery"
-  | "upload_gallery"
-  | "upload_resources"
-  | "edit_resources"
-  | "delete_resources"
-  | "assign_department_roles"
-  | "view_department_data"
-  | "approve_department_events"
-  | "view_operations_data"
-  | "view_audit_logs"
-  | "revert_profile_changes"
-  | "view_sensitive_data"
-  | "send_notifications"
-  | "manage_notification_templates"
-  | "manage_newsletter"
-  | "publish_newsletter"
-  | "manage_social_media"
-  | "manage_pr_content"
-  | "manage_design_assets"
-  | "system_developer_access"
-  // Operations that had no capability at all before, so every call site gated
-  // on one of these was either ungated or gated on an over-broad sibling
-  // (`edit_events` was doing duty for deletion, for example).
-  | "delete_events"
-  | "invalidate_tickets"
-  | "manage_user_accounts"
-  | "assign_designations"
-  | "grant_powers"
-  // Meta permissions
-  | "ALL_PERMISSIONS"
-  | string; // allow custom permissions
-
 /**
  * The global tier held in `user_roles` — the single server-owned source of the
- * `admin` and `dev` statuses. Nothing else may grant `ALL_PERMISSIONS`.
+ * `admin` and `dev` statuses.
  */
 export type UserRoleName = "admin" | "dev";
 
@@ -686,12 +610,6 @@ export interface UserRole {
   grantedAt: string;
   reason?: string;
   isActive: boolean;
-}
-
-export interface PermissionCheck {
-  hasPermission: (permission: string, scope?: string) => boolean;
-  hasAnyPermission: (permissions: string[], scope?: string) => boolean;
-  hasAllPermissions: (permissions: string[], scope?: string) => boolean;
 }
 
 // ============================================================

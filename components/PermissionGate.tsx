@@ -7,10 +7,11 @@ import { usePermissions } from "@/context/PermissionContext";
  * security — every action must still call requireCapability()/requireAdmin()
  * server-side.
  *
- * Checks the capability vocabulary the server enforces (hasCapability), not the
- * legacy permission set: a gate that asked hasPermission would hide the control
- * from every office holder whose authority arrives as a role or office
- * capability, which is now the normal path.
+ * Checks the capability vocabulary the server enforces (hasCapability) — the
+ * only authority check the client has. The legacy permission set it used to
+ * consult resolved a different vocabulary in the browser, so a gate written
+ * against it hid controls from every office holder whose authority arrives as a
+ * role, office, title or power grant.
  *
  * Usage:
  *   <PermissionGate capability="events.create">

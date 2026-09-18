@@ -2,11 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
-import {
-  hasPermission as checkPermission,
-  hasAnyPermission as checkAllAnyPermissions,
-  hasAllPermissions as checkAllPermissions,
-} from "@/lib/permissions";
 import type {
   MembershipStatus,
   Profile,
@@ -32,15 +27,16 @@ interface PermissionContextType {
   allDesignations: Designation[];
   allPowers: Power[];
   capabilities: string[];
-  hasPermission: (permission: string, scope?: string) => boolean;
-  hasAnyPermission: (permissions: string[], scope?: string) => boolean;
-  hasAllPermissions: (permissions: string[], scope?: string) => boolean;
+
   /**
-   * New-vocabulary capability check against the server-resolved set from
+   * The capability check, against the server-resolved set from
    * GET /api/permissions (`capabilities: string[]`, `"*"` for admin/dev).
-   * Use this — not hasPermission — for anything the server gates with
-   * requireCapability, or office holders will be bounced despite valid
-   * grants: hasPermission only knows the legacy permission vocabulary.
+   *
+   * This is the only authority check the client has, and deliberately so: the
+   * legacy permission vocabulary that used to sit beside it resolved a
+   * different set of strings in the browser, so a page gated on it could hide a
+   * button the server would have allowed (or show one it would refuse). What a
+   * route enforces with `requireCapability` is what the UI asks for here.
    */
   hasCapability: (capability: string) => boolean;
   isRole: (role: MembershipStatus) => boolean;
@@ -113,9 +109,6 @@ const EMPTY_PAYLOAD: PermissionsPayload = {
 const PermissionContext = createContext<PermissionContextType>({
   ...EMPTY_PAYLOAD,
   status: "no_account",
-  hasPermission: () => false,
-  hasAnyPermission: () => false,
-  hasAllPermissions: () => false,
   hasCapability: () => false,
   isRole: () => false,
   isRoleOrAbove: () => false,
@@ -219,39 +212,6 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
     loadUserData();
   }, [loadUserData]);
 
-  // One stable snapshot per payload so the WeakMap memo inside
-  // lib/permissions actually hits instead of rebuilding Sets on every check.
-  const userContext = useMemo(
-    () => ({
-      status: payload.status,
-      powers: payload.userPowers,
-      departments: payload.userDepartments,
-      designations: payload.userDesignations,
-      allPowers: payload.allPowers,
-      allDepartments: payload.allDepartments,
-      allDesignations: payload.allDesignations,
-    }),
-    [payload]
-  );
-
-  const hasPermission = useCallback(
-    (permission: string, scope?: string) => {
-      if (payload.status === "no_account") return false;
-      return checkPermission(userContext, permission, scope);
-    },
-    [payload.status, userContext]
-  );
-
-  const hasAnyPermission = useCallback(
-    (permissions: string[], scope?: string) => checkAllAnyPermissions(userContext, permissions, scope),
-    [userContext]
-  );
-
-  const hasAllPermissions = useCallback(
-    (permissions: string[], scope?: string) => checkAllPermissions(userContext, permissions, scope),
-    [userContext]
-  );
-
   const hasCapability = useCallback(
     (capability: string) => {
       const set = payload.capabilities;
@@ -271,9 +231,6 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo(
     () => ({
       ...payload,
-      hasPermission,
-      hasAnyPermission,
-      hasAllPermissions,
       hasCapability,
       isRole,
       isRoleOrAbove,
@@ -281,7 +238,7 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
       error,
       refresh: loadUserData,
     }),
-    [payload, hasPermission, hasAnyPermission, hasAllPermissions, hasCapability, isRole, isRoleOrAbove, loading, error, loadUserData]
+    [payload, hasCapability, isRole, isRoleOrAbove, loading, error, loadUserData]
   );
 
   return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;

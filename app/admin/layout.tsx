@@ -169,10 +169,10 @@ export default function AdminLayout({
       }
 
       // Option B admission: any server-resolved capability granting at least
-      // one section, or admin tier ("*" covers everything). This must use
-      // hasCapability (new vocabulary), not hasPermission (legacy): office
-      // holders kept valid grants but were bounced here because the legacy
-      // check knew none of the section capabilities.
+      // one section, or admin tier ("*" covers everything). hasCapability is
+      // the only authority check left — the legacy resolver that used to sit
+      // beside it resolved a different vocabulary in the browser, and office
+      // holders kept being bounced here because it knew none of these names.
       // Fall back to server admin-check for bootstrap ADMIN_EMAILS.
       const visible = ADMIN_SECTIONS.some((s) => sectionMatches(hasCapability, s.cap));
 
