@@ -8,6 +8,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 export default defineConfig([
   globalIgnores([
     ".now/*",
+    ".agents/*",
     "**/*.css",
     "**/.changeset",
     "**/dist",
@@ -66,7 +67,7 @@ export default defineConfig([
         "warn",
         {
           args: "after-used",
-          ignoreRestSiblings: false,
+          ignoreRestSiblings: true,
           argsIgnorePattern: "^_.*?$",
         },
       ],
