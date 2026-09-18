@@ -13,8 +13,8 @@ const LEARN_ROW = {
   text: "Weekly workshops and peer sessions, ethics before exploits. Beginners pair up — nobody sits out while others type.",
   href: "/events",
   cta: "See upcoming events",
-  src: "/Assets/Objects/crowd.jpg",
-  alt: "Members packed into a weekend workshop",
+  src: "/Assets/Banners/clut.jpg",
+  alt: "A crowd in black and white, one figure lit in green binary code",
 };
 
 const BUILD_ROW = {
