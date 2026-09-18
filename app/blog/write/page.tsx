@@ -1,7 +1,7 @@
 // app/blog/write/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +19,7 @@ export default function WriteBlogPage() {
   const { hasCapability, loading: permLoading } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -84,6 +85,9 @@ export default function WriteBlogPage() {
       toast.error(getErrorMessage(error) || "Failed to upload image");
     } finally {
       setUploadingImage(false);
+      // Reset the picker so choosing the SAME file again fires onChange.
+      // Without this, a re-upload after a failed attempt is silently dead.
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -99,6 +103,13 @@ export default function WriteBlogPage() {
     // Validation
     if (!formData.title || !formData.content || !formData.category) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // The server caps excerpts at 500 characters — catch it here with the
+    // field in view instead of a generic 400 toast after submit.
+    if (formData.excerpt.length > 500) {
+      toast.error(`Excerpt is ${formData.excerpt.length}/500 characters — please shorten it`);
       return;
     }
 
@@ -200,7 +211,7 @@ export default function WriteBlogPage() {
                 id="blog-title"
                 placeholder="Enter an engaging title..."
                 value={formData.title}
-                onChange={(e: any) =>
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
                 required
@@ -216,11 +227,15 @@ export default function WriteBlogPage() {
                 id="blog-excerpt"
                 placeholder="Brief summary of your blog..."
                 value={formData.excerpt}
-                onChange={(e: any) =>
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                   setFormData({ ...formData, excerpt: e.target.value })
                 }
                 rows={3}
+                maxLength={500}
               />
+              <p className="text-xs text-default-400 mt-1" aria-live="polite">
+                {formData.excerpt.length}/500
+              </p>
             </div>
 
             {/* Category */}
@@ -260,7 +275,7 @@ export default function WriteBlogPage() {
                 id="blog-tags"
                 placeholder="react, javascript, tutorial (comma separated)"
                 value={formData.tags}
-                onChange={(e: any) =>
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setFormData({ ...formData, tags: e.target.value })
                 }
               />
@@ -276,6 +291,7 @@ export default function WriteBlogPage() {
                 {/* Upload Button */}
                 <div>
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
@@ -305,7 +321,7 @@ export default function WriteBlogPage() {
                 <Input
                   placeholder="Or paste image URL"
                   value={formData.coverImage}
-                  onChange={(e: any) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, coverImage: e.target.value })
                   }
                 />
@@ -316,12 +332,17 @@ export default function WriteBlogPage() {
                 <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
                   <p className="text-sm font-medium mb-2">Preview:</p>
                   <img
+                    key={formData.coverImage}
                     src={formData.coverImage}
                     alt="Cover preview"
                     className="w-full h-48 object-cover rounded-lg"
-                    onError={() => {
-                      toast.error("Invalid image URL");
-                      setFormData({ ...formData, coverImage: "" });
+                    onError={(e) => {
+                      // A transient preview failure (hotlink block, flaky
+                      // network) must not wipe a valid URL and force a
+                      // re-upload. Hide this render; editing the URL remounts
+                      // via key and retries.
+                      e.currentTarget.style.display = "none";
+                      toast.error("Cover preview failed to load — the URL is kept. Open it in a new tab to check.");
                     }}
                   />
                 </div>
@@ -337,7 +358,7 @@ export default function WriteBlogPage() {
                 id="blog-content"
                 placeholder="Write your blog content here... (Markdown supported)"
                 value={formData.content}
-                onChange={(e: any) =>
+                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                   setFormData({ ...formData, content: e.target.value })
                 }
                 required

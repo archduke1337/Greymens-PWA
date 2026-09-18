@@ -301,7 +301,7 @@ export default function AdminBlogsPage() {
 
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2">
-                      {blog.tags.map((tag, i) => (
+                      {(blog.tags ?? []).map((tag, i) => (
                         <Chip key={i} size="sm" variant="primary">
                           #{tag}
                         </Chip>
@@ -413,11 +413,11 @@ export default function AdminBlogsPage() {
                     />
                   </ModalBody>
                   <ModalFooter>
-                    <Button variant="primary" onPress={() => setRejectModalOpen(false)}>
+                    <Button variant="secondary" onPress={() => setRejectModalOpen(false)}>
                       Cancel
                     </Button>
                     <Button onPress={handleReject}
-                      isPending={!!processingBlog}
+                      isPending={processingBlog === rejectingBlog?.$id}
                     >
                       Reject Blog
                     </Button>
