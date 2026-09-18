@@ -128,6 +128,30 @@ export default function BlogPage() {
         )}
       </header>
 
+      {/* Welcome note — the first thing a reader should meet */}
+      <Card>
+        <Card.Content className="space-y-2.5 p-6 sm:p-7">
+          <h2 className="font-bold tracking-tight">Welcome to the Greymens blog</h2>
+          <div className="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted">
+            <p>
+              This is where members write down what they&apos;re learning —
+              workshop recaps, CTF write-ups, project notes, half-formed ideas
+              defended bravely. If it taught you something, it&apos;ll teach
+              someone else.
+            </p>
+            <p>
+              New here? Your first post doesn&apos;t need to be big. Explain
+              one thing you figured out this month, in plain words. The
+              editorial board reads everything before it goes live, and
+              they&apos;ll help with the rest.
+            </p>
+            <p className="text-foreground">
+              Write it down. Someone out there is stuck exactly where you were.
+            </p>
+          </div>
+        </Card.Content>
+      </Card>
+
       {/* Filters */}
       <Card>
         <Card.Content className="flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
