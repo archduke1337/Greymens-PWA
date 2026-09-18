@@ -142,7 +142,7 @@ export default function ProjectsPage() {
           </Card>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 space-y-8">
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredProjects.map((project) => {
               const statusChip = getStatusChip(project.status);
