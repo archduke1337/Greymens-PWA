@@ -69,7 +69,23 @@ export default function SecurityReportPage() {
   return (
     <main className="mx-auto max-w-5xl space-y-8 px-4 py-12">
       <Button variant="secondary" onPress={goBack}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-      <header className="space-y-3"><h1 className="text-3xl font-bold">Security governance</h1><p className="max-w-2xl text-[var(--muted)]">Membership is not permission to test a system. Request written authorization before technical activity, and report suspected incidents promptly.</p></header>
+      <header className="grid items-center gap-6 sm:grid-cols-[1fr_180px]">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight">Security governance</h1>
+          <p className="max-w-2xl text-[15px] leading-relaxed text-[var(--muted)]">
+            Membership is not permission to test a system. Request written
+            authorization before technical activity — and if you see something,
+            say something here.
+          </p>
+        </div>
+        <img
+          src="/Assets/Objects/Story-board.webp"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="hidden w-full rounded-3xl border border-default-200/70 object-cover sm:block"
+        />
+      </header>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center gap-3"><ShieldCheck className="h-6 w-6 text-[var(--accent)]" /><h2 className="text-xl font-bold">Request authorized activity</h2></CardHeader>
