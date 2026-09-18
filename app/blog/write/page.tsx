@@ -170,29 +170,23 @@ export default function WriteBlogPage() {
     );
   }
 
-  const goBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/blog");
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          className="mb-4"
-          onPress={goBack}
-        >
-          Back
-        </Button>
-        <h1 className="text-4xl font-bold mb-2">Write a Blog</h1>
-        <p className="text-default-600">
-          Share your knowledge and insights with the community
-        </p>
+      <div className="mb-8 flex items-center gap-4">
+        <img
+          src="/Assets/Media/throwing-paper.gif"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="h-20 w-20 shrink-0 rounded-3xl border border-default-200/70 object-cover"
+        />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Write a post</h1>
+          <p className="mt-1 text-[15px] text-muted">
+            Think it through, write it plainly. The editorial board handles the rest.
+          </p>
+        </div>
       </div>
 
       {/* Form */}

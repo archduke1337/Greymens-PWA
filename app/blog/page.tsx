@@ -177,6 +177,13 @@ export default function BlogPage() {
       {error ? (
         <Card>
           <Card.Content className="space-y-3 px-6 py-14 text-center">
+            <img
+              src="/Assets/Media/try-again.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+            />
             <h2 className="text-lg font-bold">The blog shelf is unreachable</h2>
             <p className="mx-auto max-w-md text-sm text-muted">{error}</p>
             <Button variant="secondary" className="rounded-full" onPress={loadBlogs}>
