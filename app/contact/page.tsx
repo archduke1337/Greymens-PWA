@@ -81,11 +81,12 @@ export default function ContactPage() {
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-12 sm:px-6 sm:py-16">
       <header className="mx-auto max-w-xl space-y-3 text-center">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Contact
+          Talk to a human
         </h1>
         <p className="text-[15px] leading-relaxed text-muted">
-          Questions, partnerships, concerns — write below. Students answer,
-          usually between classes.
+          Joining, sponsoring, reporting, or just curious — write below. A
+          student officer reads everything and replies within 2–3 working
+          days.
         </p>
       </header>
 
@@ -227,14 +228,14 @@ export default function ContactPage() {
           <figure className="space-y-2">
             <div className="mx-auto max-w-[220px] overflow-hidden rounded-3xl border border-default-200/70">
               <img
-                alt="Members gathered at a Greymens workshop"
+                alt="A matchbox full of tiny people"
                 className="w-full object-cover"
                 loading="lazy"
-                src="/Assets/Objects/crowd.jpg"
+                src="/Assets/Media/matchbox-of-humans.webp"
               />
             </div>
             <figcaption className="text-center text-sm text-muted">
-              The fastest answers happen on Discord or in person.
+              Humans on the other end — pick whichever channel fits.
             </figcaption>
           </figure>
           <Card variant="secondary">
