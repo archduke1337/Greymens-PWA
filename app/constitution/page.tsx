@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, Chip, Separator } from "@heroui/react";
-import { ScrollText, AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
+import { ScrollText, ArrowRight, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Constitution",
@@ -813,14 +813,14 @@ const PARTS: Part[] = [
         n: "F",
         title: "Ratification Record",
         points: [
-          "Proposed version 0.9 — Foundational Draft. Presentation, student approval, institutional approval, ratification, effective, and final version dates to be recorded by the General Secretary on ratification.",
+          "Ratified version 1.0 — the operative Charter. The General Secretary maintains the dated record of presentation, student approval, institutional approval, ratification, and effectiveness.",
         ],
       },
       {
         n: "G",
         title: "Amendment History",
         points: [
-          "v0.9 — foundational governance draft established. Further rows accrue with each ratified amendment.",
+          "v1.0 — Charter ratified and in force. Further rows accrue with each ratified amendment.",
         ],
         quote:
           "This Charter is designed so that authority is tied to responsibility, security controls remain explicit, temporary teams can be created without constitutional surgery, and every office can survive the departure of the person currently holding it.",
@@ -830,8 +830,8 @@ const PARTS: Part[] = [
 ];
 
 const CONTROL_ROWS: Array<[string, string]> = [
-  ["Document status", "Draft for Ratification"],
-  ["Version", "0.9 — Foundational Draft"],
+  ["Document status", "In Force"],
+  ["Version", "1.0 — Ratified Charter"],
   ["School", "School of Engineering (SoE), ADYPU"],
   ["Student Coordinator / President", "Aditya Yadav"],
   ["URN", "E25B021436"],
@@ -880,11 +880,11 @@ export default function ConstitutionPage() {
                 Constitution &amp; Governance Charter
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <Chip color="warning" variant="soft" size="sm">
-                  Draft for Ratification
+                <Chip color="success" variant="soft" size="sm">
+                  In Force
                 </Chip>
                 <Chip size="sm" variant="soft">
-                  Version 0.9 — Foundational Draft
+                  Version 1.0 — Ratified Charter
                 </Chip>
               </div>
               <p className="mx-auto max-w-xl font-serif text-base italic leading-relaxed text-muted sm:text-lg">
@@ -912,19 +912,17 @@ export default function ConstitutionPage() {
                     </div>
                   ))}
                 </dl>
-                <Card className="mt-4 border-warning/40 bg-warning/5">
+                <Card className="mt-4">
                   <Card.Content className="flex gap-3 p-5">
-                    <AlertTriangle
-                      className="mt-0.5 h-5 w-5 shrink-0 text-warning"
+                    <ScrollText
+                      className="mt-0.5 h-5 w-5 shrink-0"
                       aria-hidden="true"
                     />
                     <p className="text-sm leading-relaxed text-muted">
                       <span className="font-semibold text-foreground">
-                        Ratification note.{" "}
+                        The operative Constitution.{" "}
                       </span>
-                      This is a governance draft for institutional and student
-                      review. It becomes the operative Constitution only after
-                      the required approval and ratification process. Where it
+                      This Charter is in force and governs the club. Where it
                       conflicts with law or binding institutional policy, the
                       higher authority prevails.
                     </p>
@@ -1016,8 +1014,8 @@ export default function ConstitutionPage() {
                   this document.
                 </p>
                 <p>
-                  Review cycle: at least once each academic year. Ratification
-                  and amendment records are maintained by the General Secretary.
+                  Review cycle: at least once each academic year. Amendment
+                  records are maintained by the General Secretary.
                 </p>
                 <div className="flex flex-wrap gap-2.5 pt-1">
                   <Link
