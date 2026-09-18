@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
-import { createServerDatabases } from "@/lib/appwrite-server";
+import { createServerDatabases, createServerStorage } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
 import { hasServerCapability } from "@/lib/access-control";
@@ -104,7 +103,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .slice(0, 20);
 
-    const { storage } = createAdminClient();
+    const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
     let imageUrl = "";
 
