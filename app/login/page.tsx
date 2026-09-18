@@ -50,7 +50,6 @@ const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   // OAuth is not configured yet — Google sign-in stays disabled until the
   // provider is set up. See the commented block below.
@@ -59,6 +58,13 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
+  // Derived once at mount: the params are stable for this page instance, and
+  // reading them here avoids a setState-in-effect cascade on load.
+  const [error, setError] = useState(
+    searchParams.get("error") === "oauth_failed"
+      ? "Google sign-in didn't complete. Please try again."
+      : "",
+  );
 
   // Already authenticated (verified context state, not a cookie that may be
   // forged): leave the auth page.
@@ -66,19 +72,17 @@ function LoginForm() {
     if (user) router.push(next);
   }, [user, router, next]);
 
-  useEffect(() => {
-    if (searchParams.get("error") === "oauth_failed") {
-      setError("Google sign-in didn't complete. Please try again.");
-    }
-  }, [searchParams]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // A trailing space from autocomplete is the classic "correct password,
+    // rejected anyway" report — trim the identifier, never the secret.
+    const cleanEmail = email.trim();
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(cleanEmail, password);
       router.push(next);
     } catch (err: unknown) {
       // Log the mapped message, never the raw error: auth errors can carry
