@@ -10,7 +10,7 @@ import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
+import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -195,42 +195,50 @@ export default function WriteBlogPage() {
           <h2 className="text-xl font-bold">Blog Details</h2>
         </CardHeader>
         <CardContent className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <Form validationBehavior="aria" onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
-            <div>
-              <label htmlFor="blog-title" className="text-sm font-medium mb-1 block">
-                Title <span className="text-danger" aria-hidden="true">*</span>
-              </label>
+            <TextField
+              isRequired
+              isDisabled={submitting}
+              name="title"
+              validate={(value) => {
+                const trimmed = value.trim();
+                if (!trimmed) return "Give the post a title";
+                if (trimmed.length > 255) return "Keep the title under 255 characters";
+                return null;
+              }}
+              value={formData.title}
+              onChange={(value) => setFormData({ ...formData, title: value })}
+            >
+              <Label>Title</Label>
               <Input
-                id="blog-title"
+                maxLength={255}
                 placeholder="Enter an engaging title..."
-                value={formData.title}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                required
               />
-            </div>
+              <FieldError />
+            </TextField>
 
             {/* Excerpt */}
-            <div>
-              <label htmlFor="blog-excerpt" className="text-sm font-medium mb-1 block">
-                Excerpt
-              </label>
+            <TextField
+              isDisabled={submitting}
+              name="excerpt"
+              validate={(value) =>
+                value.length > 500 ? "Shorten the excerpt to 500 characters" : null
+              }
+              value={formData.excerpt}
+              onChange={(value) => setFormData({ ...formData, excerpt: value })}
+            >
+              <Label>Excerpt</Label>
               <TextArea
-                id="blog-excerpt"
-                placeholder="Brief summary of your blog..."
-                value={formData.excerpt}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                  setFormData({ ...formData, excerpt: e.target.value })
-                }
-                rows={3}
                 maxLength={500}
+                placeholder="Brief summary of your blog..."
+                rows={3}
               />
-              <p className="text-xs text-default-400 mt-1" aria-live="polite">
+              <Description aria-live="polite">
                 {formData.excerpt.length}/500
-              </p>
-            </div>
+              </Description>
+              <FieldError />
+            </TextField>
 
             {/* Category */}
             <div>
@@ -242,7 +250,7 @@ export default function WriteBlogPage() {
                   setFormData({ ...formData, category: String(value ?? "") })
                 }
               >
-                <Label>Category <span className="text-danger" aria-hidden="true">*</span></Label>
+                <Label>Category (required)</Label>
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Indicator />
@@ -261,25 +269,24 @@ export default function WriteBlogPage() {
             </div>
 
             {/* Tags */}
-            <div>
-              <label htmlFor="blog-tags" className="text-sm font-medium mb-1 block">
-                Tags
-              </label>
+            <TextField
+              isDisabled={submitting}
+              name="tags"
+              value={formData.tags}
+              onChange={(value) => setFormData({ ...formData, tags: value })}
+            >
+              <Label>Tags</Label>
               <Input
-                id="blog-tags"
                 placeholder="react, javascript, tutorial (comma separated)"
-                value={formData.tags}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setFormData({ ...formData, tags: e.target.value })
-                }
               />
-            </div>
+              <Description>Comma-separated, up to 20.</Description>
+            </TextField>
 
             {/* Cover Image */}
-            <div className="space-y-4">
-              <label className="text-sm font-medium">
-                Cover Image <span className="text-danger">*</span>
-              </label>
+            <fieldset className="space-y-4">
+              <legend className="text-sm font-medium">
+                Cover image (required)
+              </legend>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Upload Button */}
@@ -293,16 +300,14 @@ export default function WriteBlogPage() {
                     id="cover-image-upload"
                     title="Upload cover image"
                     aria-label="Upload cover image"
-                    placeholder="Upload cover image"
                   />
                   <Button
                     type="button"
                     variant="primary"
                     isPending={uploadingImage}
+                    isDisabled={uploadingImage || submitting}
                     className="w-full"
-                    onPress={() =>
-                      document.getElementById("cover-image-upload")?.click()
-                    }
+                    onPress={() => fileInputRef.current?.click()}
                   >
                     {uploadingImage ? "Uploading..." : "Upload Image"}
                   </Button>
@@ -312,13 +317,15 @@ export default function WriteBlogPage() {
                 </div>
 
                 {/* Or URL Input */}
-                <Input
-                  placeholder="Or paste image URL"
+                <TextField
+                  isDisabled={uploadingImage || submitting}
+                  name="coverImage"
                   value={formData.coverImage}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setFormData({ ...formData, coverImage: e.target.value })
-                  }
-                />
+                  onChange={(value) => setFormData({ ...formData, coverImage: value })}
+                >
+                  <Label>Paste an image URL instead</Label>
+                  <Input placeholder="Or paste image URL" />
+                </TextField>
               </div>
 
               {/* Image Preview */}
@@ -341,30 +348,30 @@ export default function WriteBlogPage() {
                   />
                 </div>
               )}
-            </div>
+            </fieldset>
 
             {/* Content */}
-            <div>
-              <label htmlFor="blog-content" className="text-sm font-medium mb-1 block">
-                Content <span className="text-danger" aria-hidden="true">*</span>
-              </label>
+            <TextField
+              isRequired
+              isDisabled={submitting}
+              name="content"
+              validate={(value) =>
+                value.trim() ? null : "Write the post content"
+              }
+              value={formData.content}
+              onChange={(value) => setFormData({ ...formData, content: value })}
+            >
+              <Label>Content</Label>
               <TextArea
-                id="blog-content"
                 placeholder="Write your blog content here... (Markdown supported)"
-                value={formData.content}
-                onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                  setFormData({ ...formData, content: e.target.value })
-                }
-                required
                 rows={15}
               />
-            </div>
-
-            {/* Word Count */}
-            <div className="text-sm text-default-500">
-              {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
-              {calculateReadTime(formData.content)} min read
-            </div>
+              <Description>
+                {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
+                {calculateReadTime(formData.content)} min read
+              </Description>
+              <FieldError />
+            </TextField>
 
             {/* Submit Button */}
             <div className="flex gap-4 pt-4">
@@ -377,22 +384,27 @@ export default function WriteBlogPage() {
                 Cancel
               </Button>
               <Button
-                type="submit"
-                isPending={submitting}
                 className="flex-1"
+                isDisabled={submitting}
+                isPending={submitting}
+                type="submit"
               >
                 Submit for Review
               </Button>
             </div>
 
             {/* Info */}
-            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-              <p className="text-sm">
-                <strong>Note:</strong> Your blog will be reviewed by our team
-                before being published. You&apos;ll be notified once it&apos;s approved!
-              </p>
-            </div>
-          </form>
+            <Alert status="accent">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Reviewed before publishing</Alert.Title>
+                <Alert.Description>
+                  Our team reviews every post. You&apos;ll be notified once
+                  it&apos;s approved.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          </Form>
         </CardContent>
       </Card>
     </div>
