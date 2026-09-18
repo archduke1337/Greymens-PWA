@@ -1,7 +1,7 @@
 // components/admin/RolesManager.tsx
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { CheckIcon, PlusIcon, SearchIcon, ShieldIcon, TrashIcon } from "lucide-react";
 import MemberAvatar from "@/components/MemberAvatar";
@@ -185,6 +185,12 @@ export default function RolesManager() {
       toast.error(membersAvailable ? "Select a member first" : "Enter the member's user ID");
       return;
     }
+    // A non-global scope without a scope ID is accepted by the server and
+    // applies far too broadly — require the ID up front.
+    if (action === "assign_role" && assignment.scopeType !== "global" && !assignment.scopeId.trim()) {
+      toast.error(`A ${assignment.scopeType} scope needs its ID — otherwise the grant applies everywhere`);
+      return;
+    }
     setSubmitting(action);
     try {
       const response = await fetch("/api/access", {
@@ -338,7 +344,7 @@ export default function RolesManager() {
                 id="role-name"
                 placeholder="Editorial Lead"
                 value={role.name}
-                onChange={(event: any) => {
+                onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   const name = event.target.value;
                   setRole((current) => ({
                     ...current,
@@ -359,7 +365,7 @@ export default function RolesManager() {
                   id="role-slug"
                   placeholder="editorial-lead"
                   value={role.slug}
-                  onChange={(event: any) => {
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     setSlugTouched(true);
                     setRole({ ...role, slug: event.target.value });
                   }}
@@ -384,7 +390,7 @@ export default function RolesManager() {
                 className="min-h-20"
                 placeholder="What this role is for, in one line."
                 value={role.description}
-                onChange={(event: any) => setRole({ ...role, description: event.target.value })}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setRole({ ...role, description: event.target.value })}
               />
             </div>
 
@@ -396,7 +402,7 @@ export default function RolesManager() {
                   aria-label="Filter capabilities"
                   className="max-w-52"
                   value={capabilityQuery}
-                  onChange={(event: any) => setCapabilityQuery(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setCapabilityQuery(event.target.value)}
                 />
               </div>
               <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-lg border border-default-200 p-3 sm:grid-cols-2">
@@ -446,7 +452,7 @@ export default function RolesManager() {
                   placeholder="Search members by name or URN..."
                   aria-label="Search members by name or URN"
                   value={memberQuery}
-                  onChange={(event: any) => setMemberQuery(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setMemberQuery(event.target.value)}
                 />
                 <div className="max-h-52 space-y-1.5 overflow-y-auto rounded-lg border border-default-200 p-2">
                   {visibleMembers.map((member) => {
@@ -496,7 +502,7 @@ export default function RolesManager() {
                   id="assignee-id"
                   placeholder="Directory unavailable — paste user ID"
                   value={assignment.userId}
-                  onChange={(event: any) => setAssignment({ ...assignment, userId: event.target.value })}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setAssignment({ ...assignment, userId: event.target.value })}
                 />
               </div>
             )}
@@ -511,7 +517,7 @@ export default function RolesManager() {
                   placeholder="Filter roles..."
                   className="mb-2"
                   value={roleFilter}
-                  onChange={(event: any) => setRoleFilter(event.target.value)}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setRoleFilter(event.target.value)}
                 />
                 <Select
                   fullWidth
@@ -563,13 +569,18 @@ export default function RolesManager() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5" htmlFor="scope-id">
-                    Scope ID (optional)
+                    Scope ID{" "}
+                    {assignment.scopeType !== "global" ? (
+                      <span className="text-danger" aria-hidden="true">*</span>
+                    ) : (
+                      <span className="font-normal text-default-400">(optional for global)</span>
+                    )}
                   </label>
                   <Input
                     id="scope-id"
                     placeholder="department / team / project ID"
                     value={assignment.scopeId}
-                    onChange={(event: any) => setAssignment({ ...assignment, scopeId: event.target.value })}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => setAssignment({ ...assignment, scopeId: event.target.value })}
                   />
                 </div>
               </div>
@@ -583,7 +594,7 @@ export default function RolesManager() {
                 id="expires-at"
                 type="datetime-local"
                 value={assignment.expiresAt}
-                onChange={(event: any) =>
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
                   setAssignment({
                     ...assignment,
                     expiresAt: event.target.value ? new Date(event.target.value).toISOString() : "",
@@ -618,7 +629,7 @@ export default function RolesManager() {
             placeholder="Filter by name, slug, or capability..."
             aria-label="Filter role templates"
             value={templateQuery}
-            onChange={(event: any) => setTemplateQuery(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setTemplateQuery(event.target.value)}
           />
           {visibleTemplates.length === 0 ? (
             <Card className="border-none shadow-sm">
@@ -677,7 +688,7 @@ export default function RolesManager() {
             placeholder="Filter by member, role, or scope..."
             aria-label="Filter role assignments"
             value={assignmentQuery}
-            onChange={(event: any) => setAssignmentQuery(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setAssignmentQuery(event.target.value)}
           />
           {assignmentRows.length === 0 ? (
             <Card className="border-none shadow-sm">

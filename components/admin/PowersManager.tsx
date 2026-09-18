@@ -1,7 +1,7 @@
 // components/admin/PowersManager.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 import {
   TrashIcon,
@@ -203,6 +203,12 @@ export default function PowersManager() {
 
   const handleGrant = async () => {
     if (!selectedUser || !grantTarget) return;
+    // A department-scoped power without a department is granted too
+    // broadly — require the scope up front.
+    if (grantTarget.scope === "department" && !grantScope.departmentId) {
+      toast.error("Choose the department this power applies to");
+      return;
+    }
     setGranting(true);
     try {
       const response = await fetch("/api/admin/powers", {
@@ -260,7 +266,7 @@ export default function PowersManager() {
 
   const handleRevoke = async (userId: string) => {
     if (!holdersTarget) return;
-    if (!confirm(`Revoke "${holdersTarget.displayName}" from this member? They lose this privilege immediately.`)) return;
+    if (!confirm(`Revoke "${holdersTarget.displayName}" from this member? This clears the grant in every scope — they lose this privilege immediately.`)) return;
     setRevokingUserId(userId);
     try {
       const response = await fetch("/api/admin/powers", {
@@ -372,7 +378,7 @@ export default function PowersManager() {
             placeholder="Filter powers by name or capability..."
             aria-label="Filter powers by name or capability"
             value={catalogueQuery}
-            onChange={(e: any) => setCatalogueQuery(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setCatalogueQuery(e.target.value)}
           />
         </CardContent>
       </Card>
@@ -492,8 +498,8 @@ export default function PowersManager() {
                         placeholder="Search by name, URN, branch, or user ID..."
                         aria-label="Search members by name, URN, branch, or user ID"
                         value={searchQuery}
-                        onChange={(e: any) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e: any) => {
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             handleSearchUsers();
@@ -609,7 +615,7 @@ export default function PowersManager() {
                       <Input
                         type="date"
                         value={grantScope.expiresAt || ""}
-                        onChange={(e: any) =>
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
                           setGrantScope({
                             ...grantScope,
                             expiresAt: e.target.value || undefined,

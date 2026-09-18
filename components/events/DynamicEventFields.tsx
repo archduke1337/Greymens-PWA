@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ChangeEvent, type KeyboardEvent } from "react";
 import type { EventField } from "@/lib/types/index";
 import { Input, Chip, Button, Checkbox, Label, ListBox, Select, TextArea } from "@heroui/react";
 import { PlusIcon, XIcon } from "lucide-react";
@@ -67,7 +67,7 @@ function FieldRenderer({
           <Input
             placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
             value={currentValue}
-            onChange={(e: any) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -100,9 +100,15 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           <Input
+            type="number"
             placeholder={field.placeholder || "0"}
             value={currentValue?.toString() || ""}
-            onChange={(e: any) => onChange(parseFloat(e.target.value) || 0)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              // Blank stays blank (undefined) so required-checks still fire;
+              // the old `|| 0` wrote a false zero into required fields.
+              const raw = e.target.value;
+              onChange(raw === "" ? undefined : Number(raw));
+            }}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -174,9 +180,9 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           <Input
-            placeholder="YYYY-MM-DD"
+            type="date"
             value={currentValue}
-            onChange={(e: any) => onChange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -192,7 +198,7 @@ function FieldRenderer({
           <Input
             placeholder={field.placeholder || "https://"}
             value={currentValue}
-            onChange={(e: any) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -244,7 +250,7 @@ function FieldRenderer({
           <Input
             placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
             value={currentValue}
-            onChange={(e: any) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -354,8 +360,8 @@ function ArrayField({
         <Input
           placeholder={field.placeholder || "Add item"}
           value={input}
-          onChange={(e: any) => setInput(e.target.value)}
-          onKeyPress={(e: any) => {
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
             if (e.key === "Enter") {
               e.preventDefault();
               addItem();
