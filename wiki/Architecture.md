@@ -39,7 +39,6 @@ against Appwrite per request, never trusted blindly.
 
 - `lib/capabilities.ts` — the capability vocabulary (client-safe).
 - `lib/access-control.ts` — server capability enforcement (server-only).
-- `lib/permissions.ts` — legacy client permission resolution (pure, client-safe).
 - `lib/governance.ts` — offices, charter metadata, governed pages (display).
 - `lib/server-auth.ts` — session verification + status derivation.
 - `lib/server/tickets.ts` — HMAC ticket signing + shared issuance.

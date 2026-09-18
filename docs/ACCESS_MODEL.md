@@ -94,7 +94,14 @@ global assignments only — a department-scoped lead cannot act outside their
 department. An inactive template grants nothing, and neither does one with a past
 term end: time alone revokes an office, no human needed.
 
-Server routes use `requireCapability(capability, { scope })`. Notable rules:
+Server routes use `requireCapability(request, capability, scope?)`, or
+`requireAnyCapability(request, capabilities[], scope?)` where one action is
+legitimately reachable through more than one grant (an event's `approve` step
+through a blanket `events.manage` or through the narrower `events.approve`; a
+role template written by an `access.manage_role_templates` or an
+`access.assign_roles` holder). Both share one preamble — session, restriction,
+bootstrap administrator — so a route cannot accidentally re-implement it
+differently. Notable rules:
 
 - an author can never approve or publish their own blog post
 - publishing is a separate capability from approving
@@ -173,6 +180,68 @@ readable by anyone. It reveals the vocabulary, not who holds what — the
 assignments live in `user_designations` — but if the catalogue capability lists
 are ever considered sensitive, that table has to move behind an API route like
 the admin consoles did.
+
+### 3.3 Every capability has a gate, or it does not exist
+
+A capability that is grantable but checked by nothing is worse than a missing
+feature. An administrator reads the console, ticks the box, and nothing happens
+— the console was describing a permission the server had never heard of. The
+role/office/power migration produced a long list of exactly those, so the rule is
+mechanical now, and `tests/auth-matrix.test.ts` enforces it: a capability must
+appear in that file's enforcement table (a route checks it), its indirect table
+(a per-action map or ternary feeds a gate), or its view-only table (a payload
+reads it to choose a view), and the tables are cross-checked against the route
+sources. Grants are checked the same way, so no office or power can hand out a
+capability the server ignores.
+
+**Wired** — the endpoint already existed and was gating on something else:
+
+| Capability | Was checked as | Now gates |
+|---|---|---|
+| `events.approve` | `events.manage` | PATCH `/api/admin/events` `approve`/`reject` |
+| `events.publish` | `events.manage` | PATCH `/api/admin/events` `publish` |
+| `events.update` | `events.manage` | PATCH `/api/admin/events` `update`, own events unless the caller manages all |
+| `registrations.view` | `registrations.manage` | GET `/api/admin/registrations` |
+| `tickets.view` | `tickets.verify` | GET `/api/tickets/verify` |
+| `tickets.invalidate` | `tickets.verify` | PATCH `/api/tickets/verify` `invalidate` |
+| `security.authorize_activity` | `security.manage_incidents` | PATCH `/api/security/activities` |
+| `security.contain` | `security.manage_incidents` | PATCH `/api/security/incidents`, status `contained` only |
+| `access.manage_role_templates` | `access.assign_roles` | `/api/access` role-template create/rewrite |
+
+Four of these **expand** who may do what, because the office matrix always said
+they should and the route never asked: an event's office can now approve its own
+event, an `event_coordinator` can read a door list, an
+`infrastructure_systems_lead` can mark an incident contained, and a
+`ctf_lead` can decide activity requests. The rest are least-privilege splits —
+working a door no longer implies destroying a ticket, containing an incident no
+longer implies closing it, editing the events you run no longer implies editing
+everyone's.
+
+**Dropped** — no route could ever have honoured them:
+
+| Capability | Why it went |
+|---|---|
+| `blog.edit_own` | no author-facing edit path exists; drafting is ownership-checked in the route |
+| `blog.submit` | POST `/api/blogs` already requires `blog.create` and files the post as `pending` |
+| `blog.request_revision` | no such action and no UI; rejection carries the reason |
+| `access.manage_powers` | duplicate of `powers.manage`, which the powers route enforces |
+| `users.manage_roles` | the governance tier is granted in `/api/admin/users` under `users.update` |
+| `registrations.create` | registering is membership-gated by design, not capability-gated |
+| `governance.view_records` | wiring it needs a visibility filter first — see below |
+
+Two of those deserve a note. `registrations.create` was the last trace of
+capability-gating an action every member may perform. And
+`governance.view_records` was the only drop that *could* have been wired:
+general_secretary and documentation_lead held it, but `/admin/governance` has no
+read-only mode and its GET serves rows of `restricted` visibility without
+filtering, so handing out read access would have published restricted records to
+the documentation lead. It was dropped instead, and the GET's indifference to
+`visibility` is an open question in its own right.
+
+**View-only** — `departments.view` is granted by the `department_head` power and
+read by `/api/dashboard` to choose the operations view-model. It admits and
+refuses nothing, which is why it is on the exception list; if a route ever needs
+a department read gate, it belongs in the enforcement table instead.
 
 ## 4. Native Appwrite Teams and labels
 

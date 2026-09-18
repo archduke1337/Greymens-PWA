@@ -14,8 +14,10 @@ same no-grant-beyond-hold rule. Designation levels no longer derive a leadership
 tier, so a badge cannot choose a dashboard — see `docs/ACCESS_MODEL.md` §3.2.
 
 Entry points: `lib/capabilities.ts` (vocabulary) → `lib/governance.ts`
-(offices + governed pages) → enforced by `lib/access-control.ts` +
-`lib/permissions.ts` → audited to `audit_logs`.
+(offices + governed pages) → enforced by `lib/access-control.ts` → audited to
+`audit_logs`. The client's only authority check is `hasCapability`, reading the
+same vocabulary the routes enforce; the legacy resolver it used to share the
+browser with has been deleted.
 
 ## Non-negotiables
 

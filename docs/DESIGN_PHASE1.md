@@ -58,10 +58,14 @@ Full core implementation of the club operating system. Covers membership lifecyc
 
 ## 3. PermissionContext + Middleware
 
+> Historical: this section describes the original client-side resolver, which has
+> since been deleted. `PermissionContext` now fetches the server-resolved
+> capability set and exposes `hasCapability` — see `docs/ACCESS_MODEL.md`.
+
 ### PermissionContext
 - Fetches user's powers, departments, designations on login
-- Resolves permissions using `lib/permissions.ts`
-- Provides `hasPermission()`, `hasAnyPermission()`, `hasAllPermissions()`
+- ~~Resolves permissions using `lib/permissions.ts`~~
+- ~~Provides `hasPermission()`, `hasAnyPermission()`, `hasAllPermissions()`~~
 
 ### Middleware
 - Protects `/admin/*` (admin only)

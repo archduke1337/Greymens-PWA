@@ -48,10 +48,12 @@ Open PRs against `Upgrade`, keep `app/` + API routes untouched unless the task s
 ## RBAC
 
 Capabilities are the vocabulary, offices are the org chart: `admin`/`dev` resolve to
-`*`, everything else resolves via powers, department roles and designation levels
-(fail-closed, expiry-aware). Start at `lib/capabilities.ts` (vocabulary) and
-`lib/governance.ts` (offices + governed pages), enforced by `lib/access-control.ts`
-+ `lib/permissions.ts`, audited to `audit_logs`.
+`*`, everyone else resolves through role assignments, charter offices, title
+capability lists and legacy power grants (fail-closed, expiry-aware). Start at
+`lib/capabilities.ts` (vocabulary) and `lib/governance.ts` (offices + governed
+pages), enforced by `lib/access-control.ts` and audited to `audit_logs`. Every
+capability is checked by a route or it is not in the vocabulary —
+`tests/auth-matrix.test.ts` fails if the two drift apart.
 
 ## PWA notes
 
