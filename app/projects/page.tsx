@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { title, subtitle } from "@/components/primitives";
 import { readApiError } from "@/lib/errorHandler";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Project } from "@/lib/types";
-import { Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
+import { Avatar, AvatarFallback, Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
 import {
   CodeIcon,
   UsersIcon,
@@ -88,13 +89,14 @@ export default function ProjectsPage() {
     <div className="space-y-12 pb-20">
       {/* Header */}
       <div className="text-center space-y-4 py-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-default-100 border border-default-200">
-          <RocketIcon className="w-4 h-4 text-default-600" />
-          <span className="text-sm font-medium text-default-600">Member Projects</span>
-        </div>
-        <h1 className={title({ size: "lg" })}>What the club is building</h1>
+        <Chip variant="soft" size="sm">
+          <RocketIcon className="w-4 h-4" aria-hidden="true" />
+          Member projects
+        </Chip>
+        <h1 className={title({ size: "lg" })}>Built here, not just talked about</h1>
         <p className={subtitle({ class: "mt-4 max-w-2xl mx-auto" })}>
-          Ongoing and completed projects from across the club&apos;s departments.
+          Tools, labs, and experiments from across the club — most of them
+          started as a workshop demo that refused to stay a demo.
         </p>
       </div>
 
@@ -104,20 +106,18 @@ export default function ProjectsPage() {
           {categoriesWithCount.map((category) => {
             const isSelected = selectedCategory === category.key;
             return (
-              <button
+              <Button
                 key={category.key}
                 type="button"
+                size="sm"
+                variant={isSelected ? "primary" : "secondary"}
                 aria-pressed={isSelected}
-                onClick={() => setSelectedCategory(category.key)}
-                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+                onPress={() => setSelectedCategory(category.key)}
+                className="rounded-full"
               >
-                <Chip
-                  variant={isSelected ? "primary" : "soft"}
-                >
-                  {category.label}
-                  <span className="ml-2 opacity-70">{category.count}</span>
-                </Chip>
-              </button>
+                {category.label}
+                <span className="ml-2 opacity-70">{category.count}</span>
+              </Button>
             );
           })}
         </div>
@@ -151,7 +151,7 @@ export default function ProjectsPage() {
                     <div className="relative bg-default-100">
                       <img
                         src={project.image}
-                        alt=""
+                        alt={`${project.title} preview`}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
@@ -236,18 +236,21 @@ export default function ProjectsPage() {
                       <div className="flex items-center justify-between text-sm text-default-500">
                         <span className="flex -space-x-2">
                           {project.teamMembers?.slice(0, 3).map((member, index) => (
-                            <span
+                            <Avatar
                               key={`${member}-${index}`}
-                              aria-hidden="true"
-                              className="w-8 h-8 rounded-full bg-default-200 border-2 border-background flex items-center justify-center text-xs font-bold text-default-600"
+                              className="h-8 w-8 border-2 border-background text-xs"
                             >
-                              {member?.charAt(0).toUpperCase() || "M"}
-                            </span>
+                              <AvatarFallback>
+                                {member?.charAt(0).toUpperCase() || "M"}
+                              </AvatarFallback>
+                            </Avatar>
                           ))}
                           {project.teamMembers && project.teamMembers.length > 3 && (
-                            <span className="w-8 h-8 rounded-full bg-default-100 border-2 border-background flex items-center justify-center text-xs font-bold">
-                              +{project.teamMembers.length - 3}
-                            </span>
+                            <Avatar className="h-8 w-8 border-2 border-background text-xs">
+                              <AvatarFallback>
+                                +{project.teamMembers.length - 3}
+                              </AvatarFallback>
+                            </Avatar>
                           )}
                         </span>
                         <span className="flex items-center gap-1">
@@ -298,9 +301,10 @@ export default function ProjectsPage() {
                 <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-default-100 flex items-center justify-center">
                   <CodeIcon className="w-10 h-10 text-default-400" aria-hidden="true" />
                 </div>
-                <h2 className="text-xl font-semibold">No projects here yet</h2>
+                <h2 className="text-xl font-semibold">Nothing in this lane yet</h2>
                 <p className="text-default-500 max-w-md mx-auto">
-                  Nothing matches this category right now. Try another category, or check back soon.
+                  No project in this category right now. That usually means
+                  one is half-built in somebody&apos;s dorm — check back soon.
                 </p>
               </CardContent>
             </Card>
@@ -319,24 +323,22 @@ export default function ProjectsPage() {
               <div className="min-w-0 flex-1 space-y-1.5">
                 <h2 className="text-lg font-bold tracking-tight">Have something worth building?</h2>
                 <p className="text-sm leading-relaxed text-muted">
-                  Projects start as conversations — at a workshop, over coffee,
+                  Projects start as conversations: at a workshop, over coffee,
                   in the Discord. Bring the itch; we&apos;ll help scratch it
                   properly, with a lead, a scope, and a handover.
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap justify-center gap-2">
-                <a
-                  href="/events"
-                  className="inline-flex items-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-                >
-                  Find a workshop
-                </a>
-                <a
-                  href="/contact"
-                  className="inline-flex items-center rounded-full border border-default-300 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-secondary"
-                >
-                  Talk to us
-                </a>
+                <Link href="/events">
+                  <Button className="rounded-full px-5">
+                    Find a workshop
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button variant="secondary" className="rounded-full px-5">
+                    Talk to us
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
