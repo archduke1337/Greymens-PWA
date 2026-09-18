@@ -54,13 +54,12 @@ const nextConfig = {
       },
     ];
   },
-  async redirects() {
-    return [
-      // Case-only rename app/Blog -> app/blog (Linux/SEO): keep old bookmarks working.
-      { source: "/Blog/:path*", destination: "/blog/:path*", permanent: true },
-      { source: "/Blog", destination: "/blog", permanent: true },
-    ];
-  },
+  // NOTE: no case-variant redirects (e.g. /Blog -> /blog). Next.js matches
+  // redirect sources case-insensitively, so "/Blog/:path*" also matches the
+  // correct lowercase "/blog" with an empty :path* — producing destination
+  // "/blog/" and a fatal /blog <-> /blog/ ping-pong with the platform's
+  // trailing-slash normalization (ERR_TOO_MANY_REDIRECTS in production).
+  // A wrong-case URL simply falls through to the 404 page.
 };
 
 module.exports = nextConfig;
