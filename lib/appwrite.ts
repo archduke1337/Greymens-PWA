@@ -61,18 +61,11 @@ export const databases: Databases = new Proxy({} as Databases, {
 });
 export { ID };
 
-export function createAdminClient() {
-  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
-  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-  const apiKey = process.env.APPWRITE_API_KEY;
-  if (!endpoint || !projectId || !apiKey) throw new Error("Server Appwrite configuration is incomplete");
-  const adminClient = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
-  return {
-    account: new Account(adminClient),
-    databases: new Databases(adminClient),
-    storage: new Storage(adminClient),
-  };
-}
+// NOTE: server routes must NOT build admin clients from this module.
+// The web `appwrite` SDK no longer accepts API keys (no `setKey`), so
+// privileged storage goes through `createServerStorage()` in the
+// server-only `lib/appwrite-server.ts` (node-appwrite). See the 4 upload
+// routes (blogs/image, gallery, resources, profile).
 
 // Single source of truth for Appwrite config
 export const APPWRITE_CONFIG = {
@@ -132,6 +125,36 @@ export const authService = {
     try {
       return await account.createEmailPasswordSession({ email, password });
     } catch (error) {
+      throw error;
+    }
+  },
+
+  // GitHub OAuth login (token flow only).
+  //
+  // Uses Account.createOAuth2Token, which navigates the browser to GitHub —
+  // do not redirect manually. Appwrite appends `userId` + `secret` to the
+  // success URL, and /auth/success exchanges them via createSession.
+  // No OAuth secrets live in frontend code; they stay in the Appwrite Console
+  // under Auth > Social providers for this project.
+  loginWithGithub() {
+    try {
+      const successUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/success`
+          : "/auth/success";
+
+      const failureUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/failure`
+          : "/auth/failure";
+
+      return account.createOAuth2Token({
+        provider: OAuthProvider.Github,
+        success: successUrl,
+        failure: failureUrl,
+      });
+    } catch (error) {
+      console.error("GitHub OAuth error:", error);
       throw error;
     }
   },
