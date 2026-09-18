@@ -6,6 +6,7 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAccountNames } from "@/lib/server-users";
 import { TeamDirectory, type TeamGroup } from "@/components/team/TeamDirectory";
+import LinkButton from "@/components/ui/LinkButton";
 import { Alert, Button, Card, Chip } from "@heroui/react";
 
 export const metadata: Metadata = {
@@ -205,13 +206,13 @@ export default async function TeamPage() {
             </p>
           </div>
           {isAuthed ? (
-            <Link href="/events" className="shrink-0">
-              <Button className="rounded-full px-6">See events</Button>
-            </Link>
+            <LinkButton href="/events" className="shrink-0 rounded-full px-6">
+              See events
+            </LinkButton>
           ) : (
-            <Link href="/register" className="shrink-0">
-              <Button className="rounded-full px-6">Join the club</Button>
-            </Link>
+            <LinkButton href="/register" className="shrink-0 rounded-full px-6">
+              Join the club
+            </LinkButton>
           )}
         </Card.Content>
       </Card>
