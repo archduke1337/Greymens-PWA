@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAccountNames } from "@/lib/server-users";
 import { TeamDirectory, type TeamGroup } from "@/components/team/TeamDirectory";
+import { Alert, Button, Card, Chip } from "@heroui/react";
 
 export const metadata: Metadata = {
   title: "Leadership",
-  description: "TheGreyMen Club office bearers and their areas of responsibility.",
+  description:
+    "The students who run Greymens Club — officers and leads as recorded in the club's designation register.",
 };
 
 /**
@@ -144,11 +147,14 @@ export default async function TeamPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-14 space-y-12">
       <header className="space-y-4 max-w-2xl">
-        <ChipLabel />
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Leadership</h1>
+        <Chip size="sm" variant="soft">
+          Governance
+        </Chip>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Who runs the club</h1>
         <p className="text-default-600">
-          The office bearers responsible for the club&apos;s governance, technical direction and
-          operations, as recorded in the club&apos;s designation register.
+          Officers and leads, exactly as recorded in the club&apos;s
+          designation register — no honorary names, no filler. If someone
+          holds a title here, they hold the work that comes with it.
         </p>
       </header>
 
@@ -168,20 +174,33 @@ export default async function TeamPage() {
       </figure>
 
       {failed ? (
-        <p className="text-sm text-danger">
-          The leadership register could not be loaded. Please try again shortly.
-        </p>
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>The register wouldn&apos;t load</Alert.Title>
+            <Alert.Description>
+              The leadership register could not be reached. Try again shortly.
+            </Alert.Description>
+          </Alert.Content>
+        </Alert>
       ) : (
         <TeamDirectory groups={groups} />
       )}
-    </div>
-  );
-}
 
-function ChipLabel() {
-  return (
-    <span className="inline-flex items-center rounded-full bg-default-100 px-3 py-1 text-xs font-medium text-default-600">
-      Governance
-    </span>
+      <Card variant="secondary">
+        <Card.Content className="flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:text-left">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <h2 className="text-lg font-bold tracking-tight">Want your name up there?</h2>
+            <p className="text-sm leading-relaxed text-muted">
+              Titles go to members who do the work first. Join, show up for a
+              few months, and the register takes care of itself.
+            </p>
+          </div>
+          <Link href="/register" className="shrink-0">
+            <Button className="rounded-full px-6">Join the club</Button>
+          </Link>
+        </Card.Content>
+      </Card>
+    </div>
   );
 }

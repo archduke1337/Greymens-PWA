@@ -36,9 +36,9 @@ function socialLinks(member: TeamMember): SocialLink[] {
   // LinkedIn is intentionally represented by a neutral external-link icon:
   // lucide dropped its brand icons, and the project's own icon set has no
   // LinkedIn mark.
-  if (member.githubUrl) links.push({ href: member.githubUrl, label: `${member.name} on GitHub`, Icon: GithubIcon });
-  if (member.linkedinUrl) links.push({ href: member.linkedinUrl, label: `${member.name} on LinkedIn`, Icon: ExternalLinkIcon });
-  if (member.portfolioUrl) links.push({ href: member.portfolioUrl, label: `${member.name}'s portfolio`, Icon: Globe });
+  if (member.githubUrl) links.push({ href: member.githubUrl, label: "GitHub", Icon: GithubIcon });
+  if (member.linkedinUrl) links.push({ href: member.linkedinUrl, label: "LinkedIn", Icon: ExternalLinkIcon });
+  if (member.portfolioUrl) links.push({ href: member.portfolioUrl, label: "Portfolio", Icon: Globe });
   return links;
 }
 
@@ -49,8 +49,15 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
         <CardContent className="p-8 text-center space-y-3">
           <h2 className="text-lg font-semibold">Leadership is being published</h2>
           <p className="text-sm text-default-500">
-            Officers are listed here once their profile is marked visible on the public site.
-            Members can control this from their profile settings.
+            Officers appear here once their profile is marked visible. Members
+            can change this from{" "}
+            <a
+              href="/profile"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              profile settings
+            </a>
+            .
           </p>
         </CardContent>
       </Card>
