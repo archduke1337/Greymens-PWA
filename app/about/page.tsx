@@ -6,17 +6,17 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const FOCUS = [
-  "Cybersecurity: the core craft",
-  "AI / ML: the force multiplier",
-  "Web & software: where most projects live",
-  "Digital forensics: follow the evidence",
-  "CTFs & competitions: the team sport",
-  "Research & open source: in the open, or it didn't happen",
+  { text: "Cybersecurity: the core craft", href: "/events", link: "Workshops" },
+  { text: "AI / ML: the force multiplier", href: "/projects", link: "Projects" },
+  { text: "Web & software: where most projects live", href: "/projects", link: "Projects" },
+  { text: "Digital forensics: follow the evidence", href: "/blog", link: "Write-ups" },
+  { text: "CTFs & competitions: the team sport", href: "/events", link: "Events" },
+  { text: "Research & open source: in the open, or it didn't happen", href: "/blog", link: "Posts" },
 ];
 
 const NOT_THAT = [
-  "No fees, ever. Workshops cost nothing.",
-  "No attendance policing. Show up when you can.",
+  "No fees, ever. Open events stay open.",
+  "No forms to attend. Just show up.",
   "No certificate-chasing. Work first, paper later.",
   "No question too basic. Everyone starts somewhere.",
 ];
@@ -28,27 +28,35 @@ export default function AboutPage() {
     <div className="mx-auto w-full max-w-3xl space-y-16 px-4 py-12 sm:px-6 sm:py-16">
       {/* Hero */}
       <header className="space-y-4 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-8">
-          <img
-            src="/adypu-logo.png"
-            alt="ADYPU"
-            loading="lazy"
-            className="h-10 w-auto object-contain"
-          />
-          <img
-            src="/seamedu-logo.jpg"
-            alt="Seamedu"
-            loading="lazy"
-            className="h-14 w-14 rounded-2xl object-cover"
-          />
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <span className="flex h-14 items-center rounded-2xl bg-white px-3">
+            <img
+              src="/adypu-logo.png"
+              alt="Ajeenkya D Y Patil University"
+              loading="lazy"
+              className="h-9 w-auto object-contain"
+            />
+          </span>
+          <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white">
+            <img
+              src="/seamedu-logo.jpg"
+              alt="Seamedu"
+              loading="lazy"
+              className="h-12 w-12 object-contain"
+            />
+          </span>
         </div>
+        <p className="text-sm text-muted">
+          A student club of Ajeenkya D Y Patil University
+        </p>
         <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
           A club for people who take things apart
         </h1>
         <p className="mx-auto max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-          GreyMens is ADYPU&apos;s student cybersecurity collective — every
-          branch, every year. We learn by breaking (authorized) things, build
-          what we learn into projects, and hand the knowledge down.
+          Greymens is ADYPU&apos;s student cybersecurity collective — every
+          branch, every year. We learn by breaking things we&apos;re invited
+          to break, build what we learn into projects, and hand the knowledge
+          down.
         </p>
       </header>
 
@@ -76,9 +84,18 @@ export default function AboutPage() {
           </figure>
           <ul className="space-y-2.5 sm:order-2">
             {FOCUS.map((item) => (
-              <li key={item} className="flex items-center gap-2.5 text-[15px]">
+              <li key={item.text} className="flex items-center gap-2.5 text-[15px]">
                 <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {item}
+                <span>
+                  {item.text}{" "}
+                  <Link
+                    href={item.href}
+                    aria-label={`See ${item.link.toLowerCase()} at Greymens`}
+                    className="whitespace-nowrap text-sm font-medium text-muted underline underline-offset-4 hover:text-foreground focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    {item.link} <span aria-hidden="true">→</span>
+                  </Link>
+                </span>
               </li>
             ))}
           </ul>
@@ -115,7 +132,7 @@ export default function AboutPage() {
             Then a club.
           </p>
           <p>
-            Today that room is bigger. Founded by student coordinator{" "}
+            Today that room is bigger. Founded in 2026 by student coordinator{" "}
             <span className="text-foreground">Aditya Yadav</span>, with faculty
             coordinators{" "}
             <span className="text-foreground">
@@ -123,24 +140,28 @@ export default function AboutPage() {
             </span>
             , in ADYPU&apos;s School of Engineering. The culture hasn&apos;t
             changed: show up curious, leave sharper, bring someone with you
-            next time.
+            next time.{" "}
+            <Link
+              href="/team"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Meet the current leadership
+            </Link>
+            .
           </p>
-          <blockquote className="border-l-2 border-foreground/70 pl-4 text-base text-foreground">
-            Technology should empower people, not control them.
-          </blockquote>
         </div>
       </section>
 
       {/* Community */}
       <section aria-label="Community" className="space-y-6 text-center">
         <img
-          src="/Assets/Media/team-ideas.gif"
-          alt="Hands fitting puzzle pieces together"
+          src="/Assets/Media/matchbox-of-humans.webp"
+          alt="A matchbox full of tiny people"
           loading="lazy"
           className="mx-auto h-44 w-44 rounded-3xl border border-default-200/70 object-cover"
         />
         <div className="space-y-3">
-          <h2 className="text-xl font-bold tracking-tight">Built like a puzzle, together</h2>
+          <h2 className="text-xl font-bold tracking-tight">Plenty of pieces. Bring yours.</h2>
           <p className="mx-auto max-w-md text-[15px] leading-relaxed text-muted">
             Security people who can build. Builders who think like attackers —
             ethically. Researchers who can explain themselves. Everyone holds a

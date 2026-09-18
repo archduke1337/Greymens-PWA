@@ -254,16 +254,16 @@ export default function ContactPage() {
 
         <aside className="space-y-4">
           <figure className="space-y-2">
-            <div className="mx-auto max-w-[220px] overflow-hidden rounded-3xl border border-default-200/70">
+            <div className="mx-auto max-w-[220px] overflow-hidden rounded-3xl border border-default-200/70 bg-white">
               <img
-                alt="A matchbox full of tiny people"
+                alt="A hand giving a thumbs-up"
                 className="w-full object-cover"
                 loading="lazy"
-                src="/Assets/Media/matchbox-of-humans.webp"
+                src="/Assets/Media/thumb-up.webp"
               />
             </div>
             <figcaption className="text-center text-sm text-muted">
-              Humans on the other end — pick whichever channel fits.
+              Give us a shout — a human answers.
             </figcaption>
           </figure>
           <Card variant="secondary">
