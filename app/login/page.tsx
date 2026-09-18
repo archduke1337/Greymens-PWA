@@ -4,7 +4,16 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
-import { Button, Card, CardContent, Input, Link } from "@heroui/react";
+import {
+  Button,
+  Card,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  Link,
+  TextField,
+} from "@heroui/react";
 
 function getSafeNext(next: string | null): string {
   if (!next) return "/";
@@ -34,6 +43,8 @@ function mapLoginError(err: unknown): string {
   }
   return "Something went wrong. Please try again.";
 }
+
+const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -106,8 +117,19 @@ function LoginForm() {
   */
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2">
-      {/* Art panel */}
+    <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
+      {/* Compact art strip on small screens */}
+      <figure className="overflow-hidden rounded-3xl border border-default-200/70 lg:hidden">
+        <img
+          src="/Assets/Objects/login.png"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="h-36 w-full object-cover object-top sm:h-44"
+        />
+      </figure>
+
+      {/* Art panel on large screens */}
       <figure className="hidden space-y-3 lg:block">
         <div className="overflow-hidden rounded-3xl border border-default-200/70">
           <img
@@ -123,82 +145,89 @@ function LoginForm() {
 
       {/* Form */}
       <Card className="w-full">
-        <CardContent className="space-y-5 p-6 sm:p-8">
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-            <p className="text-sm text-muted">
-              Log in with your club email and password.
-            </p>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="login-email" className="text-sm font-medium">
-                Email
-              </label>
+        <Card.Header>
+          <Card.Title>Welcome back</Card.Title>
+          <Card.Description>Log in with your club email and password.</Card.Description>
+        </Card.Header>
+        <Form onSubmit={handleSubmit} validationBehavior="aria">
+          <Card.Content className="space-y-4">
+            <TextField
+              name="email"
+              type="email"
+              isRequired
+              value={email}
+              onChange={setEmail}
+              validate={(value) =>
+                EMAIL_PATTERN.test(value) ? null : "Enter a valid email address"
+              }
+            >
+              <Label>Email</Label>
               <Input
-                id="login-email"
-                type="email"
-                autoComplete="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                required
+                autoComplete="email"
                 disabled={loading}
               />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="login-password" className="text-sm font-medium">
-                Password
-              </label>
+              <FieldError />
+            </TextField>
+            <TextField
+              name="password"
+              type="password"
+              isRequired
+              value={password}
+              onChange={setPassword}
+            >
+              <Label>Password</Label>
               <Input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
                 placeholder="Your password"
-                value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                required
+                autoComplete="current-password"
                 disabled={loading}
               />
-            </div>
+              <FieldError />
+            </TextField>
             {error && (
               <p role="alert" className="text-sm text-danger">
                 {error}
               </p>
             )}
-            <Button type="submit" isPending={loading} className="w-full rounded-full">
+          </Card.Content>
+          <Card.Footer className="flex-col gap-3">
+            <Button
+              type="submit"
+              isPending={loading}
+              className="w-full rounded-full"
+            >
               Log in
             </Button>
-          </form>
 
-          {/*
-          TEMPORARILY DISABLED — Google OAuth is not configured yet.
-          <div className="flex items-center gap-3" aria-hidden="true">
-            <span className="h-px flex-1 bg-default-200" />
-            <span className="text-xs text-muted">OR</span>
-            <span className="h-px flex-1 bg-default-200" />
-          </div>
-          <Button
-            className="w-full rounded-full"
-            variant="secondary"
-            onPress={handleGoogleLogin}
-            isPending={googleLoading}
-            isDisabled={loading || googleLoading}
-          >
-            Continue with Google
-          </Button>
-          */}
-
-          <p className="text-center text-sm text-muted">
-            New here?{" "}
-            <Link
-              href={next !== "/" ? `/register?next=${encodeURIComponent(next)}` : "/register"}
-              className="font-medium text-foreground underline underline-offset-4"
+            {/*
+            TEMPORARILY DISABLED — Google OAuth is not configured yet.
+            <div className="flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-default-200" />
+              <span className="text-xs text-muted">OR</span>
+              <span className="h-px flex-1 bg-default-200" />
+            </div>
+            <Button
+              className="w-full rounded-full"
+              variant="secondary"
+              onPress={handleGoogleLogin}
+              isPending={googleLoading}
+              isDisabled={loading || googleLoading}
             >
-              Create an account
-            </Link>
-          </p>
-        </CardContent>
+              Continue with Google
+            </Button>
+            */}
+
+            <p className="text-center text-sm text-muted">
+              New here?{" "}
+              <Link
+                href={next !== "/" ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Create an account
+              </Link>
+            </p>
+          </Card.Footer>
+        </Form>
       </Card>
     </div>
   );

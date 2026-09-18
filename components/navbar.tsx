@@ -81,15 +81,16 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Mobile menu: public pages + auth only */}
+          {/* Mobile menu: public pages + auth only.
+              The trigger renders its own button, so the child must be plain
+              content — a nested Button here produced <button> inside
+              <button>, which broke taps on touch devices. */}
           <div className="lg:hidden">
             <Dropdown>
-              <Dropdown.Trigger>
-                <Button size="sm" variant="ghost" className="rounded-full">
-                  Menu
-                </Button>
+              <Dropdown.Trigger className="rounded-full px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-secondary hover:text-foreground">
+                Menu
               </Dropdown.Trigger>
-              <Dropdown.Popover>
+              <Dropdown.Popover placement="bottom end">
                 <Dropdown.Menu aria-label="Navigation menu" onAction={go}>
                   {siteConfig.navItems.map((item) => (
                     <Dropdown.Item key={item.href} id={item.href} textValue={item.label}>
@@ -127,7 +128,7 @@ export const Navbar = () => {
                       <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                   </Dropdown.Trigger>
-                  <Dropdown.Popover className="min-w-[250px]">
+                  <Dropdown.Popover className="min-w-[250px]" placement="bottom end">
                     <div className="px-3 pb-2 pt-3">
                       <div className="flex items-center gap-2.5">
                         <Avatar size="sm">
