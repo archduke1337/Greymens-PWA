@@ -12,11 +12,20 @@ import {
   Form,
   Input,
   Label,
+  Link as HeroLink,
   TextArea,
   TextField,
 } from "@heroui/react";
-import { ArrowUpRight, Mail, MessagesSquare, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Mail,
+  MessagesSquare,
+  ShieldCheck,
+} from "lucide-react";
 
+import { LinkedinIcon } from "@/components/icons";
+import { siteConfig } from "@/config/site";
 import { readApiError } from "@/lib/errorHandler";
 
 const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
@@ -26,23 +35,27 @@ const CHANNELS = [
     Icon: MessagesSquare,
     name: "Discord",
     pace: "Often the fastest answer",
-    cta: "Join the server",
-    href: "https://discord.gg/6v89E3SaZT",
+    href: siteConfig.links.discord,
     external: true,
   },
   {
     Icon: Mail,
     name: "Email",
-    pace: "Replies in 2–3 working days",
-    cta: "hello@greymens.club",
+    pace: "hello@greymens.club · replies in 2–3 working days",
     href: "mailto:hello@greymens.club",
     external: false,
+  },
+  {
+    Icon: LinkedinIcon,
+    name: "LinkedIn",
+    pace: "For sponsors, alumni, and recruiters",
+    href: siteConfig.links.linkedin,
+    external: true,
   },
   {
     Icon: ShieldCheck,
     name: "Security issues",
     pace: "Confidential, handled first",
-    cta: "Disclose responsibly",
     href: "/security/report",
     external: false,
   },
@@ -269,46 +282,71 @@ export default function ContactPage() {
             </figcaption>
           </figure>
           <Card variant="secondary">
-            <Card.Content className="space-y-4 p-5">
-              <h2 className="text-sm font-semibold">Other ways to reach us</h2>
-              <ul className="space-y-3">
-                {CHANNELS.map(({ Icon, name, pace, cta, href, external }) => (
-                  <li key={name} className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background">
-                      <Icon aria-hidden="true" className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{name}</span>
-                      <span className="block text-xs text-muted">{pace}</span>
-                    </span>
-                    {external ? (
-                      <a
-                        aria-label={`${cta} (opens in a new tab)`}
-                        className="inline-flex shrink-0 items-center gap-1 text-xs font-medium underline underline-offset-4"
-                        href={href}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        {cta}
-                        <ArrowUpRight aria-hidden="true" className="h-3 w-3" />
-                      </a>
-                    ) : href.startsWith("/") ? (
-                      <Link
-                        className="shrink-0 text-xs font-medium underline underline-offset-4"
-                        href={href}
-                      >
-                        {cta}
-                      </Link>
-                    ) : (
-                      <a
-                        className="shrink-0 break-all text-xs font-medium underline underline-offset-4"
-                        href={href}
-                      >
-                        {cta}
-                      </a>
-                    )}
-                  </li>
-                ))}
+            <Card.Header>
+              <Card.Title>Other ways to reach us</Card.Title>
+              <Card.Description>
+                Pick the channel that fits — a human reads all of them.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content className="gap-1 p-2">
+              <ul className="space-y-1">
+                {CHANNELS.map(({ Icon, name, pace, href, external }) => {
+                  const row = (
+                    <>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent dark:bg-accent/20">
+                        <Icon aria-hidden="true" className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {name}
+                        </span>
+                        <span
+                          className="block truncate text-xs text-muted"
+                          title={pace}
+                        >
+                          {pace}
+                        </span>
+                      </span>
+                      {external ? (
+                        <ArrowUpRight
+                          aria-hidden="true"
+                          className="h-3.5 w-3.5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                        />
+                      ) : (
+                        <ArrowRight
+                          aria-hidden="true"
+                          className="h-3.5 w-3.5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+                        />
+                      )}
+                    </>
+                  );
+                  const rowClassName =
+                    "group flex items-center gap-3 rounded-2xl px-3 py-2.5 no-underline transition-colors hover:bg-background";
+
+                  return (
+                    <li key={name}>
+                      {external ? (
+                        <HeroLink
+                          aria-label={`${name} (opens in a new tab)`}
+                          className={rowClassName}
+                          href={href}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          {row}
+                        </HeroLink>
+                      ) : href.startsWith("/") ? (
+                        <Link className={rowClassName} href={href}>
+                          {row}
+                        </Link>
+                      ) : (
+                        <HeroLink className={rowClassName} href={href}>
+                          {row}
+                        </HeroLink>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </Card.Content>
           </Card>
