@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { blogService, type Blog } from "@/lib/blog";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, Chip } from "@heroui/react";
 import {
   ArrowLeft,
@@ -26,6 +30,8 @@ const formatDate = (dateString: string) => {
 export default function BlogDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { hasCapability } = usePermissions();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -102,15 +108,24 @@ export default function BlogDetailPage() {
 
   return (
     <article className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10 sm:px-6">
-      <Button
-        variant="ghost"
-        size="sm"
-        onPress={() => router.push("/blog")}
-        className="rounded-full"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        All posts
-      </Button>
+      <div className="flex items-center justify-between gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push("/blog")}
+          className="rounded-full"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          All posts
+        </Button>
+        {(user?.$id === blog.authorId || hasCapability("blog.review")) && (
+          <Link href={`/blog/write?edit=${blog.$id}`}>
+            <Button variant="secondary" size="sm" className="rounded-full">
+              Edit post
+            </Button>
+          </Link>
+        )}
+      </div>
 
       {/* Cover */}
       <div className="relative overflow-hidden rounded-3xl bg-surface-secondary">
@@ -183,15 +198,12 @@ export default function BlogDetailPage() {
         </div>
       )}
 
-      {/* Body */}
+      {/* Body — real Markdown (GFM): headings, lists, code, tables. Raw
+          HTML is never rendered: react-markdown escapes it by default. */}
       <Card>
         <Card.Content className="p-6 sm:p-9">
-          <div className="space-y-4 text-[15.5px] leading-[1.85] text-foreground/90 sm:text-base">
-            {blog.content.split(/\n{2,}/).map((paragraph, index) => (
-              <p key={index} className="whitespace-pre-wrap">
-                {paragraph}
-              </p>
-            ))}
+          <div className="blog-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
           </div>
         </Card.Content>
       </Card>
