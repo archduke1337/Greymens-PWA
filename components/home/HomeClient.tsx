@@ -8,42 +8,6 @@ import { ArrowRight } from "lucide-react";
 import { blogService } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches);
-    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
-}
-
-/**
- * Decorative GIF that respects reduced motion. GIFs can't be paused, so when
- * the visitor prefers reduced motion the frame holds an empty panel instead
- * of looping forever. Layout is preserved via the shared sizing classes.
- */
-export function ArtImage({
-  src,
-  alt,
-  className,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-}) {
-  const reduceMotion = usePrefersReducedMotion();
-
-  if (reduceMotion) {
-    return <div aria-hidden="true" className={`${className ?? ""} bg-surface-secondary`} />;
-  }
-  return <img src={src} alt={alt} loading="lazy" className={className} />;
-}
-
 /**
  * Hero primary action. Auth state resolves client-side; while it loads, a
  * same-size placeholder holds the space so the button never flashes between
@@ -180,7 +144,7 @@ export function ProofStrip() {
       )}
       <p className="text-center font-serif text-[15px] italic text-muted">
         “Technology should empower people, not control them.”{" "}
-        <span className="not-italic">— Greymens</span>
+        <span className="not-italic">— the Greymens Charter</span>
       </p>
     </section>
   );
@@ -188,7 +152,9 @@ export function ProofStrip() {
 
 /**
  * Recruitment band, visitors only. Gated on auth loading so signed-in
- * members never see it flash in and out.
+ * members never see it flash in and out. No art: it follows the event
+ * cards, so plain type gives the page a place to breathe — and animated
+ * art here meant reduced-motion visitors got an empty box.
  */
 export function JoinBand() {
   const { user, loading } = useAuth();
@@ -199,17 +165,12 @@ export function JoinBand() {
     <section className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6" aria-label="Join">
       <div className="rounded-3xl border border-default-200/70">
         <div className="flex flex-col items-center gap-5 p-8 text-center sm:p-10">
-          <ArtImage
-            src="/Assets/Media/point-out.gif"
-            alt=""
-            className="h-24 w-24 rounded-2xl object-cover"
-          />
           <div className="space-y-2">
             <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
               One open event is all it takes
             </h2>
             <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
-              No application, no experience, no awkward introductions. Pick a
+              No gauntlet, no experience, no awkward introductions. Pick a
               workshop, show up, decide for yourself.
             </p>
           </div>

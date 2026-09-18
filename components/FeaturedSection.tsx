@@ -8,7 +8,6 @@ import {
   MapPin,
   Users,
   Star,
-  Crown,
   ArrowRight,
 } from "lucide-react";
 
@@ -60,14 +59,29 @@ export default function FeaturedSection() {
   // (removed) cards are real links below; no click handler needed.
 
   if (loading) {
+    // Same-size skeleton: holds the section's space so nothing below jumps
+    // when the cards land (mirrors the proof strip's pattern).
     return (
-      <section className="py-20 relative overflow-hidden bg-background">
+      <section className="py-20" aria-hidden="true">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center space-y-4" role="status" aria-label="Loading featured events">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent" />
-            <p className="text-lg font-medium text-muted">
-              Loading featured events...
-            </p>
+          <div className="mx-auto mb-12 max-w-xl space-y-3">
+            <div className="mx-auto h-8 w-64 animate-pulse rounded-full bg-surface-secondary" />
+            <div className="mx-auto h-4 w-80 animate-pulse rounded-full bg-surface-secondary" />
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[0, 1, 2].map((n) => (
+              <div
+                key={n}
+                className="overflow-hidden rounded-3xl border border-default-200/70 bg-surface"
+              >
+                <div className="h-64 animate-pulse bg-surface-secondary" />
+                <div className="space-y-3 p-6">
+                  <div className="h-6 w-3/4 animate-pulse rounded-full bg-surface-secondary" />
+                  <div className="h-4 w-full animate-pulse rounded-full bg-surface-secondary" />
+                  <div className="h-4 w-2/3 animate-pulse rounded-full bg-surface-secondary" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -81,10 +95,11 @@ export default function FeaturedSection() {
   return (
     <section className="py-20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Header */}
+        {/* Header — "Highlights", not "Upcoming": the proof strip above
+            already owns "upcoming", and both link to /events. */}
         <div className="mx-auto mb-12 max-w-xl space-y-2 text-center">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Upcoming highlights
+            Highlights from the calendar
           </h2>
 
           <p className="text-[15px] text-muted">
@@ -129,12 +144,6 @@ export default function FeaturedSection() {
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium">
                         <Star className="w-3 h-3" />
                         Featured
-                      </div>
-                    )}
-                    {event.isPremium && (
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
-                        <Crown className="w-3 h-3" />
-                        Premium
                       </div>
                     )}
                   </div>
@@ -205,29 +214,13 @@ export default function FeaturedSection() {
                     ))}
                   </div>
 
-                  {/* Price & CTA */}
+                  {/* Price & CTA — homepage states Free or Paid, nothing
+                      else: no rupee signs, no discounts. Pricing detail
+                      belongs to the event's own page. */}
                   <div className="flex items-center justify-between pt-4 border-t border-default-200/70">
-                    <div>
-                      {event.discountPrice &&
-                      event.discountPrice < event.price ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl font-bold text-foreground tabular-nums">
-                            ${event.discountPrice}
-                          </span>
-                          <span className="text-sm text-muted line-through tabular-nums">
-                            ${event.price}
-                          </span>
-                        </div>
-                      ) : event.price === 0 ? (
-                        <span className="text-xl font-bold text-foreground">
-                          Free
-                        </span>
-                      ) : (
-                        <span className="text-xl font-bold text-foreground tabular-nums">
-                          ${event.price}
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-xl font-bold text-foreground">
+                      {event.price === 0 ? "Free" : "Paid"}
+                    </span>
 
                     <div className="flex items-center gap-2 text-primary font-medium">
                       <span className="text-sm">View details</span>

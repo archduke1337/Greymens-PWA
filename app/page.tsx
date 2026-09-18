@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 import FeaturedSection from "@/components/FeaturedSection";
 import GuitarStringDivider from "@/components/GuitarStringDivider";
-import { ArtImage, HeroCta, JoinBand, ProofStrip } from "@/components/home/HomeClient";
+import { HeroCta, JoinBand, ProofStrip } from "@/components/home/HomeClient";
 
 const LEARN_ROW = {
   title: "Learn out loud",
@@ -20,8 +20,8 @@ const BUILD_ROW = {
   text: "Projects with a named lead, a scope, and a handover — web, AI, systems. Demos that refuse to stay demos.",
   href: "/projects",
   cta: "Browse member projects",
-  src: "/Assets/Media/team-ideas.gif",
-  alt: "Hands fitting puzzle pieces together",
+  src: "/Assets/Media/Do-something.webp",
+  alt: "A hand rising out of a hole holding a sign that reads DO SOMETHING",
 };
 
 const FIRST_MONTH = [
@@ -38,7 +38,7 @@ const FIRST_MONTH = [
   {
     n: "03",
     title: "Decide if it's yours",
-    text: "One event is enough to know. The application takes a minute; review takes a few days.",
+    text: "One event is enough to know. The form takes a minute; review takes a few days.",
   },
 ];
 
@@ -46,10 +46,11 @@ export default function Home() {
   return (
     <div className="w-full">
       {/* Institutional marks — quiet trust line between navbar and the fold.
-          White tiles keep both logos' brand colors intact on the dark bg. */}
+          Centered like the about page; white tiles keep both logos' brand
+          colors intact on the dark bg. */}
       <section
         aria-label="Institutional affiliation"
-        className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-3 px-4 pb-5 pt-1 sm:gap-4"
+        className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-4 pb-5 pt-1 sm:flex-row sm:justify-center sm:gap-4"
       >
         <span className="flex h-11 items-center rounded-xl bg-white px-3.5">
           <img
@@ -65,7 +66,7 @@ export default function Home() {
             className="h-8 w-8 object-contain"
           />
         </span>
-        <p className="text-xs text-muted sm:text-sm">
+        <p className="text-center text-xs text-muted sm:text-sm">
           A student club of Ajeenkya D Y Patil University
         </p>
       </section>
@@ -125,6 +126,10 @@ export default function Home() {
         </div>
       </section>
 
+      <p className="mx-auto max-w-3xl px-4 pt-3 text-center text-xs text-muted sm:px-6">
+        One figure in that crowd is already lit up. That&apos;s the club.
+      </p>
+
       <style>{`
         @keyframes heroIn {
           from {
@@ -177,9 +182,10 @@ export default function Home() {
         <div className="grid items-center gap-8 lg:grid-cols-2">
           <figure className="lg:order-2">
             <div className="overflow-hidden rounded-3xl border border-default-200/70">
-              <ArtImage
+              <img
                 src={BUILD_ROW.src}
                 alt={BUILD_ROW.alt}
+                loading="lazy"
                 className="aspect-[4/3] w-full object-cover"
               />
             </div>
@@ -213,8 +219,8 @@ export default function Home() {
             Your first month
           </h2>
           <p className="text-[15px] leading-relaxed text-muted">
-            No application gauntlet. Three steps, and the second one is just
-            walking through a door.
+            One short form and a few days of review. Three steps, and the
+            second one is just walking through a door.
           </p>
         </div>
         <ol className="grid gap-8 pt-8 sm:grid-cols-3">
