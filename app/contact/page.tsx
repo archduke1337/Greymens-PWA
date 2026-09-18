@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Button, Card, Chip, Input, TextArea } from "@heroui/react";
-import { Mail, MessageCircle, Clock, MapPin, ArrowRight } from "lucide-react";
+import { Button, Card, Input, TextArea } from "@heroui/react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -43,7 +42,7 @@ export default function ContactPage() {
       setSubmitStatus({
         type: "success",
         message:
-          "Message sent — thank you! A club officer will reply within 2–3 working days. For anything urgent, find us on Discord.",
+          "Sent. A club officer replies within 2–3 working days — sooner on Discord.",
       });
       setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
@@ -52,150 +51,97 @@ export default function ContactPage() {
         message:
           error instanceof Error && error.message
             ? error.message
-            : "Failed to send message. Please try again or email us directly.",
+            : "Couldn't send. Try again, or email us directly.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const contactMethods = [
-    {
-      Icon: MessageCircle,
-      title: "Discord — fastest",
-      value: "Daily chatter, event help, quick questions",
-      link: "https://discord.gg/6v89E3SaZT",
-      cta: "Join the server",
-    },
-    {
-      Icon: Mail,
-      title: "Email — official",
-      value: "Partnerships, grievances, formal requests",
-      link: "mailto:hello@greymens.club",
-      cta: "hello@greymens.club",
-    },
-    {
-      Icon: MapPin,
-      title: "In person — friendliest",
-      value: "School of Engineering, ADYPU · during workshops & meetups",
-      link: "/events",
-      cta: "See where we'll be",
-    },
-  ];
-
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6">
-      <header className="mx-auto max-w-2xl space-y-3 text-center">
-        <Chip color="accent" variant="soft" size="sm">
-          Contact
-        </Chip>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Talk to a human, not a form
-        </h1>
-        <p className="text-base leading-relaxed text-muted">
-          Questions about joining, events, partnerships, or anything else? Write
-          below or pick the channel that suits you. Students answer — usually
-          between classes.
-        </p>
-        <p className="inline-flex items-center gap-1.5 text-xs text-muted">
-          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-          Typical reply time: 2–3 working days · Security issues go to{" "}
-          <Link href="/security/report" className="font-medium text-foreground underline underline-offset-4">
-            responsible disclosure
-          </Link>
+    <div className="mx-auto w-full max-w-5xl space-y-12 px-4 py-12 sm:px-6 sm:py-16">
+      <header className="mx-auto max-w-xl space-y-3 text-center">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Contact</h1>
+        <p className="text-[15px] leading-relaxed text-muted">
+          Questions, partnerships, concerns — write below. Students answer,
+          usually between classes.
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <Card.Header className="px-6 pt-6 sm:px-8">
-            <Card.Title className="text-xl">Send us a message</Card.Title>
-            <Card.Description>
-              Tell us who you are and what&apos;s on your mind — specifics get
-              faster, better answers.
-            </Card.Description>
-          </Card.Header>
-          <Card.Content className="px-6 pb-6 sm:px-8 sm:pb-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid items-start gap-10 lg:grid-cols-[1fr_280px]">
+        <Card>
+          <Card.Content className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {submitStatus.type && (
-                <div
+                <p
                   role={submitStatus.type === "success" ? "status" : "alert"}
-                  className={`rounded-2xl p-4 text-sm leading-relaxed ${
+                  className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     submitStatus.type === "success"
                       ? "bg-success-soft text-success-soft-foreground"
                       : "bg-danger-soft text-danger-soft-foreground"
                   }`}
                 >
                   {submitStatus.message}
-                </div>
+                </p>
               )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label htmlFor="contact-name" className="text-sm font-medium">
-                    Your name
-                  </label>
+                  <label htmlFor="contact-name" className="text-sm font-medium">Name</label>
                   <Input
                     id="contact-name"
                     required
                     placeholder="What should we call you?"
                     value={formData.name}
-                    onChange={(e: unknown) =>
-                      setFormData({ ...formData, name: String((e as { target: { value: string } }).target.value) })
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, name: e.target.value })
                     }
                     disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="contact-email" className="text-sm font-medium">
-                    Email
-                  </label>
+                  <label htmlFor="contact-email" className="text-sm font-medium">Email</label>
                   <Input
                     id="contact-email"
                     required
                     type="email"
                     placeholder="you@example.com"
                     value={formData.email}
-                    onChange={(e: unknown) =>
-                      setFormData({ ...formData, email: String((e as { target: { value: string } }).target.value) })
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, email: e.target.value })
                     }
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="contact-subject" className="text-sm font-medium">
-                  What&apos;s this about?
-                </label>
+                <label htmlFor="contact-subject" className="text-sm font-medium">Subject</label>
                 <Input
                   id="contact-subject"
                   required
                   placeholder="Joining, an event, a partnership, a concern…"
                   value={formData.subject}
-                  onChange={(e: unknown) =>
-                    setFormData({ ...formData, subject: String((e as { target: { value: string } }).target.value) })
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, subject: e.target.value })
                   }
                   disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="contact-message" className="text-sm font-medium">
-                  Message
-                </label>
+                <label htmlFor="contact-message" className="text-sm font-medium">Message</label>
                 <TextArea
                   id="contact-message"
                   required
-                  placeholder="Give us the context — the more specific, the faster we can help."
+                  placeholder="The context — specifics get faster answers."
                   value={formData.message}
-                  onChange={(e: unknown) =>
-                    setFormData({ ...formData, message: String((e as { target: { value: string } }).target.value) })
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setFormData({ ...formData, message: e.target.value })
                   }
                   disabled={isSubmitting}
                 />
               </div>
               <Button
                 type="submit"
-                size="lg"
                 isPending={isSubmitting}
                 className="w-full rounded-full"
               >
@@ -205,71 +151,49 @@ export default function ContactPage() {
           </Card.Content>
         </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <Card.Header className="px-6 pt-6">
-              <Card.Title>Other ways to reach us</Card.Title>
-            </Card.Header>
-            <Card.Content className="space-y-2 px-3 pb-4">
-              {contactMethods.map((method) => {
-                const Icon = method.Icon;
-                const external = method.link.startsWith("http");
-                return (
-                  <a
-                    key={method.title}
-                    href={method.link}
-                    {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className="flex items-start gap-3.5 rounded-2xl p-3 transition-colors hover:bg-surface-secondary"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-foreground">
-                      <Icon className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{method.title}</span>
-                      <span className="block text-[13px] leading-relaxed text-muted">
-                        {method.value}
-                      </span>
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-[13px] font-medium text-accent">
-                        {method.cta}
-                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                      </span>
-                    </span>
-                  </a>
-                );
-              })}
-            </Card.Content>
-          </Card>
-
-          <Card>
-            <Card.Content className="space-y-2 p-6">
-              <h2 className="font-semibold">Before you write</h2>
-              <ul className="space-y-2 text-sm leading-relaxed text-muted">
-                <li>
-                  <span className="font-medium text-foreground">Joining?</span> Just{" "}
-                  <Link href="/register" className="underline underline-offset-4">
-                    apply
-                  </Link>{" "}
-                  — no need to ask permission first.
-                </li>
-                <li>
-                  <span className="font-medium text-foreground">An event?</span> Check{" "}
-                  <Link href="/events" className="underline underline-offset-4">
-                    the lineup
-                  </Link>{" "}
-                  and register there.
-                </li>
-                <li>
-                  <span className="font-medium text-foreground">A vulnerability?</span>{" "}
-                  Please use{" "}
-                  <Link href="/security/report" className="underline underline-offset-4">
-                    responsible disclosure
-                  </Link>
-                  , not this form.
-                </li>
-              </ul>
-            </Card.Content>
-          </Card>
-        </div>
+        <aside className="space-y-4">
+          <figure className="space-y-2">
+            <div className="mx-auto max-w-[220px] overflow-hidden rounded-3xl border border-default-200/70">
+              <img
+                src="/Assets/Objects/Nokia-MAIN-554x1024.webp"
+                alt="A retro phone displaying the words ring us not your mate"
+                loading="lazy"
+                className="w-full object-cover"
+              />
+            </div>
+          </figure>
+          <ul className="space-y-2 text-center text-sm text-muted">
+            <li>
+              Fastest —{" "}
+              <a
+                href="https://discord.gg/6v89E3SaZT"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Discord
+              </a>
+            </li>
+            <li>
+              Formal —{" "}
+              <a
+                href="mailto:hello@greymens.club"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                hello@greymens.club
+              </a>
+            </li>
+            <li>
+              Vulnerability?{" "}
+              <Link
+                href="/security/report"
+                className="font-medium text-foreground underline underline-offset-4"
+              >
+                Disclose responsibly
+              </Link>
+            </li>
+          </ul>
+        </aside>
       </div>
     </div>
   );
