@@ -30,11 +30,28 @@ const categories = [
 ];
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  if (!dateString) return "Date TBA";
+  const time = new Date(dateString).getTime();
+  if (!Number.isFinite(time)) return "Date TBA";
+  return new Date(time).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
+};
+
+/**
+ * Past events sink to the bottom: a club page leading with last year's news
+ * reads as a dead page. Missing or unparsable dates stay up — "TBA" beats
+ * burial for events still being scheduled.
+ */
+const isPastEvent = (event: { date?: string | null }) => {
+  if (!event.date) return false;
+  const day = new Date(event.date);
+  if (!Number.isFinite(day.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return day < today;
 };
 
 const calculateDiscount = (original: number, discount: number) => {
@@ -140,6 +157,8 @@ export default function EventsPage() {
       (event.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     .sort((a, b) => {
+      const pastOrder = Number(isPastEvent(a)) - Number(isPastEvent(b));
+      if (pastOrder !== 0) return pastOrder;
       switch (sortBy) {
         case "date":
           return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -282,7 +301,7 @@ export default function EventsPage() {
       </figure>
 
       {/* Filters and Search */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <Card variant="secondary" className="border-none shadow-lg">
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -352,11 +371,12 @@ export default function EventsPage() {
       </div>
 
       {/* Events Grid */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {filteredEvents.map((event) => {
+            {filteredEvents.map((event) => {
             const status = registrationStatus[event.$id!];
             const isRegistered = Boolean(status);
+            const past = isPastEvent(event);
             const registerLabel =
               status === "waitlisted" ? "Waitlisted"
               : status === "pending" ? "Pending approval"
@@ -366,7 +386,7 @@ export default function EventsPage() {
             return (
             <Card
               key={event.$id}
-              className="border-none hover:shadow-2xl transition-all duration-300 group" variant="secondary"
+              className="border-none transition-shadow duration-200 hover:shadow-lg group" variant="secondary"
             >
               <CardContent className="p-0 overflow-hidden">
                 <div className="relative">
@@ -374,11 +394,20 @@ export default function EventsPage() {
                     <img
                       src={event.image}
                       alt={event.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                      className="w-full h-48 object-cover bg-surface-secondary"
                     />
                   </Link>
 
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    {past && (
+                      <Chip color="default" variant="primary" size="sm" className="font-bold">
+                        Ended
+                      </Chip>
+                    )}
                     {event.isFeatured && (
                       <Chip color="accent" variant="primary" size="sm" className="font-bold">
                         <StarIcon className="w-3 h-3 mr-1" />
@@ -404,8 +433,8 @@ export default function EventsPage() {
                     <HeartIcon 
                       className={`w-4 h-4 ${
                         savedEvents.includes(event.$id!) 
-                          ? "fill-red-500 text-red-500" 
-                          : "text-gray-600"
+                          ? "fill-danger text-danger" 
+                          : "text-muted"
                       }`} 
                     />
                   </Button>
@@ -445,7 +474,7 @@ export default function EventsPage() {
 
                     <div className="flex items-center gap-2 text-sm text-default-500">
                       <UsersIcon className="w-4 h-4" />
-                      <span>{event.registered} registered</span>
+                      <span>{event.registered ?? 0} registered</span>
                       {remaining !== null && (
                         <span className="text-xs text-default-400">
                           • {remaining} {remaining === 1 ? "spot" : "spots"} left
@@ -485,7 +514,11 @@ export default function EventsPage() {
               <CardFooter className="px-6 pb-6 pt-0">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    {event.discountPrice && event.discountPrice < event.price ? (
+                    {event.price === 0 ? (
+                      <span className="text-2xl font-bold text-foreground">
+                        Free
+                      </span>
+                    ) : event.discountPrice && event.discountPrice < event.price ? (
                       <>
                         <span className="text-2xl font-bold text-foreground">
                           ${event.discountPrice}
@@ -501,14 +534,20 @@ export default function EventsPage() {
                     )}
                   </div>
 
-                  <Button
-                    variant={isRegistered ? "secondary" : "primary"}
-                    isPending={registering === event.$id}
-                    aria-label={isRegistered ? `${registerLabel} for ${event.title} (activate to cancel)` : `Register for ${event.title}`}
-                    onPress={() => toggleRegisterEvent(event.$id!)}
-                  >
-                    {registerLabel}
-                  </Button>
+                  {past ? (
+                    <Button variant="secondary" isDisabled aria-label={`${event.title} has ended`}>
+                      Ended
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={isRegistered ? "secondary" : "primary"}
+                      isPending={registering === event.$id}
+                      aria-label={isRegistered ? `${registerLabel} for ${event.title} (activate to cancel)` : `Register for ${event.title}`}
+                      onPress={() => toggleRegisterEvent(event.$id!)}
+                    >
+                      {registerLabel}
+                    </Button>
+                  )}
                 </div>
               </CardFooter>
             </Card>

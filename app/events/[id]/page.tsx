@@ -1,7 +1,6 @@
 // app/events/[id]/page.tsx
 "use client";
 
-import { title } from "@/components/primitives";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -22,7 +21,6 @@ import {
   Building,
   Tag,
   CheckCircle,
-  XCircle,
   TrendingUp
 } from "lucide-react";
 import { toast } from "sonner";
@@ -236,14 +234,27 @@ export default function EventDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+const formatDate = (dateString: string) => {
+  if (!dateString) return "Date TBA";
+  const time = new Date(dateString).getTime();
+  if (!Number.isFinite(time)) return "Date TBA";
+  return new Date(time).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+/** An event whose day has passed can be read, not joined. */
+const isPastEvent = (dateString?: string | null) => {
+  if (!dateString) return false;
+  const day = new Date(dateString);
+  if (!Number.isFinite(day.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return day < today;
+};
 
   const calculateDiscount = (original: number, discount: number) => {
     if (!Number.isFinite(original) || original <= 0) return 0;
@@ -263,7 +274,7 @@ export default function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-default-500">Loading event details...</p>
@@ -274,16 +285,42 @@ export default function EventDetailPage() {
 
   // A failed load with no cached event is an error, not a 404: only the
   // explicit notFound flag (or an empty success) means "does not exist".
-  if (loadError && !event) {
+  if ((loadError && !event) || (!event && !loading) || notFound) {
+    const missing = !loadError && (notFound || !event);
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Couldn&apos;t load this event</h2>
-          <p className="text-default-500 mb-6">{loadError}</p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="primary" onPress={() => { setLoading(true); loadEvent(); }}>
-              Try again
-            </Button>
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
+          {missing ? (
+            <img
+              src="/Assets/Media/walking-confused.gif"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+            />
+          ) : (
+            <img
+              src="/Assets/Media/try-again.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+            />
+          )}
+          <h2 className="text-2xl font-bold">
+            {missing ? "Nothing on this trail" : "Couldn't load this event"}
+          </h2>
+          <p className="text-default-500">
+            {missing
+              ? "This event doesn't exist, or its link is outdated."
+              : loadError}
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            {!missing && (
+              <Button variant="primary" onPress={() => { setLoading(true); loadEvent(); }}>
+                Try again
+              </Button>
+            )}
             <Button variant="ghost" onPress={() => router.push("/events")}>
               Browse Events
             </Button>
@@ -293,36 +330,10 @@ export default function EventDetailPage() {
     );
   }
 
-  if (!event || notFound) {
+  if (!event) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <XCircle className="w-16 h-16 text-danger mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Event Not Found</h2>
-          <p className="text-default-500 mb-6">The event you&apos;re looking for doesn&apos;t exist.</p>
-          <Button onPress={() => router.push("/events")}>
-            Browse Events
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Couldn&apos;t load this event</h2>
-          <p className="text-default-500 mb-6">{loadError}</p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="primary" onPress={() => { setLoading(true); loadEvent(); }}>
-              Try again
-            </Button>
-            <Button variant="ghost" onPress={() => router.push("/events")}>
-              Browse Events
-            </Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
       </div>
     );
   }
@@ -340,12 +351,17 @@ export default function EventDetailPage() {
       </div>
 
       {/* Hero Image Section */}
-      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
-        <img
-          src={event.image}
-          alt={event.title}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden bg-surface-secondary">
+        {event.image ? (
+          <img
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         
         {/* Floating Action Buttons */}
@@ -359,7 +375,7 @@ export default function EventDetailPage() {
           >
             <Heart 
               className={`w-5 h-5 ${
-                isSaved ? "fill-red-500 text-red-500" : "text-gray-600"
+                isSaved ? "fill-danger text-danger" : "text-gray-600"
               }`} 
             />
           </Button>
@@ -440,7 +456,7 @@ export default function EventDetailPage() {
               <CardContent className="pt-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-6 h-6 text-primary" />
                     </div>
                     <div>
@@ -450,8 +466,8 @@ export default function EventDetailPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Time</p>
@@ -460,8 +476,8 @@ export default function EventDetailPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                      <Building className="w-6 h-6 text-green-600" />
+                    <div className="w-12 h-12 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
+                      <Building className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Venue</p>
@@ -470,8 +486,8 @@ export default function EventDetailPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-6 h-6 text-orange-600" />
+                    <div className="w-12 h-12 rounded-full bg-surface-tertiary flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm text-default-500 mb-1">Location</p>
@@ -532,12 +548,16 @@ export default function EventDetailPage() {
 
           {/* Right Column - Registration Card */}
           <div className="lg:col-span-1">
-            <Card className="border-none shadow-2xl sticky top-6 bg-card">
+            <Card className="border-none shadow-2xl sticky top-28 bg-card">
               <CardContent className="p-6 space-y-6">
                 {/* Price */}
                 <div>
                   <div className="flex items-baseline gap-3 mb-2">
-                    {event.discountPrice && event.discountPrice < event.price ? (
+                    {event.price === 0 ? (
+                      <span className="text-4xl font-bold text-foreground">
+                        Free
+                      </span>
+                    ) : event.discountPrice && event.discountPrice < event.price ? (
                       <>
                         <span className="text-4xl font-bold text-foreground">
                           ${event.discountPrice}
@@ -569,7 +589,7 @@ export default function EventDetailPage() {
                       <span className="text-default-600">Registered</span>
                     </div>
                     <span className="font-bold text-lg">
-                      {event.registered}{event.capacity && `/${event.capacity}`}
+                      {event.registered ?? 0}{event.capacity && `/${event.capacity}`}
                     </span>
                   </div>
 
@@ -607,18 +627,30 @@ export default function EventDetailPage() {
                 <Separator />
 
                 {/* Registration Button */}
-                <div className="space-y-3">                          <Button
-                            onPress={handleRegister}
-                            variant={isRegistered ? "secondary" : "primary"}
-                            className="w-full font-bold text-lg"
-                            isPending={registering}
-                          >
-                    {registering ? "Registering..."
-                      : registrationStatus === "waitlisted" ? "You're on the Waitlist"
-                      : registrationStatus === "pending" ? "Pending Approval"
-                      : isRegistered ? "You're Registered!"
-                      : "Register Now"}
-                  </Button>
+                <div className="space-y-3">
+                  {isPastEvent(event.date) ? (
+                    <Button
+                      variant="secondary"
+                      className="w-full font-bold text-lg"
+                      isDisabled
+                      aria-label={`${event.title} has ended`}
+                    >
+                      Event ended
+                    </Button>
+                  ) : (
+                    <Button
+                      onPress={handleRegister}
+                      variant={isRegistered ? "secondary" : "primary"}
+                      className="w-full font-bold text-lg"
+                      isPending={registering}
+                    >
+                      {registering ? "Registering..."
+                        : registrationStatus === "waitlisted" ? "You're on the Waitlist"
+                        : registrationStatus === "pending" ? "Pending Approval"
+                        : isRegistered ? "You're Registered!"
+                        : "Register Now"}
+                    </Button>
+                  )}
 
                   {isRegistered && registrationStatus === "approved" && (
                     <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-xl border border-success-200 dark:border-success-800">
@@ -678,30 +710,6 @@ export default function EventDetailPage() {
                           <span className="font-semibold">Filling fast!</span> Only {getSpotsLeft()} spots left
                         </p>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Features */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle className="w-5 h-5 text-success" />
-                    <span>Instant confirmation</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle className="w-5 h-5 text-success" />
-                    <span>E-ticket included</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <CheckCircle className="w-5 h-5 text-success" />
-                    <span>Certificate of attendance</span>
-                  </div>
-                  {event.isPremium && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Crown className="w-5 h-5 text-primary" />
-                      <span className="font-semibold text-primary">Premium perks included</span>
                     </div>
                   )}
                 </div>
