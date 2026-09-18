@@ -305,6 +305,41 @@ export default function ProjectsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Have something worth building? */}
+          <Card>
+            <CardContent className="flex flex-col items-center gap-5 p-6 text-center sm:flex-row sm:text-left">
+              <img
+                src="/Assets/Media/Do-something.webp"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                className="h-28 w-28 shrink-0 rounded-3xl border border-default-200/70 object-cover"
+              />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <h2 className="text-lg font-bold tracking-tight">Have something worth building?</h2>
+                <p className="text-sm leading-relaxed text-muted">
+                  Projects start as conversations — at a workshop, over coffee,
+                  in the Discord. Bring the itch; we&apos;ll help scratch it
+                  properly, with a lead, a scope, and a handover.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-wrap justify-center gap-2">
+                <a
+                  href="/events"
+                  className="inline-flex items-center rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+                >
+                  Find a workshop
+                </a>
+                <a
+                  href="/contact"
+                  className="inline-flex items-center rounded-full border border-default-300 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-secondary"
+                >
+                  Talk to us
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

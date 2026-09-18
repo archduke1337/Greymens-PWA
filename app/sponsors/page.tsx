@@ -74,18 +74,24 @@ export default function SponsorsPage() {
       </header>
 
       {sponsors.length === 0 ? (
-        <Card className="mx-auto max-w-xl">
-          <CardContent className="space-y-3 px-6 py-12 text-center">
-            <h2 className="text-lg font-bold">No sponsors yet</h2>
+        <Card className="mx-auto max-w-xl overflow-hidden">
+          <img
+            src="/Assets/greymens-billboard.jpg"
+            alt="An empty billboard waiting for a name"
+            loading="lazy"
+            className="h-48 w-full object-cover object-top"
+          />
+          <CardContent className="space-y-3 px-6 py-8 text-center">
+            <h2 className="text-lg font-bold">This billboard is empty</h2>
             <p className="mx-auto max-w-md text-sm leading-relaxed text-muted">
-              We&apos;re a young club, and this wall is empty on purpose — the
+              We&apos;re a young club, and this wall is blank on purpose — the
               first names here will be real partners, not placeholders.
             </p>
             <a
               href="mailto:sponsors@greymens.club"
               className="inline-flex items-center rounded-full bg-foreground px-6 py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
             >
-              Become our first sponsor
+              Put your name on it
             </a>
           </CardContent>
         </Card>

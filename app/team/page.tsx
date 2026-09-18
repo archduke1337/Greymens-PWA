@@ -152,6 +152,21 @@ export default async function TeamPage() {
         </p>
       </header>
 
+      <figure className="space-y-2">
+        <div className="overflow-hidden rounded-3xl border border-default-200/70">
+          <img
+            src="/Assets/Banners/clut.jpg"
+            alt="A crowd in black and white with one figure lit in green binary code"
+            loading="lazy"
+            className="h-44 w-full object-cover sm:h-60"
+          />
+        </div>
+        <figcaption className="text-center text-sm text-muted">
+          Leadership here isn&apos;t a title — it&apos;s whoever steps forward,
+          does the work, and hands it over.
+        </figcaption>
+      </figure>
+
       {failed ? (
         <p className="text-sm text-danger">
           The leadership register could not be loaded. Please try again shortly.
