@@ -58,9 +58,9 @@ export default function RootLayout({
           <AuthProvider>
             <PermissionProvider>
               <ServiceWorkerRegistration />
-              <div className="relative flex flex-col min-h-screen">
+              <div className="relative flex min-h-screen flex-col">
                 <Navbar />
-                <main className="flex-grow w-full">
+                <main className="w-full flex-grow px-3 pt-4 sm:px-4 sm:pt-6">
                   {children}
                 </main>
                 <Footer />
