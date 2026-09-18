@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import {
+  Alert,
   Button,
   Card,
   Description,
@@ -75,7 +76,7 @@ function RegisterForm() {
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+      setError("Password must be at least 8 characters.");
       return;
     }
 
@@ -157,91 +158,86 @@ function RegisterForm() {
         <Form onSubmit={handleSubmit} validationBehavior="aria">
           <Card.Content className="space-y-4">
             <TextField
-              name="name"
               isRequired
-              value={name}
-              onChange={setName}
+              isDisabled={loading}
+              name="name"
               validate={(value) =>
                 value.trim().length >= 2 ? null : "Enter your full name"
               }
+              value={name}
+              onChange={setName}
             >
               <Label>Full name</Label>
-              <Input
-                placeholder="Your name"
-                autoComplete="name"
-                disabled={loading}
-              />
+              <Input autoComplete="name" placeholder="Your name" />
               <FieldError />
             </TextField>
             <TextField
+              isRequired
+              isDisabled={loading}
               name="email"
               type="email"
-              isRequired
-              value={email}
-              onChange={setEmail}
               validate={(value) =>
                 EMAIL_PATTERN.test(value) ? null : "Enter a valid email address"
               }
+              value={email}
+              onChange={setEmail}
             >
               <Label>Email</Label>
-              <Input
-                placeholder="you@example.com"
-                autoComplete="email"
-                disabled={loading}
-              />
+              <Input autoComplete="email" placeholder="you@example.com" />
               <FieldError />
             </TextField>
             <div className="grid gap-4 sm:grid-cols-2">
               <TextField
+                isRequired
+                isDisabled={loading}
                 name="password"
                 type="password"
-                isRequired
-                minLength={8}
+                validate={(value) =>
+                  value.length >= 8 ? null : "Password must be at least 8 characters."
+                }
                 value={password}
                 onChange={setPassword}
-                validate={(value) =>
-                  value.length >= 8 ? null : "At least 8 characters"
-                }
               >
                 <Label>Password</Label>
                 <Input
-                  placeholder="Min. 8 characters"
                   autoComplete="new-password"
-                  disabled={loading}
+                  placeholder="Min. 8 characters"
                 />
                 <Description>At least 8 characters.</Description>
                 <FieldError />
               </TextField>
               <TextField
+                isRequired
+                isDisabled={loading}
                 name="confirmPassword"
                 type="password"
-                isRequired
-                value={confirmPassword}
-                onChange={setConfirmPassword}
                 validate={(value) =>
                   value === password ? null : "Passwords do not match"
                 }
+                value={confirmPassword}
+                onChange={setConfirmPassword}
               >
                 <Label>Confirm password</Label>
-                <Input
-                  placeholder="Repeat it"
-                  autoComplete="new-password"
-                  disabled={loading}
-                />
+                <Input autoComplete="new-password" placeholder="Repeat it" />
                 <FieldError />
               </TextField>
             </div>
             {error && (
-              <p role="alert" className="text-sm text-danger">
-                {error}
-              </p>
+              <Alert role="alert" status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t create your account</Alert.Title>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
-              type="submit"
-              isPending={loading}
               className="w-full rounded-full"
+              isDisabled={loading}
+              isPending={loading}
+              type="submit"
             >
               Create account
             </Button>

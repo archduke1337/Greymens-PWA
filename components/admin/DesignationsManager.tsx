@@ -23,6 +23,9 @@ import {
   CardContent,
   Checkbox,
   Chip,
+  Description,
+  FieldError,
+  Form,
   Input,
   Label,
   ListBox,
@@ -36,6 +39,7 @@ import {
   Select,
   Switch,
   TextArea,
+  TextField,
   useOverlayState,
 } from "@heroui/react";
 import type { Designation, UserDesignation, Profile, Department } from "@/lib/types";
@@ -553,7 +557,7 @@ export default function DesignationsManager({ designations, departments, onChang
           <ModalContainer size="lg">
             <ModalDialog>
               {({ close: dialogClose }: { close: () => void }) => (
-                <form onSubmit={handleSubmit}>
+                <Form validationBehavior="aria" onSubmit={handleSubmit}>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                     <h2 className="text-xl font-bold tracking-tight text-foreground">
                       {editingDesig ? "Edit Designation" : "Create Designation"}
@@ -566,29 +570,44 @@ export default function DesignationsManager({ designations, departments, onChang
                   </ModalHeader>
 
                   <ModalBody className="py-6 space-y-5">
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Designation Name</label>
+                    <TextField
+                      isRequired
+                      isDisabled={submitting}
+                      name="name"
+                      validate={(value) => {
+                        const trimmed = value.trim();
+                        if (!trimmed) return "Give the designation a name";
+                        if (trimmed.length > 100) return "Keep the name under 100 characters";
+                        return null;
+                      }}
+                      value={formData.name}
+                      onChange={(value) => setFormData({ ...formData, name: value })}
+                    >
+                      <Label>Designation Name</Label>
                       <Input
+                        maxLength={100}
                         placeholder="e.g., Head of Web Development"
-                        value={formData.name}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        required
                       />
-                    </div>
+                      <FieldError />
+                    </TextField>
 
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Description</label>
+                    <TextField
+                      isDisabled={submitting}
+                      name="description"
+                      validate={(value) =>
+                        value.length > 2000 ? "Keep the description under 2000 characters" : null
+                      }
+                      value={formData.description}
+                      onChange={(value) => setFormData({ ...formData, description: value })}
+                    >
+                      <Label>Description</Label>
                       <TextArea
+                        maxLength={2000}
                         placeholder="What does this designation entail?"
-                        value={formData.description}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                          setFormData({ ...formData, description: e.target.value })
-                        }
                         rows={3}
                       />
-                    </div>
+                      <FieldError />
+                    </TextField>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -621,7 +640,6 @@ export default function DesignationsManager({ designations, departments, onChang
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Level</label>
                         {/*
                           * Levels run 1–9. Level 10 used to be the reserved
                           * "everything" tier, which meant this field alone could
@@ -630,75 +648,101 @@ export default function DesignationsManager({ designations, departments, onChang
                           * The bounds are enforced again on the server — a number
                           * input is a convenience, not a constraint.
                           */}
-                        <Input
+                        <TextField
+                          isRequired
+                          isDisabled={submitting}
+                          name="level"
                           type="number"
-                          min={1}
-                          max={9}
-                          placeholder="1"
+                          validate={(value) => {
+                            const parsed = Number(value);
+                            return Number.isInteger(parsed) && parsed >= 1 && parsed <= 9
+                              ? null
+                              : "Level must be a whole number between 1 and 9";
+                          }}
                           value={formData.level.toString()}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const parsed = parseInt(e.target.value, 10);
+                          onChange={(value) => {
+                            const parsed = parseInt(value, 10);
                             const level = Number.isFinite(parsed) ? Math.min(9, Math.max(1, parsed)) : 1;
                             setFormData({ ...formData, level });
                           }}
-                          required
-                        />
-                        <p className="text-xs text-default-400 mt-1">
-                          1 is entry level, 9 is the most senior. Higher levels grant more oversight.
-                        </p>
+                        >
+                          <Label>Level</Label>
+                          <Input max={9} min={1} placeholder="1" type="number" />
+                          <Description>
+                            1 is entry level, 9 is the most senior.
+                          </Description>
+                          <FieldError />
+                        </TextField>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-1 block">Badge Icon</label>
-                        <Input
-                          placeholder="Emoji or text"
-                          value={formData.badgeIcon}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                            setFormData({ ...formData, badgeIcon: e.target.value })
-                          }
-                        />
-                      </div>
+                      <TextField
+                        isDisabled={submitting}
+                        name="badgeIcon"
+                        validate={(value) =>
+                          value.length > 100 ? "Keep the badge icon under 100 characters" : null
+                        }
+                        value={formData.badgeIcon}
+                        onChange={(value) => setFormData({ ...formData, badgeIcon: value })}
+                      >
+                        <Label>Badge Icon</Label>
+                        <Input maxLength={100} placeholder="Emoji or text" />
+                        <FieldError />
+                      </TextField>
 
                       <div className="flex items-center gap-2">
-                        <label className="text-sm font-medium">Badge Color</label>
+                        <Label className="text-sm font-medium" htmlFor="desig-badge-color">Badge Color</Label>
                         <input
+                          id="desig-badge-color"
                           type="color"
                           value={formData.badgeColor || "#6366f1"}
                           onChange={(e) =>
                             setFormData({ ...formData, badgeColor: e.target.value })
                           }
+                          disabled={submitting}
                           className="w-10 h-10 rounded-lg border border-default-300 cursor-pointer"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Max Holders (optional)</label>
+                    <TextField
+                      isDisabled={submitting}
+                      name="maxHolders"
+                      type="number"
+                      validate={(value) => {
+                        if (!value.trim()) return null;
+                        const parsed = Number(value);
+                        return Number.isInteger(parsed) && parsed >= 1
+                          ? null
+                          : "Holder limit must be a whole number of at least 1";
+                      }}
+                      value={formData.maxHolders?.toString() ?? ""}
+                      onChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          maxHolders: value
+                            ? (() => {
+                                const parsed = parseInt(value, 10);
+                                return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+                              })()
+                            : undefined,
+                        })
+                      }
+                    >
+                      <Label>Max Holders (optional)</Label>
                       <Input
-                        type="number"
+                        min={1}
                         placeholder="Leave empty for unlimited"
-                        value={formData.maxHolders?.toString() || ""}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                            setFormData({
-                              ...formData,
-                              maxHolders: e.target.value
-                                ? (() => {
-                                    const parsed = parseInt(e.target.value, 10);
-                                    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-                                  })()
-                                : undefined,
-                            })
-                          }
+                        type="number"
                       />
-                    </div>
+                      <Description>Leave empty for unlimited.</Description>
+                      <FieldError />
+                    </TextField>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Department (optional)</label>
                       <Select
                         fullWidth
-                        aria-label="Linked department"
                         value={formData.departmentId || ""}
                         onChange={(value) =>
                           setFormData({
@@ -707,6 +751,7 @@ export default function DesignationsManager({ designations, departments, onChang
                           })
                         }
                       >
+                        <Label>Department (optional)</Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
@@ -789,16 +834,17 @@ export default function DesignationsManager({ designations, departments, onChang
                       Cancel
                     </Button>
                     <Button
-                      type="submit"
-                      isPending={submitting}
                       className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                      isDisabled={submitting}
+                      isPending={submitting}
+                      type="submit"
                     >
                       {editingDesig
                         ? "Update Designation"
                         : "Create Designation"}
                     </Button>
                   </ModalFooter>
-                </form>
+                </Form>
               )}
             </ModalDialog>
           </ModalContainer>

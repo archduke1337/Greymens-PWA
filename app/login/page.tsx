@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import {
+  Alert,
   Button,
   Card,
   FieldError,
@@ -152,49 +153,51 @@ function LoginForm() {
         <Form onSubmit={handleSubmit} validationBehavior="aria">
           <Card.Content className="space-y-4">
             <TextField
+              isRequired
+              isDisabled={loading}
               name="email"
               type="email"
-              isRequired
-              value={email}
-              onChange={setEmail}
               validate={(value) =>
                 EMAIL_PATTERN.test(value) ? null : "Enter a valid email address"
               }
+              value={email}
+              onChange={setEmail}
             >
               <Label>Email</Label>
-              <Input
-                placeholder="you@example.com"
-                autoComplete="email"
-                disabled={loading}
-              />
+              <Input autoComplete="email" placeholder="you@example.com" />
               <FieldError />
             </TextField>
             <TextField
+              isRequired
+              isDisabled={loading}
               name="password"
               type="password"
-              isRequired
               value={password}
               onChange={setPassword}
             >
               <Label>Password</Label>
               <Input
-                placeholder="Your password"
                 autoComplete="current-password"
-                disabled={loading}
+                placeholder="Your password"
               />
               <FieldError />
             </TextField>
             {error && (
-              <p role="alert" className="text-sm text-danger">
-                {error}
-              </p>
+              <Alert role="alert" status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t log you in</Alert.Title>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
             )}
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
-              type="submit"
-              isPending={loading}
               className="w-full rounded-full"
+              isDisabled={loading}
+              isPending={loading}
+              type="submit"
             >
               Log in
             </Button>
