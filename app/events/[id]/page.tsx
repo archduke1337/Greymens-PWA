@@ -340,93 +340,72 @@ const isPastEvent = (dateString?: string | null) => {
 
   return (
     <div className="pb-20">
-      {/* Back Button */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      {/* Top row: back + actions */}
+      <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between gap-3">
         <Button
           variant="ghost"
           onPress={() => router.push("/events")}
         >
           Back to Events
         </Button>
-      </div>
-
-      {/* Hero Image Section */}
-      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden bg-surface-secondary">
-        {event.image ? (
-          <img
-            src={event.image}
-            alt={event.title}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-        
-        {/* Floating Action Buttons */}
-        <div className="absolute top-6 right-6 flex gap-2">
+        <div className="flex gap-2">
           <Button
             isIconOnly
-            variant="primary"
-            className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+            variant="secondary"
             aria-label={isSaved ? "Unsave event" : "Save event"}
             onPress={toggleSave}
           >
-            <Heart 
+            <Heart
               className={`w-5 h-5 ${
-                isSaved ? "fill-danger text-danger" : "text-gray-600"
-              }`} 
+                isSaved ? "fill-danger text-danger" : ""
+              }`}
             />
           </Button>
           <Button
             isIconOnly
-            variant="primary"
-            className="bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+            variant="secondary"
             aria-label="Share event"
             onPress={handleShare}
           >
             <Share className="w-5 h-5" />
           </Button>
         </div>
+      </div>
 
-        {/* Hero Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {event.isFeatured && (
-                <Chip color="accent" variant="primary" size="sm" className="font-bold">
-                  <Star className="w-3 h-3 mr-1" />
-                  Featured
-                </Chip>
-              )}
-              {event.isPremium && (
-                <Chip color="warning" variant="primary" size="sm" className="font-bold">
-                  <Crown className="w-3 h-3 mr-1" />
-                  Premium
-                </Chip>
-              )}
-              <Chip size="sm">{event.category}</Chip>
-            </div>
-            
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
-              {event.title}
-            </h1>
-            
-            <div className="flex flex-wrap items-center gap-6 text-white/90">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                <span className="font-medium">{formatDate(event.date)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                <span className="font-medium">{event.time}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                <span className="font-medium">{event.location}</span>
-              </div>
-            </div>
+      {/* Header — no cover art: titles carry the page, images stay optional */}
+      <div className="max-w-7xl mx-auto px-6 pb-2">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {event.isFeatured && (
+            <Chip color="accent" variant="primary" size="sm" className="font-bold">
+              <Star className="w-3 h-3 mr-1" />
+              Featured
+            </Chip>
+          )}
+          {event.isPremium && (
+            <Chip color="warning" variant="primary" size="sm" className="font-bold">
+              <Crown className="w-3 h-3 mr-1" />
+              Premium
+            </Chip>
+          )}
+          <Chip size="sm">{event.category}</Chip>
+        </div>
+
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+          {event.title}
+        </h1>
+
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-muted">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            <span className="font-medium">{formatDate(event.date)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            <span className="font-medium">{event.time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5" />
+            <span className="font-medium">{event.location}</span>
           </div>
         </div>
       </div>
