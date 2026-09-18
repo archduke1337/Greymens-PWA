@@ -89,10 +89,18 @@ export default function HelpFeedbackPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
+        <img
+          src="/Assets/Media/lone-brain.gif"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+        />
         <h1 className="text-3xl font-bold">Help & Feedback</h1>
         <p className="text-default-500">
-          Have a question, found a bug, or want to suggest a feature? We&apos;d love to hear from you.
+          What&apos;s on your mind? Questions, bugs, ideas — a volunteer reads
+          every one.
         </p>
       </div>
 

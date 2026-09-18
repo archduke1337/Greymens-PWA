@@ -165,6 +165,15 @@ export default function ApplicantDashboard() {
       {/* Application Status Card */}
       <div className={`rounded-2xl border ${config.border} ${config.bg} p-6`}>
         <div className="flex items-start gap-4">
+          {(appStatus === "pending" || appStatus === "reapplied") && (
+            <img
+              src="/Assets/Media/sand-time-clock.gif"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="h-14 w-14 shrink-0 rounded-2xl border border-default-200/70 object-cover"
+            />
+          )}
           <div className={`p-3 rounded-xl ${config.bg}`}>
             <StatusIcon className={`w-6 h-6 ${config.color}`} />
           </div>

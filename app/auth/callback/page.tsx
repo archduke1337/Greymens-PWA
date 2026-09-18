@@ -50,9 +50,14 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center" role="status" aria-label="Completing sign in">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-        <p className="mt-4 text-default-500">Completing sign in...</p>
+      <div className="text-center space-y-4" role="status" aria-label="Completing sign in">
+        <img
+          src="/Assets/Media/yo-yo-globe.webp"
+          alt=""
+          aria-hidden="true"
+          className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+        />
+        <p className="text-default-500">Completing sign in — spinning the globe…</p>
       </div>
     </div>
   );

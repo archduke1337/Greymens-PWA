@@ -53,6 +53,13 @@ function UnauthorizedContent() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+      <img
+        src="/Assets/Media/seriously-reaction.gif"
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className="mb-5 h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+      />
       <h1 className="text-3xl font-bold">Access Denied</h1>
       <p className="text-gray-500 mt-2 max-w-md">
         {loading

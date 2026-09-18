@@ -111,8 +111,13 @@ function VerifyEmailContent() {
           )}
           {status === "success" && (
             <>
-              <div className="text-success text-6xl" aria-hidden="true">✓</div>
-              <h2 className="text-xl font-bold mt-4 text-success">Email Verified!</h2>
+              <img
+                src="/Assets/Media/thumb-up.webp"
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-20 w-20 rounded-3xl border border-default-200/70 object-cover"
+              />
+              <h2 className="text-xl font-bold mt-4">Email verified — you&apos;re in</h2>
             </>
           )}
           {status === "error" && (
