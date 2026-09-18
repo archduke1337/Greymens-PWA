@@ -13,7 +13,6 @@ import {
   PenLine,
   Clock,
   Eye,
-  Sparkles,
   Newspaper,
   Search,
   ArrowRight,
@@ -103,16 +102,11 @@ export default function BlogPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6">
       {/* Hero */}
-      <header className="mx-auto max-w-2xl space-y-4 text-center">
-        <Chip color="accent" variant="soft" size="sm">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          Notes from the lab
-        </Chip>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">The club blog</h1>
-        <p className="text-base leading-relaxed text-muted">
-          Walkthroughs, CTF write-ups, project notes, and hard-won lessons —
-          written by members, reviewed by the editorial board, readable by
-          everyone.
+      <header className="mx-auto max-w-xl space-y-3 text-center">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Blog</h1>
+        <p className="text-[15px] leading-relaxed text-muted">
+          Walkthroughs, CTF write-ups, and project notes — written by members,
+          reviewed by the editorial board.
         </p>
         {user ? (
           <Button className="rounded-full px-6" onPress={() => router.push("/blog/write")}>
@@ -193,13 +187,17 @@ export default function BlogPage() {
       ) : filteredBlogs.length === 0 ? (
         <Card>
           <Card.Content className="space-y-3 px-6 py-14 text-center">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-secondary">
-              <Newspaper className="h-7 w-7 text-muted" aria-hidden="true" />
-            </span>
+            <img
+              src="/Assets/Media/searching.gif"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+            />
             <h2 className="text-lg font-bold">
               {searchQuery || selectedCategory !== "all"
                 ? "Nothing matches that search"
-                : "No posts yet — the page is yours to fill"}
+                : "No posts yet"}
             </h2>
             <p className="mx-auto max-w-md text-sm text-muted">
               {searchQuery || selectedCategory !== "all"
