@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LinkButton from "@/components/ui/LinkButton";
 import { Button, Card } from "@heroui/react";
 import { ArrowRight, Check, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -168,18 +169,14 @@ export default function AboutPage() {
             different piece.
           </p>
           <div className="flex flex-wrap justify-center gap-2.5 pt-1">
-            <Link href="/team">
-              <Button variant="secondary" className="rounded-full px-6">
-                Meet the leadership
-              </Button>
-            </Link>
+            <LinkButton href="/team" variant="secondary" className="rounded-full px-6">
+              Meet the leadership
+            </LinkButton>
             {!user && (
-              <Link href="/register">
-                <Button className="rounded-full px-6">
-                  Join us
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </Link>
+              <LinkButton href="/register" className="rounded-full px-6">
+                Join us
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </LinkButton>
             )}
           </div>
         </div>
