@@ -150,7 +150,10 @@ export default function ProjectsPage() {
                 <Card key={project.$id} className="group">
                   <CardContent className="p-0 overflow-hidden rounded-[inherit]">
                     {/* Project image */}
-                    <div className="relative bg-default-100">
+                    <div className="relative bg-default-100 min-h-48">
+                      <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                        <CodeIcon className="w-10 h-10 text-default-300" />
+                      </span>
                       <img
                         src={project.image}
                         alt={`${project.title} preview`}
@@ -158,7 +161,7 @@ export default function ProjectsPage() {
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
-                        className="w-full h-48 object-cover"
+                        className="relative w-full h-48 object-cover"
                       />
                       {project.isFeatured && (
                         <div className="absolute top-4 left-4">
@@ -168,7 +171,7 @@ export default function ProjectsPage() {
                           </Chip>
                         </div>
                       )}
-                      <div className="absolute bottom-4 right-4">
+                      <div className="absolute right-4 top-4">
                         <Chip color={statusChip.color} variant={statusChip.variant} size="sm">
                           {project.status.replace("-", " ")}
                         </Chip>

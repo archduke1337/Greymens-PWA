@@ -64,16 +64,16 @@ export const Navbar = () => {
       >
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-accent"
+          className="flex items-center gap-3 rounded-full focus-visible:outline-2 focus-visible:outline-accent"
           aria-label="Greymens Club home"
         >
           <img
             src="/logo-eyes.png"
             alt=""
             aria-hidden="true"
-            className="h-7 w-auto rounded-md object-cover"
+            className="h-6 w-auto shrink-0 rounded-md object-cover sm:h-7"
           />
-          <span className="text-[15px] font-bold tracking-[0.22em]">GREYMENS</span>
+          <span className="hidden text-[15px] font-bold tracking-[0.22em] min-[430px]:block">GREYMENS</span>
         </Link>
 
         {/* Desktop pill links: public pages only. Dashboard/Console are
