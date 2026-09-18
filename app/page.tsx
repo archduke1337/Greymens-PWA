@@ -45,51 +45,49 @@ const FIRST_MONTH = [
 export default function Home() {
   return (
     <div className="w-full">
-      {/* Hero — type-only fold: language carries it, the visual waits below.
+      {/* Hero — split fold: the claim on the left, the crowd on the right.
           CSS-only entrance (motion-safe): content is fully visible with JS
           disabled or animations off — animation enhances, never gates. */}
-      <section className="mx-auto w-full max-w-3xl px-4 pt-24 text-center sm:px-6 sm:pt-28">
-        <div className="space-y-6 motion-safe:animate-[heroIn_0.7s_ease-out_both]">
-          <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
-            Curious minds. Secure tomorrows.
-          </h1>
-          <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
-            Greymens is ADYPU&apos;s student cybersecurity club. Every branch,
-            no experience needed — just curiosity.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row">
-            <HeroCta />
-            <Link
-              href="https://discord.gg/6v89E3SaZT"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="lg" variant="secondary" className="rounded-full px-8">
-                Join the Discord
-              </Button>
-            </Link>
+      <section className="mx-auto w-full max-w-6xl px-4 pt-16 sm:px-6 sm:pt-24">
+        <div className="grid items-center gap-10 motion-safe:animate-[heroIn_0.7s_ease-out_both] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+          <div className="space-y-6 text-center lg:text-left">
+            <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
+              Curious minds. Secure tomorrows.
+            </h1>
+            <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted lg:mx-0">
+              Greymens is ADYPU&apos;s student cybersecurity club. Every branch,
+              no experience needed — just curiosity.
+            </p>
+            <div className="flex flex-col items-center gap-3 pt-1 sm:flex-row lg:justify-start">
+              <HeroCta />
+              <Link
+                href="https://discord.gg/6v89E3SaZT"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="lg" variant="secondary" className="rounded-full px-8">
+                  Join the Discord
+                </Button>
+              </Link>
+            </div>
+            <p className="text-sm text-muted">
+              Free workshops · Open to every branch · No experience needed
+            </p>
           </div>
-          <p className="text-sm text-muted">
-            Free workshops · Open to every branch · No experience needed
-          </p>
+          <figure className="space-y-3">
+            <div className="overflow-hidden rounded-3xl border border-default-200/70">
+              <img
+                src="/Assets/Banners/clut.jpg"
+                alt="A crowd in black and white with one figure lit in green binary code"
+                className="aspect-[4/3] w-full object-cover"
+                fetchPriority="high"
+              />
+            </div>
+            <figcaption className="text-center text-sm text-muted lg:text-left">
+              The room you&apos;ll walk into — find the green one. That&apos;s us.
+            </figcaption>
+          </figure>
         </div>
-      </section>
-
-      {/* The club in one illustration — same hand, same ink as the story */}
-      <section className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6 sm:pt-20">
-        <figure className="space-y-3">
-          <div className="overflow-hidden rounded-3xl border border-default-200/70">
-            <img
-              src="/Assets/Objects/intro.png"
-              alt="Hand-drawn Greymens scene: a member at a login screen under a watching eye, security books, a trust-no-one mug, and the club charter"
-              loading="lazy"
-              className="w-full object-cover"
-            />
-          </div>
-          <figcaption className="text-center text-sm text-muted">
-            Observe. Learn. Build. Operate. The whole club in one illustration.
-          </figcaption>
-        </figure>
       </section>
 
       <style>{`
