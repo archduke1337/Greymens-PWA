@@ -140,7 +140,7 @@ export default function AdminEventsPage() {
     }
     const discountRaw = formData.discountPrice;
     const discountPrice =
-      discountRaw === null || discountRaw === undefined || discountRaw === ""
+      discountRaw === null || discountRaw === undefined
         ? null
         : Number(discountRaw);
     if (discountPrice !== null && (!Number.isFinite(discountPrice) || discountPrice < 0)) {
