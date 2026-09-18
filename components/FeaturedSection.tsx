@@ -10,7 +10,6 @@ import {
   Star,
   Crown,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 
 const formatDate = (dateString: string) => {
@@ -83,21 +82,14 @@ export default function FeaturedSection() {
     <section className="py-20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         {/* Header */}
-        <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm text-foreground">
-              Featured Events
-            </span>
-          </div>
-
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-            Don&apos;t Miss Out
+        <div className="mx-auto mb-12 max-w-xl space-y-2 text-center">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Upcoming highlights
           </h2>
 
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Join our most anticipated events and be part of something
-            extraordinary
+          <p className="text-[15px] text-muted">
+            A few events worth planning around — the full list lives on the
+            events page.
           </p>
         </div>
 
