@@ -8,7 +8,6 @@ import { siteConfig } from "@/config/site";
 import { ADMIN_SECTIONS, sectionMatches } from "@/app/admin/layout";
 import { accessiblePages } from "@/lib/governance";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Logo } from "@/components/icons";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
@@ -28,9 +27,9 @@ const STATUS_LABELS: Partial<Record<MembershipStatus, string>> = {
   dev: "Dev",
 };
 
-// Dashboard + Console live ONLY here (and the admin Console item below).
-// They are deliberately absent from the pill nav and the mobile menu:
-// the profile chip is the single home for account destinations.
+// Dashboard + Console live ONLY here. They are deliberately absent from the
+// pill nav and the mobile menu: the profile chip is the single home for
+// account destinations.
 const ACCOUNT_ITEMS = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/profile", label: "Profile", Icon: User },
@@ -61,16 +60,10 @@ export const Navbar = () => {
     <header className="sticky top-3 z-50 flex w-full justify-center px-3 sm:px-4">
       <nav
         aria-label="Primary"
-        className="flex w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-default-200/70 bg-background/80 py-2 pl-3 pr-2 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/60"
+        className="flex w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-default-200/70 bg-background/80 py-2 pl-5 pr-2 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-black/60"
       >
-        <Link className="flex min-w-0 items-center gap-2.5 rounded-full pr-2" href="/">
-          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-surface-secondary">
-            <Logo className="h-7 w-7" />
-          </span>
-          <span className="flex min-w-0 flex-col leading-none">
-            <span className="truncate text-[15px] font-bold tracking-tight">Greymens</span>
-            <span className="text-[11px] font-medium text-muted">Cybersecurity Club · ADYPU</span>
-          </span>
+        <Link href="/" className="rounded-full focus-visible:outline-2 focus-visible:outline-accent" aria-label="Greymens Club home">
+          <span className="text-[15px] font-bold tracking-[0.22em]">GREYMENS</span>
         </Link>
 
         {/* Desktop pill links: public pages only. Dashboard/Console are
@@ -80,7 +73,7 @@ export const Navbar = () => {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-secondary hover:text-foreground"
+              className="rounded-full px-3.5 py-2 text-sm text-muted transition-colors hover:bg-surface-secondary hover:text-foreground"
             >
               {item.label}
             </Link>
@@ -129,7 +122,7 @@ export const Navbar = () => {
                     aria-label={`Account menu for ${user.name}`}
                     className="rounded-full"
                   >
-                    <Avatar className="h-9 w-9 border-2 border-default-200 transition-transform">
+                    <Avatar className="h-9 w-9 border border-default-200 transition-transform">
                       <AvatarImage src={avatarSrc} alt={user.name} />
                       <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
