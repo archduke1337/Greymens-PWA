@@ -66,11 +66,32 @@ export const Footer = () => {
         {/* Link columns */}
         <div className="grid grid-cols-2 gap-8 py-10 md:grid-cols-4">
           <div className="col-span-2 space-y-3 md:col-span-1">
-            <p className="text-[15px] font-bold tracking-[0.22em]">GREYMENS</p>
+            <p className="flex items-center gap-2.5 text-[15px] font-bold tracking-[0.22em]">
+              <img
+                src="/logo-eyes.png"
+                alt="Greymens Club logo"
+                className="h-9 w-auto rounded-md object-cover"
+              />
+              GREYMENS
+            </p>
             <p className="max-w-xs text-sm leading-relaxed text-muted">
               A student cybersecurity club at ADYPU&apos;s School of
               Engineering. Curious minds, secure tomorrows.
             </p>
+            <div className="flex items-center gap-4 pt-1" aria-label="Our university and partners">
+              <img
+                src="/adypu-logo.png"
+                alt="ADYPU"
+                loading="lazy"
+                className="h-8 w-auto object-contain"
+              />
+              <img
+                src="/seamedu-logo.jpg"
+                alt="Seamedu"
+                loading="lazy"
+                className="h-10 w-10 rounded-lg object-cover"
+              />
+            </div>
           </div>
 
           <nav aria-label="Club" className="space-y-3">

@@ -62,7 +62,17 @@ export const Navbar = () => {
         aria-label="Primary"
         className="flex w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-default-200/70 bg-background/80 py-2 pl-5 pr-2 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-black/60"
       >
-        <Link href="/" className="rounded-full focus-visible:outline-2 focus-visible:outline-accent" aria-label="Greymens Club home">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-accent"
+          aria-label="Greymens Club home"
+        >
+          <img
+            src="/logo-eyes.png"
+            alt=""
+            aria-hidden="true"
+            className="h-7 w-auto rounded-md object-cover"
+          />
           <span className="text-[15px] font-bold tracking-[0.22em]">GREYMENS</span>
         </Link>
 
