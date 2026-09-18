@@ -45,10 +45,37 @@ const FIRST_MONTH = [
 export default function Home() {
   return (
     <div className="w-full">
-      {/* Hero — full-bleed overlay: the crowd is the hero, the claim sits
-          inside it. CSS-only entrance (motion-safe): content is fully
-          visible with JS disabled or animations off. */}
-      <section className="relative flex min-h-[88vh] w-full items-end overflow-hidden">
+      {/* Institutional marks — quiet trust line between navbar and the fold.
+          White tiles keep both logos' brand colors intact on the dark bg. */}
+      <section
+        aria-label="Institutional affiliation"
+        className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-3 px-4 pb-5 pt-1 sm:gap-4"
+      >
+        <span className="flex h-11 items-center rounded-xl bg-white px-3.5">
+          <img
+            src="/adypu-logo.png"
+            alt="Ajeenkya D Y Patil University"
+            className="h-6 w-auto object-contain"
+          />
+        </span>
+        <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white">
+          <img
+            src="/seamedu-logo.jpg"
+            alt="Seamedu"
+            className="h-8 w-8 object-contain"
+          />
+        </span>
+        <p className="text-xs text-muted sm:text-sm">
+          A student club of Ajeenkya D Y Patil University
+        </p>
+      </section>
+
+      {/* Hero — the crowd is the hero, but it never reads as a pasted photo:
+          four background-token gradients dissolve every edge into the page,
+          so the image sits inside the UI like atmosphere. Type uses the
+          theme's own foreground over a matching scrim — legible in both
+          themes. CSS-only entrance (motion-safe). */}
+      <section className="relative flex h-[min(88vh,900px)] min-h-[560px] w-full items-end overflow-hidden">
         <img
           src="/Assets/Banners/clut.jpg"
           alt=""
@@ -58,13 +85,25 @@ export default function Home() {
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10"
+          className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-[var(--background)] to-transparent sm:h-44"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[var(--background)] to-transparent sm:w-40"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[var(--background)] to-transparent sm:w-40"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)]/45 to-transparent"
         />
         <div className="relative mx-auto w-full max-w-6xl space-y-6 px-4 pb-16 pt-32 sm:px-6 sm:pb-20 motion-safe:animate-[heroIn_0.7s_ease-out_both]">
-          <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-balance text-white sm:text-6xl">
+          <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-balance text-foreground sm:text-6xl">
             Curious minds. Secure tomorrows.
           </h1>
-          <p className="max-w-xl text-lg leading-relaxed text-white/80">
+          <p className="max-w-xl text-lg leading-relaxed text-muted">
             Greymens is ADYPU&apos;s student cybersecurity club. Every branch,
             no experience needed — just curiosity.
           </p>
@@ -75,16 +114,12 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button
-                size="lg"
-                variant="secondary"
-                className="rounded-full border-white/20 px-8"
-              >
+              <Button size="lg" variant="secondary" className="rounded-full px-8">
                 Join the Discord
               </Button>
             </Link>
           </div>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-muted">
             Free workshops · Open to every branch · No experience needed
           </p>
         </div>
@@ -107,6 +142,7 @@ export default function Home() {
 
       {/* Learn / Build — image first on small screens, alternating on large */}
       <section
+        id="what-happens-here"
         className="mx-auto w-full max-w-5xl space-y-16 px-4 pt-20 sm:px-6 sm:pt-28"
         aria-label="What happens here"
       >
@@ -168,6 +204,7 @@ export default function Home() {
 
       {/* First month — an ordered path, so the numbers are earned */}
       <section
+        id="first-month"
         className="mx-auto w-full max-w-5xl px-4 pt-20 sm:px-6 sm:pt-28"
         aria-label="Your first month"
       >
