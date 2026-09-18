@@ -5,7 +5,7 @@ import type { Project } from "@/lib/types";
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, Slider, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, TextArea, useOverlayState } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, Slider, Spinner, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -279,29 +279,29 @@ export default function AdminProjectsPage() {
         {/* Header Section */}
         <div className="text-center space-y-4 relative">
           <div className="relative z-10">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-4xl font-bold text-foreground">
               Project Management
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mt-2 max-w-2xl mx-auto">
+            <p className="text-lg text-muted mt-2 max-w-2xl mx-auto">
               Manage and organize all club projects
             </p>
           </div>
         </div>
 
         {/* Admin Tips Section */}
-        <Card className="border-none shadow-lg bg-card">
+        <Card>
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
                 <LightbulbIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                <h3 className="text-lg font-semibold text-foreground mb-3">
                   Admin Tips & Best Practices
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {adminTips.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <div key={index} className="flex items-start gap-2 text-sm text-muted">
                       <span className="flex-shrink-0 mt-0.5">{tip.split(' ')[0]}</span>
                       <span>{tip.split(' ').slice(1).join(' ')}</span>
                     </div>
@@ -316,11 +316,11 @@ export default function AdminProjectsPage() {
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Projects Table */}
           <div className="lg:col-span-3">
-            <Card className="border-none shadow-xl">
+            <Card>
               <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 pt-6 pb-0">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Projects</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                  <h2 className="text-xl font-bold text-foreground">Projects</h2>
+                  <p className="text-muted text-sm mt-1 tabular-nums">
                     {projects.length} project{projects.length !== 1 ? 's' : ''} total
                   </p>
                 </div>
@@ -334,17 +334,17 @@ export default function AdminProjectsPage() {
               </CardHeader>
               <CardContent className="p-6">
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <Loader2Icon className="w-12 h-12 animate-spin text-primary mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
+                  <div role="status" aria-label="Loading projects" className="flex flex-col items-center justify-center py-16">
+                    <Spinner size="lg" className="mb-4" />
+                    <p className="text-muted">Loading projects...</p>
                   </div>
                 ) : projects.length === 0 ? (
                   <div className="text-center py-16">
                     <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
                       <FolderIcon className="w-12 h-12 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No projects yet</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">No projects yet</h3>
+                    <p className="text-muted mb-6 max-w-md mx-auto">
                       Start by creating your first project to showcase your work and attract more contributors
                     </p>
                     <Button
@@ -373,7 +373,7 @@ export default function AdminProjectsPage() {
                       </TableHeader>
                       <TableBody>
                         {projects.map((project) => (
-                          <TableRow key={project.$id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <TableRow key={project.$id} className="hover:bg-surface-secondary transition-colors">
                             <TableCell>
                               <div className="flex items-center gap-4">
                                 <div className="relative flex-shrink-0">
@@ -388,13 +388,13 @@ export default function AdminProjectsPage() {
                                       event.currentTarget.style.visibility = "hidden";
                                     }}
                                   />
-                                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                                  <div aria-hidden="true" className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full border-2 border-background flex items-center justify-center">
                                     <ImageIcon className="w-3 h-3 text-white" />
                                   </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{project.title}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
+                                  <p className="font-semibold text-foreground text-sm truncate">{project.title}</p>
+                                  <p className="text-xs text-muted line-clamp-1 mt-1">
                                     {project.description}
                                   </p>
                                 </div>
@@ -416,13 +416,13 @@ export default function AdminProjectsPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 flex-1">
+                                <div className="w-20 bg-surface-secondary rounded-full h-2 flex-1">
                                   <div
                                     className="bg-primary h-2 rounded-full transition-all duration-300"
                                     style={{ width: `${project.progress}%` }}
                                   />
                                 </div>
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-8">{project.progress}%</span>
+                                <span className="text-sm font-medium text-muted min-w-8 tabular-nums">{project.progress}%</span>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -434,7 +434,7 @@ export default function AdminProjectsPage() {
                                   Featured
                                 </Chip>
                               ) : (
-                                <span className="text-gray-400 text-sm">—</span>
+                                <span aria-hidden="true" className="text-muted text-sm">—</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -442,8 +442,8 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="ghost"
-                                  className="text-gray-600 dark:text-gray-400 hover:opacity-90 hover:bg-muted transition-all"
+                                  variant="secondary"
+                                  aria-label={`Edit ${project.title}`}
                                   onPress={() => handleEdit(project)}
                                 >
                                   <Edit2Icon className="w-4 h-4" />
@@ -451,8 +451,8 @@ export default function AdminProjectsPage() {
                                 <Button
                                   isIconOnly
                                   size="sm"
-                                  variant="ghost"
-                                  className="text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                  variant="danger-soft"
+                                  aria-label={`Delete ${project.title}`}
                                   isPending={deletingId === project.$id}
                                   onPress={() => handleDelete(project.$id!)}
                                 >
@@ -475,22 +475,22 @@ export default function AdminProjectsPage() {
           {/* Stats Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <Card className="border-none shadow-xl">
+            <Card>
               <CardHeader className="px-6 pt-6 pb-0">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Overview</h3>
+                <h3 className="text-lg font-bold text-foreground">Project Overview</h3>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{projects.length}</p>
+                    <p className="text-sm text-muted">Total Projects</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">{projects.length}</p>
                   </div>
                   <FolderIcon className="w-8 h-8 text-primary" />
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">In progress</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm text-muted">In progress</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
                       {projects.filter(p => p.status === 'in-progress').length}
                     </p>
                   </div>
@@ -498,27 +498,27 @@ export default function AdminProjectsPage() {
                     <Loader2Icon className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm text-muted">Completed</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
                       {projects.filter(p => p.status === 'completed').length}
                     </p>
                   </div>
                   <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                     </svg>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Featured</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm text-muted">Featured</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
                       {projects.filter(p => p.isFeatured).length}
                     </p>
                   </div>
-                  <StarIcon className="w-8 h-8 text-yellow-500" />
+                  <StarIcon className="w-8 h-8 text-warning" />
                 </div>
               </CardContent>
             </Card>
@@ -531,7 +531,7 @@ export default function AdminProjectsPage() {
               <ModalDialog>
                 {({close: dialogClose}: {close: () => void}) => (
               <>
-            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-gray-200 dark:border-gray-700">
+            <ModalHeader className="flex flex-col gap-1 p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                   {isEditing ? (
@@ -541,10 +541,10 @@ export default function AdminProjectsPage() {
                   )}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-xl font-bold text-foreground">
                     {isEditing ? "Edit Project" : "Create New Project"}
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-muted">
                     {isEditing ? "Update project details and progress" : "Add a new project to showcase your work"}
                   </p>
                 </div>
@@ -715,9 +715,9 @@ export default function AdminProjectsPage() {
                 </Switch>
               </div>
             </ModalBody>
-            <ModalFooter className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <ModalFooter className="p-6 border-t border-border">
               <Button
-                variant="ghost"
+                variant="secondary"
                 onPress={close}
                 isDisabled={saving}
               >

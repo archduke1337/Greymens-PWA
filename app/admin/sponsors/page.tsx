@@ -20,7 +20,7 @@ const sponsorTiers = {
   partner: { color: "from-blue-400 to-blue-600", label: "Community Partner", size: "small", maxWidth: "100px" },
 };
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, Switch, TextArea } from "@heroui/react";
+import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, Spinner, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -196,9 +196,9 @@ export default function AdminSponsorsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="mt-4">Loading sponsors...</p>
+        <div role="status" aria-label="Loading sponsors" className="text-center">
+          <Spinner size="lg" className="mx-auto" />
+          <p className="mt-4 text-muted">Loading sponsors...</p>
         </div>
       </div>
     );
@@ -382,7 +382,7 @@ export default function AdminSponsorsPage() {
 
               <div className="flex gap-4 justify-end">
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   isDisabled={saving}
                   onPress={resetForm}
                 >
@@ -403,7 +403,7 @@ export default function AdminSponsorsPage() {
 
       {/* Sponsors List */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">
+        <h2 className="text-2xl font-bold tabular-nums">
           All Sponsors ({sponsors.length})
         </h2>
 
@@ -460,7 +460,8 @@ export default function AdminSponsorsPage() {
                     <div className="flex items-center justify-center h-24 bg-default-100 rounded-lg">
                       <img
                         src={sponsor.logo}
-                        alt={sponsor.name}
+                        alt={`${sponsor.name} logo`}
+                        loading="lazy"
                         className="max-h-20 max-w-full object-contain"
                       />
                     </div>
@@ -491,18 +492,18 @@ export default function AdminSponsorsPage() {
                       </a>
                       <Button
                         size="sm"
-                        
-                        variant="primary"
+                        variant="secondary"
                         isIconOnly
+                        aria-label={`Edit ${sponsor.name}`}
                         onPress={() => handleEdit(sponsor)}
                       >
                         <EditIcon className="w-4 h-4" />
                       </Button>
                       <Button
                         size="sm"
-                        
-                        variant="primary"
+                        variant="danger-soft"
                         isIconOnly
+                        aria-label={`Delete ${sponsor.name}`}
                         isPending={deletingId === sponsor.$id}
                         onPress={() => handleDelete(sponsor.$id!)}
                       >
@@ -511,7 +512,7 @@ export default function AdminSponsorsPage() {
                     </div>
 
                     {/* Order */}
-                    <div className="text-xs text-default-400">
+                    <div className="text-xs text-default-400 tabular-nums">
                       Display Order: {sponsor.displayOrder}
                     </div>
                   </CardContent>

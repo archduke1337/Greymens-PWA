@@ -19,6 +19,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Spinner,
   Switch,
   TextArea,
   useOverlayState,
@@ -215,7 +216,9 @@ export default function AdminEventTypesPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <div role="status" aria-label="Loading event types">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
@@ -232,7 +235,7 @@ export default function AdminEventTypesPage() {
           </p>
         </div>
         <Button onPress={openCreate} className="bg-primary" size="lg">
-          <PlusIcon className="w-5 h-5" />
+          <PlusIcon aria-hidden="true" className="w-5 h-5" />
           <span className="ml-2">Add Event Type</span>
         </Button>
       </div>
@@ -247,10 +250,10 @@ export default function AdminEventTypesPage() {
       ) : (
         <div className="space-y-3">
           {eventTypes.map((type) => (
-            <Card key={type.$id} className="border-none shadow-md">
+            <Card key={type.$id}>
               <CardContent className="p-4">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center text-xl flex-shrink-0">
+                  <div aria-hidden="true" className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center text-xl flex-shrink-0">
                     {type.icon || type.displayName.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -268,23 +271,24 @@ export default function AdminEventTypesPage() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="ghost"
+                      variant="secondary"
                       onPress={() => handleToggleActive(type)}
                       isPending={togglingId === type.$id}
                     >
                       {type.isActive ? "Deactivate" : "Activate"}
                     </Button>
-                    <Button size="sm" variant="primary" isIconOnly onPress={() => openEdit(type)}>
-                      <EditIcon className="w-4 h-4" />
+                    <Button size="sm" variant="secondary" isIconOnly aria-label={`Edit ${type.displayName}`} onPress={() => openEdit(type)}>
+                      <EditIcon aria-hidden="true" className="w-4 h-4" />
                     </Button>
                     <Button
                       size="sm"
-                      variant="primary"
+                      variant="danger-soft"
                       isIconOnly
+                      aria-label={`Delete ${type.displayName}`}
                       isPending={deletingId === type.$id}
                       onPress={() => handleDelete(type)}
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      <TrashIcon aria-hidden="true" className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -348,6 +352,7 @@ export default function AdminEventTypesPage() {
                           type="number"
                           value={form.displayOrder}
                           onChange={(e: any) => setForm({ ...form, displayOrder: e.target.value })}
+                          className="tabular-nums"
                         />
                       </div>
                     </div>
@@ -360,7 +365,7 @@ export default function AdminEventTypesPage() {
                       </Switch.Content>
                     </Switch>
                     <div>
-                      <Button size="sm" variant="ghost" onPress={() => setShowAdvanced((v) => !v)}>
+                      <Button size="sm" variant="secondary" onPress={() => setShowAdvanced((v) => !v)}>
                         {showAdvanced ? "Hide advanced JSON configs" : "Show advanced JSON configs"}
                       </Button>
                       {showAdvanced && (

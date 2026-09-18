@@ -19,6 +19,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Spinner,
   useOverlayState,
 } from "@heroui/react";
 import {
@@ -27,9 +28,6 @@ import {
   XCircle,
   Clock,
   Trash2,
-  Eye,
-  Search,
-  Loader2,
 } from "lucide-react";
 
 type TabKey = "pending" | "approved" | "rejected";
@@ -156,7 +154,9 @@ export default function AdminGalleryPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <div role="status" aria-label="Loading gallery">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
@@ -175,19 +175,19 @@ export default function AdminGalleryPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 md:mb-8">
         {[
-          { label: "Pending", value: counts.pending, icon: Clock, color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30" },
-          { label: "Approved", value: counts.approved, icon: CheckCircle, color: "text-green-600", bg: "bg-green-100 dark:bg-green-900/30" },
-          { label: "Rejected", value: counts.rejected, icon: XCircle, color: "text-red-600", bg: "bg-red-100 dark:bg-red-900/30" },
+          { label: "Pending", value: counts.pending, icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+          { label: "Approved", value: counts.approved, icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
+          { label: "Rejected", value: counts.rejected, icon: XCircle, color: "text-danger", bg: "bg-danger/10" },
         ].map((stat) => (
-          <Card key={stat.label} className="border-none shadow-md">
+          <Card key={stat.label}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-default-500">{stat.label}</p>
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  <p className={`text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
                 </div>
                 <div className={`w-12 h-12 rounded-full ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  <stat.icon aria-hidden="true" className={`w-6 h-6 ${stat.color}`} />
                 </div>
               </div>
             </CardContent>
@@ -196,21 +196,21 @@ export default function AdminGalleryPage() {
       </div>
 
       {/* Tabs + Search */}
-      <Card className="border-none shadow-lg mb-6">
+      <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex gap-2">
               {(["pending", "approved", "rejected"] as TabKey[]).map((tab) => (
                 <Button
                   key={tab}
-                  variant={activeTab === tab ? "primary" : "ghost"}
+                  variant={activeTab === tab ? "primary" : "secondary"}
                   size="sm"
                   isDisabled={activeTab === tab}
                   onPress={() => setActiveTab(tab)}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                   {tab === "pending" && counts.pending > 0 && (
-                    <Chip size="sm" color="warning" variant="soft" className="ml-1">
+                    <Chip size="sm" color="warning" variant="soft" className="ml-1 tabular-nums">
                       {counts.pending}
                     </Chip>
                   )}
@@ -231,9 +231,9 @@ export default function AdminGalleryPage() {
 
       {/* Images Grid */}
       {filtered.length === 0 ? (
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-12 text-center">
-            <ImagePlus className="w-16 h-16 text-default-300 mx-auto mb-4" />
+            <ImagePlus aria-hidden="true" className="w-16 h-16 text-default-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No {activeTab} images</h3>
             <p className="text-default-500">
               {activeTab === "pending" ? "All caught up!" : `No ${activeTab} images yet.`}
@@ -243,7 +243,7 @@ export default function AdminGalleryPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((image) => (
-            <Card key={image.$id} className="border-none shadow-md overflow-hidden">
+            <Card key={image.$id} className="overflow-hidden">
               <div className="relative aspect-video">
                 <img
                   src={image.imageUrl}
@@ -298,7 +298,7 @@ export default function AdminGalleryPage() {
                     onPress={() => handleApprove(image)}
                     isPending={approvingId === image.$id}
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle aria-hidden="true" className="w-4 h-4" />
                     {image.status === "rejected" ? "Re-approve" : "Approve"}
                   </Button>
                 )}
@@ -308,7 +308,7 @@ export default function AdminGalleryPage() {
                     variant="danger"
                     onPress={() => { setRejectTarget(image); open(); }}
                   >
-                    <XCircle className="w-4 h-4" />
+                    <XCircle aria-hidden="true" className="w-4 h-4" />
                     Reject
                   </Button>
                 )}
@@ -318,8 +318,9 @@ export default function AdminGalleryPage() {
                   onPress={() => handleDelete(image)}
                   isPending={deletingId === image.$id}
                   isIconOnly
+                  aria-label={`Delete ${image.title}`}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 aria-hidden="true" className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
@@ -347,7 +348,7 @@ export default function AdminGalleryPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="ghost" onPress={close}>Cancel</Button>
+                <Button variant="secondary" onPress={close}>Cancel</Button>
                 <Button variant="danger" onPress={handleReject} isPending={rejecting} isDisabled={!rejectReason.trim()}>
                   Reject
                 </Button>

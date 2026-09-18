@@ -23,6 +23,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
+  Spinner,
   useOverlayState,
 } from "@heroui/react";
 import {
@@ -30,12 +31,9 @@ import {
   Link as LinkIcon,
   Video,
   FolderOpen,
-  Bell,
   Plus,
-  Search,
   Trash2,
   Edit,
-  Loader2,
 } from "lucide-react";
 
 const RESOURCE_TYPES = [
@@ -242,7 +240,9 @@ export default function AdminResourcesPage() {
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <div role="status" aria-label="Loading resources">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
@@ -258,13 +258,13 @@ export default function AdminResourcesPage() {
             Manage club resources across departments and roles
           </p>
         </div>          <Button variant="primary" onPress={openCreate}>
-          <Plus className="w-4 h-4" />
+          <Plus aria-hidden="true" className="w-4 h-4" />
           Add Resource
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="border-none shadow-md mb-6">
+      <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -278,7 +278,7 @@ export default function AdminResourcesPage() {
             <div className="flex gap-2">
               <Button
                 key="all"
-                variant={layerFilter === "all" ? "primary" : "ghost"}
+                variant={layerFilter === "all" ? "primary" : "secondary"}
                 size="sm"
                 onPress={() => setLayerFilter("all")}
               >
@@ -287,7 +287,7 @@ export default function AdminResourcesPage() {
               {LAYERS.map((l) => (
                 <Button
                   key={l.value}
-                  variant={layerFilter === l.value ? "primary" : "ghost"}
+                  variant={layerFilter === l.value ? "primary" : "secondary"}
                   size="sm"
                   onPress={() => setLayerFilter(l.value)}
                 >
@@ -301,9 +301,9 @@ export default function AdminResourcesPage() {
 
       {/* Resources List */}
       {filtered.length === 0 ? (
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-12 text-center">
-            <FileText className="w-16 h-16 text-default-300 mx-auto mb-4" />
+            <FileText aria-hidden="true" className="w-16 h-16 text-default-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No resources found</h3>
             <p className="text-default-500">
               {searchQuery ? "Try a different search" : "Create your first resource"}
@@ -315,10 +315,10 @@ export default function AdminResourcesPage() {
           {filtered.map((resource) => {
             const TypeIcon = getTypeIcon(resource.type);
             return (
-              <Card key={resource.$id} className="border-none shadow-md">
+              <Card key={resource.$id}>
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                    <TypeIcon className="w-5 h-5 text-primary" />
+                    <TypeIcon aria-hidden="true" className="w-5 h-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{resource.title}</h3>
@@ -339,11 +339,11 @@ export default function AdminResourcesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <Button size="sm" variant="ghost" onPress={() => openEdit(resource)} isIconOnly>
-                      <Edit className="w-4 h-4" />
+                    <Button size="sm" variant="secondary" onPress={() => openEdit(resource)} isIconOnly aria-label={`Edit ${resource.title}`}>
+                      <Edit aria-hidden="true" className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="danger-soft" onPress={() => handleDelete(resource)} isPending={deletingId === resource.$id} isIconOnly>
-                      <Trash2 className="w-4 h-4" />
+                    <Button size="sm" variant="danger-soft" onPress={() => handleDelete(resource)} isPending={deletingId === resource.$id} isIconOnly aria-label={`Delete ${resource.title}`}>
+                      <Trash2 aria-hidden="true" className="w-4 h-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -489,7 +489,7 @@ export default function AdminResourcesPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="ghost" onPress={close}>Cancel</Button>                    <Button
+                <Button variant="secondary" onPress={close}>Cancel</Button>                    <Button
                     variant="primary"
                     onPress={handleSave}
                     isPending={saving}
