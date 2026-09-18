@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import type { Event, Notification, Registration, Resource } from "@/lib/types";
-import MyPowersCard from "@/components/dashboards/MyPowersCard";
 import { Button, Tabs } from "@heroui/react";
+import AccessCard from "@/components/dashboards/AccessCard";
 /** The caller's own issued tickets, as returned by /api/events/register. */
 type MemberTicket = {
   $id: string;
@@ -190,8 +190,6 @@ export default function MemberDashboard() {
         })}
       </div>
 
-      <MyPowersCard />
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* My Events */}
         <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
@@ -292,6 +290,8 @@ export default function MemberDashboard() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <AccessCard />
+
           {/* Upcoming Events Feed */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
             <h2 className="text-lg font-semibold mb-4">Upcoming Events</h2>

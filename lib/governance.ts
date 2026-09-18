@@ -238,6 +238,16 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     auditAction: "event.create",
   },
   {
+    // Self-service: the author's own writing surface, gated by blog.create
+    // (granted by the `blog_creator` power). Listed here so a member holding
+    // that capability is shown where it takes them.
+    href: "/blog/write",
+    label: "Write a blog",
+    office: "self",
+    capabilities: ["blog.create"],
+    auditAction: "blog.create",
+  },
+  {
     href: "/admin/blog",
     label: "Editorial review",
     office: "editorial_lead",
@@ -280,32 +290,41 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     auditAction: "notification.send",
   },
   {
-    // Roles and operational powers share one console ("Access & Powers"): a
-    // single entry, since the page itself splits tabs by capability. Roles
-    // bundle capabilities on a scope; powers are fixed grants.
+    // Everything that grants authority lives here: roles, charter offices
+    // (a template plus a term) and operational powers. The page splits tabs by
+    // capability; each tab is filtered again server-side.
     href: "/admin/access",
-    label: "Access & powers (roles + operational powers)",
+    label: "Access & powers (roles + offices + operational powers)",
     office: "president",
-    capabilities: ["access.assign_roles", "powers.manage"],
-    form: "create_role / assign_role + scope + expiry · grant / revoke power",
-    auditAction: "access.role_assigned / power.grant / power.revoke",
+    capabilities: [
+      "access.assign_roles",
+      "governance.manage_offices",
+      "powers.manage",
+    ],
+    form: "create_role / assign_role + scope + expiry · assign office + term · grant / revoke power",
+    auditAction:
+      "access.role_assigned / office.assign / office.end / power.grant / power.revoke",
   },
   {
-    // Offices and designations share one console: a single entry, since the
-    // page itself splits tabs by capability. Offices grant capabilities,
-    // designations grant none — see the Positions page copy.
+    // Titles only: a designation grants no capability, so this is not access
+    // administration and is deliberately separate from /admin/access.
     href: "/admin/positions",
-    label: "Positions (offices + designations)",
+    label: "Designations (titles)",
     office: "general_secretary",
-    capabilities: ["governance.manage_offices", "designations.assign"],
-    form: "assign office + term / assign designation",
-    auditAction: "office.assign / designation.assign",
+    capabilities: ["designations.assign"],
+    form: "assign / revoke designation",
+    auditAction: "designation.assign / designation.revoke",
   },
   {
+    // governance.manage, not governance.view_records: /api/admin/governance gates
+    // every method — including GET — on `governance.manage`. Listing view_records
+    // here advertised a page to documentation_lead (who holds it) that the API
+    // then refuses with a 403. `governance.view_records` is currently granted by
+    // three offices and enforced by nothing; see docs/ACCESS_MODEL.md.
     href: "/admin/governance",
     label: "Constitutional records",
     office: "general_secretary",
-    capabilities: ["governance.view_records"],
+    capabilities: ["governance.manage"],
   },
   {
     href: "/admin/departments",
@@ -335,4 +354,15 @@ export function pagesForCapabilities(
   if (set.has("*") || set.has("ALL_PERMISSIONS")) return GOVERNED_PAGES;
 
   return GOVERNED_PAGES.filter((p) => p.capabilities.some((c) => set.has(c)));
+}
+
+/**
+ * Governed pages a caller can actually open. Template routes
+ * (`/events/[id]/tickets`) are excluded: they name a screen, not an address,
+ * and a link to one resolves to a literal "[id]" path that never renders.
+ */
+export function accessiblePages(
+  caps: Set<string> | string[],
+): GovernedPage[] {
+  return pagesForCapabilities(caps).filter((p) => !p.href.includes("["));
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import type { Application, Event } from "@/lib/types";
-import MyPowersCard from "@/components/dashboards/MyPowersCard";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AccessCard from "@/components/dashboards/AccessCard";
 import {
   LayoutDashboard,
   Users,
@@ -21,8 +21,7 @@ import {
 import { usePermissions } from "@/context/PermissionContext";
 
 export default function LeadDashboard() {
-  const { userDepartments, userDesignations, allDepartments, hasPermission } =
-    usePermissions();
+  const { userDepartments, allDepartments, hasCapability } = usePermissions();
 
   type LeadDashboardPayload = {
     lead?: {
@@ -37,21 +36,17 @@ export default function LeadDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const leadDepartments = userDepartments.filter((ud) => ud.role === "lead");
-  const leadDepartmentIds = leadDepartments.map((ud) => ud.departmentId);
 
-  // `draft_events` and `manage_department_team` are department-scoped
-  // capabilities: the grant is stored as `capability:department:<id>` and only
-  // applies inside the department it was issued for. They must therefore be
-  // asked with a scope, and the answer is "any of my departments", not "my
-  // first department" — a lead may hold the role in one department and not in
-  // another. Asking without a scope resolves to false, which is why these
-  // checks previously appeared always-on and now need the loop.
-  const canDraftEvents = leadDepartmentIds.some((id) =>
-    hasPermission("draft_events", `department:${id}`),
-  );
-  const canManageTeam = leadDepartmentIds.some((id) =>
-    hasPermission("manage_department_team", `department:${id}`),
-  );
+  // Presentation must ask what the server will enforce. These actions post to
+  // /admin/events/create (requireCapability("events.create")) and to the
+  // membership/department consoles, so the gates are those same capabilities.
+  // The legacy scoped pair (`draft_events`, `manage_department_team`) satisfied
+  // none of them and disagreed with the server in both directions: a lead with
+  // the grant but without a department row saw a button that 403s, and the
+  // reverse hid an action that would have worked.
+  const canDraftEvents = hasCapability("events.create");
+  const canReviewApplications = hasCapability("membership.view_applications");
+  const canManageDepartments = hasCapability("departments.manage");
 
   useEffect(() => {
     let cancelled = false;
@@ -136,7 +131,6 @@ export default function LeadDashboard() {
       </div>
 
       {/* Department Overview */}
-      <MyPowersCard />
       {leadDepartments.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Users className="w-10 h-10 text-muted mx-auto mb-3" />
@@ -322,11 +316,13 @@ export default function LeadDashboard() {
 
         {/* Team & Applications Sidebar */}
         <div className="space-y-6">
+          <AccessCard />
+
           {/* Pending Applications */}
           <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Applications</h2>
-              {canManageTeam && (
+              {canReviewApplications && (
                 <Link
                   className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
                   href="/admin/membership"
@@ -379,7 +375,7 @@ export default function LeadDashboard() {
                   label: "Manage Team",
                   href: "/admin/departments",
                   icon: Users,
-                  show: canManageTeam,
+                  show: canManageDepartments,
                 },
                 {
                   label: "Department Resources",

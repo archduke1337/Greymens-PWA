@@ -2,10 +2,11 @@
 import { Avatar, AvatarImage, AvatarFallback, Button, Chip, Dropdown, Label, Separator } from "@heroui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LifeBuoy, LogOut, Settings, ShieldCheck, User } from "lucide-react";
+import { KeyRound, LayoutDashboard, LifeBuoy, LogOut, Settings, ShieldCheck, User } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ADMIN_SECTIONS, sectionMatches } from "@/app/admin/layout";
+import { accessiblePages } from "@/lib/governance";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -41,7 +42,7 @@ const ACCOUNT_ITEMS = [
 
 export const Navbar = () => {
   const { user, loading } = useAuth();
-  const { status, hasCapability, profile } = usePermissions();
+  const { status, hasCapability, profile, capabilities } = usePermissions();
   // Uploaded picture wins; the generated initial-avatar is only a fallback
   // for accounts that never uploaded one.
   const avatarSrc = profile?.avatar || (user?.name ? getAvatarUrl(user.name) : undefined);
@@ -56,6 +57,12 @@ export const Navbar = () => {
     isAdmin || ADMIN_SECTIONS.some((section) => sectionMatches(hasCapability, section.cap));
   const isLoggedIn = !!user;
   const statusLabel = STATUS_LABELS[status];
+  // Destinations the caller's capabilities open, capped to keep the menu
+  // usable. Empty for wildcard accounts: they already have the whole console
+  // sidebar, and this list would otherwise repeat every section.
+  const accessPages = capabilities.includes("*")
+    ? []
+    : accessiblePages(capabilities).slice(0, 6);
 
   const go = (key: unknown) => {
     router.push(String(key));
@@ -93,7 +100,7 @@ export const Navbar = () => {
             href="/admin"
             className="px-3 py-2 text-sm font-medium text-warning hover:text-warning transition-colors rounded-lg hover:bg-warning/10"
           >
-            Admin
+            Console
           </Link>
         )}
       </div>
@@ -118,8 +125,8 @@ export const Navbar = () => {
                   </Dropdown.Item>
                 )}
                 {seesAdminConsole && (
-                  <Dropdown.Item key="account-admin" id="/admin" textValue="Admin">
-                    <Label>Admin</Label>
+                  <Dropdown.Item key="account-admin" id="/admin" textValue="Console">
+                    <Label>Console</Label>
                   </Dropdown.Item>
                 )}
                 {isLoggedIn ? (
@@ -178,10 +185,16 @@ export const Navbar = () => {
                         <Label>{label}</Label>
                       </Dropdown.Item>
                     ))}
+                    {accessPages.map((page) => (
+                      <Dropdown.Item key={page.href} id={page.href} textValue={page.label}>
+                        <KeyRound className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                        <Label>{page.label}</Label>
+                      </Dropdown.Item>
+                    ))}
                     {seesAdminConsole && (
-                      <Dropdown.Item key="/admin" id="/admin" textValue="Admin Panel">
+                      <Dropdown.Item key="/admin" id="/admin" textValue="Console">
                         <ShieldCheck className="size-4 shrink-0 text-muted" aria-hidden="true" />
-                        <Label>Admin Panel</Label>
+                        <Label>Console</Label>
                       </Dropdown.Item>
                     )}
                     <Separator />

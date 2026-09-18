@@ -1,7 +1,6 @@
 "use client";
 
 import type { Application, Department, Event } from "@/lib/types";
-import MyPowersCard from "@/components/dashboards/MyPowersCard";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,10 +14,9 @@ import {
   Clock,
   ArrowUpRight,
   Building2,
-  UserPlus,
-} from "lucide-react";
+  UserPlus,} from "lucide-react";
 
-
+import AccessCard from "@/components/dashboards/AccessCard";
 
 export default function HeadDashboard() {
   type HeadDashboardPayload = {
@@ -173,12 +171,10 @@ export default function HeadDashboard() {
             href="/admin"
           >
             <BarChart3 className="w-4 h-4" />
-            Admin Panel
+            Console
           </Link>
         </div>
       </div>
-
-      <MyPowersCard />
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -301,6 +297,8 @@ export default function HeadDashboard() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          <AccessCard />
+
           {/* Membership Queue */}
           <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">

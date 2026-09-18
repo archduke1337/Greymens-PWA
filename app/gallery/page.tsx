@@ -56,7 +56,7 @@ const CATEGORIES = [
 export default function GalleryPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { hasPermission } = usePermissions();
+  const { hasCapability, isRoleOrAbove } = usePermissions();
   const {
     isOpen: isUploadOpen,
     open: openUpload,
@@ -75,8 +75,11 @@ export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const canUpload = hasPermission("upload_gallery");
-  const canApprove = hasPermission("approve_gallery");
+  // Mirrors the server: POST /api/gallery requires membership (requireMember),
+  // and moderation authority is the gallery.manage capability, the same one
+  // /api/admin/gallery requires.
+  const canUpload = isRoleOrAbove("member");
+  const canApprove = hasCapability("gallery.manage");
 
   // Upload form state
   const [uploadForm, setUploadForm] = useState({

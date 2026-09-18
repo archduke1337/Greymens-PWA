@@ -7,25 +7,28 @@ import { usePermissions } from "@/context/PermissionContext";
  * security — every action must still call requireCapability()/requireAdmin()
  * server-side.
  *
+ * Checks the capability vocabulary the server enforces (hasCapability), not the
+ * legacy permission set: a gate that asked hasPermission would hide the control
+ * from every office holder whose authority arrives as a role or office
+ * capability, which is now the normal path.
+ *
  * Usage:
- *   <PermissionGate capability="events:create">
+ *   <PermissionGate capability="events.create">
  *     <CreateEventButton />
  *   </PermissionGate>
  */
 export default function PermissionGate({
   capability,
-  scope,
   fallback = null,
   loadingFallback = null,
   children,
 }: {
   capability: string;
-  scope?: string;
   fallback?: React.ReactNode;
   loadingFallback?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const { hasPermission, loading, status } = usePermissions();
+  const { hasCapability, loading, status } = usePermissions();
 
   // Reserve space while permissions resolve instead of popping gated UI in
   // late; callers that care pass an explicit skeleton via loadingFallback.
@@ -36,5 +39,5 @@ export default function PermissionGate({
 
   if (restricted) return <>{fallback}</>;
 
-  return hasPermission(capability, scope) ? <>{children}</> : <>{fallback}</>;
+  return hasCapability(capability) ? <>{children}</> : <>{fallback}</>;
 }

@@ -16,7 +16,7 @@ export default function WriteBlogPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
-  const { hasPermission, loading: permLoading } = usePermissions();
+  const { hasCapability, loading: permLoading } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -36,11 +36,15 @@ export default function WriteBlogPage() {
       router.push("/login");
       return;
     }
-    if (!hasPermission("blog.create")) {
+    // The server gates POST /api/blogs and /api/blogs/image with
+    // requireCapability("blog.create"). Checking the legacy permission
+    // vocabulary here resolved to admin-only, so everyone else was bounced
+    // from the editor even though the server would have accepted the post.
+    if (!hasCapability("blog.create")) {
       toast.error("You don't have permission to create blogs");
       router.push("/unauthorized");
     }
-  }, [user, permLoading, hasPermission, router]);
+  }, [user, permLoading, hasCapability, router]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

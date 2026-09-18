@@ -1,7 +1,6 @@
 "use client";
 
 import type { Application, Department } from "@/lib/types";
-import MyPowersCard from "@/components/dashboards/MyPowersCard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -178,8 +177,8 @@ export default function AdminDashboard() {
   if (error || !data) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center space-y-4">
-        <h1 className="text-2xl font-semibold">Admin dashboard unavailable</h1>
-        <p className="text-muted mt-2">{error || "The server did not return an admin view."}</p>
+        <h1 className="text-2xl font-semibold">Dashboard unavailable</h1>
+        <p className="text-muted mt-2">{error || "The server did not return a management view."}</p>
         <p className="text-muted text-sm">
           If this keeps happening, sign out and back in — a stale session is
           the most common cause.
@@ -236,8 +235,6 @@ export default function AdminDashboard() {
           );
         })}
       </div>
-
-      <MyPowersCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Membership Queue Quick View */}
@@ -415,9 +412,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Quick Links to Admin Sections */}
+      {/* Quick links to the console sections */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Admin Sections</h2>
+        <h2 className="text-lg font-semibold">Console sections</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {adminSections.map((section) => {
             const Icon = section.icon;
