@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Profile, Department } from "@/lib/types";
 import {
@@ -72,7 +72,7 @@ export default function AdminMembershipRejectedPage() {
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to load rejected applications");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load rejected applications"));
 
       setDepartments(payload?.departments ?? []);
       setAccountNames(payload?.accountNames ?? {});

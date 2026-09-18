@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import { ArrowLeft, BookOpen, Loader2, Plus } from "lucide-react";
@@ -55,7 +56,7 @@ export default function GovernanceAdminPage() {
     try {
       const response = await fetch("/api/admin/governance", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ ...form, status: "draft" }) });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to create record");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to create record"));
       toast.success("Governance record created as draft");
       setForm({ recordType: "minute", title: "", body: "", meetingDate: "", visibility: "members" });
       await loadRecords();
@@ -70,7 +71,7 @@ export default function GovernanceAdminPage() {
     try {
       const response = await fetch("/api/admin/governance", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ recordId, status }) });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to update record");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to update record"));
       toast.success(status === "approved" ? "Record approved" : status === "archived" ? "Record archived" : "Record reopened as draft");
       await loadRecords();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update record"); }

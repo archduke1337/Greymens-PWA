@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/types";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
 import { Button, Card, CardContent, Chip, Input, Label, ListBox, Select, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
@@ -65,7 +65,7 @@ export default function AdminEventsPage() {
     try {
       const response = await fetch("/api/admin/events", { credentials: "include" });
       const payload = (await response.json()) as { events?: Event[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load events");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load events"));
       setEvents(payload.events ?? []);
     } catch (error) {
       console.error("Error loading events:", error);
@@ -119,7 +119,7 @@ export default function AdminEventsPage() {
         body: JSON.stringify(editingEvent ? { action: "update", eventId: editingEvent.$id, ...formData } : formData),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to save event");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to save event"));
       
       await loadEvents();
       handleCloseModal();
@@ -160,7 +160,7 @@ export default function AdminEventsPage() {
         body: JSON.stringify(reason !== undefined ? { action, eventId, reason } : { action, eventId }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || `Unable to ${action} event`);
+      if (!response.ok) throw new Error(readApiError(payload, `Unable to ${action} event`));
       await loadEvents();
       toast.success(
         action === "approve" ? "Event approved." : action === "publish" ? "Event published." : "Event rejected.",
@@ -186,7 +186,7 @@ export default function AdminEventsPage() {
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       // 409 carries registration/ticket counts — surface them so the admin
       // knows why deletion is blocked instead of a generic failure.
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete event");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete event"));
       await loadEvents();
       toast.success("Event deleted successfully!");
     } catch (error) {
@@ -207,7 +207,7 @@ export default function AdminEventsPage() {
         body: JSON.stringify({ past: true }),
       });
       const payload = await response.json().catch(() => null) as { deleted?: number; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete past events");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete past events"));
       const count = payload?.deleted ?? 0;
       await loadEvents();
       toast.success(`${count} past events deleted successfully!`);

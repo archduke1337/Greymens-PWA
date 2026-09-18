@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { Button, Card, CardContent, Chip, Input } from "@heroui/react";
 import { Loader2, SearchIcon } from "lucide-react";
 import DesignationsManager from "@/components/admin/DesignationsManager";
@@ -62,7 +62,7 @@ export default function AdminDesignationsPage() {
     try {
       const response = await fetch("/api/admin/positions", { credentials: "include" });
       const payload = (await response.json().catch(() => null)) as (DesignationsData & { error?: string }) | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to load designations");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load designations"));
       setData(payload as DesignationsData);
     } catch (error) {
       console.error("Error loading designations:", error);

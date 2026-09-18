@@ -1,6 +1,7 @@
 "use client";
 
 import { title, subtitle } from "@/components/primitives";
+import { readApiError } from "@/lib/errorHandler";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Project } from "@/lib/types";
 import { Button, Card, CardContent, CardFooter, Chip, ProgressBar } from "@heroui/react";
@@ -49,7 +50,7 @@ export default function ProjectsPage() {
       setError(null);
       const response = await fetch("/api/projects");
       const payload = (await response.json()) as { projects?: Project[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load projects");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load projects"));
       setProjects(payload.projects ?? []);
     } catch (caught) {
       console.error("Error fetching projects:", caught);

@@ -19,7 +19,7 @@ const sponsorTiers = {
   bronze: { color: "from-orange-400 to-orange-600", label: "Bronze Sponsor", size: "small", maxWidth: "120px" },
   partner: { color: "from-blue-400 to-blue-600", label: "Community Partner", size: "small", maxWidth: "100px" },
 };
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, Switch, TextArea } from "@heroui/react";
 
 export default function AdminSponsorsPage() {
@@ -53,7 +53,7 @@ export default function AdminSponsorsPage() {
     try {
       const response = await fetch("/api/admin/sponsors", { credentials: "include" });
       const payload = (await response.json().catch(() => null)) as { sponsors?: Sponsor[]; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to load sponsors");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load sponsors"));
       setSponsors(payload?.sponsors ?? []);
     } catch (error) {
       console.error("Error loading sponsors:", error);
@@ -90,7 +90,7 @@ export default function AdminSponsorsPage() {
           body: JSON.stringify({ sponsorId: editingSponsor.$id, ...formData }),
         });
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(payload?.error || "Unable to update sponsor");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to update sponsor"));
         toast.success("Sponsor updated successfully!");
       } else {
         // Create new sponsor
@@ -101,7 +101,7 @@ export default function AdminSponsorsPage() {
           body: JSON.stringify(formData),
         });
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(payload?.error || "Unable to create sponsor");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to create sponsor"));
         toast.success("Sponsor created successfully!");
       }
 
@@ -144,7 +144,7 @@ export default function AdminSponsorsPage() {
         credentials: "include",
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete sponsor");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete sponsor"));
       toast.success("Sponsor deleted successfully!");
       await loadSponsors();
     } catch (error) {

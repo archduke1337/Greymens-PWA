@@ -14,7 +14,7 @@ import {
   AwardIcon,
 } from "lucide-react";
 
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import { CAPABILITIES } from "@/lib/capabilities";
 import {
@@ -156,7 +156,7 @@ export default function DesignationsManager({ designations, departments, onChang
         ),
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(result?.error || "Failed to save designation");
+      if (!response.ok) throw new Error(readApiError(result, "Failed to save designation"));
 
       if (editingDesig) {
         toast.success("Designation updated successfully!");
@@ -207,7 +207,7 @@ export default function DesignationsManager({ designations, departments, onChang
         credentials: "include",
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(result?.error || "Failed to delete designation");
+      if (!response.ok) throw new Error(readApiError(result, "Failed to delete designation"));
       toast.success("Designation deleted successfully!");
       await onChanged();
     } catch (error) {
@@ -237,7 +237,7 @@ export default function DesignationsManager({ designations, departments, onChang
         credentials: "include",
       });
       const payload = (await response.json().catch(() => null)) as { profiles?: Profile[]; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to search users");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to search users"));
       setSearchResults(payload?.profiles ?? []);
     } catch (error) {
       const message = getErrorMessage(error);
@@ -263,7 +263,7 @@ export default function DesignationsManager({ designations, departments, onChang
         }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string; alreadyAssigned?: boolean } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to assign designation");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to assign designation"));
       const assignee = selectedUser?.urn || assignUserId;
       toast.success(
         payload?.alreadyAssigned
@@ -297,7 +297,7 @@ export default function DesignationsManager({ designations, departments, onChang
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!holdersResponse.ok) throw new Error(holdersPayload?.error || "Failed to load holders");
+      if (!holdersResponse.ok) throw new Error(readApiError(holdersPayload, "Failed to load holders"));
 
       const names = holdersPayload?.accountNames ?? {};
       setHolders(
@@ -326,7 +326,7 @@ export default function DesignationsManager({ designations, departments, onChang
         { method: "DELETE", credentials: "include" },
       );
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to revoke designation");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to revoke designation"));
       toast.success("Designation revoked successfully!");
       setHolders((prev) => prev.filter((h) => h.userId !== userId));
       await onChanged();

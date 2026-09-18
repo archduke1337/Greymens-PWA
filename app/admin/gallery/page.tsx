@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { GalleryImage } from "@/lib/gallery";
@@ -53,7 +54,7 @@ export default function AdminGalleryPage() {
     try {
       const response = await fetch("/api/admin/gallery", { credentials: "include" });
       const payload = (await response.json()) as { images?: GalleryImage[]; accountNames?: Record<string, string>; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load gallery");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load gallery"));
       const allImages = payload.images ?? [];
       setImages(allImages);
       setUploaderNames(payload.accountNames ?? {});
@@ -89,7 +90,7 @@ export default function AdminGalleryPage() {
         body: JSON.stringify({ imageId: image.$id, action: "approve" }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to approve image");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to approve image"));
       toast.success(image.status === "rejected" ? "Image re-approved" : "Image approved");
       await loadData();
     } catch (error) {
@@ -110,7 +111,7 @@ export default function AdminGalleryPage() {
         body: JSON.stringify({ imageId: rejectTarget.$id, action: "reject", reason: rejectReason.trim() }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to reject image");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to reject image"));
       toast.success("Image rejected");
       close();
       setRejectTarget(null);
@@ -133,7 +134,7 @@ export default function AdminGalleryPage() {
         credentials: "include",
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete image");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete image"));
       toast.success("Image deleted");
       await loadData();
     } catch (error) {

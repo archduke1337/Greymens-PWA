@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import type { ExtendedUser } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
@@ -72,7 +72,7 @@ export default function WriteBlogPage() {
       const response = await fetch("/api/blogs/image", { method: "POST", body });
       const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
       if (!response.ok || !payload?.url) {
-        throw new Error(payload?.error || "Failed to upload image");
+        throw new Error(readApiError(payload, "Failed to upload image"));
       }
       // Functional update: the user may keep typing while the upload is in
       // flight, and a stale formData spread would clobber those edits.
@@ -134,7 +134,7 @@ export default function WriteBlogPage() {
       });
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || "Failed to submit blog");
+        throw new Error(readApiError(data, "Failed to submit blog"));
       }
 
       toast.success(

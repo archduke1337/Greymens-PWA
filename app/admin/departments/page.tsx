@@ -16,7 +16,7 @@ import {
   ChevronUpIcon,
 } from "lucide-react";
 
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import {
   Button,
@@ -105,7 +105,7 @@ export default function AdminDepartmentsPage() {
         memberCounts?: Record<string, number>;
         error?: string;
       };
-      if (!response.ok) throw new Error(payload.error || "Failed to load departments");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load departments"));
       setDepartments(payload.departments ?? []);
       setMemberCounts(payload.memberCounts ?? {});
     } catch (error) {
@@ -145,7 +145,7 @@ export default function AdminDepartmentsPage() {
         ),
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(result?.error || "Failed to save department");
+      if (!response.ok) throw new Error(readApiError(result, "Failed to save department"));
 
       if (editingDept) {
         toast.success("Department updated successfully!");
@@ -197,7 +197,7 @@ export default function AdminDepartmentsPage() {
         credentials: "include",
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(result?.error || "Failed to delete department");
+      if (!response.ok) throw new Error(readApiError(result, "Failed to delete department"));
       toast.success("Department deactivated. Reactivate it via Edit.");
       await loadDepartments();
     } catch (error) {
@@ -225,7 +225,7 @@ export default function AdminDepartmentsPage() {
           credentials: "include",
         });
         const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
-        if (!response.ok) throw new Error(payload.error || "Failed to load department members");
+        if (!response.ok) throw new Error(readApiError(payload, "Failed to load department members"));
         setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
         if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
       } catch (error) {
@@ -253,7 +253,7 @@ export default function AdminDepartmentsPage() {
       });
       const payload = (await response.json().catch(() => null)) as { reactivated?: boolean; error?: string } | null;
       // 404 (unknown department) and 409 (already assigned) carry the reason.
-      if (!response.ok) throw new Error(payload?.error || "Failed to add member");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to add member"));
       toast.success(payload?.reactivated ? "Member reinstated in department" : "Member added to department");
       setAddMemberForm({ userId: "", role: "member" });
       // Refresh the cached roster for this department.
@@ -281,7 +281,7 @@ export default function AdminDepartmentsPage() {
         credentials: "include",
       });
       const payload = (await response.json()) as { members?: Array<UserDepartment & { profile?: Profile | null }>; accountNames?: Record<string, string>; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Failed to load department members");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load department members"));
       setDeptMembers((prev) => ({ ...prev, [dept.$id!]: payload.members ?? [] }));
       if (payload.accountNames) setMemberNames((prev) => ({ ...prev, ...payload.accountNames }));
     } catch (error) {
@@ -303,7 +303,7 @@ export default function AdminDepartmentsPage() {
         credentials: "include",
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to remove member");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to remove member"));
       toast.success(`${name} removed from department`);
       setDeptMembers((prev) => ({
         ...prev,

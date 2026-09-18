@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import type { Sponsor } from "@/lib/sponsors";
 import { sponsorTiers } from "@/lib/sponsors";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 
 import { Button, Card, CardContent, Chip, Separator } from "@heroui/react";
 
@@ -22,7 +22,7 @@ export default function SponsorsPage() {
       setLoadError(null);
       const response = await fetch("/api/sponsors", { credentials: "include" });
       const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load sponsors");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load sponsors"));
       setSponsors(payload.sponsors ?? []);
     } catch (error) {
       console.error("Error loading sponsors:", error);

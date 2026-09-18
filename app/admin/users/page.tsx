@@ -60,7 +60,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import { auditService } from "@/lib/audit";
 import { useAuth } from "@/context/AuthContext";
@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
       } | null;
 
       if (!response.ok)
-        throw new Error(payload?.error || "Failed to load users");
+        throw new Error(readApiError(payload, "Failed to load users"));
 
       setAllDepartments(payload?.departments ?? []);
       setAllDesignations(payload?.designations ?? []);
@@ -254,7 +254,7 @@ export default function AdminUsersPage() {
       } | null;
 
       if (!response.ok)
-        throw new Error(payload?.error || "Failed to update profile");
+        throw new Error(readApiError(payload, "Failed to update profile"));
 
       toast.success("Profile updated successfully");
       setIsEditing(false);
@@ -322,7 +322,7 @@ export default function AdminUsersPage() {
         } | null;
 
         if (!response.ok)
-          throw new Error(payload?.error || "The change could not be applied");
+          throw new Error(readApiError(payload, "The change could not be applied"));
 
         toast.success(successMessage);
         await loadAllData();
@@ -410,7 +410,7 @@ export default function AdminUsersPage() {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       // 404 (deactivated designation) and 409 (maxHolders cap reached) carry
       // the real reason — surface it instead of a generic failure.
-      if (!response.ok) throw new Error(payload?.error || "Could not grant designation");
+      if (!response.ok) throw new Error(readApiError(payload, "Could not grant designation"));
       toast.success(`Designation granted to ${userLabel(selectedUser, accountNames)}`);
       setGrantDesigId("");
       await refreshSelectedUser(userId);
@@ -432,7 +432,7 @@ export default function AdminUsersPage() {
         { method: "DELETE" },
       );
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Could not revoke designation");
+      if (!response.ok) throw new Error(readApiError(payload, "Could not revoke designation"));
       toast.success(`Designation revoked from ${userLabel(selectedUser, accountNames)}`);
       await refreshSelectedUser(userId);
     } catch (error) {
@@ -453,7 +453,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ action: "grant", userId, powerId: grantPowerId }),
       });
       const payload = (await response.json().catch(() => null)) as { alreadyGranted?: boolean; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Could not grant power");
+      if (!response.ok) throw new Error(readApiError(payload, "Could not grant power"));
       toast.success(
         payload?.alreadyGranted
           ? `${userLabel(selectedUser, accountNames)} already holds this power — no duplicate created`
@@ -480,7 +480,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ action: "revoke", userId, powerId }),
       });
       const payload = (await response.json().catch(() => null)) as { revoked?: number; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Could not revoke power");
+      if (!response.ok) throw new Error(readApiError(payload, "Could not revoke power"));
       toast.success(`Power revoked from ${userLabel(selectedUser, accountNames)}`);
       await refreshSelectedUser(userId);
     } catch (error) {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import {
   Button,
   Card,
@@ -72,7 +72,7 @@ export default function AdminEventTypesPage() {
     try {
       const response = await fetch("/api/admin/event-types", { credentials: "include" });
       const payload = (await response.json()) as { eventTypes?: EventTypeDoc[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load event types");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load event types"));
       setEventTypes(payload.eventTypes ?? []);
     } catch (error) {
       console.error("Error loading event types:", error);
@@ -156,7 +156,7 @@ export default function AdminEventTypesPage() {
         body: JSON.stringify(body),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to save event type");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to save event type"));
       toast.success(editing ? "Event type updated" : "Event type created");
       close();
       setEditing(null);
@@ -180,7 +180,7 @@ export default function AdminEventTypesPage() {
         body: JSON.stringify({ eventTypeId: type.$id, isActive: !type.isActive }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to update event type");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to update event type"));
       toast.success(type.isActive ? "Event type deactivated" : "Event type activated");
       await loadData();
     } catch (error) {
@@ -202,7 +202,7 @@ export default function AdminEventTypesPage() {
       const payload = (await response.json().catch(() => null)) as { error?: string } | null;
       // 409 carries the blocking event count — surface it so the admin knows
       // to deactivate instead of retrying delete.
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete event type");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete event type"));
       toast.success("Event type deleted");
       await loadData();
     } catch (error) {

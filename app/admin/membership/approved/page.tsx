@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Membership, Profile, Department } from "@/lib/types";
 import {
@@ -71,7 +71,7 @@ export default function AdminMembershipApprovedPage() {
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to load approved members");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load approved members"));
 
       const approvedApps = payload?.applications ?? [];
       setDepartments(payload?.departments ?? []);

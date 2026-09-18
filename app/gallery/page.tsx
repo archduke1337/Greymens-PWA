@@ -41,7 +41,7 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 
 const CATEGORIES = [
   { id: "all", label: "All", Icon: Palette },
@@ -108,7 +108,7 @@ export default function GalleryPage() {
       };
 
       if (!response.ok)
-        throw new Error(payload.error || "Unable to load gallery");
+        throw new Error(readApiError(payload, "Unable to load gallery"));
       setImages(payload.images ?? []);
     } catch (error) {
       console.error("Error loading gallery:", error);
@@ -156,7 +156,7 @@ export default function GalleryPage() {
         error?: string;
       };
 
-      if (!response.ok) throw new Error(data.error || "Failed to upload image");
+      if (!response.ok) throw new Error(readApiError(data, "Failed to upload image"));
 
       toast.success(
         canApprove

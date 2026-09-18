@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -46,7 +47,7 @@ export default function OfficesManager({ assignments, members, membersAvailable,
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       // 404 (unknown user) and 409 (office already filled) carry the real
       // reason — surface it instead of a generic failure.
-      if (!response.ok) throw new Error(payload?.error || "Unable to assign office");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to assign office"));
       toast.success("Office assigned");
       setForm({ ...form, userId: "", termStart: "", termEnd: "", notes: "" });
       await onChanged();
@@ -59,7 +60,7 @@ export default function OfficesManager({ assignments, members, membersAvailable,
     try {
       const response = await fetch("/api/admin/offices", { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ assignmentId, status }) });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Could not update office");
+      if (!response.ok) throw new Error(readApiError(payload, "Could not update office"));
       toast.success(status === "ended" ? "Assignment ended" : "Assignment updated");
       await onChanged();
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not update office"); }

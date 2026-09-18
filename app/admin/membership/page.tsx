@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import type { Application, Profile, Department } from "@/lib/types";
 import {
@@ -95,7 +95,7 @@ export default function AdminMembershipPage() {
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to load membership data");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load membership data"));
 
       setApplications(payload?.applications ?? []);
       setDepartments(payload?.departments ?? []);
@@ -183,7 +183,7 @@ export default function AdminMembershipPage() {
         alreadyRejected?: boolean;
         error?: string;
       } | null;
-      if (!response.ok) throw new Error(payload?.error || "Action failed. Please try again.");
+      if (!response.ok) throw new Error(readApiError(payload, "Action failed. Please try again."));
 
       if (actionType === "approve") {
         // A double-submit can win the race after a colleague already approved:

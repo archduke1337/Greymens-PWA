@@ -1,6 +1,7 @@
 "use client";
 
 import type { Application, Department } from "@/lib/types";
+import { readApiError } from "@/lib/errorHandler";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
       try {
         const response = await fetch("/api/dashboard", { credentials: "include" });
         const payload = (await response.json()) as AdminDashboardPayload & { error?: string };
-        if (!response.ok || !payload.admin) throw new Error(payload.error || "Unable to load dashboard");
+        if (!response.ok || !payload.admin) throw new Error(readApiError(payload, "Unable to load dashboard"));
         if (!cancelled) setData(payload.admin);
       } catch (loadError) {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");

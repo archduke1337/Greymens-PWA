@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import type { Event as EventType } from "@/lib/types";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import Link from "next/link";
 import {
   Calendar,
@@ -67,7 +67,7 @@ export default function EventDetailPage() {
         setEvent(null);
         return;
       }
-      if (!response.ok) throw new Error(payload.error || "Unable to load event");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load event"));
       setEvent(payload.event ?? null);
       if (!payload.event) setNotFound(true);
     } catch (error) {
@@ -159,7 +159,7 @@ export default function EventDetailPage() {
           body: JSON.stringify({ eventId }),
         });
         const data = await response.json().catch(() => ({})) as { error?: string };
-        if (!response.ok) throw new Error(data.error || "Unable to cancel this registration");
+        if (!response.ok) throw new Error(readApiError(data, "Unable to cancel this registration"));
         setRegistrationStatus(null);
         setTicketId("");
         toast.success("Registration cancelled");
@@ -183,7 +183,7 @@ export default function EventDetailPage() {
         status?: "approved" | "pending" | "waitlisted";
         ticket?: { ticketCode?: string } | null;
       };
-      if (!response.ok) throw new Error(data.error || "Unable to register for this event");
+      if (!response.ok) throw new Error(readApiError(data, "Unable to register for this event"));
 
       setRegistrationStatus(data.status || "approved");
       setTicketId(data.ticket?.ticketCode ?? "");

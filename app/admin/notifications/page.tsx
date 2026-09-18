@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types";
@@ -55,7 +56,7 @@ export default function AdminNotificationsPage() {
     try {
       const response = await fetch("/api/notifications?all=true&limit=200", { credentials: "include" });
       const payload = (await response.json()) as { notifications?: Notification[]; accountNames?: Record<string, string>; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load notifications");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load notifications"));
       setNotifications(payload.notifications ?? []);
       setRecipientNames(payload.accountNames ?? {});
     } catch (error) {
@@ -122,7 +123,7 @@ export default function AdminNotificationsPage() {
         }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to send notification");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to send notification"));
 
       toast.success(`Notification sent to ${recipientNames[form.userId.trim()] || "member"}`);
       close();

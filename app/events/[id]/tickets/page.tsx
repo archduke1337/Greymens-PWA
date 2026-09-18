@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Ticket } from "@/lib/types";
 import type { Event } from "@/lib/types";
 import TicketCard from "@/components/tickets/TicketCard";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import {
   Ticket as TicketIcon,
@@ -59,7 +59,7 @@ export default function EventTicketsPage() {
     try {
       const eventResponse = await fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { credentials: "include" });
       const eventPayload = await eventResponse.json().catch(() => null) as { event?: Event; error?: string } | null;
-      if (!eventResponse.ok) throw new Error(eventPayload?.error || "Failed to load event");
+      if (!eventResponse.ok) throw new Error(readApiError(eventPayload, "Failed to load event"));
       setEvent(eventPayload?.event ?? null);
 
       const ticketsResponse = await fetch(`/api/tickets/verify?${new URLSearchParams({ eventId, limit: "500", offset: "0" })}`, { cache: "no-store", credentials: "include" });
@@ -75,7 +75,7 @@ export default function EventTicketsPage() {
           error?: string;
         } | null;
         if (!registerResponse.ok) {
-          throw new Error(registerPayload?.error || "Failed to load your ticket");
+          throw new Error(readApiError(registerPayload, "Failed to load your ticket"));
         }
         const mine = (registerPayload?.tickets ?? []).find((t) => t.eventId === eventId) ?? null;
         setOwnTicket(
@@ -107,7 +107,7 @@ export default function EventTicketsPage() {
       // The initial response above is page one; continue only if rows remain.
       const firstPage = await ticketsResponse.json().catch(() => null) as { tickets?: Ticket[]; total?: number; error?: string } | null;
       if (!ticketsResponse.ok) {
-        throw new Error(firstPage?.error || "Failed to load tickets");
+        throw new Error(readApiError(firstPage, "Failed to load tickets"));
       }
       const allTickets: Ticket[] = [...(firstPage?.tickets ?? [])];
       const total = firstPage?.total ?? allTickets.length;
@@ -120,7 +120,7 @@ export default function EventTicketsPage() {
         );
         const payload = await pageResponse.json().catch(() => null) as { tickets?: Ticket[]; error?: string } | null;
         if (!pageResponse.ok) {
-          throw new Error(payload?.error || "Failed to load tickets");
+          throw new Error(readApiError(payload, "Failed to load tickets"));
         }
         const rows = payload?.tickets ?? [];
         if (rows.length === 0) break;
@@ -152,7 +152,7 @@ export default function EventTicketsPage() {
       body: JSON.stringify({ ticketId, action, method: "manual_search", ...body }),
     });
     const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-    if (!response.ok) throw new Error(payload?.error || "The ticket could not be updated");
+    if (!response.ok) throw new Error(readApiError(payload, "The ticket could not be updated"));
     return payload;
   }, []);
 

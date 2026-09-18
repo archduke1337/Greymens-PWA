@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { Resource, Department } from "@/lib/types";
@@ -141,7 +142,7 @@ export default function AdminResourcesPage() {
             })(),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to save resource");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to save resource"));
       toast.success(editTarget ? "Resource updated" : "Resource created");
 
       close();
@@ -168,7 +169,7 @@ export default function AdminResourcesPage() {
         body: JSON.stringify({ resourceId: resource.$id }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete resource");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete resource"));
       toast.success("Resource deleted");
       await loadData();
     } catch (error) {

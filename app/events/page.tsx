@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import type { Event as EventType } from "@/lib/types";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -79,7 +79,7 @@ export default function EventsPage() {
       setLoadError(null);
       const response = await fetch("/api/events", { credentials: "include" });
       const payload = (await response.json()) as { events?: EventType[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load events");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load events"));
       setEvents(payload.events ?? []);
     } catch (error) {
       console.error("Error loading events:", error);
@@ -187,7 +187,7 @@ export default function EventsPage() {
           body: JSON.stringify({ eventId }),
         });
         const data = await response.json().catch(() => ({})) as { error?: string };
-        if (!response.ok) throw new Error(data.error || "Unable to cancel this registration");
+        if (!response.ok) throw new Error(readApiError(data, "Unable to cancel this registration"));
         setRegistrationStatus(prev => {
           const next = { ...prev };
           delete next[eventId];
@@ -208,7 +208,7 @@ export default function EventsPage() {
           status?: "approved" | "pending" | "waitlisted";
           ticket?: { ticketCode?: string } | null;
         };
-        if (!response.ok) throw new Error(data.error || "Unable to register for this event");
+        if (!response.ok) throw new Error(readApiError(data, "Unable to register for this event"));
 
         setRegistrationStatus(prev => ({ ...prev, [eventId]: data.status || "approved" }));
 

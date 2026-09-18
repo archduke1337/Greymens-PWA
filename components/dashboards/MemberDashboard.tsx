@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
@@ -73,7 +74,7 @@ export default function MemberDashboard() {
         const ticketPayload = (await ticketResponse.json()) as { tickets?: MemberTicket[] };
         const notificationPayload = (await notificationResponse.json()) as { notifications?: Notification[] };
         const resourcePayload = (await resourceResponse.json()) as { resources?: Resource[] };
-        if (!dashboardResponse.ok) throw new Error(dashboard.error || "Unable to load dashboard");
+        if (!dashboardResponse.ok) throw new Error(readApiError(dashboard, "Unable to load dashboard"));
         if (!cancelled) {
           setUpcomingEvents(dashboard.upcomingEvents ?? []);
           setRegisteredEvents((dashboard.myEvents ?? []).flatMap(({ event }) => (event ? [event] : [])));

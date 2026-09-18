@@ -1,6 +1,7 @@
 "use client";
 
 import type { Application, Event } from "@/lib/types";
+import { readApiError } from "@/lib/errorHandler";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -54,7 +55,7 @@ export default function LeadDashboard() {
       try {
         const response = await fetch("/api/dashboard", { credentials: "include" });
         const payload = (await response.json()) as LeadDashboardPayload & { error?: string };
-        if (!response.ok || !payload.lead) throw new Error(payload.error || "Unable to load dashboard");
+        if (!response.ok || !payload.lead) throw new Error(readApiError(payload, "Unable to load dashboard"));
         if (!cancelled) setData(payload.lead);
       } catch (loadError) {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");

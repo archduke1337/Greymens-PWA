@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { readApiError } from "@/lib/errorHandler";
 import { Button, Card, CardContent, CardHeader, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
 
 type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
@@ -38,7 +39,7 @@ export default function HelpFeedbackPage() {
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "Failed to submit feedback");
+        throw new Error(readApiError(payload, "Failed to submit feedback"));
       }
       setSubmitted(true);
     } catch (error) {

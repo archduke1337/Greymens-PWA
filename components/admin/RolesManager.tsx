@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckIcon, PlusIcon, SearchIcon, ShieldIcon, TrashIcon } from "lucide-react";
 import MemberAvatar from "@/components/MemberAvatar";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import {
   Button,
   Card,
@@ -119,7 +119,7 @@ export default function RolesManager() {
       const data = (await response.json().catch(() => null)) as
         | { roles?: Role[]; assignments?: Assignment[]; accountNames?: Record<string, string>; error?: string }
         | null;
-      if (!response.ok) throw new Error(data?.error || "Unable to load roles");
+      if (!response.ok) throw new Error(readApiError(data, "Unable to load roles"));
       setRoles(data?.roles ?? []);
       setAssignments(data?.assignments ?? []);
       setAccountNames(data?.accountNames ?? {});
@@ -194,7 +194,7 @@ export default function RolesManager() {
         body: JSON.stringify(action === "create_role" ? { action, ...role } : { action, ...assignment }),
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || "Unable to save access");
+      if (!response.ok) throw new Error(readApiError(data, "Unable to save access"));
       toast.success(action === "create_role" ? "Role template created" : "Role assigned");
       if (action === "create_role") {
         setRole({ name: "", slug: "", description: "", capabilities: [] });
@@ -230,7 +230,7 @@ export default function RolesManager() {
         body: JSON.stringify({ assignmentId, isActive: false }),
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || "Unable to revoke access");
+      if (!response.ok) throw new Error(readApiError(data, "Unable to revoke access"));
       toast.success("Access revoked");
       await load();
     } catch (error) {

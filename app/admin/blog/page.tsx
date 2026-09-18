@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import type { Blog } from "@/lib/blog-format";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Tabs, TextArea } from "@heroui/react";
 import {
@@ -39,7 +39,7 @@ export default function AdminBlogsPage() {
     try {
       const response = await fetch("/api/blogs?scope=all", { cache: "no-store" });
       const payload = await response.json().catch(() => null) as { blogs?: Blog[]; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to load blogs");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load blogs"));
       setBlogs(payload?.blogs ?? []);
     } catch (error) {
       console.error("Error loading blogs:", error);
@@ -61,7 +61,7 @@ export default function AdminBlogsPage() {
       body: JSON.stringify({ blogId, action, ...body }),
     });
     const payload = await response.json().catch(() => null) as { error?: string } | null;
-    if (!response.ok) throw new Error(payload?.error || "The change could not be applied");
+    if (!response.ok) throw new Error(readApiError(payload, "The change could not be applied"));
   };
 
   const filterBlogsByTab = () => {
@@ -132,7 +132,7 @@ export default function AdminBlogsPage() {
     try {
       const response = await fetch(`/api/blogs?blogId=${encodeURIComponent(blogId)}`, { method: "DELETE" });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to delete blog");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to delete blog"));
       toast.success("Post deleted");
       await loadBlogs();
     } catch (error) {

@@ -10,7 +10,7 @@ import {
   ShieldIcon,
   UsersIcon,
 } from "lucide-react";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import {
   Button,
@@ -123,7 +123,7 @@ export default function PowersManager() {
     try {
       const response = await fetch("/api/admin/powers", { credentials: "include" });
       const payload = (await response.json()) as { powers?: Power[]; departments?: Department[]; error?: string };
-      if (!response.ok) throw new Error(payload.error || "Unable to load powers");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load powers"));
       const allPowers = payload.powers ?? [];
       const allDepts = payload.departments ?? [];
       setPowers(allPowers);
@@ -175,7 +175,7 @@ export default function PowersManager() {
       if (!directoryData) {
         const response = await fetch("/api/admin/users?limit=500", { credentials: "include" });
         const payload = (await response.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
-        if (!response.ok) throw new Error(payload?.error || "Unable to search users");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to search users"));
         directoryData = {
           profiles: (payload?.users ?? []).map((entry) => entry.profile),
           names: payload?.accountNames ?? {},
@@ -218,7 +218,7 @@ export default function PowersManager() {
         }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to grant power");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to grant power"));
       toast.success(
         `Power "${grantTarget.displayName}" granted to ${resultNames[selectedUser.userId] || selectedUser.urn || selectedUser.userId}!`
       );
@@ -244,7 +244,7 @@ export default function PowersManager() {
       ]);
       const powerPayload = (await powerResponse.json().catch(() => null)) as { grants?: UserPower[]; error?: string } | null;
       const usersPayload = (await usersResponse.json().catch(() => null)) as { users?: Array<{ profile: Profile }>; accountNames?: Record<string, string>; error?: string } | null;
-      if (!powerResponse.ok) throw new Error(powerPayload?.error || "Unable to load power holders");
+      if (!powerResponse.ok) throw new Error(readApiError(powerPayload, "Unable to load power holders"));
       const profileByUser = new Map((usersPayload?.users ?? []).map((entry) => [entry.profile.userId, entry.profile]));
       const holderNames = usersPayload?.accountNames ?? {};
       setHolderNames(holderNames);
@@ -270,7 +270,7 @@ export default function PowersManager() {
         body: JSON.stringify({ action: "revoke", userId, powerId: holdersTarget.$id }),
       });
       const payload = (await response.json().catch(() => null)) as { revoked?: number; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to revoke power");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to revoke power"));
       toast.success(
         typeof payload?.revoked === "number" && payload.revoked === 0
           ? "No active grant found — nothing revoked"

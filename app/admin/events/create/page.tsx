@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, type ChangeEvent, type KeyboardEvent } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
@@ -338,7 +339,7 @@ export default function AdminCreateEventPage() {
         body: JSON.stringify(eventData),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to create event");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to create event"));
 
       toast.success(managesEvents ? "Event created successfully!" : "Event proposal submitted for review!");
       router.push(managesEvents ? "/admin/events" : "/events");

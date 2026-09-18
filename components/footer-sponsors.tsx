@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import type { Sponsor } from "@/lib/sponsors";
 
 export function FooterSponsors() {
@@ -12,7 +13,7 @@ export function FooterSponsors() {
     void fetch("/api/sponsors", { signal: controller.signal })
       .then(async (response) => {
         const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
-        if (!response.ok) throw new Error(payload.error || "Unable to load sponsors");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to load sponsors"));
         setSponsors((payload.sponsors ?? []).slice(0, 6));
       })
       .catch((error: unknown) => {

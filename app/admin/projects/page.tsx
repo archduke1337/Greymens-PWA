@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Project } from "@/lib/types";
-import { getErrorMessage } from "@/lib/errorHandler";
+import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
 import { PlusIcon, Edit2Icon, TrashIcon, SaveIcon, Loader2Icon, ImageIcon, UsersIcon, GitForkIcon, StarIcon, FolderIcon, InfoIcon, LightbulbIcon } from "lucide-react";
 import { Button, Card, CardContent, CardHeader, Chip, Input, Label, ListBox, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Select, Slider, Switch, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, TextArea, useOverlayState } from "@heroui/react";
@@ -65,7 +65,7 @@ export default function AdminProjectsPage() {
       setLoading(true);
       const response = await fetch("/api/admin/projects", { credentials: "include" });
       const payload = (await response.json().catch(() => null)) as { projects?: Project[]; error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to load projects");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to load projects"));
       setProjects(payload?.projects ?? []);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -197,7 +197,7 @@ export default function AdminProjectsPage() {
           body: JSON.stringify({ projectId: selectedProject.$id, ...projectData }),
         });
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(payload?.error || "Unable to update project");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to update project"));
         toast.success("Project updated successfully!");
       } else {
         const response = await fetch("/api/admin/projects", {
@@ -207,7 +207,7 @@ export default function AdminProjectsPage() {
           body: JSON.stringify(projectData),
         });
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        if (!response.ok) throw new Error(payload?.error || "Unable to create project");
+        if (!response.ok) throw new Error(readApiError(payload, "Unable to create project"));
         toast.success("Project created successfully!");
       }
 
@@ -233,7 +233,7 @@ export default function AdminProjectsPage() {
         credentials: "include",
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to delete project");
+      if (!response.ok) throw new Error(readApiError(payload, "Unable to delete project"));
       toast.success("Project deleted successfully!");
       fetchProjects();
     } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { useRouter } from "next/navigation";
@@ -164,7 +165,7 @@ export default function ProfilePage() {
       const payload = (await response.json().catch(() => null)) as
         | { profile?: Profile | null; membership?: Membership | null; tickets?: Ticket[]; error?: string }
         | null;
-      if (!response.ok) throw new Error(payload?.error || "Failed to load profile");
+      if (!response.ok) throw new Error(readApiError(payload, "Failed to load profile"));
 
       const profileData = payload?.profile ?? null;
       setProfile(profileData);
@@ -217,7 +218,7 @@ export default function ProfilePage() {
       });
       const payload = (await response.json().catch(() => null)) as { avatar?: string; error?: string } | null;
       if (!response.ok || !payload?.avatar) {
-        throw new Error(payload?.error || "Failed to upload picture");
+        throw new Error(readApiError(payload, "Failed to upload picture"));
       }
       setProfilePicture(payload.avatar);
       toast.success("Profile picture updated");
@@ -266,7 +267,7 @@ export default function ProfilePage() {
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(payload?.error || "Failed to save profile");
+        throw new Error(readApiError(payload, "Failed to save profile"));
       }
 
       await refresh();
