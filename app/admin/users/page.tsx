@@ -51,6 +51,7 @@ import {
   ModalFooter,
   ModalHeader,
   Select,
+  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -590,8 +591,11 @@ export default function AdminUsersPage() {
 
   if (authLoading || loadingUsers) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Loading users">
+        <div className="text-center space-y-4">
+          <Spinner size="lg" />
+          <p className="text-muted">Loading users...</p>
+        </div>
       </div>
     );
   }
@@ -610,12 +614,12 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Users</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.total}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <UsersIcon className="w-6 h-6 text-primary" />
@@ -624,55 +628,55 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Active Members</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.active}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <CheckCircleIcon className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Inactive</p>
-                <p className="text-2xl font-bold">{stats.inactive}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.inactive}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                <UserMinusIcon className="w-6 h-6 text-yellow-600" />
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <UserMinusIcon className="w-6 h-6 text-warning" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Banned</p>
-                <p className="text-2xl font-bold">{stats.banned}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.banned}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <ShieldOffIcon className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
+                <ShieldOffIcon className="w-6 h-6 text-danger" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         {(stats.other > 0 || stats.noMembership > 0) && (
-          <Card className="border-none shadow-md">
+          <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-default-500">Other / No membership</p>
-                  <p className="text-2xl font-bold">{stats.other + stats.noMembership}</p>
+                  <p className="text-2xl font-bold tabular-nums">{stats.other + stats.noMembership}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-default-100 dark:bg-default-900/30 flex items-center justify-center">
                   <UsersIcon className="w-6 h-6 text-default-500" />
@@ -683,7 +687,7 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      <Card className="border-none shadow-lg mb-6">
+      <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -722,13 +726,13 @@ export default function AdminUsersPage() {
               ))}
             </div>
           </div>
-          <div className="mt-3 text-sm text-default-500">
+          <div className="mt-3 text-sm tabular-nums text-default-500">
             Showing {filteredUsers.length} of {enrichedUsers.length} users
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -822,7 +826,7 @@ export default function AdminUsersPage() {
                             ))
                           )}
                           {eu.departments.length > 2 && (
-                            <Chip className="text-xs" size="sm" variant="soft">
+                            <Chip className="text-xs tabular-nums" size="sm" variant="soft">
                               +{eu.departments.length - 2}
                             </Chip>
                           )}
@@ -939,7 +943,7 @@ export default function AdminUsersPage() {
                             )}
                           </Chip>
                           {selectedUser.membership?.membershipNumber && (
-                            <Chip size="sm" variant="soft">
+                            <Chip className="tabular-nums" size="sm" variant="soft">
                               {selectedUser.membership.membershipNumber}
                             </Chip>
                           )}
@@ -1216,7 +1220,7 @@ export default function AdminUsersPage() {
                                 </span>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="danger-soft"
                                   isPending={grantBusy === `desig-${ud.designationId}`}
                                   onPress={() => handleRevokeDesignation(ud.designationId, getDesignationName(ud.designationId))}
                                 >
@@ -1291,7 +1295,7 @@ export default function AdminUsersPage() {
                                 </span>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="danger-soft"
                                   isPending={grantBusy === `power-${up.powerId}`}
                                   onPress={() => handleRevokePower(up.powerId, getPowerName(up.powerId))}
                                 >
@@ -1348,7 +1352,7 @@ export default function AdminUsersPage() {
                             <span className="text-default-500">
                               Membership Number
                             </span>
-                            <span className="font-mono">
+                            <span className="font-mono tabular-nums">
                               {selectedUser.membership.membershipNumber}
                             </span>
                           </div>
@@ -1502,7 +1506,7 @@ export default function AdminUsersPage() {
                     <>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="secondary"
                         onPress={handleEditProfile}
                       >
                         <PencilIcon className="w-4 h-4 mr-1" />
@@ -1613,8 +1617,11 @@ export default function AdminUsersPage() {
 
                 <ModalBody className="py-6 max-h-[70vh] overflow-y-auto">
                   {loadingAudit ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                    <div className="flex items-center justify-center py-12" role="status" aria-label="Loading audit trail">
+                      <div className="text-center space-y-4">
+                        <Spinner size="lg" />
+                        <p className="text-muted">Loading audit trail...</p>
+                      </div>
                     </div>
                   ) : auditLogs.length === 0 ? (
                     <div className="text-center py-12">
