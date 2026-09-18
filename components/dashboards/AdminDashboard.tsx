@@ -4,6 +4,7 @@ import type { Application, Department } from "@/lib/types";
 import { readApiError } from "@/lib/errorHandler";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button, Card, CardContent, Chip, ProgressBar } from "@heroui/react";
 import {
   Users,
   Calendar,
@@ -91,28 +92,28 @@ export default function AdminDashboard() {
       label: "Total Users",
       value: totalUsers,
       icon: Users,
-      color: "text-primary",
+      tile: "bg-accent/10 text-accent",
       sub: `${membershipStats.active} active members`,
     },
     {
       label: "Total Events",
       value: totalEvents,
       icon: Calendar,
-      color: "text-blue-400",
+      tile: "bg-default/10 text-foreground",
       sub: `${activeEvents.length} active`,
     },
     {
       label: "Pending Applications",
       value: applicationStats.pending,
       icon: ClipboardCheck,
-      color: "text-amber-400",
+      tile: "bg-warning/10 text-warning",
       sub: "Awaiting review",
     },
     {
       label: "Active Members",
       value: membershipStats.active,
       icon: Ticket,
-      color: "text-emerald-400",
+      tile: "bg-success/10 text-success",
       sub: "Active memberships",
     },
   ];
@@ -185,13 +186,9 @@ export default function AdminDashboard() {
           the most common cause.
         </p>
         <div>
-          <button
-            type="button"
-            onClick={() => setRetryKey((key) => key + 1)}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          >
+          <Button variant="secondary" onPress={() => setRetryKey((key) => key + 1)}>
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -206,9 +203,9 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold tracking-tight">
               Admin Dashboard
             </h1>
-            <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+            <Chip size="sm" color="danger" variant="soft">
               Admin
-            </span>
+            </Chip>
           </div>
           <p className="text-muted">
             System overview and administrative controls.
@@ -222,24 +219,28 @@ export default function AdminDashboard() {
           const Icon = stat.icon;
 
           return (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-border bg-surface p-5"
-            >
-              <div className="flex items-center justify-between">
-                <Icon className={`w-5 h-5 ${stat.color}`} />
-                <span className="text-2xl font-bold">{stat.value}</span>
-              </div>
-              <p className="text-sm text-muted mt-2">{stat.label}</p>
-              <p className="text-xs text-muted mt-1">{stat.sub}</p>
-            </div>
+            <Card key={stat.label}>
+              <CardContent className="space-y-3 p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tile}`}>
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <span className="text-2xl font-bold tabular-nums">{stat.value}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{stat.label}</p>
+                  <p className="mt-0.5 text-xs text-muted">{stat.sub}</p>
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Membership Queue Quick View */}
-        <div className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Membership Queue</h2>
             <Link
@@ -252,30 +253,30 @@ export default function AdminDashboard() {
 
           {/* Application Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-amber-400">Pending</span>
+                <Clock className="size-4 text-warning" aria-hidden="true" />
+                <span className="text-sm text-warning">Pending</span>
               </div>
-              <p className="text-2xl font-bold mt-1">
+              <p className="mt-1 text-2xl font-bold tabular-nums">
                 {applicationStats.pending}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            <div className="rounded-xl border border-success/20 bg-success/5 p-4">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm text-emerald-400">Approved</span>
+                <CheckCircle className="size-4 text-success" aria-hidden="true" />
+                <span className="text-sm text-success">Approved</span>
               </div>
-              <p className="text-2xl font-bold mt-1">
+              <p className="mt-1 text-2xl font-bold tabular-nums">
                 {applicationStats.approved}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+            <div className="rounded-xl border border-danger/20 bg-danger/5 p-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                <span className="text-sm text-red-400">Rejected</span>
+                <AlertTriangle className="size-4 text-danger" aria-hidden="true" />
+                <span className="text-sm text-danger">Rejected</span>
               </div>
-              <p className="text-2xl font-bold mt-1">
+              <p className="mt-1 text-2xl font-bold tabular-nums">
                 {applicationStats.rejected}
               </p>
             </div>
@@ -290,10 +291,10 @@ export default function AdminDashboard() {
               {pendingApplications.slice(0, 5).map((app) => (
                 <div
                   key={app.$id}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10"
+                  className="flex items-center gap-4 p-3 rounded-xl border border-warning/10 bg-warning/5"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <ClipboardCheck className="w-4 h-4 text-amber-400" />
+                  <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                    <ClipboardCheck className="size-4 text-warning" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm">
@@ -308,14 +309,15 @@ export default function AdminDashboard() {
                         app.preferredDepartments.length > 0 && (
                           <>
                             <span>•</span>
-                            <span>{app.preferredDepartments.join(", ")}</span>
+                            <span className="truncate">{app.preferredDepartments.join(", ")}</span>
                           </>
                         )}
                     </div>
                   </div>
                   <Link
-                    className="text-amber-400 hover:text-amber-300"
+                    className="text-warning hover:opacity-80 shrink-0"
                     href="/admin/membership"
+                    aria-label={`Review application ${app.$id?.slice(-6)}`}
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
@@ -324,14 +326,16 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <CheckCircle className="w-10 h-10 text-emerald-500/50 mx-auto mb-3" />
+              <CheckCircle className="w-10 h-10 text-success/50 mx-auto mb-3" aria-hidden="true" />
               <p className="text-sm text-muted">No pending applications</p>
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Event Pipeline */}
-        <div className="rounded-2xl border border-border bg-surface p-6">
+        <Card>
+          <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Event Pipeline</h2>
             <Link
@@ -410,7 +414,8 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick links to the console sections */}
@@ -423,7 +428,7 @@ export default function AdminDashboard() {
             return (
               <Link
                 key={section.href}
-                className="group rounded-xl border border-border bg-surface p-5 hover:border-border hover:bg-surface-secondary transition-all duration-200"
+                className="group rounded-2xl border border-border bg-surface p-5 transition-all duration-200 hover:border-primary/40 hover:bg-surface-secondary"
                 href={section.href}
               >
                 <div className="flex items-start justify-between">
@@ -443,9 +448,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* System Health */}
-      <div className="rounded-2xl border border-border bg-surface p-6">
+      <Card>
+        <CardContent className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Activity className="w-5 h-5 text-emerald-400" />
+          <Activity className="size-5 text-success" aria-hidden="true" />
           <h2 className="text-lg font-semibold">System Health</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -454,46 +460,43 @@ export default function AdminDashboard() {
               label: "Active Members",
               value: membershipStats.active,
               total: totalUsers,
-              color: "bg-primary",
             },
             {
               label: "Active Events",
               value: activeEvents.length,
               total: totalEvents,
-              color: "bg-emerald-500",
             },
             {
               label: "Departments",
               value: departments.length,
               total: departments.length,
-              color: "bg-blue-500",
             },
             {
               label: "Application Rate",
               value: applicationStats.approved,
               total: applicationStats.approved + applicationStats.rejected,
-              color: "bg-amber-500",
             },
-          ].map((item) => (
-            <div key={item.label} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">{item.label}</span>
-                <span className="font-medium">
-                  {item.value}/{item.total}
-                </span>
+          ].map((item) => {
+            const percent = item.total > 0 ? Math.round((item.value / item.total) * 100) : 0;
+            return (
+              <div key={item.label} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted">{item.label}</span>
+                  <span className="font-medium tabular-nums">
+                    {item.value}/{item.total}
+                  </span>
+                </div>
+                <ProgressBar value={percent} aria-label={`${item.label}: ${percent} percent`}>
+                  <ProgressBar.Track>
+                    <ProgressBar.Fill />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
-              <div className="h-2 rounded-full bg-surface-secondary overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${item.color} transition-all`}
-                  style={{
-                    width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
