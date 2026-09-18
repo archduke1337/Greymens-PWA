@@ -21,6 +21,7 @@ const LEARN_LINKS = [
   { href: "/blog", label: "Blog" },
   { href: "/gallery", label: "Gallery" },
   { href: "/resources", label: "Resources" },
+  { href: "/links", label: "Links" },
   { href: "/sponsors", label: "Sponsors" },
 ];
 
