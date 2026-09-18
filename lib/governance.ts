@@ -113,8 +113,8 @@ export const GOVERNANCE_OFFICES: GovernanceOffice[] = [
 
 export const CHARTER_METADATA = {
   name: "GREYMEN's CLUB Constitution & Governance Charter",
-  status: "Draft for Ratification",
-  version: "0.9",
+  status: "In Force",
+  version: "1.0",
   school: "School of Engineering (SoE), ADYPU",
   president: "Aditya Yadav",
   presidentUrn: "E25B021436",
