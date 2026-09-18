@@ -42,12 +42,12 @@ export default function WriteBlogPage() {
       router.push("/login");
       return;
     }
-    // Create mode needs blog.create. Edit mode additionally admits reviewers:
-    // an editor without writing rights can still revise, and ownership itself
-    // is enforced by the API — the gate here only decides who sees the form.
-    const canWrite = hasCapability("blog.create");
-    const canReview = hasCapability("blog.review");
-    if (!canWrite && !(editId && canReview)) {
+    // Create mode needs blog.create. Edit mode admits any signed-in user:
+    // ownership is unknowable until the post loads, and the API enforces
+    // owner-or-reviewer — so denying here would lock out authors who can
+    // write but hold no blog.create grant, while a stranger only ever sees
+    // an empty form that redirects away ("not yours to edit").
+    if (!editId && !hasCapability("blog.create")) {
       toast.error("You don't have permission to create blogs");
       router.push("/unauthorized");
     }
