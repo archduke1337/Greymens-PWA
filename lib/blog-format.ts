@@ -18,7 +18,7 @@ export interface Blog {
   authorName: string;
   authorEmail: string;
   authorAvatar?: string;
-  status: "draft" | "pending" | "approved" | "rejected";
+  status: "draft" | "pending" | "approved" | "published" | "rejected";
   rejectionReason?: string;
   publishedAt?: string;
   views: number;
