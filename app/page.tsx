@@ -75,19 +75,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The club on one desk — drawn, not rendered */}
+      {/* The club in one illustration — same hand, same ink as the story */}
       <section className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6 sm:pt-20">
         <figure className="space-y-3">
           <div className="overflow-hidden rounded-3xl border border-default-200/70">
             <img
-              src="/Assets/Objects/about.png"
-              alt="Hand-drawn Greymens desk: mission poster, focus checklist, terminal, books, and a sleeping cat"
+              src="/Assets/Objects/intro.png"
+              alt="Hand-drawn Greymens scene: a member at a login screen under a watching eye, security books, a trust-no-one mug, and the club charter"
               loading="lazy"
               className="w-full object-cover"
             />
           </div>
           <figcaption className="text-center text-sm text-muted">
-            The whole club on one desk — curious minds, secure tomorrows.
+            Observe. Learn. Build. Operate. The whole club in one illustration.
           </figcaption>
         </figure>
       </section>
