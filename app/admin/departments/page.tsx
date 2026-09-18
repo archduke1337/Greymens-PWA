@@ -37,20 +37,21 @@ import {
   Select,
   Switch,
   TextArea,
+  Spinner,
   useOverlayState,
 } from "@heroui/react";
 import type { Department, UserDepartment, Profile } from "@/lib/types";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  technical: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  technical: "bg-accent/10 text-accent",
   content: "bg-muted text-muted-foreground",
-  operations: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  operations: "bg-success/10 text-success",
 };
 
 const ROLE_BADGES: Record<string, string> = {
   member: "bg-default-100 text-default-700",
   core_member: "bg-primary-100 text-primary-700",
-  lead: "bg-warning-100 text-warning-700",
+  lead: "bg-warning/10 text-warning",
 };
 
 export default function AdminDepartmentsPage() {
@@ -344,9 +345,9 @@ export default function AdminDepartmentsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Loading departments">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <Spinner size="lg" />
           <p className="mt-4">Loading departments...</p>
         </div>
       </div>
@@ -377,42 +378,42 @@ export default function AdminDepartmentsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Departments</p>
-                <p className="text-2xl font-bold">{departments.length}</p>
+                <p className="text-2xl font-bold tabular-nums">{departments.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <UsersIcon className="w-6 h-6 text-accent" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Technical</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {departments.filter((d) => d.category === "technical").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
                 <span className="text-xl">&#128187;</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Content</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {departments.filter((d) => d.category === "content").length}
                 </p>
               </div>
@@ -423,16 +424,16 @@ export default function AdminDepartmentsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Operations</p>
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-bold tabular-nums">
                   {departments.filter((d) => d.category === "operations").length}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
                 <span className="text-xl">&#9881;</span>
               </div>
             </div>
@@ -458,7 +459,7 @@ export default function AdminDepartmentsPage() {
         ) : (
           <div className="space-y-3">
             {departments.map((dept) => (
-              <Card key={dept.$id} className="border-none shadow-md">
+              <Card key={dept.$id}>
                 <CardContent className="p-0">
                   {/* Department Row */}
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4">
@@ -478,7 +479,7 @@ export default function AdminDepartmentsPage() {
                           {dept.category}
                         </Chip>
                         {!dept.isActive && (
-                          <Chip size="sm" className="bg-red-100 text-red-800">
+                          <Chip size="sm" className="bg-danger/10 text-danger">
                             Inactive
                           </Chip>
                         )}
@@ -496,7 +497,7 @@ export default function AdminDepartmentsPage() {
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-default-100 hover:bg-default-200 transition-colors cursor-pointer"
                     >
                       <UsersIcon className="w-4 h-4 text-default-500" />
-                      <span className="text-sm font-semibold">
+                      <span className="text-sm font-semibold tabular-nums">
                         {memberCounts[dept.$id!] || 0} members
                       </span>
                       {expandedDept === dept.$id ? (
@@ -518,7 +519,7 @@ export default function AdminDepartmentsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="primary"
+                        variant="danger-soft"
                         isIconOnly
                         isPending={deletingDeptId === dept.$id}
                         onPress={() => handleDelete(dept.$id!)}
@@ -530,7 +531,7 @@ export default function AdminDepartmentsPage() {
 
                   {/* Expanded Members View */}
                   {expandedDept === dept.$id && (
-                    <div className="border-t p-4 bg-default-50">
+                    <div className="border-t border-border p-4 bg-surface-secondary">
                       <h4 className="font-semibold text-sm mb-3">
                         Department Members
                       </h4>
@@ -576,8 +577,8 @@ export default function AdminDepartmentsPage() {
                         </Button>
                       </form>
                       {loadingMembers === dept.$id ? (
-                        <div className="flex items-center gap-2 py-4">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                        <div className="flex items-center gap-2 py-4" role="status" aria-label="Loading members">
+                          <Spinner size="lg" />
                           <span className="text-sm text-default-500">
                             Loading members...
                           </span>
@@ -591,7 +592,7 @@ export default function AdminDepartmentsPage() {
                           {deptMembers[dept.$id!]?.map((member) => (
                             <div
                               key={member.$id}
-                              className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-default-200"
+                              className="flex items-center justify-between p-3 bg-surface rounded-xl border border-border"
                             >
                               <div className="flex items-center gap-3">
                                 <MemberAvatar
@@ -628,7 +629,7 @@ export default function AdminDepartmentsPage() {
                                 </span>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
+                                  variant="danger-soft"
                                   isPending={removingUserId === member.userId}
                                   onPress={() => handleRemoveMember(dept.$id!, member.userId)}
                                 >

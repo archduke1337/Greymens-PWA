@@ -3,7 +3,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Card, CardContent, Chip, Input } from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input, Spinner } from "@heroui/react";
 import { ArrowLeft, SearchIcon } from "lucide-react";
 import MemberAvatar from "@/components/MemberAvatar";
 import RolesManager from "@/components/admin/RolesManager";
@@ -408,7 +408,7 @@ function AccessConsole() {
   if (visibleTabs.length === 0) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-12">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-8 text-center text-default-500">
             The access console requires access.assign_roles, governance.manage_offices, or powers.manage.
           </CardContent>
@@ -452,7 +452,7 @@ function AccessConsole() {
       </div>
 
       {notes.length > 0 && (
-        <ul className="mb-6 space-y-1 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-200">
+        <ul className="mb-6 space-y-1 rounded-xl border border-warning/20 bg-warning/5 p-4 text-sm text-warning">
           {notes.map((note) => (
             <li key={note}>{note}</li>
           ))}
@@ -469,20 +469,20 @@ function AccessConsole() {
               value={searchQuery}
               onChange={(event: any) => setSearchQuery(event.target.value)}
             />
-            <span className="text-sm text-default-500">
+            <span className="text-sm tabular-nums text-default-500">
               {loadingPeople ? "Loading…" : `${filteredPeople.length} member${filteredPeople.length === 1 ? "" : "s"}`}
             </span>
           </div>
 
           {loadingPeople ? (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center py-16" role="status" aria-label="Joining roles, offices and powers">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                <Spinner size="lg" />
                 <p className="mt-4">Joining roles, offices and powers...</p>
               </div>
             </div>
           ) : loadError ? (
-            <Card className="border-none shadow-sm">
+            <Card>
               <CardContent className="space-y-3 p-8 text-center">
                 <p className="text-default-500">{loadError}</p>
                 <Button variant="secondary" onPress={() => void loadPeople()}>
@@ -491,7 +491,7 @@ function AccessConsole() {
               </CardContent>
             </Card>
           ) : filteredPeople.length === 0 ? (
-            <Card className="border-none shadow-sm">
+            <Card>
               <CardContent className="p-8 text-center text-default-500">
                 {searchQuery.trim()
                   ? "No member matches that search."
@@ -500,7 +500,7 @@ function AccessConsole() {
             </Card>
           ) : (
             filteredPeople.map((person) => (
-              <Card key={person.userId} className="border-none shadow-sm">
+              <Card key={person.userId}>
                 <CardContent className="space-y-3 p-5">
                   <div className="flex items-center gap-3">
                     <MemberAvatar
@@ -642,8 +642,8 @@ export default function AdminAccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+        <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-label="Loading access console">
+          <Spinner size="lg" />
         </div>
       }
     >

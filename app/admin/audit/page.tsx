@@ -25,6 +25,7 @@ import {
   Input,
   ListBox,
   Select,
+  Spinner,
   Table,
   TableBody,
   TableCell,
@@ -265,8 +266,8 @@ export default function AdminAuditPage() {
 
   if (authLoading || loadingLogs) {
     return (
-      <div role="status" className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-hidden="true" />
+      <div role="status" aria-label="Loading audit log" className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" />
         <span className="sr-only">Loading audit log...</span>
       </div>
     );
@@ -286,12 +287,12 @@ export default function AdminAuditPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Total Logs</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.total}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <FileTextIcon className="w-6 h-6 text-primary" />
@@ -300,50 +301,50 @@ export default function AdminAuditPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Last 24h</p>
-                <p className="text-2xl font-bold">{stats.recent24h}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.recent24h}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <ClockIcon className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                <ClockIcon className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Actors on page</p>
-                <p className="text-2xl font-bold">{stats.uniqueActors}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.uniqueActors}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <UserIcon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <UserIcon className="w-6 h-6 text-accent" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-default-500">Action types on page</p>
-                <p className="text-2xl font-bold">{stats.uniqueActions}</p>
+                <p className="text-2xl font-bold tabular-nums">{stats.uniqueActions}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                <ActivityIcon className="w-6 h-6 text-yellow-600" />
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center">
+                <ActivityIcon className="w-6 h-6 text-warning" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-none shadow-lg mb-6">
+      <Card className="mb-6">
         <CardContent className="p-4">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -445,7 +446,7 @@ export default function AdminAuditPage() {
               {hasActiveFilters && (
                 <div className="flex items-end">
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onPress={clearFilters}
                   >
@@ -457,7 +458,7 @@ export default function AdminAuditPage() {
             </div>
           </div>
 
-          <div className="mt-3 text-sm text-default-500">
+          <div className="mt-3 text-sm tabular-nums text-default-500">
             Showing {filteredLogs.length} of {totalLogs} logs
             {hasServerFilters && " · filters applied to the whole log"}
             {userSearch.trim() && " · text search applies to this page"}
@@ -465,7 +466,7 @@ export default function AdminAuditPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-none shadow-lg">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -498,7 +499,7 @@ export default function AdminAuditPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <ClockIcon className="w-3 h-3 text-default-400 hidden sm:block" />
-                          <span className="text-xs sm:text-sm whitespace-nowrap">
+                          <span className="text-xs tabular-nums sm:text-sm whitespace-nowrap">
                             {formatTimestamp(log.timestamp)}
                           </span>
                         </div>
@@ -543,7 +544,7 @@ export default function AdminAuditPage() {
                         {log.details ? (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             onPress={() => toggleExpand(log.$id!)}
                             className="text-xs h-7"
                           >
@@ -588,7 +589,7 @@ export default function AdminAuditPage() {
                     detailsStr = String(log.details);
                   }
                   return (
-                    <div key={log.$id} className="p-4 bg-default-50 dark:bg-default-100/5">
+                    <div key={log.$id} className="p-4 bg-surface-secondary">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs font-semibold text-default-500 uppercase tracking-wider">
                           Details — {log.entityType}/{log.entityId}
@@ -602,7 +603,7 @@ export default function AdminAuditPage() {
                           <XIcon className="w-3 h-3" />
                         </Button>
                       </div>
-                      <pre className="text-xs font-mono bg-white dark:bg-gray-900 border border-default-200 rounded-lg p-3 overflow-x-auto max-h-60 overflow-y-auto">
+                      <pre className="text-xs font-mono bg-surface border border-border rounded-xl p-3 overflow-x-auto max-h-60 overflow-y-auto">
                         {detailsStr}
                       </pre>
                     </div>
@@ -615,13 +616,13 @@ export default function AdminAuditPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-default-500">
+          <p className="text-sm tabular-nums text-default-500">
             Page {page + 1} of {totalPages}
           </p>
           <div className="flex gap-2">
             <Button
               size="sm"
-              variant="ghost"
+              variant="secondary"
               isDisabled={page === 0}
               onPress={() => setPage((p) => Math.max(0, p - 1))}
             >
@@ -630,7 +631,7 @@ export default function AdminAuditPage() {
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="secondary"
               isDisabled={page >= totalPages - 1}
               onPress={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             >
