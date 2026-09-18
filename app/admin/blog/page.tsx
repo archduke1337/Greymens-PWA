@@ -349,6 +349,18 @@ export default function AdminBlogsPage() {
                       </Button>
                     </a>
 
+                    <a
+                      href={`/blog/write?edit=${blog.$id}`}
+                      className="flex-1 md:flex-none"
+                    >
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                      >
+                        Edit
+                      </Button>
+                    </a>
+
                     {blog.status === "pending" && (
                       <>
                         <Button
