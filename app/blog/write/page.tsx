@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, type ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
@@ -14,11 +14,16 @@ import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, 
 
 export default function WriteBlogPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
   const { user: authUser } = useAuth();
   const user = authUser as unknown as ExtendedUser | null;
   const { hasCapability, loading: permLoading } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editSlug, setEditSlug] = useState<string | null>(null);
+  const [loadingPost, setLoadingPost] = useState(Boolean(editId));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -37,15 +42,72 @@ export default function WriteBlogPage() {
       router.push("/login");
       return;
     }
-    // The server gates POST /api/blogs and /api/blogs/image with
-    // requireCapability("blog.create"). Checking the legacy permission
-    // vocabulary here resolved to admin-only, so everyone else was bounced
-    // from the editor even though the server would have accepted the post.
-    if (!hasCapability("blog.create")) {
+    // Create mode needs blog.create. Edit mode additionally admits reviewers:
+    // an editor without writing rights can still revise, and ownership itself
+    // is enforced by the API — the gate here only decides who sees the form.
+    const canWrite = hasCapability("blog.create");
+    const canReview = hasCapability("blog.review");
+    if (!canWrite && !(editId && canReview)) {
       toast.error("You don't have permission to create blogs");
       router.push("/unauthorized");
     }
-  }, [user, permLoading, hasCapability, router]);
+  }, [user, permLoading, hasCapability, router, editId]);
+
+  // Edit mode: fetch the post (own posts first, then the review queue for
+  // editors) and prefill the form. Slugs never change — links stay stable.
+  useEffect(() => {
+    if (!editId || permLoading || !user) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoadingPost(true);
+      try {
+        const fetchScope = async (scope: string) => {
+          const response = await fetch(`/api/blogs?scope=${scope}`, {
+            cache: "no-store",
+            credentials: "include",
+          });
+          if (!response.ok) return [];
+          const payload = (await response.json().catch(() => null)) as {
+            blogs?: Array<Record<string, unknown>>;
+          } | null;
+          return payload?.blogs ?? [];
+        };
+        let found = (await fetchScope("mine")).find((b) => b.$id === editId);
+        if (!found && hasCapability("blog.review")) {
+          found = (await fetchScope("all")).find((b) => b.$id === editId);
+        }
+        if (cancelled) return;
+        if (!found) {
+          toast.error("Post not found, or not yours to edit");
+          router.push("/blog");
+          return;
+        }
+        setFormData({
+          title: String(found.title ?? ""),
+          excerpt: String(found.excerpt ?? ""),
+          content: String(found.content ?? ""),
+          coverImage: String(found.coverImage ?? ""),
+          category: String(found.category ?? ""),
+          tags: Array.isArray(found.tags) ? (found.tags as string[]).join(", ") : "",
+        });
+        setEditSlug(typeof found.slug === "string" ? found.slug : null);
+        setIsEditing(true);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Error loading post for edit:", error);
+          toast.error("Could not load that post for editing");
+          router.push("/blog");
+        }
+      } finally {
+        if (!cancelled) setLoadingPost(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, permLoading, user]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,12 +183,46 @@ export default function WriteBlogPage() {
     setSubmitting(true);
 
     try {
-      const slug = generateSlug(formData.title);
-      const readTime = calculateReadTime(formData.content);
       const tags = formData.tags
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag);
+
+      // Edit mode revises in place (slug stable) instead of filing anew.
+      if (isEditing && editId) {
+        const response = await fetch("/api/blogs", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action: "edit",
+            blogId: editId,
+            title: formData.title,
+            excerpt: formData.excerpt,
+            content: formData.content,
+            coverImage: formData.coverImage,
+            category: formData.category,
+            tags,
+          }),
+        });
+        const payload = (await response.json().catch(() => null)) as {
+          error?: unknown;
+          resetToPending?: boolean;
+        } | null;
+        if (!response.ok) {
+          throw new Error(readApiError(payload, "Failed to save the edit"));
+        }
+        toast.success(
+          payload?.resetToPending
+            ? "Saved — a live post goes back for review after an author edit."
+            : "Post updated."
+        );
+        router.push(editSlug ? `/blog/${editSlug}` : "/blog");
+        return;
+      }
+
+      const slug = generateSlug(formData.title);
+      const readTime = calculateReadTime(formData.content);
 
       const response = await fetch("/api/blogs", {
         method: "POST",
@@ -182,14 +278,27 @@ export default function WriteBlogPage() {
           className="h-20 w-20 shrink-0 rounded-3xl border border-default-200/70 object-cover"
         />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Write a post</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {isEditing ? "Edit post" : "Write a post"}
+          </h1>
           <p className="mt-1 text-[15px] text-muted">
-            Think it through, write it plainly. The editorial board handles the rest.
+            {isEditing
+              ? "Revisions keep the same link. Editing a live post sends it back for review."
+              : "Think it through, write it plainly. The editorial board handles the rest."}
           </p>
         </div>
       </div>
 
       {/* Form */}
+      {editId && loadingPost && !isEditing ? (
+        <Card>
+          <CardContent className="space-y-3 p-8" aria-label="Loading post">
+            <div className="h-6 w-1/2 animate-pulse rounded-full bg-surface-secondary" />
+            <div className="h-3.5 w-full animate-pulse rounded-full bg-surface-secondary" />
+            <div className="h-3.5 w-2/3 animate-pulse rounded-full bg-surface-secondary" />
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="border-none shadow-xl">
         <CardHeader className="bg-muted">
           <h2 className="text-xl font-bold">Blog Details</h2>
@@ -363,7 +472,7 @@ export default function WriteBlogPage() {
             >
               <Label>Content</Label>
               <TextArea
-                placeholder="Write your blog content here... (Markdown supported)"
+                placeholder="Write your blog content here... Markdown works: # headings, **bold**, lists, code, tables"
                 rows={15}
               />
               <Description>
@@ -385,11 +494,11 @@ export default function WriteBlogPage() {
               </Button>
               <Button
                 className="flex-1"
-                isDisabled={submitting}
+                isDisabled={submitting || loadingPost}
                 isPending={submitting}
                 type="submit"
               >
-                Submit for Review
+                {isEditing ? "Save edit" : "Submit for Review"}
               </Button>
             </div>
 
@@ -397,16 +506,20 @@ export default function WriteBlogPage() {
             <Alert status="accent">
               <Alert.Indicator />
               <Alert.Content>
-                <Alert.Title>Reviewed before publishing</Alert.Title>
+                <Alert.Title>
+                  {isEditing ? "Edits keep the same link" : "Reviewed before publishing"}
+                </Alert.Title>
                 <Alert.Description>
-                  Our team reviews every post. You&apos;ll be notified once
-                  it&apos;s approved.
+                  {isEditing
+                    ? "Author edits to a live post return it to the review queue; reviewer touch-ups keep it live."
+                    : "Our team reviews every post. You'll be notified once it's approved."}
                 </Alert.Description>
               </Alert.Content>
             </Alert>
           </Form>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
