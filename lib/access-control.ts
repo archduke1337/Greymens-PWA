@@ -80,8 +80,8 @@ export const POWER_CAPABILITIES: Record<string, Capability[]> = {
     "registrations.manage",
   ],
   ticket_verifier: ["tickets.view", "tickets.verify", "tickets.invalidate"],
-  blog_creator: ["blog.create", "blog.submit"],
-  blog_reviewer: ["blog.review", "blog.approve", "blog.request_revision"],
+  blog_creator: ["blog.create"],
+  blog_reviewer: ["blog.review", "blog.approve"],
   gallery_manager: ["gallery.manage"],
   gallery_uploader: [],
   resource_manager: ["resources.manage"],
@@ -430,6 +430,26 @@ export async function requireCapability(
   capability: string,
   scope?: { type: string; id?: string },
 ): Promise<AuthResult> {
+  return requireAnyCapability(request, [capability], scope);
+}
+
+/**
+ * `requireCapability` for a set: the caller needs any one of them.
+ *
+ * Used where one action is legitimately reachable through more than one grant —
+ * an event's `approve` step through a blanket `events.manage` or through the
+ * narrower `events.approve`, an office's template edits through
+ * `access.manage_role_templates` or `access.assign_roles`. Expressing the
+ * alternatives here keeps the restriction and bootstrap rules in one place;
+ * a route that re-implemented the preamble would eventually miss one.
+ *
+ * One capability read for the whole set, not one per candidate.
+ */
+export async function requireAnyCapability(
+  request: NextRequest,
+  capabilities: readonly string[],
+  scope?: { type: string; id?: string },
+): Promise<AuthResult> {
   const authenticated = await requireAuthenticatedUser(request);
 
   if (!authenticated.user) return authenticated;
@@ -449,14 +469,17 @@ export async function requireCapability(
   // "account" for them. Honor the same allowlist the status ladder uses —
   // after the restriction check, so a ban still wins.
   if (isBootstrapAdmin(authenticated.user.email)) return authenticated;
-  if (!(await hasServerCapability(authenticated.user.$id, capability, scope))) {
-    return {
-      user: null,
-      response: fail("FORBIDDEN", "Forbidden", 403),
-    };
+
+  const held = await getEffectiveCapabilities(authenticated.user.$id, scope);
+
+  if (held.has("*") || capabilities.some((capability) => held.has(capability))) {
+    return authenticated;
   }
 
-  return authenticated;
+  return {
+    user: null,
+    response: fail("FORBIDDEN", "Forbidden", 403),
+  };
 }
 
 export async function getAccessSummary(userId: string, knownStatus?: string) {

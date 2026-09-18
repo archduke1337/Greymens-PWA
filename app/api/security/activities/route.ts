@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { RESTRICTED_STATUSES, getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
-import { requireCapability, hasServerCapability } from "@/lib/access-control";
+import { requireAnyCapability, hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail, ApiError } from "@/lib/api";
@@ -85,7 +85,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "security.manage_incidents");
+  // Deciding an authorized-activity request is `security.authorize_activity`
+  // (cybersecurity_lead, ctf_lead) or the wider incident-management grant.
+  // The capability was granted by two offices and read by nothing, so an
+  // office appointed to sanction activity could not approve its own queue.
+  const authenticated = await requireAnyCapability(request, [
+    "security.authorize_activity",
+    "security.manage_incidents",
+  ]);
   if (!authenticated.user) return authenticated.response;
   try {
     const body = await request.json() as { activityId?: unknown; status?: unknown };

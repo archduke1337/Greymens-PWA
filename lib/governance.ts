@@ -316,11 +316,12 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     auditAction: "designation.assign / designation.revoke",
   },
   {
-    // governance.manage, not governance.view_records: /api/admin/governance gates
-    // every method — including GET — on `governance.manage`. Listing view_records
-    // here advertised a page to documentation_lead (who holds it) that the API
-    // then refuses with a 403. `governance.view_records` is currently granted by
-    // three offices and enforced by nothing; see docs/ACCESS_MODEL.md.
+    // `governance.manage` is the whole story for this screen: /api/admin/governance
+    // gates every method — including GET — on it, and the rows it serves include
+    // `restricted` visibility. A read-only `governance.view_records` used to be
+    // granted by two offices while no route read it; it was dropped rather than
+    // wired, because handing out read access here needs a visibility filter
+    // first. See docs/ACCESS_MODEL.md.
     href: "/admin/governance",
     label: "Constitutional records",
     office: "general_secretary",
@@ -351,7 +352,7 @@ export function pagesForCapabilities(
 ): GovernedPage[] {
   const set = caps instanceof Set ? caps : new Set(caps);
 
-  if (set.has("*") || set.has("ALL_PERMISSIONS")) return GOVERNED_PAGES;
+  if (set.has("*")) return GOVERNED_PAGES;
 
   return GOVERNED_PAGES.filter((p) => p.capabilities.some((c) => set.has(c)));
 }

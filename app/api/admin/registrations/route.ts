@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { createSignedTicket } from "@/lib/server/tickets";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -28,7 +28,15 @@ async function issueTicket(
 }
 
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "registrations.manage");
+  // Reading an event's registration list is `registrations.view` — the grant
+  // community_lead and event_coordinator hold for running their own events.
+  // Changing a registration is `registrations.manage`, checked on PATCH.
+  // Listing used to demand the managing capability, so the two offices that
+  // were chartered to see registrations could not open the list at all.
+  const authenticated = await requireAnyCapability(request, [
+    "registrations.view",
+    "registrations.manage",
+  ]);
   if (!authenticated.user) return authenticated.response;
 
   try {

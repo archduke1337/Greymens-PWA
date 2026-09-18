@@ -12,21 +12,23 @@
  * - General Council: communications, editorial, marketing, social, docs, membership, community
  * - Technical: software_web, ai_ml_data, infra_systems, ctf
  * Capabilities below map 1:1 to Charter Article 52 authority matrix.
+ *
+ * An entry here is a promise that some route enforces it (or, for
+ * `departments.view`, that a payload reads it to choose a view). A name that
+ * nothing grants and nothing checks is not vocabulary, it is a trap: it shows
+ * up in the capability picker, an administrator ticks it, and nothing happens.
+ * `tests/auth-matrix.test.ts` fails the build when the two drift apart in
+ * either direction, so deletions are cheap and silent dead names are not.
  */
 export const CAPABILITIES = [
   "blog.create",
-  "blog.edit_own",
-  "blog.submit",
   "blog.review",
-  "blog.request_revision",
   "blog.approve",
   "blog.publish",
   "blog.feature",
   "access.assign_roles",
   "access.manage_role_templates",
-  "access.manage_powers",
   "governance.manage",
-  "governance.view_records",
   "governance.manage_offices",
   "events.create",
   "events.update",
@@ -34,7 +36,6 @@ export const CAPABILITIES = [
   "events.approve",
   "events.publish",
   "registrations.view",
-  "registrations.create",
   "registrations.manage",
   "tickets.view",
   "tickets.verify",
@@ -44,7 +45,6 @@ export const CAPABILITIES = [
   "membership.reject",
   "users.view",
   "users.update",
-  "users.manage_roles",
   "departments.view",
   "departments.manage",
   "designations.assign",
@@ -81,9 +81,12 @@ export const OFFICE_CAPABILITIES: Record<string, Capability[]> = {
     "audit.view",
   ],
   vice_president: ["governance.manage", "events.approve"],
+  // No governance.view_records: reading the constitutional record is not a
+  // separate grant on its own screen — /admin/governance serves records of
+  // `restricted` visibility to its readers, so a read-only capability there
+  // would have to filter by visibility before it could be handed out.
   general_secretary: [
     "governance.manage",
-    "governance.view_records",
     "membership.view_applications",
     "audit.view",
   ],
@@ -105,7 +108,7 @@ export const OFFICE_CAPABILITIES: Record<string, Capability[]> = {
   editorial_lead: ["blog.review", "blog.approve", "blog.publish"],
   marketing_lead: ["sponsors.manage"],
   social_media_lead: ["notifications.send"],
-  documentation_lead: ["governance.view_records", "resources.manage"],
+  documentation_lead: ["resources.manage"],
   membership_lead: [
     "membership.view_applications",
     "membership.approve",

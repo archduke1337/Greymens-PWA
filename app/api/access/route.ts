@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
-import { getAccessSummary, isCapability, requireCapability, hasServerCapability, unheldCapabilities } from "@/lib/access-control";
+import { getAccessSummary, isCapability, requireAnyCapability, hasServerCapability, unheldCapabilities } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -93,7 +93,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const authenticated = await requireCapability(request, "access.assign_roles");
+  // Creating a role template is `access.manage_role_templates`; assigning one
+  // is `access.assign_roles`. The route serves both, so it opens on either and
+  // each branch narrows to its own below.
+  const authenticated = await requireAnyCapability(request, [
+    "access.assign_roles",
+    "access.manage_role_templates",
+  ]);
   if (!authenticated.user) return authenticated.response;
   if (!consumeRateLimit(`access-mutate:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
@@ -129,6 +135,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === "assign_role") {
+      // Writing a template and handing one out are different jobs, so the
+      // capability that names the first one is checked here rather than assumed
+      // from the coarse gate above: a template editor may not assign.
+      const canAssign = await requireAnyCapability(request, ["access.assign_roles"]);
+      if (!canAssign.user) return canAssign.response;
       // userId/roleId are Appwrite document IDs (36 chars): validating wider
       // only moves the failure to the column size.
       const userId = text(body.userId, 36);
@@ -175,7 +186,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "access.assign_roles");
+  // assignmentId edits an assignment (access.assign_roles); roleId rewrites a
+  // template (access.manage_role_templates or access.assign_roles). Same split
+  // as POST: open on either, narrow per branch.
+  const authenticated = await requireAnyCapability(request, [
+    "access.assign_roles",
+    "access.manage_role_templates",
+  ]);
   if (!authenticated.user) return authenticated.response;
   if (!consumeRateLimit(`access-mutate:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
@@ -186,6 +203,8 @@ export async function PATCH(request: NextRequest) {
     const roleId = text(body.roleId, 100);
     const { databases } = createServerDatabases();
     if (assignmentId) {
+      const canAssign = await requireAnyCapability(request, ["access.assign_roles"]);
+      if (!canAssign.user) return canAssign.response;
       const expiresRaw = text(body.expiresAt, 40);
       if (expiresRaw && !validFutureDate(expiresRaw)) {
         return fail("VALIDATION", "expiresAt must be a future ISO date", 400);

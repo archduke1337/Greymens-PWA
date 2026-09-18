@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ID } from "appwrite";
 import { ok, fail, ApiError } from "@/lib/api";
@@ -106,17 +106,54 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const PATCH_ACTIONS = new Set(["update", "approve", "reject", "publish"]);
+
+/**
+ * Event lifecycle, one capability per step.
+ *
+ * Every step used to sit behind a single `events.manage`, which meant `events.approve`
+ * (president, vice_president) and `events.publish` (cto) were granted by offices and
+ * checked by nothing — an officer could hold the capability their charter names and
+ * still be refused the action. Each step now asks for its own, with `events.manage` as
+ * the blanket alternative so managers and administrators lose nothing.
+ */
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "events.manage");
+  // Coarse gate first: the caller must hold some event-lifecycle capability before
+  // the payload is even read. The narrow gate follows once we know the action.
+  const authenticated = await requireAnyCapability(request, [
+    "events.manage",
+    "events.update",
+    "events.approve",
+    "events.publish",
+  ]);
   if (!authenticated.user) return authenticated.response;
   try {
     const body = await request.json() as { eventId?: unknown; action?: unknown; reason?: unknown };
     const eventId = typeof body.eventId === "string" ? body.eventId.trim() : "";
-    const action = body.action;
+    const action = String(body.action ?? "");
     if (!eventId) return fail("VALIDATION", "eventId is required", 400);
+    if (!PATCH_ACTIONS.has(action)) return fail("VALIDATION", "Invalid event action", 400);
     const { databases } = createServerDatabases();
 
+    // ".user" is this module's answer to "was the gate satisfied": the 403 it
+    // carries distinguishes a restricted account from a missing grant for us.
+    const blanket = (await requireAnyCapability(request, ["events.manage"])).user !== null;
+
     if (action === "update") {
+      if (!blanket) {
+        const narrow = await requireAnyCapability(request, ["events.update"]);
+        if (!narrow.user) return narrow.response;
+        // events.update without events.manage is a coordinator's grant: it covers
+        // the events they run, not every event on the platform. Ownership is the
+        // same boundary /api/events PATCH draws for the self-service path.
+        const current = await databases
+          .getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId)
+          .catch(() => null);
+        if (!current) return fail("NOT_FOUND", "Event not found", 404);
+        if (String(current.ownerId ?? "") !== authenticated.user.$id) {
+          return fail("FORBIDDEN", "You can only edit events you own", 403);
+        }
+      }
       const raw = body as Record<string, unknown>;
       const updates: Record<string, unknown> = {};
       const stringFields: Array<[string, number]> = [
@@ -183,8 +220,12 @@ export async function PATCH(request: NextRequest) {
       return ok({ event });
     }
 
-    if (!["approve", "reject", "publish"].includes(String(action))) {
-      return fail("VALIDATION", "Invalid event action", 400);
+    if (!blanket) {
+      // Rejecting is an approval decision, so it shares events.approve.
+      const narrow = await requireAnyCapability(request, [
+        action === "publish" ? "events.publish" : "events.approve",
+      ]);
+      if (!narrow.user) return narrow.response;
     }
     const now = new Date().toISOString();
     const data = action === "approve"

@@ -4,7 +4,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
-import { hasServerCapability } from "@/lib/access-control";
+import { hasServerCapability, requireAnyCapability } from "@/lib/access-control";
 import { findUserIdByEmail } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -22,6 +22,20 @@ const MAX_TICKETS = 200;
  * at all — the capability was granted and never consulted. Both routes now ask
  * the same question as every other capability-gated route.
  */
+/**
+ * Reading tickets: door authority, or the read-only `tickets.view` grant.
+ *
+ * event_coordinator is chartered to see an event's door list without being
+ * appointed to work it, and the governed-page map already advertises that list
+ * under `tickets.view`. Until now the capability was granted and checked by
+ * nothing, so the only way to read a list was to hold door authority — which
+ * made the office a grant with no effect.
+ */
+async function canReadTickets(request: NextRequest) {
+  return requireAnyCapability(request, ["tickets.verify", "tickets.view"]);
+}
+
+/** Working the door: check-in authority and nothing less. */
 async function canVerify(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
 
@@ -67,7 +81,7 @@ async function ownsEvent(eventId: string, userId: string): Promise<boolean> {
  * member could enumerate an event's entire attendee list.
  */
 export async function GET(request: NextRequest) {
-  const authenticated = await canVerify(request);
+  const authenticated = await canReadTickets(request);
 
   if (!authenticated.user) return authenticated.response;
 
@@ -213,6 +227,14 @@ export async function PATCH(request: NextRequest) {
 
     if (!ticketId || !["checkIn", "invalidate"].includes(action)) {
       return fail("VALIDATION", "Invalid ticket action", 400);
+    }
+    // Invalidating burns someone's ticket: it is its own capability, held by
+    // the ticket_verifier power. The cybersecurity_lead office grants door
+    // authority without it, and previously inheriting it silently meant the
+    // narrower grant could destroy a ticket.
+    if (action === "invalidate") {
+      const canInvalidate = await requireAnyCapability(request, ["tickets.invalidate"]);
+      if (!canInvalidate.user) return canInvalidate.response;
     }
 
     const { databases } = createServerDatabases();

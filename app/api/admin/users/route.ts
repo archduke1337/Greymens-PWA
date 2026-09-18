@@ -228,10 +228,10 @@ export async function PATCH(request: NextRequest) {
     return fail("VALIDATION", "userId is required", 400);
 
   // Tier grants and bans are single-writer sensitive: throttle per actor.
-  // Note on granularity: set_governance_role shares the users.update gate.
-  // users.manage_roles exists in the vocabulary but no office or template
-  // grants it, so splitting the gate today would only add confusion — only
-  // "*" holders reach this switch at all.
+  // Note on granularity: set_governance_role shares the users.update gate — the
+  // governance tier is granted here, not through the roles console. There is no
+  // separate capability for it; the old `users.manage_roles` name was granted by
+  // nothing and checked by nothing, and has been dropped from the vocabulary.
   if (!consumeRateLimit(`admin-users:${authenticated.user.$id}`, 60, 10 * 60 * 1000).allowed) {
     return fail("RATE_LIMITED", "Too many requests", 429);
   }

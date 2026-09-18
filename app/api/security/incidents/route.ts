@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { RESTRICTED_STATUSES, getMembershipStatus, requireAuthenticatedUser } from "@/lib/server-auth";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail, ApiError } from "@/lib/api";
@@ -73,13 +73,26 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "security.manage_incidents");
+  // Containing an incident and running the incident queue are separate grants.
+  // infrastructure_systems_lead is chartered for the first and not the second,
+  // so the route opens on either and narrows below: a contain-only holder may
+  // move an incident to `contained` and nothing else. Both capabilities were
+  // previously granted and neither was read — the whole endpoint answered to
+  // security.manage_incidents.
+  const authenticated = await requireAnyCapability(request, [
+    "security.manage_incidents",
+    "security.contain",
+  ]);
   if (!authenticated.user) return authenticated.response;
   try {
     const body = await request.json() as { incidentId?: unknown; status?: unknown; resolution?: unknown; assignedTo?: unknown };
     const incidentId = typeof body.incidentId === "string" ? body.incidentId.trim() : "";
     const status = typeof body.status === "string" ? body.status.trim() : "";
     if (!incidentId || !STATUSES.has(status)) return fail("VALIDATION", "Invalid incident update", 400);
+    if (status !== "contained") {
+      const managesIncidents = await requireAnyCapability(request, ["security.manage_incidents"]);
+      if (!managesIncidents.user) return managesIncidents.response;
+    }
     const data: Record<string, unknown> = { status, updatedAt: new Date().toISOString() };
     if (typeof body.resolution === "string") data.resolution = body.resolution.trim().slice(0, 65535);
     if (typeof body.assignedTo === "string") data.assignedTo = body.assignedTo.trim().slice(0, 36);
