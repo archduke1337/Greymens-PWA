@@ -4,7 +4,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { DATABASE_ID, COLLECTIONS } from "@/lib/database";
 import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
-import { hasPower } from "@/lib/access-control";
+import { hasServerCapability } from "@/lib/access-control";
 import { findUserIdByEmail } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -14,12 +14,13 @@ import { ok, fail, ApiError } from "@/lib/api";
 const MAX_TICKETS = 200;
 
 /**
- * Door authority: an administrator, a holder of the `ticket_verifier` power, or
- * the owner of the event being scanned.
+ * Door authority: an administrator, a holder of the `tickets.verify`
+ * capability, or the owner of the event being scanned.
  *
- * The previous inline check read `user_powers` directly and ignored `expiresAt`,
- * so a verification grant stayed usable after it had expired. It now goes
- * through the shared helper, which honours expiry.
+ * The check used to read the legacy `ticket_verifier` power, which meant an
+ * office that grants `tickets.verify` (cybersecurity_lead) had no door access
+ * at all — the capability was granted and never consulted. Both routes now ask
+ * the same question as every other capability-gated route.
  */
 async function canVerify(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
@@ -27,7 +28,7 @@ async function canVerify(request: NextRequest) {
   if (!authenticated.user) return authenticated;
 
   if (await isAdminUser(authenticated.user)) return authenticated;
-  if (await hasPower(authenticated.user.$id, "ticket_verifier"))
+  if (await hasServerCapability(authenticated.user.$id, "tickets.verify"))
     return authenticated;
 
   return {
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
     if (eventId) {
       const permitted =
         (await isAdminUser(authenticated.user)) ||
-        (await hasPower(authenticated.user.$id, "ticket_verifier")) ||
+        (await hasServerCapability(authenticated.user.$id, "tickets.verify")) ||
         (await ownsEvent(eventId, authenticated.user.$id));
 
       if (!permitted) {
@@ -179,7 +180,7 @@ export async function GET(request: NextRequest) {
     const isOwner = await ownsEvent(String(ticket.eventId ?? ""), authenticated.user.$id);
     const isDoorAuthority =
       (await isAdminUser(authenticated.user)) ||
-      (await hasPower(authenticated.user.$id, "ticket_verifier")) ||
+      (await hasServerCapability(authenticated.user.$id, "tickets.verify")) ||
       isOwner;
     if (!isDoorAuthority) {
       // Uniform 404 to avoid existence oracle.
@@ -231,13 +232,13 @@ export async function PATCH(request: NextRequest) {
     if (requestedEventId && String(ticket.eventId ?? "") !== requestedEventId) {
       return fail("NOT_FOUND", "Ticket not found", 404);
     }
-    // Event-scope enforcement: non-admin callers must own the event or hold
-    // ticket_verifier power. Verifiers remain cross-event until event↔dept
+    // Event-scope enforcement: non-admin callers must own the event or hold the
+    // tickets.verify capability. Verifiers remain cross-event until event↔dept
     // linkage exists, but ownership is now checked and logged.
     const eventIdForScope = String(ticket.eventId ?? "");
     const callerIsAdmin = await isAdminUser(authenticated.user);
     const callerOwnsEvent = eventIdForScope ? await ownsEvent(eventIdForScope, authenticated.user.$id) : false;
-    const callerIsVerifier = await hasPower(authenticated.user.$id, "ticket_verifier");
+    const callerIsVerifier = await hasServerCapability(authenticated.user.$id, "tickets.verify");
     if (!callerIsAdmin && !callerOwnsEvent && !callerIsVerifier) {
       return fail("FORBIDDEN", "Forbidden", 403);
     }

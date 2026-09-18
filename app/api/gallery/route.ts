@@ -3,8 +3,8 @@ import { ID, Query } from "appwrite";
 import { createAdminClient } from "@/lib/appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { isAdminUser, requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
-import { hasPower } from "@/lib/access-control";
+import { requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
+import { hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
@@ -126,7 +126,14 @@ export async function POST(request: NextRequest) {
       imageUrl = providedUrl;
     }
 
-    const canModerate = (await isAdminUser(authenticated.user)) || (await hasPower(authenticated.user.$id, "gallery_manager"));
+    // Moderation authority is the capability, the same one /api/admin/gallery
+    // requires. It used to be read here as the legacy `gallery_manager` power,
+    // so a manager who held gallery.manage still had their own uploads queued
+    // as pending — two answers to one question.
+    const canModerate = await hasServerCapability(
+      authenticated.user.$id,
+      "gallery.manage",
+    );
     const now = new Date().toISOString();
 
     const image = await databases.createDocument(DATABASE_ID, COLLECTIONS.GALLERY, ID.unique(), {
