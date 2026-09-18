@@ -1,12 +1,12 @@
 // app/admin/events/page.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/types";
 import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import { toast } from "sonner";
-import { PlusIcon, Pencil, Trash2, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
+import { PlusIcon, Pencil, Trash2, XIcon, Image as ImageIcon, CalendarIcon, MapPinIcon, UsersIcon, DollarSignIcon, TagIcon, StarIcon, CrownIcon, TrendingUpIcon, LinkIcon } from "lucide-react";
 import { Button, Card, CardContent, Chip, Input, Label, ListBox, Select, Modal, ModalBackdrop, ModalContainer, ModalDialog, ModalBody, ModalFooter, ModalHeader, Switch, Tab, TabListContainer, TabList, TabIndicator, TabPanel, Table, TableBody, TableCell, TableColumn, TableHeader, TableContent, TableScrollContainer, TableRow, Tabs, TextArea, useOverlayState } from "@heroui/react";
 
 export default function AdminEventsPage() {
@@ -69,6 +69,7 @@ export default function AdminEventsPage() {
       setEvents(payload.events ?? []);
     } catch (error) {
       console.error("Error loading events:", error);
+      toast.error(getErrorMessage(error) || "Unable to load events");
     } finally {
       setLoadingEvents(false);
     }
@@ -98,6 +99,22 @@ export default function AdminEventsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Explicit validation with tab names: required inputs live across tab
+    // panels, so native `required` (removed from this form) could block
+    // submit from a hidden tab with no visible cue. Check here instead.
+    const missing: string[] = [];
+    if (!formData.title?.trim()) missing.push("title (Basic Info tab)");
+    if (!formData.description?.trim()) missing.push("description (Basic Info tab)");
+    if (!formData.date) missing.push("date (Date & Location tab)");
+    if (!formData.time?.trim()) missing.push("time (Date & Location tab)");
+    if (!formData.venue?.trim()) missing.push("venue (Date & Location tab)");
+    if (!formData.location?.trim()) missing.push("location (Date & Location tab)");
+    if (!formData.organizerName?.trim()) missing.push("organizer name (Organizer tab)");
+    if (missing.length > 0) {
+      toast.error(`Missing required fields: ${missing.join(", ")}`);
+      return;
+    }
+
     // Validation
     if (!formData.image || !formData.image.startsWith('http')) {
       toast.error("Please enter a valid image URL (must start with http:// or https://)");
@@ -109,6 +126,32 @@ export default function AdminEventsPage() {
       return;
     }
 
+    // The server requires whole numbers: decimals 400, NaN 400s, and a
+    // cleared field must not silently become free (0) or default (50).
+    const price = Number(formData.price);
+    const capacity = Number(formData.capacity);
+    if (!Number.isInteger(price) || price < 0) {
+      toast.error("Price must be a whole number, 0 or more (Pricing tab)");
+      return;
+    }
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      toast.error("Capacity must be a whole number, 1 or more (Pricing tab)");
+      return;
+    }
+    const discountRaw = formData.discountPrice;
+    const discountPrice =
+      discountRaw === null || discountRaw === undefined || discountRaw === ""
+        ? null
+        : Number(discountRaw);
+    if (discountPrice !== null && (!Number.isFinite(discountPrice) || discountPrice < 0)) {
+      toast.error("Discount price must be 0 or more (Pricing tab)");
+      return;
+    }
+    if (discountPrice !== null && discountPrice >= price) {
+      toast.error("Discount price must be less than the regular price (Pricing tab)");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -116,7 +159,9 @@ export default function AdminEventsPage() {
         method: editingEvent ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(editingEvent ? { action: "update", eventId: editingEvent.$id, ...formData } : formData),
+        body: JSON.stringify(editingEvent
+          ? { action: "update", eventId: editingEvent.$id, ...formData, price, capacity, discountPrice }
+          : { ...formData, price, capacity, discountPrice }),
       });
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(readApiError(payload, "Unable to save event"));
@@ -539,8 +584,7 @@ export default function AdminEventsPage() {
                       <Input
                         placeholder="https://example.com/image.jpg"
                         value={formData.image}
-                        onChange={(e: any) => handleInputChange("image", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("image", e.target.value)}
                       />
                       {formData.image && formData.image.startsWith('http') && (
                         <div className="relative group w-full">
@@ -548,8 +592,8 @@ export default function AdminEventsPage() {
                             src={formData.image} 
                             alt="Preview" 
                             className="w-full h-48 object-cover rounded-xl border-2 border-border"
-                            onError={(e: any) => {
-                              e.currentTarget.src = "https://via.placeholder.com/400x300?text=Invalid+Image+URL";
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
                             }}
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
@@ -567,15 +611,13 @@ export default function AdminEventsPage() {
                     <Input
                       placeholder="Enter event title"
                       value={formData.title}
-                      onChange={(e: any) => handleInputChange("title", e.target.value)}
-                      required
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("title", e.target.value)}
                     />
 
                     <TextArea
                       placeholder="Describe your event in detail"
                       value={formData.description}
-                      onChange={(e: any) => handleInputChange("description", e.target.value)}
-                      required
+                      onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleInputChange("description", e.target.value)}
                     />
 
                     <Select
@@ -603,7 +645,7 @@ export default function AdminEventsPage() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-xl">
                       <Switch
                         isSelected={formData.isFeatured}
-                        onChange={(checked: any) => handleInputChange("isFeatured", checked)}
+                        onChange={(checked: boolean) => handleInputChange("isFeatured", checked)}
                         aria-label="Featured"
                       >
                         <Switch.Content>
@@ -618,7 +660,7 @@ export default function AdminEventsPage() {
                       </Switch>
                       <Switch
                         isSelected={formData.isPremium}
-                        onChange={(checked: any) => handleInputChange("isPremium", checked)}
+                        onChange={(checked: boolean) => handleInputChange("isPremium", checked)}
                         aria-label="Premium"
                       >
                         <Switch.Content>
@@ -641,15 +683,13 @@ export default function AdminEventsPage() {
                       <Input
                         type="date"
                         value={formData.date}
-                        onChange={(e: any) => handleInputChange("date", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("date", e.target.value)}
                       />
                       <Input
                         type="text"
                         placeholder="e.g., 09:00 AM - 06:00 PM"
                         value={formData.time}
-                        onChange={(e: any) => handleInputChange("time", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("time", e.target.value)}
                       />
                     </div>
 
@@ -657,14 +697,12 @@ export default function AdminEventsPage() {
                       <Input
                         placeholder="e.g., Grand Convention Center"
                         value={formData.venue}
-                        onChange={(e: any) => handleInputChange("venue", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("venue", e.target.value)}
                       />
                       <Input
                         placeholder="e.g., New York, NY"
                         value={formData.location}
-                        onChange={(e: any) => handleInputChange("location", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("location", e.target.value)}
                       />
                     </div>
 
@@ -688,21 +726,19 @@ export default function AdminEventsPage() {
                         type="number"
                         placeholder="0"
                         value={formData.price?.toString()}
-                        onChange={(e: any) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("price", e.target.value === "" ? 0 : Number(e.target.value))}
                       />
                       <Input
                         type="number"
                         placeholder="Optional"
                         value={formData.discountPrice?.toString() || ""}
-                        onChange={(e: any) => handleInputChange("discountPrice", e.target.value ? parseFloat(e.target.value) : null)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("discountPrice", e.target.value === "" ? null : Number(e.target.value))}
                       />
                       <Input
                         type="number"
                         placeholder="50"
                         value={formData.capacity?.toString()}
-                        onChange={(e: any) => handleInputChange("capacity", parseInt(e.target.value) || 50)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("capacity", e.target.value === "" ? 0 : Number(e.target.value))}
                       />
                     </div>
 
@@ -736,8 +772,7 @@ export default function AdminEventsPage() {
                     <Input
                       placeholder="e.g., John Doe"
                       value={formData.organizerName}
-                      onChange={(e: any) => handleInputChange("organizerName", e.target.value)}
-                      required
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("organizerName", e.target.value)}
                     />
                     
                     <div className="space-y-3">
@@ -748,8 +783,7 @@ export default function AdminEventsPage() {
                       <Input
                         placeholder="https://example.com/avatar.jpg"
                         value={formData.organizerAvatar}
-                        onChange={(e: any) => handleInputChange("organizerAvatar", e.target.value)}
-                        required
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleInputChange("organizerAvatar", e.target.value)}
                       />
                       {formData.organizerAvatar && formData.organizerAvatar.startsWith('http') && (
                         <div className="flex items-center gap-3 p-3 bg-default-100 dark:bg-default-50/10 rounded-lg">
@@ -757,8 +791,8 @@ export default function AdminEventsPage() {
                             src={formData.organizerAvatar} 
                             alt="Avatar preview" 
                             className="w-12 h-12 rounded-full object-cover border-2 border-border"
-                            onError={(e: any) => {
-                              e.currentTarget.src = "https://via.placeholder.com/100?text=Invalid";
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
                             }}
                           />
                           <span className="text-sm text-default-600">Avatar Preview</span>
@@ -776,8 +810,8 @@ export default function AdminEventsPage() {
                         <Input
                           placeholder="Add a tag (e.g., AI, Networking)"
                           value={tagInput}
-                          onChange={(e: any) => setTagInput(e.target.value)}
-                          onKeyPress={(e: any) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
                               handleAddTag();
@@ -795,13 +829,17 @@ export default function AdminEventsPage() {
                       {formData.tags && formData.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 p-4 bg-default-100 dark:bg-default-50/10 rounded-xl">
                           {formData.tags.map((tag, index) => (
-                            <Chip 
-                              key={index} 
-                              variant="primary"
-                              className="font-medium"
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => handleRemoveTag(tag)}
+                              aria-label={`Remove tag ${tag}`}
+                              title="Remove tag"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                             >
                               {tag}
-                            </Chip>
+                              <XIcon className="w-3 h-3" />
+                            </button>
                           ))}
                         </div>
                       )}
@@ -825,7 +863,7 @@ export default function AdminEventsPage() {
 
             <ModalFooter className="border-t pt-4">
               <Button 
-                variant="primary" 
+                variant="secondary" 
                 className="w-full sm:w-auto"
                 onPress={handleCloseModal}
               >
