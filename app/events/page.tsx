@@ -1,7 +1,6 @@
 // app/events/page.tsx
 "use client";
 
-import { title, subtitle } from "@/components/primitives";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,7 +13,6 @@ import {
   MapPinIcon,
   UsersIcon,
   HeartIcon,
-  SparklesIcon,
   StarIcon,
   CrownIcon,
   CalendarXIcon,
@@ -253,22 +251,14 @@ export default function EventsPage() {
   return (
     <div className="space-y-12 pb-20">
       {/* Hero Section */}
-      <div className="text-center space-y-6 relative py-12">
-        <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-6">
-          <SparklesIcon className="w-5 h-5 text-primary" />
-          <span className="text-sm font-semibold tracking-tight text-foreground">
-            Upcoming Events
-          </span>
-        </div>
+      <div className="mx-auto max-w-xl space-y-3 px-4 py-12 text-center sm:py-16">
         <div className="relative z-10">
-          <h1 className={title({ size: "lg" })}>
-            Discover{" "}
-            <span className={title({ color: "violet", size: "lg" })}>
-              Amazing Events
-            </span>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Events
           </h1>
-          <p className={subtitle({ class: "mt-6 max-w-3xl mx-auto text-xl" })}>
-            Join our community events, workshops, and conferences to learn, network, and grow together
+          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
+            Workshops, meetups, CTFs, and competitions. Open ones say so —
+            just register and show up.
           </p>
           {canProposeEvents && (
             <div className="mt-6">
