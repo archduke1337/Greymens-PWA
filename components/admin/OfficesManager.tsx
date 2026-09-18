@@ -41,6 +41,10 @@ export default function OfficesManager({ assignments, members, membersAvailable,
   const assignOffice = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.userId.trim()) { toast.error(membersAvailable ? "Select a member first" : "Enter the member's user ID"); return; }
+    if (form.termEnd && form.termStart && form.termEnd <= form.termStart) {
+      toast.error("Term end must be after term start");
+      return;
+    }
     setSaving(true);
     try {
       const response = await fetch("/api/admin/offices", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(form) });
@@ -75,7 +79,7 @@ export default function OfficesManager({ assignments, members, membersAvailable,
       <Card><CardHeader className="flex-row items-center gap-3"><Settings className="h-5 w-5 text-[var(--accent)]" /><h2 className="text-xl font-bold">Assign office</h2></CardHeader><CardContent><form className="space-y-4" onSubmit={assignOffice}>
         <div><Select fullWidth value={form.officeId} onChange={(value) => setForm({ ...form, officeId: String(value ?? form.officeId) as typeof form.officeId })}><Label>Office</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{GOVERNANCE_OFFICES.map((office) => (<ListBox.Item key={office.id} id={office.id} textValue={office.title}>{office.title}<ListBox.ItemIndicator /></ListBox.Item>))}</ListBox></Select.Popover></Select></div>
         {membersAvailable ? (
-          <div><Select fullWidth value={form.userId} onChange={(value) => setForm({ ...form, userId: String(value ?? "") })}><Label>Member</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{members.map((member) => (<ListBox.Item key={member.userId} id={member.userId} textValue={member.name}>{member.name}{member.urn ? ` · ${member.urn}` : ""}<ListBox.ItemIndicator /></ListBox.Item>))}</ListBox></Select.Popover></Select></div>
+          <div><Select fullWidth value={form.userId === "" ? null : form.userId} placeholder="Select a member" onChange={(value) => setForm({ ...form, userId: String(value ?? "") })}><Label>Member</Label><Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger><Select.Popover><ListBox>{members.map((member) => (<ListBox.Item key={member.userId} id={member.userId} textValue={member.name}>{member.name}{member.urn ? ` · ${member.urn}` : ""}<ListBox.ItemIndicator /></ListBox.Item>))}</ListBox></Select.Popover></Select></div>
         ) : (
           <TextField variant="secondary"><Label>Appwrite user ID</Label><Input value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })} placeholder="Member directory unavailable — paste user ID" required /></TextField>
         )}

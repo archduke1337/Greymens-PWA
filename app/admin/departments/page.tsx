@@ -838,7 +838,7 @@ export default function AdminDepartmentsPage() {
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       className="w-full sm:w-auto"
                       onPress={resetForm}
                     >

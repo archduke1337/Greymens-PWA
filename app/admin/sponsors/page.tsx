@@ -258,7 +258,7 @@ export default function AdminSponsorsPage() {
                   fullWidth
                   aria-label="Sponsor tier"
                   value={formData.tier}
-                  onChange={(value) => setFormData({ ...formData, tier: String(value ?? "gold") as Sponsor["tier"] })}
+                  onChange={(value) => setFormData({ ...formData, tier: String(value ?? formData.tier) as Sponsor["tier"] })}
                 >
                   <Select.Trigger>
                     <Select.Value />

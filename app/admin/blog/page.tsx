@@ -355,7 +355,7 @@ export default function AdminBlogsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="primary"
+                          variant="secondary"
                           className="flex-1 md:flex-none"
                           onPress={() => openRejectModal(blog)}
                         >
@@ -378,7 +378,7 @@ export default function AdminBlogsPage() {
 
                     <Button
                       size="sm"
-                      variant="primary"
+                      variant="danger"
                       className="flex-1 md:flex-none"
                       isPending={processingBlog === blog.$id}
                       onPress={() => handleDelete(blog.$id!)}

@@ -586,7 +586,7 @@ export default function AdminProjectsPage() {
                     fullWidth
                     aria-label="Project category"
                     value={formData.category}
-                    onChange={(value) => setFormData({ ...formData, category: String(value ?? "") })}
+                    onChange={(value) => setFormData({ ...formData, category: String(value ?? formData.category) })}
                   >
                     <Select.Trigger>
                       <Select.Value />
@@ -608,7 +608,7 @@ export default function AdminProjectsPage() {
                     fullWidth
                     aria-label="Project status"
                     value={formData.status}
-                    onChange={(value) => setFormData({ ...formData, status: String(value ?? "") })}
+                    onChange={(value) => setFormData({ ...formData, status: String(value ?? formData.status) })}
                   >
                     <Select.Trigger>
                       <Select.Value />

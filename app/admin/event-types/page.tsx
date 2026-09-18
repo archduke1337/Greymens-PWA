@@ -307,12 +307,11 @@ export default function AdminEventTypesPage() {
                   </ModalHeader>
                   <ModalBody className="py-6 space-y-5">
                     <div>
-                      <Label>Name (unique key)</Label>
+                      <Label>Name (unique key — renames are allowed; events link by ID, not name)</Label>
                       <Input
                         placeholder="e.g., workshop"
                         value={form.name}
-                        onChange={(e: any) => setForm({ ...form, name: e.target.value })}
-                        disabled={Boolean(editing)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
                         required
                       />
                     </div>
@@ -321,7 +320,7 @@ export default function AdminEventTypesPage() {
                       <Input
                         placeholder="e.g., Workshop"
                         value={form.displayName}
-                        onChange={(e: any) => setForm({ ...form, displayName: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, displayName: e.target.value })}
                         required
                       />
                     </div>
@@ -386,7 +385,7 @@ export default function AdminEventTypesPage() {
                     </div>
                   </ModalBody>
                   <ModalFooter className="border-t pt-4">
-                    <Button variant="primary" onPress={close}>
+                    <Button variant="secondary" onPress={close}>
                       Cancel
                     </Button>
                     <Button type="submit" isPending={saving}>
