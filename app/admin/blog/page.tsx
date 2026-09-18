@@ -37,7 +37,7 @@ export default function AdminBlogsPage() {
 
   const loadBlogs = async () => {
     try {
-      const response = await fetch("/api/blogs?scope=all", { cache: "no-store" });
+      const response = await fetch("/api/blogs?scope=all", { cache: "no-store", credentials: "include" });
       const payload = await response.json().catch(() => null) as { blogs?: Blog[]; error?: string } | null;
       if (!response.ok) throw new Error(readApiError(payload, "Failed to load blogs"));
       setBlogs(payload?.blogs ?? []);
@@ -230,10 +230,17 @@ export default function AdminBlogsPage() {
       <div className="space-y-6">
         {filteredBlogs.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-12">
+            <CardContent className="text-center py-12 space-y-2">
               <p className="text-lg text-default-600">
-                No blogs in this category
+                {blogs.length === 0
+                  ? "No blog posts exist yet"
+                  : "No blogs in this category"}
               </p>
+              {blogs.length === 0 && (
+                <p className="text-sm text-default-500">
+                  New submissions from /blog/write appear here for review.
+                </p>
+              )}
             </CardContent>
           </Card>
         ) : (
