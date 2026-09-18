@@ -87,6 +87,14 @@ function stringArray(value: unknown): string[] | null {
   return value as string[];
 }
 
+/** Split a comma-separated field the way the inputs promise ("a, b, c"). */
+function parseList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 /** Overlay a stored draft: non-empty draft values win (newest user intent). */
 function mergeDraft(
   base: OnboardingForm,
@@ -160,6 +168,12 @@ export default function OnboardingPage() {
   const initializedRef = useRef<string | null>(null);
 
   const [formData, setFormData] = useState<OnboardingForm>(EMPTY_FORM);
+  // Raw text for the comma-separated inputs. The arrays in formData are parsed
+  // copies kept in sync on every keystroke. Binding the inputs directly to
+  // `skills.join(", ")` re-parsed on each change, which ate every comma and
+  // space as it was typed and made multiple entries impossible.
+  const [skillsText, setSkillsText] = useState("");
+  const [interestsText, setInterestsText] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
 
   useEffect(() => {
@@ -230,6 +244,8 @@ export default function OnboardingPage() {
       }
     }
     setFormData(next);
+    setSkillsText(next.skills.join(", "));
+    setInterestsText(next.interests.join(", "));
   }, [user, permLoading, profile, application]);
 
   // Autosave every edit (debounced) under the account id, so a reload, a
@@ -772,10 +788,11 @@ export default function OnboardingPage() {
                   type="text"
                   fullWidth
                   placeholder="React, Python, Design (comma separated)"
-                  value={formData.skills.join(", ")}
-                  onChange={(e) =>
-                    updateField("skills", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))
-                  }
+                  value={skillsText}
+                  onChange={(e) => {
+                    setSkillsText(e.target.value);
+                    updateField("skills", parseList(e.target.value));
+                  }}
                 />
               </div>
               <div className="space-y-1">
@@ -785,10 +802,11 @@ export default function OnboardingPage() {
                   type="text"
                   fullWidth
                   placeholder="AI, Web Dev, Cybersecurity (comma separated)"
-                  value={formData.interests.join(", ")}
-                  onChange={(e) =>
-                    updateField("interests", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))
-                  }
+                  value={interestsText}
+                  onChange={(e) => {
+                    setInterestsText(e.target.value);
+                    updateField("interests", parseList(e.target.value));
+                  }}
                 />
               </div>
               <div className="space-y-1">

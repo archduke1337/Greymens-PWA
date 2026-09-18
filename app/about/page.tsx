@@ -111,6 +111,20 @@ export default function AboutPage() {
           <blockquote className="border-l-2 border-foreground/70 pl-4 text-base text-foreground">
             Technology should empower people, not control them.
           </blockquote>
+          <figure className="flex flex-wrap items-center justify-center gap-8 pt-4">
+            <img
+              src="/adypu-logo.png"
+              alt="ADYPU"
+              loading="lazy"
+              className="h-10 w-auto object-contain"
+            />
+            <img
+              src="/seamedu-logo.jpg"
+              alt="Seamedu"
+              loading="lazy"
+              className="h-14 w-14 rounded-2xl object-cover"
+            />
+          </figure>
         </div>
       </section>
 
