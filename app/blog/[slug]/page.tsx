@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { blogService, type Blog } from "@/lib/blog";
-import { Button, Card, CardContent, Chip } from "@heroui/react";
+import { Avatar, AvatarImage, AvatarFallback, Button, Card, Chip } from "@heroui/react";
 import {
-  ArrowLeftIcon,
-  ClockIcon,
-  EyeIcon,
-  CalendarIcon,
-  TagIcon,
+  ArrowLeft,
+  Clock,
+  Eye,
+  CalendarDays,
+  Tag,
+  Newspaper,
+  ArrowRight,
 } from "lucide-react";
 
 const formatDate = (dateString: string) => {
@@ -30,8 +33,6 @@ export default function BlogDetailPage() {
 
   useEffect(() => {
     if (!slug) return;
-    // A slow first lookup must not overwrite a faster second one when the
-    // slug changes quickly (neighbouring-post navigation).
     let cancelled = false;
     const run = async () => {
       setLoading(true);
@@ -40,9 +41,6 @@ export default function BlogDetailPage() {
         if (cancelled) return;
         if (data) {
           setBlog(data);
-          // The view counter is written by the server: the blogs table grants no
-          // client write permission, and the reader should not be able to set an
-          // arbitrary count. Failures here are not worth interrupting a reader.
           void fetch("/api/blogs/views", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -68,10 +66,13 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="inline-block w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-default-500">Loading blog...</p>
+      <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-10 sm:px-6" aria-label="Loading post">
+        <div className="h-64 animate-pulse rounded-3xl bg-surface-secondary sm:h-80" />
+        <div className="h-8 w-3/4 animate-pulse rounded-full bg-surface-tertiary" />
+        <div className="space-y-2.5">
+          {[0, 1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-3.5 animate-pulse rounded-full bg-surface-secondary" />
+          ))}
         </div>
       </div>
     );
@@ -79,109 +80,143 @@ export default function BlogDetailPage() {
 
   if (!blog) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-md">
-          <CardContent className="text-center py-12 space-y-4">
-            <p className="text-4xl">📝</p>
-            <h2 className="text-xl font-bold">Blog Not Found</h2>
-            <p className="text-default-500">This blog post may have been removed or doesn&apos;t exist.</p>
-            <Button variant="primary" onPress={() => router.push("/blog")}>
-              Browse Blogs
+      <div className="mx-auto flex w-full max-w-md px-4 py-16">
+        <Card className="w-full">
+          <Card.Content className="space-y-3 px-6 py-12 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-secondary">
+              <Newspaper className="h-7 w-7 text-muted" aria-hidden="true" />
+            </span>
+            <h1 className="text-xl font-bold">This post is missing</h1>
+            <p className="text-sm text-muted">
+              It may have been removed, or the link has a typo. The rest of the
+              shelf is intact.
+            </p>
+            <Button className="rounded-full" onPress={() => router.push("/blog")}>
+              Browse all posts
             </Button>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
+    <article className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10 sm:px-6">
       <Button
         variant="ghost"
         size="sm"
         onPress={() => router.push("/blog")}
-        className="mb-4"
+        className="rounded-full"
       >
-        <ArrowLeftIcon className="w-4 h-4 mr-2" />
-        Back to Blogs
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        All posts
       </Button>
 
-      <div className="relative rounded-2xl overflow-hidden">
-        <img
-          src={blog.coverImage}
-          alt={blog.title}
-          className="w-full h-64 md:h-96 object-cover"
+      {/* Cover */}
+      <div className="relative overflow-hidden rounded-3xl bg-surface-secondary">
+        {blog.coverImage ? (
+          <img
+            src={blog.coverImage}
+            alt=""
+            className="h-60 w-full object-cover sm:h-80"
+          />
+        ) : (
+          <div className="flex h-48 items-center justify-center sm:h-64">
+            <Newspaper className="h-12 w-12 text-muted" aria-hidden="true" />
+          </div>
+        )}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Chip className="bg-primary text-white font-bold">
+        <div className="absolute inset-x-0 bottom-0 space-y-2.5 p-5 sm:p-7">
+          <div className="flex flex-wrap gap-1.5">
+            <Chip size="sm" color="accent" variant="primary">
               {(blog.category || "other").replace("-", " ")}
             </Chip>
             {blog.featured && (
-              <Chip className="bg-yellow-500 text-white font-bold">
+              <Chip size="sm" color="warning" variant="primary">
                 Featured
               </Chip>
             )}
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white">{blog.title}</h1>
+          <h1 className="max-w-2xl text-2xl font-bold leading-tight text-white sm:text-4xl">
+            {blog.title}
+          </h1>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-sm text-default-500">
-        <div className="flex items-center gap-2">
-          <img
-            src={blog.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(blog.authorName)}`}
-            alt={blog.authorName}
-            className="w-8 h-8 rounded-full"
-          />
+      {/* Byline */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5 text-sm text-muted">
+        <span className="flex items-center gap-2.5">
+          <Avatar className="h-9 w-9">
+            <AvatarImage
+              src={blog.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(blog.authorName)}`}
+              alt=""
+            />
+            <AvatarFallback>{blog.authorName?.charAt(0) || "A"}</AvatarFallback>
+          </Avatar>
           <span className="font-medium text-foreground">{blog.authorName}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <CalendarIcon className="w-4 h-4" />
-          <span>{blog.publishedAt ? formatDate(blog.publishedAt) : "Draft"}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <ClockIcon className="w-4 h-4" />
-          <span>{blog.readTime} min read</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <EyeIcon className="w-4 h-4" />
-          <span>{blog.views} views</span>
-        </div>
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          {blog.publishedAt ? formatDate(blog.publishedAt) : "Draft"}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Clock className="h-4 w-4" aria-hidden="true" />
+          {blog.readTime} min read
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Eye className="h-4 w-4" aria-hidden="true" />
+          {blog.views} views
+        </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(blog.tags ?? []).map((tag, index) => (
-          <Chip key={index} size="sm" variant="primary">
-            <TagIcon className="w-3 h-3 mr-1" />
-            {tag}
-          </Chip>
-        ))}
-      </div>
+      {(blog.tags ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-1.5" aria-label="Tags">
+          {(blog.tags ?? []).map((tag) => (
+            <Chip key={tag} size="sm" variant="soft">
+              <Tag className="h-3 w-3" aria-hidden="true" />
+              {tag}
+            </Chip>
+          ))}
+        </div>
+      )}
 
+      {/* Body */}
       <Card>
-        <CardContent className="p-6 md:p-8">
-          <div className="prose prose-lg max-w-none dark:prose-invert">
-            <div className="whitespace-pre-wrap leading-relaxed">
-              {blog.content}
-            </div>
+        <Card.Content className="p-6 sm:p-9">
+          <div className="space-y-4 text-[15.5px] leading-[1.85] text-foreground/90 sm:text-base">
+            {blog.content.split(/\n{2,}/).map((paragraph, index) => (
+              <p key={index} className="whitespace-pre-wrap">
+                {paragraph}
+              </p>
+            ))}
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
+      {/* Next step */}
       <Card>
-        <CardContent className="p-6 text-center space-y-4">
-          <p className="text-lg font-semibold">Enjoyed this article?</p>
-          <p className="text-default-500">Share it with your network</p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="primary" onPress={() => router.push("/blog")}>
-              Read More Blogs
+        <Card.Content className="flex flex-col items-center gap-3 p-6 text-center sm:p-8">
+          <h2 className="font-bold">Keep reading</h2>
+          <p className="max-w-md text-sm text-muted">
+            More walkthroughs, write-ups, and project notes from members — or
+            write your own and earn a byline.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button className="rounded-full" onPress={() => router.push("/blog")}>
+              More posts
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Button>
+            <Link href="/blog/write">
+              <Button variant="secondary" className="rounded-full">
+                Write a post
+              </Button>
+            </Link>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
-    </div>
+    </article>
   );
 }
