@@ -476,8 +476,15 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Join Greymens Club</h1>
+        <div className="text-center mb-8 space-y-3">
+          <img
+            src="/Assets/Objects/welcome.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="mx-auto h-20 w-20 rounded-3xl border border-default-200/70 bg-background object-cover"
+          />
+          <h1 className="text-3xl font-bold tracking-tight">Join Greymens Club</h1>
           <p className="text-muted-foreground mt-2">Complete your membership application</p>
           <p className="text-xs text-muted-foreground mt-1" role="note">
             {draftRestored
