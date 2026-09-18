@@ -25,6 +25,20 @@ export default function AboutPage() {
     <div className="mx-auto w-full max-w-3xl space-y-16 px-4 py-12 sm:px-6 sm:py-16">
       {/* Hero */}
       <header className="space-y-4 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-8">
+          <img
+            src="/adypu-logo.png"
+            alt="ADYPU"
+            loading="lazy"
+            className="h-10 w-auto object-contain"
+          />
+          <img
+            src="/seamedu-logo.jpg"
+            alt="Seamedu"
+            loading="lazy"
+            className="h-14 w-14 rounded-2xl object-cover"
+          />
+        </div>
         <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
           A club for people who take things apart
         </h1>
@@ -111,20 +125,6 @@ export default function AboutPage() {
           <blockquote className="border-l-2 border-foreground/70 pl-4 text-base text-foreground">
             Technology should empower people, not control them.
           </blockquote>
-          <figure className="flex flex-wrap items-center justify-center gap-8 pt-4">
-            <img
-              src="/adypu-logo.png"
-              alt="ADYPU"
-              loading="lazy"
-              className="h-10 w-auto object-contain"
-            />
-            <img
-              src="/seamedu-logo.jpg"
-              alt="Seamedu"
-              loading="lazy"
-              className="h-14 w-14 rounded-2xl object-cover"
-            />
-          </figure>
         </div>
       </section>
 
