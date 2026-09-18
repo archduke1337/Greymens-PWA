@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import GitHubIcon from "@/components/auth/GitHubIcon";
 import {
   Alert,
   Button,
@@ -13,6 +14,7 @@ import {
   Input,
   Label,
   Link,
+  Spinner,
   TextField,
 } from "@heroui/react";
 
@@ -51,10 +53,8 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  // OAuth is not configured yet — Google sign-in stays disabled until the
-  // provider is set up. See the commented block below.
-  // const [googleLoading, setGoogleLoading] = useState(false);
-  const { login, user } = useAuth();
+  const [githubLoading, setGithubLoading] = useState(false);
+  const { login, loginWithGithub, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
@@ -62,7 +62,7 @@ function LoginForm() {
   // reading them here avoids a setState-in-effect cascade on load.
   const [error, setError] = useState(
     searchParams.get("error") === "oauth_failed"
-      ? "Google sign-in didn't complete. Please try again."
+      ? "GitHub sign-in didn't complete. Please try again."
       : "",
   );
 
@@ -95,18 +95,17 @@ function LoginForm() {
     }
   };
 
-  /*
-  // TEMPORARILY DISABLED — enable once Google OAuth is configured.
-  const handleGoogleLogin = async () => {
+  const handleGithubLogin = async () => {
     setError("");
-    setGoogleLoading(true);
+    setGithubLoading(true);
     try {
       try {
         sessionStorage.setItem("post_auth_next", next);
       } catch {
-        // Storage unavailable: callback falls back to "/".
+        // Storage unavailable: callback falls back to "/dashboard".
       }
-      await loginWithGoogle();
+      // Token flow: navigates to GitHub; /auth/success creates the session.
+      await loginWithGithub();
     } catch (err: unknown) {
       try {
         sessionStorage.removeItem("post_auth_next");
@@ -114,12 +113,11 @@ function LoginForm() {
         // Ignore storage errors on the failure path too.
       }
       const mapped = mapLoginError(err);
-      console.error("Google login failed:", mapped);
+      console.error("GitHub login failed:", mapped);
       setError(mapped);
-      setGoogleLoading(false);
+      setGithubLoading(false);
     }
   };
-  */
 
   return (
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
@@ -152,13 +150,15 @@ function LoginForm() {
       <Card className="w-full">
         <Card.Header>
           <Card.Title>Welcome back</Card.Title>
-          <Card.Description>Log in with your club email and password.</Card.Description>
+          <Card.Description>
+            Log in with your club email and password — or continue with GitHub.
+          </Card.Description>
         </Card.Header>
         <Form onSubmit={handleSubmit} validationBehavior="aria">
           <Card.Content className="space-y-4">
             <TextField
               isRequired
-              isDisabled={loading}
+              isDisabled={loading || githubLoading}
               name="email"
               type="email"
               validate={(value) =>
@@ -173,7 +173,7 @@ function LoginForm() {
             </TextField>
             <TextField
               isRequired
-              isDisabled={loading}
+              isDisabled={loading || githubLoading}
               name="password"
               type="password"
               value={password}
@@ -198,31 +198,44 @@ function LoginForm() {
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
-              className="w-full rounded-full"
-              isDisabled={loading}
+              fullWidth
+              className="rounded-full"
+              isDisabled={loading || githubLoading}
               isPending={loading}
               type="submit"
             >
-              Log in
+              {({ isPending }) => (
+                <>
+                  {isPending ? <Spinner color="current" size="sm" /> : null}
+                  {isPending ? "Logging in…" : "Log in"}
+                </>
+              )}
             </Button>
 
-            {/*
-            TEMPORARILY DISABLED — Google OAuth is not configured yet.
             <div className="flex items-center gap-3" aria-hidden="true">
               <span className="h-px flex-1 bg-default-200" />
               <span className="text-xs text-muted">OR</span>
               <span className="h-px flex-1 bg-default-200" />
             </div>
             <Button
-              className="w-full rounded-full"
+              fullWidth
+              className="rounded-full"
               variant="secondary"
-              onPress={handleGoogleLogin}
-              isPending={googleLoading}
-              isDisabled={loading || googleLoading}
+              onPress={handleGithubLogin}
+              isPending={githubLoading}
+              isDisabled={loading || githubLoading}
             >
-              Continue with Google
+              {({ isPending }) => (
+                <>
+                  {isPending ? (
+                    <Spinner color="current" size="sm" />
+                  ) : (
+                    <GitHubIcon />
+                  )}
+                  {isPending ? "Connecting to GitHub…" : "Sign in with GitHub"}
+                </>
+              )}
             </Button>
-            */}
 
             <p className="text-center text-sm text-muted">
               New here?{" "}
