@@ -13,7 +13,8 @@ export const title = tv({
       // Needs stops in BOTH modes: the compound below applies
       // bg-clip-text + text-transparent whenever a color is set, so
       // dark-only stops render invisible text in light mode.
-      foreground: "from-foreground to-default-500 dark:from-[#FFFFFF] dark:to-[#8E8E8E]",
+      foreground:
+        "from-foreground to-default-500 dark:from-[#FFFFFF] dark:to-[#8E8E8E]",
     },
     size: {
       sm: "text-3xl lg:text-4xl",

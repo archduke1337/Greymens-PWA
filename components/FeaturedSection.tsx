@@ -3,13 +3,10 @@ import type { Event } from "@/lib/database";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Calendar,
-  MapPin,
-  Users,
-  Star,
-  ArrowRight,
-} from "lucide-react";
+import Image from "next/image";
+import { Calendar, MapPin, Users, Star, ArrowRight } from "lucide-react";
+
+import { logError } from "@/lib/logger";
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -43,7 +40,7 @@ export default function FeaturedSection() {
 
         if (!cancelled) setFeaturedEvents(featured);
       } catch (error) {
-        console.error("Error fetching featured events:", error);
+        logError("Error fetching featured events:", error);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -62,7 +59,7 @@ export default function FeaturedSection() {
     // Same-size skeleton: holds the section's space so nothing below jumps
     // when the cards land (mirrors the proof strip's pattern).
     return (
-      <section className="py-20" aria-hidden="true">
+      <section aria-hidden="true" className="py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mx-auto mb-12 max-w-xl space-y-3">
             <div className="mx-auto h-8 w-64 animate-pulse rounded-full bg-surface-secondary" />
@@ -115,121 +112,126 @@ export default function FeaturedSection() {
               event.capacity && event.capacity > 0
                 ? Math.max(0, event.capacity - (event.registered ?? 0))
                 : null;
+
             return (
-            <Link
-              key={event.$id}
-              href={`/events/${event.$id}`}
-              className="group motion-safe:animate-[fadeInUp_0.6s_ease-out_both] focus-visible:outline-2 focus-visible:outline-primary rounded-xl"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="relative bg-surface rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-default-200/70">
-                {/* Image Section */}
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    alt={event.title}
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 motion-reduce:transform-none"
-                    src={event.image}
-                  />
+              <Link
+                key={event.$id}
+                className="group motion-safe:animate-[fadeInUp_0.6s_ease-out_both] focus-visible:outline-2 focus-visible:outline-primary rounded-xl"
+                href={`/events/${event.$id}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="relative bg-surface rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-default-200/70">
+                  {/* Image Section */}
+                  <div className="relative h-64 overflow-hidden">
+                    <Image
+                      unoptimized
+                      alt={event.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 motion-reduce:transform-none"
+                      height={600}
+                      loading="lazy"
+                      src={event.image ?? ""}
+                      width={800}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
 
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {event.isFeatured && (
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium">
-                        <Star className="w-3 h-3" />
-                        Featured
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Category */}
-                  <div className="absolute top-4 right-4">
-                    <span className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold border border-white/30">
-                      {event.category}
-                    </span>
-                  </div>
-
-                  {/* Date Badge */}
-                  <div className="absolute bottom-4 left-4">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/95 dark:bg-black/95 backdrop-blur-md shadow-lg">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span className="font-bold text-sm">
-                        {formatDate(event.date)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="p-6 space-y-4">
-                  {/* Title */}
-                  <h3 className="text-2xl font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                    {event.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-muted line-clamp-2 leading-relaxed">
-                    {event.description}
-                  </p>
-
-                  {/* Details */}
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center gap-2 text-sm text-muted">
-                      <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium">{event.location}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-muted">
-                      <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
-                        <Users className="w-4 h-4 text-primary" />
-                      </div>
-                      <span className="font-medium">
-                        {event.registered} registered
-                      </span>
-                      {remaining !== null && (
-                        <span className="text-xs text-muted">
-                          • {remaining} {remaining === 1 ? "spot" : "spots"} left
-                        </span>
+                    {/* Badges */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {event.isFeatured && (
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium">
+                          <Star className="w-3 h-3" />
+                          Featured
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(event.tags ?? []).slice(0, 3).map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-surface-secondary text-muted text-xs rounded-full font-medium"
-                      >
-                        {tag}
+                    {/* Category */}
+                    <div className="absolute top-4 right-4">
+                      <span className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold border border-white/30">
+                        {event.category}
                       </span>
-                    ))}
+                    </div>
+
+                    {/* Date Badge */}
+                    <div className="absolute bottom-4 left-4">
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/95 dark:bg-black/95 backdrop-blur-md shadow-lg">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span className="font-bold text-sm">
+                          {formatDate(event.date)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Price & CTA — homepage states Free or Paid, nothing
+                  {/* Content Section */}
+                  <div className="p-6 space-y-4">
+                    {/* Title */}
+                    <h3 className="text-2xl font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+                      {event.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-muted line-clamp-2 leading-relaxed">
+                      {event.description}
+                    </p>
+
+                    {/* Details */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 text-sm text-muted">
+                        <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="font-medium">{event.location}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-muted">
+                        <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
+                          <Users className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="font-medium">
+                          {event.registered} registered
+                        </span>
+                        {remaining !== null && (
+                          <span className="text-xs text-muted">
+                            • {remaining} {remaining === 1 ? "spot" : "spots"}{" "}
+                            left
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {(event.tags ?? []).slice(0, 3).map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-surface-secondary text-muted text-xs rounded-full font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Price & CTA — homepage states Free or Paid, nothing
                       else: no rupee signs, no discounts. Pricing detail
                       belongs to the event's own page. */}
-                  <div className="flex items-center justify-between pt-4 border-t border-default-200/70">
-                    <span className="text-xl font-bold text-foreground">
-                      {event.price === 0 ? "Free" : "Paid"}
-                    </span>
+                    <div className="flex items-center justify-between pt-4 border-t border-default-200/70">
+                      <span className="text-xl font-bold text-foreground">
+                        {event.price === 0 ? "Free" : "Paid"}
+                      </span>
 
-                    <div className="flex items-center gap-2 text-primary font-medium">
-                      <span className="text-sm">View details</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-primary font-medium">
+                        <span className="text-sm">View details</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
             );
           })}
         </div>

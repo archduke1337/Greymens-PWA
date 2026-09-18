@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { readApiError } from "@/lib/errorHandler";
 import type { Sponsor } from "@/lib/sponsors";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+
+import { readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export function FooterSponsors() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -12,13 +16,19 @@ export function FooterSponsors() {
 
     void fetch("/api/sponsors", { signal: controller.signal })
       .then(async (response) => {
-        const payload = (await response.json()) as { sponsors?: Sponsor[]; error?: string };
-        if (!response.ok) throw new Error(readApiError(payload, "Unable to load sponsors"));
+        const payload = (await response.json()) as {
+          sponsors?: Sponsor[];
+          error?: string;
+        };
+
+        if (!response.ok)
+          throw new Error(readApiError(payload, "Unable to load sponsors"));
         setSponsors((payload.sponsors ?? []).slice(0, 6));
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        console.error("Error loading footer sponsors:", error);
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        logError("Error loading footer sponsors:", error);
       });
 
     return () => controller.abort();
@@ -38,20 +48,22 @@ export function FooterSponsors() {
           sponsor.website ? (
             <a
               key={sponsor.$id}
-              href={sponsor.website}
-              target="_blank"
-              rel="noopener noreferrer"
               aria-label={`${sponsor.name} (opens in new tab)`}
               className="group"
+              href={sponsor.website}
+              rel="noopener noreferrer"
+              target="_blank"
             >
-              <img
-                src={sponsor.logo}
+              <Image
                 alt={sponsor.name}
+                className="w-20 h-20 object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+                height={80}
                 loading="lazy"
+                src={sponsor.logo}
+                width={80}
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
-                className="w-20 h-20 object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
               />
             </a>
           ) : null,

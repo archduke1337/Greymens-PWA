@@ -10,9 +10,9 @@ export function Toaster() {
 
   return (
     <SonnerToaster
-      position="top-right"
-      richColors
       closeButton
+      richColors
+      position="top-right"
       theme={(resolvedTheme === "dark" ? "dark" : "light") as "light" | "dark"}
       toastOptions={{
         duration: 4000,

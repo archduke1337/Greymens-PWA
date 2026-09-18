@@ -1,11 +1,9 @@
 "use client";
 
 import type { Application, Event } from "@/lib/types";
-import { readApiError } from "@/lib/errorHandler";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import AccessCard from "@/components/dashboards/AccessCard";
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +17,8 @@ import {
   FolderOpen,
 } from "lucide-react";
 
+import AccessCard from "@/components/dashboards/AccessCard";
+import { readApiError } from "@/lib/errorHandler";
 import { usePermissions } from "@/context/PermissionContext";
 
 export default function LeadDashboard() {
@@ -53,38 +53,44 @@ export default function LeadDashboard() {
     let cancelled = false;
     const loadData = async () => {
       try {
-        const response = await fetch("/api/dashboard", { credentials: "include" });
-        const payload = (await response.json()) as LeadDashboardPayload & { error?: string };
-        if (!response.ok || !payload.lead) throw new Error(readApiError(payload, "Unable to load dashboard"));
+        const response = await fetch("/api/dashboard", {
+          credentials: "include",
+        });
+        const payload = (await response.json()) as LeadDashboardPayload & {
+          error?: string;
+        };
+
+        if (!response.ok || !payload.lead)
+          throw new Error(readApiError(payload, "Unable to load dashboard"));
         if (!cancelled) setData(payload.lead);
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");
+        if (!cancelled)
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load dashboard",
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     void loadData();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const events = data?.events ?? [];
   const pendingApplications = data?.pendingApplications ?? [];
   const departmentMembers = data?.departmentMemberCounts ?? {};
   // The server already restricts this payload to the lead's own event pipeline.
-  const myEvents = events;
   const draftEvents = events.filter((event) => event.status === "draft");
   const reviewEvents = events.filter((event) => event.status === "review");
   const publishedEvents = events.filter((event) =>
     ["approved", "published", "active"].includes(event.status),
   );
-
-  const getDepartmentName = (deptId: string) => {
-    return allDepartments.find((d) => d.$id === deptId)?.name || "Unknown";
-  };
-
-  const getDepartmentColor = (deptId: string) => {
-    return allDepartments.find((d) => d.$id === deptId)?.color || "#8b5cf6";
-  };
 
   if (loading) {
     return (
@@ -105,7 +111,9 @@ export default function LeadDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-semibold">Lead dashboard unavailable</h1>
-        <p className="text-muted mt-2">{error || "The server did not return a lead view."}</p>
+        <p className="text-muted mt-2">
+          {error || "The server did not return a lead view."}
+        </p>
       </div>
     );
   }
@@ -135,67 +143,71 @@ export default function LeadDashboard() {
       {leadDepartments.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-8 text-center">
           <Users className="w-10 h-10 text-muted mx-auto mb-3" />
-          <p className="text-sm text-muted">No department leadership assigned yet.</p>
-          <p className="text-xs text-muted mt-1">Your event pipeline below is still available.</p>
+          <p className="text-sm text-muted">
+            No department leadership assigned yet.
+          </p>
+          <p className="text-xs text-muted mt-1">
+            Your event pipeline below is still available.
+          </p>
         </div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {leadDepartments.map((ud) => {
-          const dept = allDepartments.find((d) => d.$id === ud.departmentId);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {leadDepartments.map((ud) => {
+            const dept = allDepartments.find((d) => d.$id === ud.departmentId);
 
-          if (!dept) return null;
+            if (!dept) return null;
 
-          return (
-            <div
-              key={ud.$id}
-              className="rounded-2xl border border-border bg-surface p-5"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${dept.color || "#8b5cf6"}20` }}
-                  >
-                    <LayoutDashboard
-                      className="w-5 h-5"
-                      style={{ color: dept.color || "#8b5cf6" }}
-                    />
+            return (
+              <div
+                key={ud.$id}
+                className="rounded-2xl border border-border bg-surface p-5"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        backgroundColor: `${dept.color || "#8b5cf6"}20`,
+                      }}
+                    >
+                      <LayoutDashboard
+                        className="w-5 h-5"
+                        style={{ color: dept.color || "#8b5cf6" }}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{dept.name}</h3>
+                      <p className="text-xs text-muted capitalize">
+                        {dept.category}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-primary border border-border">
+                    Lead
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {departmentMembers[ud.departmentId] || 0}
+                    </p>
+                    <p className="text-xs text-muted">Members</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold">{dept.name}</h3>
-                    <p className="text-xs text-muted capitalize">
-                      {dept.category}
-                    </p>
+                    <p className="text-2xl font-bold">{events.length}</p>
+                    <p className="text-xs text-muted">Pipeline events</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 text-xs rounded-full bg-muted text-primary border border-border">
-                  Lead
-                </span>
+                <Link
+                  className="mt-4 flex items-center gap-1 text-sm text-primary hover:opacity-90 transition-colors"
+                  href="/admin/departments"
+                >
+                  Manage Department <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <p className="text-2xl font-bold">
-                    {departmentMembers[ud.departmentId] || 0}
-                  </p>
-                  <p className="text-xs text-muted">Members</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {events.length}
-                  </p>
-                  <p className="text-xs text-muted">Pipeline events</p>
-                </div>
-              </div>
-              <Link
-                className="mt-4 flex items-center gap-1 text-sm text-primary hover:opacity-90 transition-colors"
-                href="/admin/departments"
-              >
-                Manage Department <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -263,9 +275,9 @@ export default function LeadDashboard() {
                     </p>
                   </div>
                   <Link
+                    aria-label={`Manage ${event.title} in the event console`}
                     className="text-muted hover:text-muted"
                     href="/admin/events"
-                    aria-label={`Manage ${event.title} in the event console`}
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>

@@ -11,6 +11,7 @@ export default function GuitarStringDivider() {
   useEffect(() => {
     const string = stringRef.current;
     const path = pathRef.current;
+
     if (!string || !path) return;
 
     // Motion-sensitive visitors get a still string: no idle vibration, no
@@ -29,16 +30,16 @@ export default function GuitarStringDivider() {
       if (vibrationTimeline.current) vibrationTimeline.current.kill();
 
       const tl = gsap.timeline({ repeat: -1, yoyo: true });
+
       tl.to(path, {
         attr: { d: "M 50 100 Q 500 95 950 100" },
         duration: 0.5,
         ease: "sine.inOut",
-      })
-        .to(path, {
-          attr: { d: "M 50 100 Q 500 105 950 100" },
-          duration: 0.5,
-          ease: "sine.inOut",
-        });
+      }).to(path, {
+        attr: { d: "M 50 100 Q 500 105 950 100" },
+        duration: 0.5,
+        ease: "sine.inOut",
+      });
       vibrationTimeline.current = tl;
     };
 
@@ -54,6 +55,7 @@ export default function GuitarStringDivider() {
       bending = false;
       if (!lastEvent) return;
       const e = lastEvent;
+
       lastEvent = null;
       stopVibration();
 
@@ -101,15 +103,15 @@ export default function GuitarStringDivider() {
   }, []);
 
   return (
-    <div className="relative w-full py-6 overflow-hidden" aria-hidden="true">
+    <div aria-hidden="true" className="relative w-full py-6 overflow-hidden">
       <div ref={stringRef} className="relative w-full h-24">
         <svg
           className="w-full h-full"
-          viewBox="0 0 1000 200"
           preserveAspectRatio="none"
+          viewBox="0 0 1000 200"
         >
           <defs>
-            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
               <stop offset="0%" stopColor="#a855f7" />
               <stop offset="50%" stopColor="#ec4899" />
               <stop offset="100%" stopColor="#f97316" />
@@ -119,10 +121,10 @@ export default function GuitarStringDivider() {
           <path
             ref={pathRef}
             d="M 50 100 Q 500 100 950 100"
-            stroke={`url(#${gradientId})`}
-            strokeWidth="3"
             fill="none"
+            stroke={`url(#${gradientId})`}
             strokeLinecap="round"
+            strokeWidth="3"
           />
         </svg>
       </div>

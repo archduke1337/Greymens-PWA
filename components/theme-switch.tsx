@@ -23,17 +23,17 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
 
   return (
     <button
-      role="switch"
-      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
       aria-checked={isDark}
-      onClick={onChange}
+      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
       className={clsx(
         "px-px transition-opacity hover:opacity-80 cursor-pointer",
         "inline-flex items-center justify-center min-w-11 min-h-11",
         "bg-transparent rounded-lg",
         "focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2",
-        className
+        className,
       )}
+      role="switch"
+      onClick={onChange}
     >
       {isLight ? <SunFilledIcon size={22} /> : <MoonFilledIcon size={22} />}
     </button>

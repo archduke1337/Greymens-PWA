@@ -1,6 +1,8 @@
 // components/tickets/TicketCard.tsx
 "use client";
 
+import type { Ticket as TicketType } from "@/lib/types";
+
 import { useEffect, useState, useRef } from "react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
@@ -15,7 +17,8 @@ import {
   Copy,
 } from "lucide-react";
 import { Button, Card, CardContent, Chip } from "@heroui/react";
-import type { Ticket as TicketType } from "@/lib/types";
+
+import { logError } from "@/lib/logger";
 
 interface TicketCardProps {
   ticket: TicketType;
@@ -50,9 +53,10 @@ export default function TicketCard({
           },
           errorCorrectionLevel: "H",
         });
+
         setQrDataUrl(dataUrl);
       } catch (error) {
-        console.error("Error generating QR code:", error);
+        logError("Error generating QR code:", error);
         toast.error("Failed to generate QR code");
       } finally {
         setGenerating(false);
@@ -68,15 +72,18 @@ export default function TicketCard({
 
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
+
       if (!ctx) return;
 
       const width = 400;
       const height = 560;
+
       canvas.width = width;
       canvas.height = height;
 
       // Background
       const gradient = ctx.createLinearGradient(0, 0, width, height);
+
       gradient.addColorStop(0, "#f5f3ff");
       gradient.addColorStop(1, "#fdf2f8");
       ctx.fillStyle = gradient;
@@ -85,6 +92,7 @@ export default function TicketCard({
 
       // Header bar
       const headerGradient = ctx.createLinearGradient(0, 0, width, 0);
+
       headerGradient.addColorStop(0, "#7c3aed");
       headerGradient.addColorStop(1, "#ec4899");
       ctx.fillStyle = headerGradient;
@@ -101,7 +109,8 @@ export default function TicketCard({
       ctx.fillStyle = "#1a1a2e";
       ctx.font = "bold 16px sans-serif";
       ctx.textAlign = "center";
-      const titleLines = wrapText(ctx, eventTitle, width - 40, 16);
+      const titleLines = wrapText(ctx, eventTitle, width - 40);
+
       titleLines.forEach((line, i) => {
         ctx.fillText(line, width / 2, 100 + i * 22);
       });
@@ -120,12 +129,21 @@ export default function TicketCard({
 
       // Details
       const detailsY = titleEndY + 30;
+
       ctx.font = "13px sans-serif";
       ctx.textAlign = "left";
       ctx.fillStyle = "#6b7280";
 
       const details = [
-        { label: "Date", value: new Date(eventDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) },
+        {
+          label: "Date",
+          value: new Date(eventDate).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+        },
         { label: "Time", value: eventTime },
         { label: "Venue", value: eventVenue },
         { label: "Code", value: ticket.ticketCode },
@@ -143,6 +161,7 @@ export default function TicketCard({
       // QR Code
       if (qrDataUrl) {
         const qrImg = new Image();
+
         qrImg.src = qrDataUrl;
         await new Promise<void>((resolve) => {
           qrImg.onload = () => resolve();
@@ -172,17 +191,22 @@ export default function TicketCard({
       ctx.fillStyle = "#d1d5db";
       ctx.font = "10px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Greymens Club \u2022 Official E-Ticket", width / 2, height - 15);
+      ctx.fillText(
+        "Greymens Club \u2022 Official E-Ticket",
+        width / 2,
+        height - 15,
+      );
 
       // Download
       const link = document.createElement("a");
+
       link.download = `ticket-${ticket.ticketCode}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
 
       toast.success("Ticket downloaded successfully!");
     } catch (error) {
-      console.error("Download error:", error);
+      logError("Download error:", error);
       toast.error("Failed to download ticket");
     }
   };
@@ -226,7 +250,9 @@ export default function TicketCard({
             <Ticket className="w-5 h-5" />
             <span className="font-bold text-lg">Greymens Club</span>
           </div>
-          <p className="text-primary-foreground/80 text-sm">Official E-Ticket</p>
+          <p className="text-primary-foreground/80 text-sm">
+            Official E-Ticket
+          </p>
         </div>
 
         {/* Content */}
@@ -237,7 +263,14 @@ export default function TicketCard({
             <div className="flex flex-wrap justify-center gap-3 text-sm text-default-600">
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4 text-primary" />
-                <span>{new Date(eventDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+                <span>
+                  {new Date(eventDate).toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4 text-primary" />
@@ -245,7 +278,10 @@ export default function TicketCard({
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span>{eventVenue}{eventLocation ? `, ${eventLocation}` : ""}</span>
+                <span>
+                  {eventVenue}
+                  {eventLocation ? `, ${eventLocation}` : ""}
+                </span>
               </div>
             </div>
           </div>
@@ -263,11 +299,11 @@ export default function TicketCard({
               <div className="bg-white p-3 rounded-xl shadow-sm border border-default-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={qrDataUrl}
                   alt={`QR code for ticket ${ticket.ticketCode}`}
-                  width={160}
-                  height={160}
                   className="rounded-lg"
+                  height={160}
+                  src={qrDataUrl}
+                  width={160}
                 />
               </div>
             ) : (
@@ -283,13 +319,15 @@ export default function TicketCard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-default-500 mb-1">Ticket Code</p>
-                <p className="text-lg font-mono font-bold tracking-wider">{ticket.ticketCode}</p>
+                <p className="text-lg font-mono font-bold tracking-wider">
+                  {ticket.ticketCode}
+                </p>
               </div>
               <Button
-                variant="ghost"
-                size="sm"
                 isIconOnly
                 aria-label="Copy ticket code"
+                size="sm"
+                variant="ghost"
                 onPress={handleCopyCode}
               >
                 <Copy className="w-4 h-4" />
@@ -301,8 +339,12 @@ export default function TicketCard({
           <div className="flex items-center justify-between">
             <span className="text-sm text-default-500">Status</span>
             <Chip color={statusConfig.color} size="lg" variant="soft">
-              {ticket.status === "checked_in" && <CheckCircle className="w-3 h-3 mr-1" />}
-              {ticket.status === "invalidated" && <XCircle className="w-3 h-3 mr-1" />}
+              {ticket.status === "checked_in" && (
+                <CheckCircle className="w-3 h-3 mr-1" />
+              )}
+              {ticket.status === "invalidated" && (
+                <XCircle className="w-3 h-3 mr-1" />
+              )}
               {statusConfig.label}
             </Chip>
           </div>
@@ -318,10 +360,10 @@ export default function TicketCard({
           {/* Download Button */}
           {(ticket.status === "issued" || ticket.status === "active") && (
             <Button
-              variant="primary"
               className="w-full bg-primary"
-              onPress={handleDownload}
               isDisabled={generating || !qrDataUrl}
+              variant="primary"
+              onPress={handleDownload}
             >
               <Download className="w-4 h-4 mr-2" />
               Download Ticket
@@ -337,7 +379,6 @@ function wrapText(
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
-  fontSize: number
 ): string[] {
   const words = text.split(" ");
   const lines: string[] = [];

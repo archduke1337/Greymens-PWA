@@ -1,7 +1,8 @@
 "use client";
 
-import { Chip } from "@heroui/react";
 import type { Application, Profile } from "@/lib/types";
+
+import { Chip } from "@heroui/react";
 
 interface ApplicantDetailsProps {
   profile: Profile | null;
@@ -12,6 +13,7 @@ interface ApplicantDetailsProps {
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
+
   return (
     <div className="space-y-0.5">
       <p className="text-xs text-muted">{label}</p>
@@ -22,14 +24,15 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 
 function LinkField({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
+
   return (
     <div className="space-y-0.5">
       <p className="text-xs text-muted">{label}</p>
       <a
-        href={value}
-        target="_blank"
-        rel="noopener noreferrer"
         className="text-sm text-primary hover:underline break-all"
+        href={value}
+        rel="noopener noreferrer"
+        target="_blank"
       >
         {value}
       </a>
@@ -37,7 +40,13 @@ function LinkField({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold">{title}</h3>
@@ -114,7 +123,10 @@ export function ApplicantDetails({
         </Section>
       )}
 
-      {(profile?.githubUrl || profile?.linkedinUrl || profile?.portfolioUrl || profile?.instagramUrl) && (
+      {(profile?.githubUrl ||
+        profile?.linkedinUrl ||
+        profile?.portfolioUrl ||
+        profile?.instagramUrl) && (
         <Section title="Social">
           <LinkField label="GitHub" value={profile?.githubUrl} />
           <LinkField label="LinkedIn" value={profile?.linkedinUrl} />
@@ -157,7 +169,7 @@ export function ApplicantDetails({
             <p className="text-xs text-muted">Preferred Departments</p>
             <div className="flex flex-wrap gap-1">
               {departmentNames.map((name) => (
-                <Chip key={name} size="sm" variant="soft" color="accent">
+                <Chip key={name} color="accent" size="sm" variant="soft">
                   {name}
                 </Chip>
               ))}

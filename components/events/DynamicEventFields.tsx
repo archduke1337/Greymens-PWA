@@ -1,7 +1,16 @@
 "use client";
-import { useState, type ChangeEvent, type KeyboardEvent } from "react";
 import type { EventField } from "@/lib/types/index";
-import { Input, Chip, Button, Checkbox, Label, ListBox, Select, TextArea } from "@heroui/react";
+
+import { useState, type ChangeEvent, type KeyboardEvent } from "react";
+import {
+  Input,
+  Button,
+  Checkbox,
+  Label,
+  ListBox,
+  Select,
+  TextArea,
+} from "@heroui/react";
 import { PlusIcon, XIcon } from "lucide-react";
 
 interface DynamicEventFieldsProps {
@@ -30,10 +39,10 @@ export default function DynamicEventFields({
       {fields.map((field) => (
         <FieldRenderer
           key={field.name}
+          error={errors?.[field.name]}
           field={field}
           value={values[field.name]}
           onChange={(val: any) => onChange(field.name, val)}
-          error={errors?.[field.name]}
         />
       ))}
     </div>
@@ -52,9 +61,6 @@ function FieldRenderer({
   error?: string;
 }) {
   const currentValue = value ?? field.defaultValue ?? "";
-  const inputClasses = `w-full px-3 py-2 rounded-lg border text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white dark:bg-gray-900 ${
-    error ? "border-red-500" : "border-default-300"
-  }`;
 
   switch (field.type) {
     case "text":
@@ -65,9 +71,13 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           <Input
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
             value={currentValue}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value)
+            }
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -81,12 +91,14 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </Label>
           <TextArea
-            id={`dynamic-field-${field.name}`}
             fullWidth
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+            id={`dynamic-field-${field.name}`}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
+            rows={4}
             value={typeof currentValue === "string" ? currentValue : ""}
             onChange={(e) => onChange(e.target.value)}
-            rows={4}
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -100,13 +112,14 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           <Input
-            type="number"
             placeholder={field.placeholder || "0"}
+            type="number"
             value={currentValue?.toString() || ""}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               // Blank stays blank (undefined) so required-checks still fire;
               // the old `|| 0` wrote a false zero into required fields.
               const raw = e.target.value;
+
               onChange(raw === "" ? undefined : Number(raw));
             }}
           />
@@ -119,8 +132,14 @@ function FieldRenderer({
         <div className="space-y-1.5">
           <Select
             fullWidth
-            placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`}
-            value={typeof currentValue === "string" && currentValue !== "" ? currentValue : null}
+            placeholder={
+              field.placeholder || `Select ${field.label.toLowerCase()}`
+            }
+            value={
+              typeof currentValue === "string" && currentValue !== ""
+                ? currentValue
+                : null
+            }
             onChange={(value) => onChange(String(value ?? ""))}
           >
             <Label>
@@ -148,7 +167,12 @@ function FieldRenderer({
 
     case "multi-select":
       return (
-        <MultiSelectField field={field} value={currentValue} onChange={onChange} error={error} />
+        <MultiSelectField
+          error={error}
+          field={field}
+          value={currentValue}
+          onChange={onChange}
+        />
       );
 
     case "boolean":
@@ -182,7 +206,9 @@ function FieldRenderer({
           <Input
             type="date"
             value={currentValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value)
+            }
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -198,7 +224,9 @@ function FieldRenderer({
           <Input
             placeholder={field.placeholder || "https://"}
             value={currentValue}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value)
+            }
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -212,9 +240,11 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </Label>
           <TextArea
-            id={`dynamic-field-${field.name}`}
             fullWidth
+            className="font-mono"
+            id={`dynamic-field-${field.name}`}
             placeholder={field.placeholder || '{ "key": "value" }'}
+            rows={6}
             value={
               typeof currentValue === "string"
                 ? currentValue
@@ -223,13 +253,12 @@ function FieldRenderer({
             onChange={(e) => {
               try {
                 const parsed = JSON.parse(e.target.value);
+
                 onChange(parsed);
               } catch {
                 onChange(e.target.value);
               }
             }}
-            rows={6}
-            className="font-mono"
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -237,7 +266,12 @@ function FieldRenderer({
 
     case "array":
       return (
-        <ArrayField field={field} value={currentValue} onChange={onChange} error={error} />
+        <ArrayField
+          error={error}
+          field={field}
+          value={currentValue}
+          onChange={onChange}
+        />
       );
 
     default:
@@ -248,9 +282,13 @@ function FieldRenderer({
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           <Input
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
             value={currentValue}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value)
+            }
           />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
@@ -288,16 +326,17 @@ function MultiSelectField({
       <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-default-300 min-h-[42px]">
         {field.options?.map((opt: string) => {
           const isSelected = selected.includes(opt);
+
           return (
             <button
               key={opt}
-              type="button"
-              onClick={() => toggle(opt)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 isSelected
                   ? "bg-primary text-white border-primary"
                   : "bg-default-100 text-default-700 border-default-300 hover:bg-default-200"
               }`}
+              type="button"
+              onClick={() => toggle(opt)}
             >
               {opt}
             </button>
@@ -309,9 +348,9 @@ function MultiSelectField({
           {selected.map((s) => (
             <button
               key={s}
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               type="button"
               onClick={() => toggle(s)}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
             >
               {s}
               <XIcon className="w-3 h-3" />
@@ -340,6 +379,7 @@ function ArrayField({
 
   const addItem = () => {
     const trimmed = input.trim();
+
     if (trimmed && !items.includes(trimmed)) {
       onChange([...items, trimmed]);
       setInput("");
@@ -360,7 +400,9 @@ function ArrayField({
         <Input
           placeholder={field.placeholder || "Add item"}
           value={input}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setInput(e.target.value)
+          }
           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -368,7 +410,13 @@ function ArrayField({
             }
           }}
         />
-        <Button type="button" variant="primary" onPress={addItem} isIconOnly aria-label="Add item">
+        <Button
+          isIconOnly
+          aria-label="Add item"
+          type="button"
+          variant="primary"
+          onPress={addItem}
+        >
           <PlusIcon className="w-4 h-4" />
         </Button>
       </div>
@@ -377,9 +425,9 @@ function ArrayField({
           {items.map((item, idx) => (
             <button
               key={`${item}-${idx}`}
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               type="button"
               onClick={() => removeItem(item)}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
             >
               {item}
               <XIcon className="w-3 h-3" />

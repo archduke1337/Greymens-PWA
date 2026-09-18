@@ -1,8 +1,28 @@
 "use client";
-import { Avatar, AvatarImage, AvatarFallback, Button, Chip, Dropdown, Label, Separator } from "@heroui/react";
+import type { MembershipStatus } from "@/lib/types";
+
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Button,
+  Chip,
+  Dropdown,
+  Label,
+  Separator,
+} from "@heroui/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { KeyRound, LayoutDashboard, LifeBuoy, LogOut, Settings, ShieldCheck, User } from "lucide-react";
+import {
+  KeyRound,
+  LayoutDashboard,
+  LifeBuoy,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ADMIN_SECTIONS, sectionMatches } from "@/app/admin/layout";
@@ -11,7 +31,6 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import type { MembershipStatus } from "@/lib/types";
 
 const getAvatarUrl = (name: string) => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
@@ -40,12 +59,16 @@ const ACCOUNT_ITEMS = [
 export const Navbar = () => {
   const { user, loading } = useAuth();
   const { status, hasCapability, profile, capabilities } = usePermissions();
-  const avatarSrc = profile?.avatar || (user?.name ? getAvatarUrl(user.name) : undefined);
+  const avatarSrc =
+    profile?.avatar || (user?.name ? getAvatarUrl(user.name) : undefined);
   const router = useRouter();
 
   const isAdmin = status === "admin" || status === "dev";
   const seesAdminConsole =
-    isAdmin || ADMIN_SECTIONS.some((section) => sectionMatches(hasCapability, section.cap));
+    isAdmin ||
+    ADMIN_SECTIONS.some((section) =>
+      sectionMatches(hasCapability, section.cap),
+    );
   const isLoggedIn = !!user;
   const statusLabel = STATUS_LABELS[status];
   const accessPages = capabilities.includes("*")
@@ -63,17 +86,21 @@ export const Navbar = () => {
         className="flex w-full max-w-5xl items-center justify-between gap-2 rounded-full border border-default-200/70 bg-background/80 py-2 pl-5 pr-2 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-black/60"
       >
         <Link
-          href="/"
-          className="flex items-center gap-3 rounded-full focus-visible:outline-2 focus-visible:outline-accent"
           aria-label="Greymens Club home"
+          className="flex items-center gap-3 rounded-full focus-visible:outline-2 focus-visible:outline-accent"
+          href="/"
         >
-          <img
-            src="/logo-eyes.png"
+          <Image
             alt=""
             aria-hidden="true"
             className="h-6 w-auto shrink-0 rounded-md object-cover sm:h-7"
+            height={160}
+            src="/logo-eyes.png"
+            width={380}
           />
-          <span className="hidden text-[15px] font-bold tracking-[0.22em] min-[430px]:block">GREYMENS</span>
+          <span className="hidden text-[15px] font-bold tracking-[0.22em] min-[430px]:block">
+            GREYMENS
+          </span>
         </Link>
 
         {/* Desktop pill links: public pages only. Dashboard/Console are
@@ -82,8 +109,8 @@ export const Navbar = () => {
           {siteConfig.navItems.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
               className="rounded-full px-3.5 py-2 text-sm text-muted transition-colors hover:bg-surface-secondary hover:text-foreground"
+              href={item.href}
             >
               {item.label}
             </Link>
@@ -103,16 +130,29 @@ export const Navbar = () => {
               <Dropdown.Popover placement="bottom end">
                 <Dropdown.Menu aria-label="Navigation menu" onAction={go}>
                   {siteConfig.navItems.map((item) => (
-                    <Dropdown.Item key={item.href} id={item.href} textValue={item.label}>
+                    <Dropdown.Item
+                      key={item.href}
+                      id={item.href}
+                      textValue={item.label}
+                    >
                       <Label>{item.label}</Label>
                     </Dropdown.Item>
                   ))}
                   {isLoggedIn ? (
-                    <Dropdown.Item key="account-logout" id="/logout" textValue="Logout" variant="danger">
+                    <Dropdown.Item
+                      key="account-logout"
+                      id="/logout"
+                      textValue="Logout"
+                      variant="danger"
+                    >
                       <Label>Logout</Label>
                     </Dropdown.Item>
                   ) : (
-                    <Dropdown.Item key="account-login" id="/login" textValue="Login">
+                    <Dropdown.Item
+                      key="account-login"
+                      id="/login"
+                      textValue="Login"
+                    >
                       <Label>Login</Label>
                     </Dropdown.Item>
                   )}
@@ -134,23 +174,38 @@ export const Navbar = () => {
                     className="rounded-full"
                   >
                     <Avatar className="h-9 w-9 border border-default-200 transition-transform">
-                      <AvatarImage src={avatarSrc} alt={user.name} />
-                      <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
+                      <AvatarImage alt={user.name} src={avatarSrc} />
+                      <AvatarFallback>
+                        {user.name?.charAt(0) || "U"}
+                      </AvatarFallback>
                     </Avatar>
                   </Dropdown.Trigger>
-                  <Dropdown.Popover className="min-w-[250px]" placement="bottom end">
+                  <Dropdown.Popover
+                    className="min-w-[250px]"
+                    placement="bottom end"
+                  >
                     <div className="px-3 pb-2 pt-3">
                       <div className="flex items-center gap-2.5">
                         <Avatar size="sm">
-                          <AvatarImage src={avatarSrc} alt="" />
-                          <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
+                          <AvatarImage alt="" src={avatarSrc} />
+                          <AvatarFallback>
+                            {user.name?.charAt(0) || "U"}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex min-w-0 flex-col gap-0">
-                          <p className="truncate text-sm font-medium leading-5">{user.name}</p>
-                          <p className="truncate text-xs leading-4 text-muted">{user.email}</p>
+                          <p className="truncate text-sm font-medium leading-5">
+                            {user.name}
+                          </p>
+                          <p className="truncate text-xs leading-4 text-muted">
+                            {user.email}
+                          </p>
                         </div>
                         {statusLabel && (
-                          <Chip size="sm" variant="soft" className="ms-auto shrink-0">
+                          <Chip
+                            className="ms-auto shrink-0"
+                            size="sm"
+                            variant="soft"
+                          >
                             {statusLabel}
                           </Chip>
                         )}
@@ -159,25 +214,50 @@ export const Navbar = () => {
                     <Dropdown.Menu aria-label="Account" onAction={go}>
                       {ACCOUNT_ITEMS.map(({ href, label, Icon }) => (
                         <Dropdown.Item key={href} id={href} textValue={label}>
-                          <Icon className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                          <Icon
+                            aria-hidden="true"
+                            className="size-4 shrink-0 text-muted"
+                          />
                           <Label>{label}</Label>
                         </Dropdown.Item>
                       ))}
                       {accessPages.map((page) => (
-                        <Dropdown.Item key={page.href} id={page.href} textValue={page.label}>
-                          <KeyRound className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                        <Dropdown.Item
+                          key={page.href}
+                          id={page.href}
+                          textValue={page.label}
+                        >
+                          <KeyRound
+                            aria-hidden="true"
+                            className="size-4 shrink-0 text-muted"
+                          />
                           <Label>{page.label}</Label>
                         </Dropdown.Item>
                       ))}
                       {seesAdminConsole && (
-                        <Dropdown.Item key="/admin" id="/admin" textValue="Console">
-                          <ShieldCheck className="size-4 shrink-0 text-muted" aria-hidden="true" />
+                        <Dropdown.Item
+                          key="/admin"
+                          id="/admin"
+                          textValue="Console"
+                        >
+                          <ShieldCheck
+                            aria-hidden="true"
+                            className="size-4 shrink-0 text-muted"
+                          />
                           <Label>Console</Label>
                         </Dropdown.Item>
                       )}
                       <Separator />
-                      <Dropdown.Item key="/logout" id="/logout" textValue="Logout" variant="danger">
-                        <LogOut className="size-4 shrink-0" aria-hidden="true" />
+                      <Dropdown.Item
+                        key="/logout"
+                        id="/logout"
+                        textValue="Logout"
+                        variant="danger"
+                      >
+                        <LogOut
+                          aria-hidden="true"
+                          className="size-4 shrink-0"
+                        />
                         <Label>Logout</Label>
                       </Dropdown.Item>
                     </Dropdown.Menu>
@@ -185,7 +265,7 @@ export const Navbar = () => {
                 </Dropdown>
               ) : (
                 <Link href="/login">
-                  <Button size="sm" className="rounded-full px-5">
+                  <Button className="rounded-full px-5" size="sm">
                     Login
                   </Button>
                 </Link>

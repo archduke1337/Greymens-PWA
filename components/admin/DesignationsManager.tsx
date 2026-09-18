@@ -1,6 +1,13 @@
 // components/admin/DesignationsManager.tsx
 "use client";
 
+import type {
+  Designation,
+  UserDesignation,
+  Profile,
+  Department,
+} from "@/lib/types";
+
 import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 import {
@@ -13,10 +20,6 @@ import {
   SearchIcon,
   AwardIcon,
 } from "lucide-react";
-
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import MemberAvatar from "@/components/MemberAvatar";
-import { CAPABILITIES } from "@/lib/capabilities";
 import {
   Button,
   Card,
@@ -42,7 +45,11 @@ import {
   TextField,
   useOverlayState,
 } from "@heroui/react";
-import type { Designation, UserDesignation, Profile, Department } from "@/lib/types";
+
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import MemberAvatar from "@/components/MemberAvatar";
+import { CAPABILITIES } from "@/lib/capabilities";
+import { logError } from "@/lib/logger";
 
 const CATEGORY_LABELS: Record<string, string> = {
   department: "Department",
@@ -52,9 +59,12 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  department: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  operations: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  executive: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  department:
+    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  operations:
+    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  executive:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   special: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
 };
 
@@ -64,7 +74,11 @@ export interface DesignationsManagerProps {
   onChanged: () => Promise<void> | void;
 }
 
-export default function DesignationsManager({ designations, departments, onChanged }: DesignationsManagerProps) {
+export default function DesignationsManager({
+  designations,
+  departments,
+  onChanged,
+}: DesignationsManagerProps) {
   const { isOpen, open, close } = useOverlayState();
   const [editingDesig, setEditingDesig] = useState<Designation | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +86,11 @@ export default function DesignationsManager({ designations, departments, onChang
   const [capabilityQuery, setCapabilityQuery] = useState("");
 
   // Assign modal state
-  const { isOpen: isAssignOpen, open: openAssign, close: closeAssign } = useOverlayState();
+  const {
+    isOpen: isAssignOpen,
+    open: openAssign,
+    close: closeAssign,
+  } = useOverlayState();
   const [assignTarget, setAssignTarget] = useState<Designation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
@@ -92,14 +110,22 @@ export default function DesignationsManager({ designations, departments, onChang
   const assignUserId = selectedUser?.userId ?? manualUserId.trim();
 
   // Revoke state
-  const { isOpen: isRevokeOpen, open: openRevoke, close: closeRevoke } = useOverlayState();
+  const {
+    isOpen: isRevokeOpen,
+    open: openRevoke,
+    close: closeRevoke,
+  } = useOverlayState();
   const [revokeTarget, setRevokeTarget] = useState<Designation | null>(null);
-  const [holders, setHolders] = useState<Array<UserDesignation & { profile?: Profile | null; holderName?: string }>>([]);
+  const [holders, setHolders] = useState<
+    Array<UserDesignation & { profile?: Profile | null; holderName?: string }>
+  >([]);
   const [loadingHolders, setLoadingHolders] = useState(false);
   const [revokingUserId, setRevokingUserId] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState<Omit<Designation, "$id" | "$createdAt" | "$updatedAt">>({
+  const [formData, setFormData] = useState<
+    Omit<Designation, "$id" | "$createdAt" | "$updatedAt">
+  >({
     name: "",
     slug: "",
     description: "",
@@ -115,14 +141,18 @@ export default function DesignationsManager({ designations, departments, onChang
 
   const visibleCapabilities = useMemo(() => {
     const q = capabilityQuery.trim().toLowerCase();
+
     return q
-      ? CAPABILITIES.filter((capability) => capability.toLowerCase().includes(q))
+      ? CAPABILITIES.filter((capability) =>
+          capability.toLowerCase().includes(q),
+        )
       : CAPABILITIES;
   }, [capabilityQuery]);
 
   const toggleCapability = (capability: string) =>
     setFormData((current) => {
       const selected = current.capabilities ?? [];
+
       return {
         ...current,
         capabilities: selected.includes(capability)
@@ -139,6 +169,7 @@ export default function DesignationsManager({ designations, departments, onChang
       if (!formData.name.trim()) {
         toast.error("Designation name is required");
         setSubmitting(false);
+
         return;
       }
 
@@ -159,8 +190,12 @@ export default function DesignationsManager({ designations, departments, onChang
             : payload,
         ),
       });
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(result, "Failed to save designation"));
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(result, "Failed to save designation"));
 
       if (editingDesig) {
         toast.success("Designation updated successfully!");
@@ -172,7 +207,8 @@ export default function DesignationsManager({ designations, departments, onChang
       await onChanged();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error saving designation:", message);
+
+      logError("Error saving designation:", message);
       toast.error(message || "Failed to save designation");
     } finally {
       setSubmitting(false);
@@ -200,23 +236,31 @@ export default function DesignationsManager({ designations, departments, onChang
   const handleDelete = async (desigId: string) => {
     if (
       !confirm(
-        "Are you sure you want to delete this designation? This cannot be undone."
+        "Are you sure you want to delete this designation? This cannot be undone.",
       )
     )
       return;
     setDeletingId(desigId);
     try {
-      const response = await fetch(`/api/admin/designations?designationId=${encodeURIComponent(desigId)}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const result = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(result, "Failed to delete designation"));
+      const response = await fetch(
+        `/api/admin/designations?designationId=${encodeURIComponent(desigId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(result, "Failed to delete designation"));
       toast.success("Designation deleted successfully!");
       await onChanged();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error deleting designation:", message);
+
+      logError("Error deleting designation:", message);
       toast.error(message || "Failed to delete designation");
     } finally {
       setDeletingId(null);
@@ -237,15 +281,24 @@ export default function DesignationsManager({ designations, departments, onChang
     if (!searchQuery.trim()) return;
     setSearching(true);
     try {
-      const response = await fetch(`/api/admin/members/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-        credentials: "include",
-      });
-      const payload = (await response.json().catch(() => null)) as { profiles?: Profile[]; error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to search users"));
+      const response = await fetch(
+        `/api/admin/members/search?q=${encodeURIComponent(searchQuery.trim())}`,
+        {
+          credentials: "include",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        profiles?: Profile[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to search users"));
       setSearchResults(payload?.profiles ?? []);
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error searching users:", message);
+
+      logError("Error searching users:", message);
       if (/forbidden|403/i.test(message)) setDirectoryUnavailable(true);
       toast.error(message || "Failed to search users");
     } finally {
@@ -266,19 +319,26 @@ export default function DesignationsManager({ designations, departments, onChang
           designationId: assignTarget.$id,
         }),
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string; alreadyAssigned?: boolean } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to assign designation"));
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        alreadyAssigned?: boolean;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to assign designation"));
       const assignee = selectedUser?.urn || assignUserId;
+
       toast.success(
         payload?.alreadyAssigned
           ? `${assignee} already holds "${assignTarget.name}".`
-          : `Designation "${assignTarget.name}" assigned to ${assignee}!`
+          : `Designation "${assignTarget.name}" assigned to ${assignee}!`,
       );
       closeAssign();
       await onChanged();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error assigning designation:", message);
+
+      logError("Error assigning designation:", message);
       toast.error(message || "Failed to assign designation");
     } finally {
       setAssigning(false);
@@ -293,17 +353,25 @@ export default function DesignationsManager({ designations, departments, onChang
     try {
       // Holders arrive joined with profiles and names: one call, no 500-row
       // directory over-fetch per click.
-      const holdersResponse = await fetch(`/api/admin/designations/assign?designationId=${encodeURIComponent(desig.$id!)}`, {
-        credentials: "include",
-      });
-      const holdersPayload = (await holdersResponse.json().catch(() => null)) as {
+      const holdersResponse = await fetch(
+        `/api/admin/designations/assign?designationId=${encodeURIComponent(desig.$id!)}`,
+        {
+          credentials: "include",
+        },
+      );
+      const holdersPayload = (await holdersResponse
+        .json()
+        .catch(() => null)) as {
         holders?: Array<UserDesignation & { profile?: Profile | null }>;
         accountNames?: Record<string, string>;
         error?: string;
       } | null;
-      if (!holdersResponse.ok) throw new Error(readApiError(holdersPayload, "Failed to load holders"));
+
+      if (!holdersResponse.ok)
+        throw new Error(readApiError(holdersPayload, "Failed to load holders"));
 
       const names = holdersPayload?.accountNames ?? {};
+
       setHolders(
         (holdersPayload?.holders ?? []).map((holder) => ({
           ...holder,
@@ -313,7 +381,8 @@ export default function DesignationsManager({ designations, departments, onChang
       );
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error loading holders:", message);
+
+      logError("Error loading holders:", message);
       toast.error(message || "Failed to load designation holders");
     } finally {
       setLoadingHolders(false);
@@ -329,14 +398,19 @@ export default function DesignationsManager({ designations, departments, onChang
         `/api/admin/designations/assign?userId=${encodeURIComponent(userId)}&designationId=${encodeURIComponent(revokeTarget.$id!)}`,
         { method: "DELETE", credentials: "include" },
       );
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readApiError(payload, "Failed to revoke designation"));
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Failed to revoke designation"));
       toast.success("Designation revoked successfully!");
       setHolders((prev) => prev.filter((h) => h.userId !== userId));
       await onChanged();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error revoking designation:", message);
+
+      logError("Error revoking designation:", message);
       toast.error(message || "Failed to revoke designation");
     } finally {
       setRevokingUserId(null);
@@ -373,11 +447,7 @@ export default function DesignationsManager({ designations, departments, onChang
             Manage club designations, roles, and badges
           </p>
         </div>
-        <Button
-          onPress={open}
-          className="bg-primary"
-          size="lg"
-        >
+        <Button className="bg-primary" size="lg" onPress={open}>
           <PlusIcon className="w-5 h-5" />
           <span className="ml-2">Add Designation</span>
         </Button>
@@ -409,7 +479,7 @@ export default function DesignationsManager({ designations, departments, onChang
                     {designations.filter((d) => d.category === key).length}
                   </p>
                 </div>
-                <Chip size="sm" className={CATEGORY_COLORS[key]}>
+                <Chip className={CATEGORY_COLORS[key]} size="sm">
                   {key.charAt(0).toUpperCase() + key.slice(1)}
                 </Chip>
               </div>
@@ -436,7 +506,10 @@ export default function DesignationsManager({ designations, departments, onChang
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {designations.map((desig) => (
-              <Card key={desig.$id} className="border-none shadow-md hover:shadow-lg transition-shadow">
+              <Card
+                key={desig.$id}
+                className="border-none shadow-md hover:shadow-lg transition-shadow"
+              >
                 <CardContent className="space-y-4 p-5">
                   {/* Badge & Name */}
                   <div className="flex items-start gap-3">
@@ -449,10 +522,16 @@ export default function DesignationsManager({ designations, departments, onChang
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg">{desig.name}</h3>
                       <div className="flex items-center gap-2 flex-wrap mt-1">
-                        <Chip size="sm" className={CATEGORY_COLORS[desig.category]}>
+                        <Chip
+                          className={CATEGORY_COLORS[desig.category]}
+                          size="sm"
+                        >
                           {CATEGORY_LABELS[desig.category]}
                         </Chip>
-                        <Chip size="sm" className="bg-default-100 text-default-700">
+                        <Chip
+                          className="bg-default-100 text-default-700"
+                          size="sm"
+                        >
                           Level {desig.level}
                         </Chip>
                       </div>
@@ -477,24 +556,30 @@ export default function DesignationsManager({ designations, departments, onChang
                   {desig.capabilities && desig.capabilities.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {desig.capabilities.map((capability) => (
-                        <Chip key={capability} size="sm" className="text-xs font-mono">
+                        <Chip
+                          key={capability}
+                          className="text-xs font-mono"
+                          size="sm"
+                        >
                           {capability}
                         </Chip>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-default-400">Grants no capabilities</p>
+                    <p className="text-xs text-default-400">
+                      Grants no capabilities
+                    </p>
                   )}
 
                   {/* Status */}
                   <div className="flex items-center gap-2">
                     {desig.isActive ? (
-                      <Chip size="sm" className="bg-green-100 text-green-800">
+                      <Chip className="bg-green-100 text-green-800" size="sm">
                         <CheckIcon className="w-3 h-3 mr-1" />
                         Active
                       </Chip>
                     ) : (
-                      <Chip size="sm" className="bg-red-100 text-red-800">
+                      <Chip className="bg-red-100 text-red-800" size="sm">
                         <XIcon className="w-3 h-3 mr-1" />
                         Inactive
                       </Chip>
@@ -504,36 +589,36 @@ export default function DesignationsManager({ designations, departments, onChang
                   {/* Actions */}
                   <div className="flex gap-2">
                     <Button
+                      className="flex-1"
                       size="sm"
                       variant="primary"
-                      className="flex-1"
                       onPress={() => handleOpenAssign(desig)}
                     >
                       <AwardIcon className="w-4 h-4 mr-1" />
                       Assign
                     </Button>
                     <Button
+                      className="flex-1"
                       size="sm"
                       variant="primary"
-                      className="flex-1"
                       onPress={() => handleOpenRevoke(desig)}
                     >
                       <XIcon className="w-4 h-4 mr-1" />
                       Revoke
                     </Button>
                     <Button
+                      isIconOnly
                       size="sm"
                       variant="primary"
-                      isIconOnly
                       onPress={() => handleEdit(desig)}
                     >
                       <EditIcon className="w-4 h-4" />
                     </Button>
                     <Button
-                      size="sm"
-                      variant="primary"
                       isIconOnly
                       isPending={deletingId === desig.$id}
+                      size="sm"
+                      variant="primary"
                       onPress={() => handleDelete(desig.$id!)}
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -556,7 +641,7 @@ export default function DesignationsManager({ designations, departments, onChang
         >
           <ModalContainer size="lg">
             <ModalDialog>
-              {({ close: dialogClose }: { close: () => void }) => (
+              {() => (
                 <Form validationBehavior="aria" onSubmit={handleSubmit}>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                     <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -576,12 +661,17 @@ export default function DesignationsManager({ designations, departments, onChang
                       name="name"
                       validate={(value) => {
                         const trimmed = value.trim();
+
                         if (!trimmed) return "Give the designation a name";
-                        if (trimmed.length > 100) return "Keep the name under 100 characters";
+                        if (trimmed.length > 100)
+                          return "Keep the name under 100 characters";
+
                         return null;
                       }}
                       value={formData.name}
-                      onChange={(value) => setFormData({ ...formData, name: value })}
+                      onChange={(value) =>
+                        setFormData({ ...formData, name: value })
+                      }
                     >
                       <Label>Designation Name</Label>
                       <Input
@@ -595,10 +685,14 @@ export default function DesignationsManager({ designations, departments, onChang
                       isDisabled={submitting}
                       name="description"
                       validate={(value) =>
-                        value.length > 2000 ? "Keep the description under 2000 characters" : null
+                        value.length > 2000
+                          ? "Keep the description under 2000 characters"
+                          : null
                       }
                       value={formData.description}
-                      onChange={(value) => setFormData({ ...formData, description: value })}
+                      onChange={(value) =>
+                        setFormData({ ...formData, description: value })
+                      }
                     >
                       <Label>Description</Label>
                       <TextArea
@@ -617,7 +711,9 @@ export default function DesignationsManager({ designations, departments, onChang
                           onChange={(value) =>
                             setFormData({
                               ...formData,
-                              category: String(value ?? "department") as Designation["category"],
+                              category: String(
+                                value ?? "department",
+                              ) as Designation["category"],
                             })
                           }
                         >
@@ -628,9 +724,22 @@ export default function DesignationsManager({ designations, departments, onChang
                           </Select.Trigger>
                           <Select.Popover>
                             <ListBox>
-                              {["department", "operations", "executive", "special"].map((category) => (
-                                <ListBox.Item key={category} id={category} textValue={category.charAt(0).toUpperCase() + category.slice(1)}>
-                                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                              {[
+                                "department",
+                                "operations",
+                                "executive",
+                                "special",
+                              ].map((category) => (
+                                <ListBox.Item
+                                  key={category}
+                                  id={category}
+                                  textValue={
+                                    category.charAt(0).toUpperCase() +
+                                    category.slice(1)
+                                  }
+                                >
+                                  {category.charAt(0).toUpperCase() +
+                                    category.slice(1)}
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
                               ))}
@@ -641,13 +750,13 @@ export default function DesignationsManager({ designations, departments, onChang
 
                       <div>
                         {/*
-                          * Levels run 1–9. Level 10 used to be the reserved
-                          * "everything" tier, which meant this field alone could
-                          * confer full access; seniority now stops at 9 and the
-                          * `admin`/`dev` tier comes only from a governance role.
-                          * The bounds are enforced again on the server — a number
-                          * input is a convenience, not a constraint.
-                          */}
+                         * Levels run 1–9. Level 10 used to be the reserved
+                         * "everything" tier, which meant this field alone could
+                         * confer full access; seniority now stops at 9 and the
+                         * `admin`/`dev` tier comes only from a governance role.
+                         * The bounds are enforced again on the server — a number
+                         * input is a convenience, not a constraint.
+                         */}
                         <TextField
                           isRequired
                           isDisabled={submitting}
@@ -655,19 +764,30 @@ export default function DesignationsManager({ designations, departments, onChang
                           type="number"
                           validate={(value) => {
                             const parsed = Number(value);
-                            return Number.isInteger(parsed) && parsed >= 1 && parsed <= 9
+
+                            return Number.isInteger(parsed) &&
+                              parsed >= 1 &&
+                              parsed <= 9
                               ? null
                               : "Level must be a whole number between 1 and 9";
                           }}
                           value={formData.level.toString()}
                           onChange={(value) => {
                             const parsed = parseInt(value, 10);
-                            const level = Number.isFinite(parsed) ? Math.min(9, Math.max(1, parsed)) : 1;
+                            const level = Number.isFinite(parsed)
+                              ? Math.min(9, Math.max(1, parsed))
+                              : 1;
+
                             setFormData({ ...formData, level });
                           }}
                         >
                           <Label>Level</Label>
-                          <Input max={9} min={1} placeholder="1" type="number" />
+                          <Input
+                            max={9}
+                            min={1}
+                            placeholder="1"
+                            type="number"
+                          />
                           <Description>
                             1 is entry level, 9 is the most senior.
                           </Description>
@@ -681,10 +801,14 @@ export default function DesignationsManager({ designations, departments, onChang
                         isDisabled={submitting}
                         name="badgeIcon"
                         validate={(value) =>
-                          value.length > 100 ? "Keep the badge icon under 100 characters" : null
+                          value.length > 100
+                            ? "Keep the badge icon under 100 characters"
+                            : null
                         }
                         value={formData.badgeIcon}
-                        onChange={(value) => setFormData({ ...formData, badgeIcon: value })}
+                        onChange={(value) =>
+                          setFormData({ ...formData, badgeIcon: value })
+                        }
                       >
                         <Label>Badge Icon</Label>
                         <Input maxLength={100} placeholder="Emoji or text" />
@@ -692,16 +816,24 @@ export default function DesignationsManager({ designations, departments, onChang
                       </TextField>
 
                       <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium" htmlFor="desig-badge-color">Badge Color</Label>
+                        <Label
+                          className="text-sm font-medium"
+                          htmlFor="desig-badge-color"
+                        >
+                          Badge Color
+                        </Label>
                         <input
+                          className="w-10 h-10 rounded-lg border border-default-300 cursor-pointer"
+                          disabled={submitting}
                           id="desig-badge-color"
                           type="color"
                           value={formData.badgeColor || "#6366f1"}
                           onChange={(e) =>
-                            setFormData({ ...formData, badgeColor: e.target.value })
+                            setFormData({
+                              ...formData,
+                              badgeColor: e.target.value,
+                            })
                           }
-                          disabled={submitting}
-                          className="w-10 h-10 rounded-lg border border-default-300 cursor-pointer"
                         />
                       </div>
                     </div>
@@ -713,6 +845,7 @@ export default function DesignationsManager({ designations, departments, onChang
                       validate={(value) => {
                         if (!value.trim()) return null;
                         const parsed = Number(value);
+
                         return Number.isInteger(parsed) && parsed >= 1
                           ? null
                           : "Holder limit must be a whole number of at least 1";
@@ -724,7 +857,10 @@ export default function DesignationsManager({ designations, departments, onChang
                           maxHolders: value
                             ? (() => {
                                 const parsed = parseInt(value, 10);
-                                return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+
+                                return Number.isFinite(parsed) && parsed > 0
+                                  ? parsed
+                                  : undefined;
                               })()
                             : undefined,
                         })
@@ -763,7 +899,11 @@ export default function DesignationsManager({ designations, departments, onChang
                               <ListBox.ItemIndicator />
                             </ListBox.Item>
                             {departments.map((dept) => (
-                              <ListBox.Item key={dept.$id} id={dept.$id!} textValue={dept.name}>
+                              <ListBox.Item
+                                key={dept.$id}
+                                id={dept.$id!}
+                                textValue={dept.name}
+                              >
                                 {dept.name}
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>
@@ -775,37 +915,48 @@ export default function DesignationsManager({ designations, departments, onChang
 
                     <fieldset className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <legend className="text-sm font-medium">Capabilities (optional)</legend>
+                        <legend className="text-sm font-medium">
+                          Capabilities (optional)
+                        </legend>
                         <Input
+                          aria-label="Filter capabilities"
                           className="max-w-52"
                           placeholder="Filter capabilities..."
-                          aria-label="Filter capabilities"
                           value={capabilityQuery}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => setCapabilityQuery(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setCapabilityQuery(e.target.value)
+                          }
                         />
                       </div>
                       <p className="text-xs text-default-400">
-                        A title grants nothing unless listed here. Anything you add is checked
-                        against the capabilities you hold yourself, and it appears in the Access
-                        console alongside roles, offices and powers.
+                        A title grants nothing unless listed here. Anything you
+                        add is checked against the capabilities you hold
+                        yourself, and it appears in the Access console alongside
+                        roles, offices and powers.
                       </p>
                       <div className="grid max-h-56 gap-1.5 overflow-y-auto rounded-lg border border-default-200 p-3 sm:grid-cols-2">
                         {visibleCapabilities.map((capability) => (
                           <Checkbox
                             key={capability}
-                            isSelected={(formData.capabilities ?? []).includes(capability)}
+                            isSelected={(formData.capabilities ?? []).includes(
+                              capability,
+                            )}
                             onChange={() => toggleCapability(capability)}
                           >
                             <Checkbox.Content>
                               <Checkbox.Control>
                                 <Checkbox.Indicator />
                               </Checkbox.Control>
-                              <span className="text-xs font-mono">{capability}</span>
+                              <span className="text-xs font-mono">
+                                {capability}
+                              </span>
                             </Checkbox.Content>
                           </Checkbox>
                         ))}
                         {visibleCapabilities.length === 0 && (
-                          <p className="text-xs text-default-400">No capability matches “{capabilityQuery}”.</p>
+                          <p className="text-xs text-default-400">
+                            No capability matches “{capabilityQuery}”.
+                          </p>
                         )}
                       </div>
                     </fieldset>
@@ -827,8 +978,8 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="secondary"
                       className="w-full sm:w-auto"
+                      variant="secondary"
                       onPress={resetForm}
                     >
                       Cancel
@@ -861,7 +1012,7 @@ export default function DesignationsManager({ designations, departments, onChang
         >
           <ModalContainer>
             <ModalDialog>
-              {({ close: dialogClose }: { close: () => void }) => (
+              {() => (
                 <div>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                     <h2 className="text-xl font-bold">
@@ -877,35 +1028,39 @@ export default function DesignationsManager({ designations, departments, onChang
                     {directoryUnavailable ? (
                       <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                         <p className="text-xs text-amber-200">
-                          Member search needs the users.view capability, which this
-                          account does not hold. Paste the member&apos;s user ID
-                          instead.
+                          Member search needs the users.view capability, which
+                          this account does not hold. Paste the member&apos;s
+                          user ID instead.
                         </p>
                         <Input
-                          placeholder="Appwrite user ID"
                           aria-label="Member user ID"
+                          placeholder="Appwrite user ID"
                           value={manualUserId}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => setManualUserId(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setManualUserId(e.target.value)
+                          }
                         />
                       </div>
                     ) : (
                       <div className="flex gap-2">
                         <Input
+                          className="flex-1"
                           placeholder="Search by URN, branch, or userId..."
                           value={searchQuery}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setSearchQuery(e.target.value)
+                          }
                           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               handleSearchUsers();
                             }
                           }}
-                          className="flex-1"
                         />
                         <Button
+                          isPending={searching}
                           variant="primary"
                           onPress={handleSearchUsers}
-                          isPending={searching}
                         >
                           <SearchIcon className="w-4 h-4" />
                         </Button>
@@ -914,27 +1069,29 @@ export default function DesignationsManager({ designations, departments, onChang
 
                     {/* Search Results */}
                     <div className="max-h-64 overflow-y-auto space-y-2">
-                      {searchResults.length === 0 && searchQuery && !searching && (
-                        <p className="text-sm text-default-400 text-center py-4">
-                          No results found. Try a different search.
-                        </p>
-                      )}
+                      {searchResults.length === 0 &&
+                        searchQuery &&
+                        !searching && (
+                          <p className="text-sm text-default-400 text-center py-4">
+                            No results found. Try a different search.
+                          </p>
+                        )}
                       {searchResults.map((profile) => (
                         <button
                           key={profile.userId}
-                          type="button"
-                          onClick={() => setSelectedUser(profile)}
                           className={`w-full text-left p-3 rounded-lg border transition-colors ${
                             selectedUser?.userId === profile.userId
                               ? "border-primary bg-primary/10"
                               : "border-default-200 hover:bg-default-100"
                           }`}
+                          type="button"
+                          onClick={() => setSelectedUser(profile)}
                         >
                           <div className="flex items-center gap-3">
                             <MemberAvatar
-                              src={profile.avatar}
-                              name={profile.urn || profile.userId}
                               className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                              name={profile.urn || profile.userId}
+                              src={profile.avatar}
                             />
                             <div>
                               <p className="text-sm font-medium">
@@ -964,16 +1121,16 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="secondary"
                       className="w-full sm:w-auto"
+                      variant="secondary"
                       onPress={closeAssign}
                     >
                       Cancel
                     </Button>
                     <Button
-                      isPending={assigning}
-                      isDisabled={!assignUserId}
                       className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                      isDisabled={!assignUserId}
+                      isPending={assigning}
                       onPress={handleAssign}
                     >
                       Assign Designation
@@ -999,7 +1156,7 @@ export default function DesignationsManager({ designations, departments, onChang
         >
           <ModalContainer>
             <ModalDialog>
-              {({ close: dialogClose }: { close: () => void }) => (
+              {() => (
                 <div>
                   <ModalHeader className="flex flex-col gap-1 border-b pb-4">
                     <h2 className="text-xl font-bold">
@@ -1028,28 +1185,36 @@ export default function DesignationsManager({ designations, departments, onChang
                           >
                             <div className="flex items-center gap-3">
                               <MemberAvatar
-                                src={holder.profile?.avatar}
-                                name={holder.holderName || holder.profile?.urn || holder.userId}
                                 className="w-8 h-8 text-xs font-bold flex-shrink-0"
+                                name={
+                                  holder.holderName ||
+                                  holder.profile?.urn ||
+                                  holder.userId
+                                }
+                                src={holder.profile?.avatar}
                               />
                               <div>
                                 <p className="text-sm font-medium">
-                                  {holder.holderName || holder.profile?.urn || holder.userId}
+                                  {holder.holderName ||
+                                    holder.profile?.urn ||
+                                    holder.userId}
                                 </p>
                                 <p className="text-xs text-default-400">
-                                  {holder.holderName && holder.profile?.urn ? `${holder.profile.urn} · ` : ""}
+                                  {holder.holderName && holder.profile?.urn
+                                    ? `${holder.profile.urn} · `
+                                    : ""}
                                   Assigned:{" "}
                                   {new Date(
-                                    holder.assignedAt
+                                    holder.assignedAt,
                                   ).toLocaleDateString()}
                                 </p>
                               </div>
                             </div>
                             <Button
-                              size="sm"
-                              variant="primary"
                               isIconOnly
                               isPending={revokingUserId === holder.userId}
+                              size="sm"
+                              variant="primary"
                               onPress={() => handleRevoke(holder.userId)}
                             >
                               <TrashIcon className="w-4 h-4" />
@@ -1062,8 +1227,8 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="secondary"
                       className="w-full sm:w-auto"
+                      variant="secondary"
                       onPress={() => {
                         setHolders([]);
                         closeRevoke();

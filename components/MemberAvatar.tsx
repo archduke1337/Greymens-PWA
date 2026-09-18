@@ -16,11 +16,16 @@ interface MemberAvatarProps {
  * cannot accidentally ship as initials-only when a picture exists. Sizing
  * comes from className (e.g. "w-8 h-8") to match each surface.
  */
-export default function MemberAvatar({ src, name, className }: MemberAvatarProps) {
+export default function MemberAvatar({
+  src,
+  name,
+  className,
+}: MemberAvatarProps) {
   const label = (name ?? "").trim();
+
   return (
     <Avatar className={className}>
-      {src ? <AvatarImage src={src} alt={label || "Member"} /> : null}
+      {src ? <AvatarImage alt={label || "Member"} src={src} /> : null}
       <AvatarFallback>{label.charAt(0).toUpperCase() || "?"}</AvatarFallback>
     </Avatar>
   );

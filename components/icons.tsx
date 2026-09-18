@@ -1,12 +1,15 @@
 import * as React from "react";
+import Image from "next/image";
 
 import { IconSvgProps } from "@/types";
 
 export const Logo = ({ className }: { className?: string }) => (
-  <img
-    src="/logo.png"
+  <Image
     alt="Greymens"
     className={`w-10 h-10 md:w-12 md:h-12 object-contain ${className || ""}`}
+    height={96}
+    src="/logo.png"
+    width={96}
   />
 );
 

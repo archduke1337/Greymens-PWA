@@ -27,12 +27,12 @@ export function HeroCta() {
 
   return (
     <LinkButton
-      size="lg"
-      href={user ? "/dashboard" : "/register"}
       className="rounded-full px-8"
+      href={user ? "/dashboard" : "/register"}
+      size="lg"
     >
       {user ? "Go to dashboard" : "Join the club"}
-      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      <ArrowRight aria-hidden="true" className="h-4 w-4" />
     </LinkButton>
   );
 }
@@ -65,8 +65,10 @@ export function ProofStrip() {
     const load = async () => {
       try {
         const res = await fetch("/api/stats", { cache: "no-store" });
+
         if (!res.ok) throw new Error("stats");
         const data = (await res.json()) as HomeStats;
+
         if (cancelled) return;
         setCounts({
           upcomingEvents: Math.max(0, Number(data.upcomingEvents) || 0),
@@ -80,6 +82,7 @@ export function ProofStrip() {
     };
 
     void load();
+
     return () => {
       cancelled = true;
     };
@@ -126,9 +129,9 @@ export function ProofStrip() {
             <div key={item.label} className="space-y-1">
               <p className="text-3xl font-bold tracking-tight tabular-nums sm:text-4xl">
                 <Link
-                  href={item.href}
-                  className="rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
                   aria-label={`${item.value} ${item.label.toLowerCase()} — see all`}
+                  className="rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
+                  href={item.href}
                 >
                   {item.value}
                 </Link>
@@ -158,7 +161,10 @@ export function JoinBand() {
   if (loading || user) return null;
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6" aria-label="Join">
+    <section
+      aria-label="Join"
+      className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-6"
+    >
       <div className="rounded-3xl border border-default-200/70">
         <div className="flex flex-col items-center gap-5 p-8 text-center sm:p-10">
           <div className="space-y-2">
@@ -171,11 +177,15 @@ export function JoinBand() {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2.5">
-            <LinkButton href="/events" className="rounded-full px-6">
+            <LinkButton className="rounded-full px-6" href="/events">
               Find an event
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </LinkButton>
-            <LinkButton href="/register" variant="secondary" className="rounded-full px-6">
+            <LinkButton
+              className="rounded-full px-6"
+              href="/register"
+              variant="secondary"
+            >
               Join directly
             </LinkButton>
           </div>

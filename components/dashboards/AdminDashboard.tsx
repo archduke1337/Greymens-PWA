@@ -1,7 +1,7 @@
 "use client";
 
 import type { Application, Department } from "@/lib/types";
-import { readApiError } from "@/lib/errorHandler";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardContent, Chip, ProgressBar } from "@heroui/react";
@@ -21,6 +21,7 @@ import {
   FileText,
 } from "lucide-react";
 
+import { readApiError } from "@/lib/errorHandler";
 
 export default function AdminDashboard() {
   type AdminDashboardPayload = {
@@ -51,18 +52,30 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/dashboard", { credentials: "include" });
-        const payload = (await response.json()) as AdminDashboardPayload & { error?: string };
-        if (!response.ok || !payload.admin) throw new Error(readApiError(payload, "Unable to load dashboard"));
+        const response = await fetch("/api/dashboard", {
+          credentials: "include",
+        });
+        const payload = (await response.json()) as AdminDashboardPayload & {
+          error?: string;
+        };
+
+        if (!response.ok || !payload.admin)
+          throw new Error(readApiError(payload, "Unable to load dashboard"));
         if (!cancelled) setData(payload.admin);
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");
+        if (!cancelled)
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load dashboard",
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
     void loadData();
+
     return () => {
       cancelled = true;
     };
@@ -81,9 +94,12 @@ export default function AdminDashboard() {
   const departments = data?.departments ?? [];
   const events = data?.events ?? [];
   const pendingApplications = data?.pendingApplications ?? [];
-  const totalUsers = membershipStats.active + membershipStats.inactive + membershipStats.banned;
+  const totalUsers =
+    membershipStats.active + membershipStats.inactive + membershipStats.banned;
   const totalEvents = events.length;
-  const activeEvents = events.filter((event) => ["approved", "published", "active"].includes(String(event.status)));
+  const activeEvents = events.filter((event) =>
+    ["approved", "published", "active"].includes(String(event.status)),
+  );
   const draftEvents = events.filter((event) => event.status === "draft");
   const reviewEvents = events.filter((event) => event.status === "review");
 
@@ -180,13 +196,18 @@ export default function AdminDashboard() {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-2xl font-semibold">Dashboard unavailable</h1>
-        <p className="text-muted mt-2">{error || "The server did not return a management view."}</p>
+        <p className="text-muted mt-2">
+          {error || "The server did not return a management view."}
+        </p>
         <p className="text-muted text-sm">
-          If this keeps happening, sign out and back in — a stale session is
-          the most common cause.
+          If this keeps happening, sign out and back in — a stale session is the
+          most common cause.
         </p>
         <div>
-          <Button variant="secondary" onPress={() => setRetryKey((key) => key + 1)}>
+          <Button
+            variant="secondary"
+            onPress={() => setRetryKey((key) => key + 1)}
+          >
             Try again
           </Button>
         </div>
@@ -203,7 +224,7 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold tracking-tight">
               Admin Dashboard
             </h1>
-            <Chip size="sm" color="danger" variant="soft">
+            <Chip color="danger" size="sm" variant="soft">
               Admin
             </Chip>
           </div>
@@ -222,10 +243,14 @@ export default function AdminDashboard() {
             <Card key={stat.label}>
               <CardContent className="space-y-3 p-5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tile}`}>
-                    <Icon className="size-5" aria-hidden="true" />
+                  <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tile}`}
+                  >
+                    <Icon aria-hidden="true" className="size-5" />
                   </span>
-                  <span className="text-2xl font-bold tabular-nums">{stat.value}</span>
+                  <span className="text-2xl font-bold tabular-nums">
+                    {stat.value}
+                  </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium">{stat.label}</p>
@@ -241,179 +266,195 @@ export default function AdminDashboard() {
         {/* Membership Queue Quick View */}
         <Card className="lg:col-span-2">
           <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Membership Queue</h2>
-            <Link
-              className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
-              href="/admin/membership"
-            >
-              Manage All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Membership Queue</h2>
+              <Link
+                className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
+                href="/admin/membership"
+              >
+                Manage All <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
 
-          {/* Application Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="size-4 text-warning" aria-hidden="true" />
-                <span className="text-sm text-warning">Pending</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {applicationStats.pending}
-              </p>
-            </div>
-            <div className="rounded-xl border border-success/20 bg-success/5 p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="size-4 text-success" aria-hidden="true" />
-                <span className="text-sm text-success">Approved</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {applicationStats.approved}
-              </p>
-            </div>
-            <div className="rounded-xl border border-danger/20 bg-danger/5 p-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="size-4 text-danger" aria-hidden="true" />
-                <span className="text-sm text-danger">Rejected</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {applicationStats.rejected}
-              </p>
-            </div>
-          </div>
-
-          {/* Pending Applications List */}
-          {pendingApplications.length > 0 ? (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted mb-2">
-                Recent Applications
-              </h3>
-              {pendingApplications.slice(0, 5).map((app) => (
-                <div
-                  key={app.$id}
-                  className="flex items-center gap-4 p-3 rounded-xl border border-warning/10 bg-warning/5"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
-                    <ClipboardCheck className="size-4 text-warning" aria-hidden="true" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm">
-                      Application #{app.$id?.slice(-6)}
-                    </h4>
-                    <div className="flex items-center gap-2 text-xs text-muted mt-0.5">
-                      <span>
-                        Submitted{" "}
-                        {new Date(app.submittedAt).toLocaleDateString()}
-                      </span>
-                      {app.preferredDepartments &&
-                        app.preferredDepartments.length > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{app.preferredDepartments.join(", ")}</span>
-                          </>
-                        )}
-                    </div>
-                  </div>
-                  <Link
-                    className="text-warning hover:opacity-80 shrink-0"
-                    href="/admin/membership"
-                    aria-label={`Review application ${app.$id?.slice(-6)}`}
-                  >
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
+            {/* Application Stats */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
+                <div className="flex items-center gap-2">
+                  <Clock aria-hidden="true" className="size-4 text-warning" />
+                  <span className="text-sm text-warning">Pending</span>
                 </div>
-              ))}
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {applicationStats.pending}
+                </p>
+              </div>
+              <div className="rounded-xl border border-success/20 bg-success/5 p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle
+                    aria-hidden="true"
+                    className="size-4 text-success"
+                  />
+                  <span className="text-sm text-success">Approved</span>
+                </div>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {applicationStats.approved}
+                </p>
+              </div>
+              <div className="rounded-xl border border-danger/20 bg-danger/5 p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle
+                    aria-hidden="true"
+                    className="size-4 text-danger"
+                  />
+                  <span className="text-sm text-danger">Rejected</span>
+                </div>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {applicationStats.rejected}
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <CheckCircle className="w-10 h-10 text-success/50 mx-auto mb-3" aria-hidden="true" />
-              <p className="text-sm text-muted">No pending applications</p>
-            </div>
-          )}
+
+            {/* Pending Applications List */}
+            {pendingApplications.length > 0 ? (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted mb-2">
+                  Recent Applications
+                </h3>
+                {pendingApplications.slice(0, 5).map((app) => (
+                  <div
+                    key={app.$id}
+                    className="flex items-center gap-4 p-3 rounded-xl border border-warning/10 bg-warning/5"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                      <ClipboardCheck
+                        aria-hidden="true"
+                        className="size-4 text-warning"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm">
+                        Application #{app.$id?.slice(-6)}
+                      </h4>
+                      <div className="flex items-center gap-2 text-xs text-muted mt-0.5">
+                        <span>
+                          Submitted{" "}
+                          {new Date(app.submittedAt).toLocaleDateString()}
+                        </span>
+                        {app.preferredDepartments &&
+                          app.preferredDepartments.length > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">
+                                {app.preferredDepartments.join(", ")}
+                              </span>
+                            </>
+                          )}
+                      </div>
+                    </div>
+                    <Link
+                      aria-label={`Review application ${app.$id?.slice(-6)}`}
+                      className="text-warning hover:opacity-80 shrink-0"
+                      href="/admin/membership"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <CheckCircle
+                  aria-hidden="true"
+                  className="w-10 h-10 text-success/50 mx-auto mb-3"
+                />
+                <p className="text-sm text-muted">No pending applications</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Event Pipeline */}
         <Card>
           <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Event Pipeline</h2>
-            <Link
-              className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
-              href="/admin/events"
-            >
-              View All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {[
-              {
-                label: "Drafts",
-                count: draftEvents.length,
-                color: "bg-zinc-500",
-                href: "/admin/events?status=draft",
-              },
-              {
-                label: "Pending Review",
-                count: reviewEvents.length,
-                color: "bg-amber-500",
-                href: "/admin/events?status=review",
-              },
-              {
-                label: "Active",
-                count: activeEvents.length,
-                color: "bg-emerald-500",
-                href: "/admin/events?status=active",
-              },
-            ].map((stage) => (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Event Pipeline</h2>
               <Link
-                key={stage.label}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-surface-secondary transition-colors group"
-                href={stage.href}
+                className="text-sm text-primary hover:opacity-90 flex items-center gap-1"
+                href="/admin/events"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${stage.color}`} />
-                  <span className="text-sm group-hover:text-foreground transition-colors">
-                    {stage.label}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{stage.count}</span>
-                  <ChevronRight className="w-4 h-4 text-muted group-hover:text-muted" />
-                </div>
+                View All <ChevronRight className="w-4 h-4" />
               </Link>
-            ))}
-          </div>
-
-          {/* Department Overview */}
-          <div className="mt-6 pt-6 border-t border-border">
-            <h3 className="text-sm font-medium text-muted mb-3">
-              Departments
-            </h3>
-            <div className="space-y-2">
-              {departments.slice(0, 4).map((dept) => (
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  label: "Drafts",
+                  count: draftEvents.length,
+                  color: "bg-zinc-500",
+                  href: "/admin/events?status=draft",
+                },
+                {
+                  label: "Pending Review",
+                  count: reviewEvents.length,
+                  color: "bg-amber-500",
+                  href: "/admin/events?status=review",
+                },
+                {
+                  label: "Active",
+                  count: activeEvents.length,
+                  color: "bg-emerald-500",
+                  href: "/admin/events?status=active",
+                },
+              ].map((stage) => (
                 <Link
-                  key={dept.$id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors group"
-                  href={`/admin/departments/${dept.slug}`}
+                  key={stage.label}
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-surface-secondary transition-colors group"
+                  href={stage.href}
                 >
-                  <div
-                    className="w-6 h-6 rounded flex items-center justify-center"
-                    style={{ backgroundColor: `${dept.color || "#8b5cf6"}20` }}
-                  >
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: dept.color || "#8b5cf6" }}
-                    />
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${stage.color}`} />
+                    <span className="text-sm group-hover:text-foreground transition-colors">
+                      {stage.label}
+                    </span>
                   </div>
-                  <span className="text-sm truncate group-hover:text-foreground transition-colors">
-                    {dept.name}
-                  </span>
-                  <ChevronRight className="w-3 h-3 text-muted ml-auto" />
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{stage.count}</span>
+                    <ChevronRight className="w-4 h-4 text-muted group-hover:text-muted" />
+                  </div>
                 </Link>
               ))}
             </div>
-          </div>
+
+            {/* Department Overview */}
+            <div className="mt-6 pt-6 border-t border-border">
+              <h3 className="text-sm font-medium text-muted mb-3">
+                Departments
+              </h3>
+              <div className="space-y-2">
+                {departments.slice(0, 4).map((dept) => (
+                  <Link
+                    key={dept.$id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-secondary transition-colors group"
+                    href={`/admin/departments/${dept.slug}`}
+                  >
+                    <div
+                      className="w-6 h-6 rounded flex items-center justify-center"
+                      style={{
+                        backgroundColor: `${dept.color || "#8b5cf6"}20`,
+                      }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: dept.color || "#8b5cf6" }}
+                      />
+                    </div>
+                    <span className="text-sm truncate group-hover:text-foreground transition-colors">
+                      {dept.name}
+                    </span>
+                    <ChevronRight className="w-3 h-3 text-muted ml-auto" />
+                  </Link>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -438,9 +479,7 @@ export default function AdminDashboard() {
                 <h3 className="font-medium mt-3 group-hover:text-foreground transition-colors">
                   {section.label}
                 </h3>
-                <p className="text-xs text-muted mt-1">
-                  {section.description}
-                </p>
+                <p className="text-xs text-muted mt-1">{section.description}</p>
               </Link>
             );
           })}
@@ -450,51 +489,58 @@ export default function AdminDashboard() {
       {/* System Health */}
       <Card>
         <CardContent className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="size-5 text-success" aria-hidden="true" />
-          <h2 className="text-lg font-semibold">System Health</h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Active Members",
-              value: membershipStats.active,
-              total: totalUsers,
-            },
-            {
-              label: "Active Events",
-              value: activeEvents.length,
-              total: totalEvents,
-            },
-            {
-              label: "Departments",
-              value: departments.length,
-              total: departments.length,
-            },
-            {
-              label: "Application Rate",
-              value: applicationStats.approved,
-              total: applicationStats.approved + applicationStats.rejected,
-            },
-          ].map((item) => {
-            const percent = item.total > 0 ? Math.round((item.value / item.total) * 100) : 0;
-            return (
-              <div key={item.label} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted">{item.label}</span>
-                  <span className="font-medium tabular-nums">
-                    {item.value}/{item.total}
-                  </span>
+          <div className="flex items-center gap-2 mb-4">
+            <Activity aria-hidden="true" className="size-5 text-success" />
+            <h2 className="text-lg font-semibold">System Health</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              {
+                label: "Active Members",
+                value: membershipStats.active,
+                total: totalUsers,
+              },
+              {
+                label: "Active Events",
+                value: activeEvents.length,
+                total: totalEvents,
+              },
+              {
+                label: "Departments",
+                value: departments.length,
+                total: departments.length,
+              },
+              {
+                label: "Application Rate",
+                value: applicationStats.approved,
+                total: applicationStats.approved + applicationStats.rejected,
+              },
+            ].map((item) => {
+              const percent =
+                item.total > 0
+                  ? Math.round((item.value / item.total) * 100)
+                  : 0;
+
+              return (
+                <div key={item.label} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted">{item.label}</span>
+                    <span className="font-medium tabular-nums">
+                      {item.value}/{item.total}
+                    </span>
+                  </div>
+                  <ProgressBar
+                    aria-label={`${item.label}: ${percent} percent`}
+                    value={percent}
+                  >
+                    <ProgressBar.Track>
+                      <ProgressBar.Fill />
+                    </ProgressBar.Track>
+                  </ProgressBar>
                 </div>
-                <ProgressBar value={percent} aria-label={`${item.label}: ${percent} percent`}>
-                  <ProgressBar.Track>
-                    <ProgressBar.Fill />
-                  </ProgressBar.Track>
-                </ProgressBar>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>

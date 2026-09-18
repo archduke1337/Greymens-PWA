@@ -2,12 +2,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Separator } from "@heroui/react";
 
-import { FooterSponsors } from "./footer-sponsors";
 import { useAuth } from "@/context/AuthContext";
 import { siteConfig } from "@/config/site";
+
+import { FooterSponsors } from "./footer-sponsors";
 
 const CLUB_LINKS = [
   { href: "/about", label: "About" },
@@ -37,7 +39,10 @@ const TRUST_LINKS = [
 
 const SOCIALS = [
   { label: "LinkedIn", href: "https://www.linkedin.com/company/greymens" },
-  { label: "Instagram", href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh" },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh",
+  },
   { label: "X", href: "https://twitter.com/GreymensADYPU" },
   { label: "Discord", href: siteConfig.links.discord },
 ];
@@ -45,6 +50,7 @@ const SOCIALS = [
 export const Footer = () => {
   // Signed-in members already belong — the register pitch is for visitors.
   const { user } = useAuth();
+
   return (
     <footer className="w-full border-t border-default-200/60">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -58,11 +64,11 @@ export const Footer = () => {
           </p>
           {!user && (
             <Link
-              href="/register"
               className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+              href="/register"
             >
               Join the club
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
             </Link>
           )}
         </div>
@@ -73,10 +79,12 @@ export const Footer = () => {
         <div className="grid grid-cols-2 gap-8 py-10 md:grid-cols-4">
           <div className="col-span-2 space-y-3 md:col-span-1">
             <p className="flex items-center gap-2.5 text-[15px] font-bold tracking-[0.22em]">
-              <img
-                src="/logo-eyes.png"
+              <Image
                 alt="Greymens Club logo"
                 className="h-9 w-auto rounded-md object-cover"
+                height={160}
+                src="/logo-eyes.png"
+                width={380}
               />
               GREYMENS
             </p>
@@ -84,28 +92,40 @@ export const Footer = () => {
               A student cybersecurity club at ADYPU&apos;s School of
               Engineering. Curious minds, secure tomorrows.
             </p>
-            <div className="flex items-center gap-4 pt-1" aria-label="Our university and partners">
-              <img
-                src="/adypu-logo.png"
+            <div
+              aria-label="Our university and partners"
+              className="flex items-center gap-4 pt-1"
+            >
+              <Image
                 alt="ADYPU"
-                loading="lazy"
                 className="h-8 w-auto object-contain"
-              />
-              <img
-                src="/seamedu-logo.jpg"
-                alt="Seamedu"
+                height={260}
                 loading="lazy"
+                src="/adypu-logo.png"
+                width={1024}
+              />
+              <Image
+                alt="Seamedu"
                 className="h-10 w-10 rounded-lg object-cover"
+                height={80}
+                loading="lazy"
+                src="/seamedu-logo.jpg"
+                width={80}
               />
             </div>
           </div>
 
           <nav aria-label="Club" className="space-y-3">
-            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">Club</h3>
+            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
+              Club
+            </h3>
             <ul className="space-y-2">
               {CLUB_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted transition-colors hover:text-foreground">
+                  <Link
+                    className="text-sm text-muted transition-colors hover:text-foreground"
+                    href={link.href}
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -114,11 +134,16 @@ export const Footer = () => {
           </nav>
 
           <nav aria-label="Learn" className="space-y-3">
-            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">Learn</h3>
+            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
+              Learn
+            </h3>
             <ul className="space-y-2">
               {LEARN_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted transition-colors hover:text-foreground">
+                  <Link
+                    className="text-sm text-muted transition-colors hover:text-foreground"
+                    href={link.href}
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -127,11 +152,16 @@ export const Footer = () => {
           </nav>
 
           <nav aria-label="Trust" className="space-y-3">
-            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">Trust</h3>
+            <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
+              Trust
+            </h3>
             <ul className="space-y-2">
               {TRUST_LINKS.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-muted transition-colors hover:text-foreground">
+                  <Link
+                    className="text-sm text-muted transition-colors hover:text-foreground"
+                    href={link.href}
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -144,16 +174,17 @@ export const Footer = () => {
 
         <div className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted">
-            © {new Date().getFullYear()} Greymens Club · Constitution v1.0 · In force
+            © {new Date().getFullYear()} Greymens Club · Constitution v1.0 · In
+            force
           </p>
           <ul className="flex flex-wrap gap-x-5 gap-y-1">
             {SOCIALS.map((social) => (
               <li key={social.label}>
                 <a
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-xs text-muted transition-colors hover:text-foreground"
+                  href={social.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
                   {social.label}
                 </a>

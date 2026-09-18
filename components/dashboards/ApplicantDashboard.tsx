@@ -1,7 +1,5 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/context/PermissionContext";
 import {
   FileText,
   Clock,
@@ -14,6 +12,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 
 const STATUS_CONFIG = {
   pending: {
@@ -88,17 +90,20 @@ function ExploreLinks() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {QUICK_LINKS.map((link) => {
           const Icon = link.icon;
+
           return (
             <Link
               key={link.href}
-              href={link.href}
               className="group rounded-xl border border-border bg-surface p-5 hover:border-border hover:bg-surface-secondary transition-all duration-200"
+              href={link.href}
             >
               <div className="flex items-start justify-between">
                 <Icon className={`w-5 h-5 ${link.color}`} />
                 <ArrowRight className="w-4 h-4 text-muted group-hover:text-muted group-hover:translate-x-0.5 transition-all" />
               </div>
-              <h3 className="font-medium mt-3 group-hover:text-foreground transition-colors">{link.label}</h3>
+              <h3 className="font-medium mt-3 group-hover:text-foreground transition-colors">
+                {link.label}
+              </h3>
               <p className="text-xs text-muted mt-1">{link.description}</p>
             </Link>
           );
@@ -119,9 +124,12 @@ export default function ApplicantDashboard() {
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">
-            Welcome, <span className="tracking-tight text-foreground">{user?.name}</span>
+            Welcome,{" "}
+            <span className="tracking-tight text-foreground">{user?.name}</span>
           </h1>
-          <p className="text-muted">Join the club to unlock member events, resources, and departments.</p>
+          <p className="text-muted">
+            Join the club to unlock member events, resources, and departments.
+          </p>
         </div>
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
           <div className="flex items-start gap-4">
@@ -131,11 +139,12 @@ export default function ApplicantDashboard() {
             <div className="flex-1 min-w-0">
               <h2 className="text-lg font-semibold">Start your application</h2>
               <p className="text-sm text-muted mt-1">
-                Tell us about yourself and pick your departments. It takes a few minutes.
+                Tell us about yourself and pick your departments. It takes a few
+                minutes.
               </p>
               <Link
-                href="/onboarding"
                 className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                href="/onboarding"
               >
                 Continue to onboarding
                 <ArrowRight className="w-4 h-4" />
@@ -149,7 +158,9 @@ export default function ApplicantDashboard() {
   }
 
   const appStatus = application.status || "pending";
-  const config = STATUS_CONFIG[appStatus as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
+  const config =
+    STATUS_CONFIG[appStatus as keyof typeof STATUS_CONFIG] ||
+    STATUS_CONFIG.pending;
   const StatusIcon = config.icon;
 
   return (
@@ -157,21 +168,26 @@ export default function ApplicantDashboard() {
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome, <span className="tracking-tight text-foreground">{user?.name}</span>
+          Welcome,{" "}
+          <span className="tracking-tight text-foreground">{user?.name}</span>
         </h1>
-        <p className="text-muted">Track your application and explore what Greymens Club has to offer.</p>
+        <p className="text-muted">
+          Track your application and explore what Greymens Club has to offer.
+        </p>
       </div>
 
       {/* Application Status Card */}
       <div className={`rounded-2xl border ${config.border} ${config.bg} p-6`}>
         <div className="flex items-start gap-4">
           {(appStatus === "pending" || appStatus === "reapplied") && (
-            <img
-              src="/Assets/Media/sand-time-clock.gif"
+            <Image
               alt=""
               aria-hidden="true"
-              loading="lazy"
               className="h-14 w-14 shrink-0 rounded-2xl border border-default-200/70 object-cover"
+              height={213}
+              loading="lazy"
+              src="/Assets/Media/sand-time-clock.gif"
+              width={339}
             />
           )}
           <div className={`p-3 rounded-xl ${config.bg}`}>
@@ -180,15 +196,20 @@ export default function ApplicantDashboard() {
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold">{config.label}</h2>
             <p className="text-sm text-muted mt-1">
-              {appStatus === "pending" && "Your application is being reviewed by our team. We'll notify you once a decision is made."}
-              {appStatus === "approved" && "Congratulations! Your membership has been approved. Welcome to Greymens Club!"}
-              {appStatus === "rejected" && "Your application was not approved at this time. You may reapply after 30 days."}
-              {appStatus === "reapplied" && "Your reapplication is being reviewed. Thank you for your patience."}
+              {appStatus === "pending" &&
+                "Your application is being reviewed by our team. We'll notify you once a decision is made."}
+              {appStatus === "approved" &&
+                "Congratulations! Your membership has been approved. Welcome to Greymens Club!"}
+              {appStatus === "rejected" &&
+                "Your application was not approved at this time. You may reapply after 30 days."}
+              {appStatus === "reapplied" &&
+                "Your reapplication is being reviewed. Thank you for your patience."}
             </p>
 
             {application?.submittedAt && (
               <p className="text-xs text-muted mt-2">
-                Submitted {new Date(application.submittedAt).toLocaleDateString("en-US", {
+                Submitted{" "}
+                {new Date(application.submittedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -198,7 +219,8 @@ export default function ApplicantDashboard() {
 
             {application?.reviewedAt && (
               <p className="text-xs text-muted mt-1">
-                Reviewed {new Date(application.reviewedAt).toLocaleDateString("en-US", {
+                Reviewed{" "}
+                {new Date(application.reviewedAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -217,8 +239,8 @@ export default function ApplicantDashboard() {
 
             {appStatus === "rejected" && (
               <Link
-                href="/onboarding"
                 className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                href="/onboarding"
               >
                 Reapply now
                 <ArrowRight className="w-4 h-4" />
@@ -239,8 +261,8 @@ export default function ApplicantDashboard() {
                 appStatus === "approved"
                   ? "bg-emerald-500"
                   : appStatus === "rejected"
-                  ? "bg-red-500"
-                  : "bg-primary"
+                    ? "bg-red-500"
+                    : "bg-primary"
               }`}
               style={{ width: `${config.progress}%` }}
             />
@@ -271,30 +293,42 @@ export default function ApplicantDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
-                <span className={`w-2 h-2 rounded-full ${application.oathAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                <span
+                  className={`w-2 h-2 rounded-full ${application.oathAccepted ? "bg-emerald-500" : "bg-zinc-600"}`}
+                />
                 <span className="text-muted">Oath Accepted</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <span className={`w-2 h-2 rounded-full ${application.termsAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                <span
+                  className={`w-2 h-2 rounded-full ${application.termsAccepted ? "bg-emerald-500" : "bg-zinc-600"}`}
+                />
                 <span className="text-muted">Terms Accepted</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <span className={`w-2 h-2 rounded-full ${application.constitutionAccepted ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                <span
+                  className={`w-2 h-2 rounded-full ${application.constitutionAccepted ? "bg-emerald-500" : "bg-zinc-600"}`}
+                />
                 <span className="text-muted">Constitution Accepted</span>
               </div>
             </div>
-            {application.preferredDepartments && application.preferredDepartments.length > 0 && (
-              <div>
-                <p className="text-xs text-muted mb-2">Preferred Departments</p>
-                <div className="flex flex-wrap gap-2">
-                  {application.preferredDepartments.map((dept) => (
-                    <span key={dept} className="px-2.5 py-1 text-xs rounded-full bg-muted text-primary border border-border">
-                      {dept}
-                    </span>
-                  ))}
+            {application.preferredDepartments &&
+              application.preferredDepartments.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted mb-2">
+                    Preferred Departments
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {application.preferredDepartments.map((dept) => (
+                      <span
+                        key={dept}
+                        className="px-2.5 py-1 text-xs rounded-full bg-muted text-primary border border-border"
+                      >
+                        {dept}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       )}
@@ -306,13 +340,27 @@ export default function ApplicantDashboard() {
         <h2 className="text-lg font-semibold mb-4">What Happens Next?</h2>
         <div className="space-y-4">
           {[
-            { step: 1, title: "Application Review", desc: "Our team reviews your application and profile within 3-5 business days." },
-            { step: 2, title: "Welcome Package", desc: "Once approved, you'll receive a welcome letter and access to member resources." },
-            { step: 3, title: "Join Your Department", desc: "Get assigned to your preferred department and start collaborating with the team." },
+            {
+              step: 1,
+              title: "Application Review",
+              desc: "Our team reviews your application and profile within 3-5 business days.",
+            },
+            {
+              step: 2,
+              title: "Welcome Package",
+              desc: "Once approved, you'll receive a welcome letter and access to member resources.",
+            },
+            {
+              step: 3,
+              title: "Join Your Department",
+              desc: "Get assigned to your preferred department and start collaborating with the team.",
+            },
           ].map((item) => (
             <div key={item.step} className="flex gap-4">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center">
-                <span className="text-sm font-semibold text-primary">{item.step}</span>
+                <span className="text-sm font-semibold text-primary">
+                  {item.step}
+                </span>
               </div>
               <div>
                 <h3 className="font-medium text-sm">{item.title}</h3>

@@ -1,7 +1,6 @@
 "use client";
 
 import type { Application, Department, Event } from "@/lib/types";
-import { readApiError } from "@/lib/errorHandler";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,8 +14,10 @@ import {
   Clock,
   ArrowUpRight,
   Building2,
-  UserPlus,} from "lucide-react";
+  UserPlus,
+} from "lucide-react";
 
+import { readApiError } from "@/lib/errorHandler";
 import AccessCard from "@/components/dashboards/AccessCard";
 
 export default function HeadDashboard() {
@@ -48,18 +49,33 @@ export default function HeadDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/dashboard", { credentials: "include" });
-        const payload = (await response.json()) as HeadDashboardPayload & { error?: string };
-        if (!response.ok || !payload.head) throw new Error(readApiError(payload, "Unable to load dashboard"));
+        const response = await fetch("/api/dashboard", {
+          credentials: "include",
+        });
+        const payload = (await response.json()) as HeadDashboardPayload & {
+          error?: string;
+        };
+
+        if (!response.ok || !payload.head)
+          throw new Error(readApiError(payload, "Unable to load dashboard"));
         if (!cancelled) setData(payload.head);
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard");
+        if (!cancelled)
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load dashboard",
+          );
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     void loadData();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, [retryKey]);
 
   const events = data?.events ?? [];
@@ -134,18 +150,22 @@ export default function HeadDashboard() {
   if (error || !data) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-12 text-center space-y-4">
-        <h1 className="text-2xl font-semibold">Operations dashboard unavailable</h1>
-        <p className="text-muted mt-2">{error || "The server did not return an operations view."}</p>
+        <h1 className="text-2xl font-semibold">
+          Operations dashboard unavailable
+        </h1>
+        <p className="text-muted mt-2">
+          {error || "The server did not return an operations view."}
+        </p>
         <p className="text-muted text-sm">
-          If this keeps happening, sign out and back in — a stale session is
-          the most common cause. Otherwise contact an administrator with your
+          If this keeps happening, sign out and back in — a stale session is the
+          most common cause. Otherwise contact an administrator with your
           membership number.
         </p>
         <div>
           <button
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
             type="button"
             onClick={() => setRetryKey((key) => key + 1)}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Try again
           </button>

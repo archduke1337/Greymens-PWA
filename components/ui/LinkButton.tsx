@@ -8,6 +8,7 @@
 // <a> with the exact buttonVariants classes instead: same visuals, valid
 // markup, client-side navigation.
 import type { ComponentProps, ReactNode } from "react";
+
 import Link from "next/link";
 import { buttonVariants } from "@heroui/react";
 
@@ -36,9 +37,6 @@ export default function LinkButton({
 }: LinkButtonProps) {
   return (
     <Link
-      href={href}
-      target={target}
-      rel={rel}
       aria-label={ariaLabel}
       className={buttonVariants({
         variant,
@@ -47,6 +45,9 @@ export default function LinkButton({
         isIconOnly,
         className,
       })}
+      href={href}
+      rel={rel}
+      target={target}
     >
       {children}
     </Link>
