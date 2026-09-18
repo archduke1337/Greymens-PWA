@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID, Query } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
-import { createServerDatabases } from "@/lib/appwrite-server";
+import { createServerDatabases, createServerStorage } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAuthenticatedUser, getMembershipStatus, isMemberStatus, requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
@@ -234,7 +233,7 @@ export async function POST(request: NextRequest) {
       return fail("VALIDATION", "Unsupported file type or file exceeds 50MB", 400);
     }
 
-    const { storage } = createAdminClient();
+    const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
     let fileUrl = url || undefined;
     let fileId: string | null = null;
