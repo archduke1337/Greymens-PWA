@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import ApplicantDashboard from "@/components/dashboards/ApplicantDashboard";
@@ -58,10 +59,16 @@ export default function DashboardPage() {
 
   // Restricted accounts get a 403 from the dashboard API — never render the
   // applicant funnel for them.
-  if (status === "banned" || status === "suspended" || status === "deactivated") {
+  if (
+    status === "banned" ||
+    status === "suspended" ||
+    status === "deactivated"
+  ) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Account Restricted</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Account Restricted
+        </h1>
         <p className="text-muted">
           Your account is currently {status}. Access to the dashboard is
           unavailable. If you believe this is a mistake, please contact support.

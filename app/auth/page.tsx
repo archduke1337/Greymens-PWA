@@ -4,16 +4,11 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Alert, Button, Card, Link, Spinner } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
 import GitHubIcon from "@/components/auth/GitHubIcon";
-import {
-  Alert,
-  Button,
-  Card,
-  Link,
-  Spinner,
-} from "@heroui/react";
+import { logError } from "@/lib/logger";
 
 function AuthScreen() {
   const { user, loading, loginWithGithub } = useAuth();
@@ -44,7 +39,7 @@ function AuthScreen() {
       } catch {
         // Ignore storage errors on the failure path too.
       }
-      console.error("GitHub sign-in failed:", err);
+      logError("GitHub sign-in failed:", err);
       setError("GitHub sign-in didn't start. Please try again.");
       setGithubLoading(false);
     }
@@ -53,7 +48,11 @@ function AuthScreen() {
   if (loading || user) {
     return (
       <div className="flex min-h-[calc(100vh-200px)] items-center justify-center">
-        <div className="space-y-4 text-center" role="status" aria-label="Checking session">
+        <div
+          aria-label="Checking session"
+          className="space-y-4 text-center"
+          role="status"
+        >
           <Spinner size="lg" />
           <p className="text-muted">Checking your session…</p>
         </div>
@@ -85,9 +84,9 @@ function AuthScreen() {
           <Button
             fullWidth
             className="rounded-full"
-            onPress={handleGithubSignIn}
-            isPending={githubLoading}
             isDisabled={githubLoading}
+            isPending={githubLoading}
+            onPress={handleGithubSignIn}
           >
             {({ isPending }) => (
               <>
@@ -100,7 +99,7 @@ function AuthScreen() {
               </>
             )}
           </Button>
-          <div className="flex items-center gap-3" aria-hidden="true">
+          <div aria-hidden="true" className="flex items-center gap-3">
             <span className="h-px flex-1 bg-default-200" />
             <span className="text-xs text-muted">OR</span>
             <span className="h-px flex-1 bg-default-200" />
@@ -126,8 +125,8 @@ function AuthScreen() {
           <p className="text-center text-sm text-muted">
             Stuck?{" "}
             <Link
-              href="/login"
               className="font-medium text-foreground underline underline-offset-4"
+              href="/login"
             >
               Back to login
             </Link>

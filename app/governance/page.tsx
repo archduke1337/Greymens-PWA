@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
+import Image from "next/image";
 import { Card, Chip } from "@heroui/react";
 import { ArrowRight } from "lucide-react";
+
 import {
   CHARTER_METADATA,
   CONSTITUTIONAL_PRINCIPLES,
@@ -62,11 +65,13 @@ export default function GovernancePage() {
       {/* Arch: structures that outlast people */}
       <figure className="space-y-3">
         <div className="overflow-hidden rounded-3xl border border-default-200/70">
-          <img
-            src="/Assets/Banners/about_hero.webp"
+          <Image
             alt="A hand-drawn landscape with an ancient stone arch standing under the moon"
-            loading="lazy"
             className="aspect-[16/8] w-full object-cover"
+            height={1075}
+            loading="lazy"
+            src="/Assets/Banners/about_hero.webp"
+            width={1920}
           />
         </div>
         <figcaption className="text-center text-sm text-muted">
@@ -77,10 +82,15 @@ export default function GovernancePage() {
 
       {/* Layers */}
       <section aria-label="Governance layers" className="space-y-6">
-        <h2 className="text-center text-xl font-bold tracking-tight">Four bodies, one charter</h2>
+        <h2 className="text-center text-xl font-bold tracking-tight">
+          Four bodies, one charter
+        </h2>
         <div className="grid gap-4 md:grid-cols-2">
           {LAYERS.map((layer) => {
-            const offices = GOVERNANCE_OFFICES.filter((office) => office.layer === layer.id);
+            const offices = GOVERNANCE_OFFICES.filter(
+              (office) => office.layer === layer.id,
+            );
+
             return (
               <Card key={layer.id}>
                 <Card.Header>
@@ -88,7 +98,9 @@ export default function GovernancePage() {
                   <Card.Description>{layer.tagline}</Card.Description>
                 </Card.Header>
                 <Card.Content className="space-y-4">
-                  <p className="text-sm leading-relaxed text-muted">{layer.text}</p>
+                  <p className="text-sm leading-relaxed text-muted">
+                    {layer.text}
+                  </p>
                   <p className="text-[13px] leading-relaxed text-muted">
                     {offices.map((office) => office.title).join(" · ")}
                   </p>
@@ -126,10 +138,10 @@ export default function GovernancePage() {
             </Card.Header>
             <Card.Content className="space-y-3 text-sm leading-relaxed text-muted">
               <p>
-                The club lives in the {CHARTER_METADATA.school}, coordinated
-                by {CHARTER_METADATA.facultyCoordinators.join(" and ")}.
-                Day-to-day work is student-led; coordinators step in where
-                safety, law, or policy require it.
+                The club lives in the {CHARTER_METADATA.school}, coordinated by{" "}
+                {CHARTER_METADATA.facultyCoordinators.join(" and ")}. Day-to-day
+                work is student-led; coordinators step in where safety, law, or
+                policy require it.
               </p>
               <p>
                 Founded by {CHARTER_METADATA.president} (
@@ -148,11 +160,11 @@ export default function GovernancePage() {
                 evidence.
               </p>
               <Link
-                href="/constitution"
                 className="inline-flex items-center gap-1.5 font-medium text-foreground underline underline-offset-4"
+                href="/constitution"
               >
                 Read the full Constitution
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
               </Link>
             </Card.Content>
           </Card>
@@ -161,10 +173,15 @@ export default function GovernancePage() {
 
       {/* Principles */}
       <section aria-label="Principles" className="space-y-6">
-        <h2 className="text-center text-xl font-bold tracking-tight">What we optimize for</h2>
+        <h2 className="text-center text-xl font-bold tracking-tight">
+          What we optimize for
+        </h2>
         <ul className="mx-auto grid max-w-4xl gap-x-8 gap-y-2.5 sm:grid-cols-2">
           {CONSTITUTIONAL_PRINCIPLES.map((principle) => (
-            <li key={principle} className="border-t border-default-200/70 pt-2.5 text-sm leading-relaxed text-muted">
+            <li
+              key={principle}
+              className="border-t border-default-200/70 pt-2.5 text-sm leading-relaxed text-muted"
+            >
               {principle}
             </li>
           ))}

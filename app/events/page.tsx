@@ -1,13 +1,12 @@
 // app/events/page.tsx
 "use client";
 
+import type { Event as EventType } from "@/lib/types";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { usePermissions } from "@/context/PermissionContext";
-import type { Event as EventType } from "@/lib/types";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -17,7 +16,22 @@ import {
   CrownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, Label, ListBox, ProgressBar, Select } from "@heroui/react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  Chip,
+  Input,
+  ListBox,
+  ProgressBar,
+  Select,
+} from "@heroui/react";
+
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 const categories = [
   { key: "all", label: "All Events" },
@@ -32,11 +46,13 @@ const categories = [
 const formatDate = (dateString: string) => {
   if (!dateString) return "Date TBA";
   const time = new Date(dateString).getTime();
+
   if (!Number.isFinite(time)) return "Date TBA";
-  return new Date(time).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+
+  return new Date(time).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
@@ -48,28 +64,43 @@ const formatDate = (dateString: string) => {
 const isPastEvent = (event: { date?: string | null }) => {
   if (!event.date) return false;
   const day = new Date(event.date);
+
   if (!Number.isFinite(day.getTime())) return false;
   const today = new Date();
+
   today.setHours(0, 0, 0, 0);
+
   return day < today;
 };
 
 const calculateDiscount = (original: number, discount: number) => {
   if (!Number.isFinite(original) || original <= 0) return 0;
   if (!Number.isFinite(discount) || discount < 0) return 0;
+
   return Math.max(0, Math.round(((original - discount) / original) * 100));
 };
 
 /** Spots remaining, never negative for overbooked legacy rows. */
-const spotsLeft = (event: { capacity?: number | null; registered?: number | null }) => {
+const spotsLeft = (event: {
+  capacity?: number | null;
+  registered?: number | null;
+}) => {
   if (!event.capacity || event.capacity <= 0) return null;
+
   return Math.max(0, event.capacity - (event.registered ?? 0));
 };
 
 /** Fill percentage clamped to a real 0–100 range. */
-const registrationProgress = (event: { capacity?: number | null; registered?: number | null }) => {
+const registrationProgress = (event: {
+  capacity?: number | null;
+  registered?: number | null;
+}) => {
   if (!event.capacity || event.capacity <= 0) return 0;
-  return Math.min(100, Math.max(0, ((event.registered ?? 0) / event.capacity) * 100));
+
+  return Math.min(
+    100,
+    Math.max(0, ((event.registered ?? 0) / event.capacity) * 100),
+  );
 };
 
 export default function EventsPage() {
@@ -83,7 +114,9 @@ export default function EventsPage() {
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
   // Server-owned registration state: event id -> registration status, so
   // waitlisted and pending rows are never mislabelled as "Registered".
-  const [registrationStatus, setRegistrationStatus] = useState<Record<string, string>>({});
+  const [registrationStatus, setRegistrationStatus] = useState<
+    Record<string, string>
+  >({});
   const [events, setEvents] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -93,11 +126,16 @@ export default function EventsPage() {
     try {
       setLoadError(null);
       const response = await fetch("/api/events", { credentials: "include" });
-      const payload = (await response.json()) as { events?: EventType[]; error?: string };
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load events"));
+      const payload = (await response.json()) as {
+        events?: EventType[];
+        error?: string;
+      };
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load events"));
       setEvents(payload.events ?? []);
     } catch (error) {
-      console.error("Error loading events:", error);
+      logError("Error loading events:", error);
       setEvents([]);
       setLoadError(getErrorMessage(error) || "Unable to load events");
     } finally {
@@ -108,6 +146,7 @@ export default function EventsPage() {
   const loadSavedEvents = useCallback(() => {
     try {
       const saved = localStorage.getItem("savedEvents");
+
       if (saved) setSavedEvents(JSON.parse(saved));
     } catch {
       localStorage.removeItem("savedEvents");
@@ -125,19 +164,28 @@ export default function EventsPage() {
   const loadRegistrations = useCallback(async () => {
     if (!user) {
       setRegistrationStatus({});
+
       return;
     }
     try {
-      const response = await fetch("/api/events/register", { cache: "no-store", credentials: "include" });
+      const response = await fetch("/api/events/register", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
       if (!response.ok) return;
-      const data = await response.json() as { registrations?: Array<{ eventId: string; status?: string }> };
+      const data = (await response.json()) as {
+        registrations?: Array<{ eventId: string; status?: string }>;
+      };
       const next: Record<string, string> = {};
+
       for (const registration of data.registrations ?? []) {
-        if (registration.eventId) next[registration.eventId] = registration.status || "approved";
+        if (registration.eventId)
+          next[registration.eventId] = registration.status || "approved";
       }
       setRegistrationStatus(next);
     } catch (error) {
-      console.error("Error loading registrations:", error);
+      logError("Error loading registrations:", error);
     }
   }, [user]);
 
@@ -147,112 +195,160 @@ export default function EventsPage() {
     loadRegistrations();
   }, [loadEvents, loadSavedEvents, loadRegistrations]);
 
-  const filteredEvents = useMemo(() => events
-    .filter(event =>
-      selectedCategory === "all" || event.category === selectedCategory
-    )
-    .filter(event =>
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (event.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-    .sort((a, b) => {
-      const pastOrder = Number(isPastEvent(a)) - Number(isPastEvent(b));
-      if (pastOrder !== 0) return pastOrder;
-      switch (sortBy) {
-        case "date":
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case "price":
-          return (a.discountPrice || a.price) - (b.discountPrice || b.price);
-        case "popularity":
-          return b.registered - a.registered;
-        default:
-          return 0;
-      }
-    }), [events, selectedCategory, searchQuery, sortBy]);
+  const filteredEvents = useMemo(
+    () =>
+      events
+        .filter(
+          (event) =>
+            selectedCategory === "all" || event.category === selectedCategory,
+        )
+        .filter(
+          (event) =>
+            event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            event.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (event.tags || []).some((tag) =>
+              tag.toLowerCase().includes(searchQuery.toLowerCase()),
+            ),
+        )
+        .sort((a, b) => {
+          const pastOrder = Number(isPastEvent(a)) - Number(isPastEvent(b));
+
+          if (pastOrder !== 0) return pastOrder;
+          switch (sortBy) {
+            case "date":
+              return new Date(a.date).getTime() - new Date(b.date).getTime();
+            case "price":
+              return (
+                (a.discountPrice || a.price) - (b.discountPrice || b.price)
+              );
+            case "popularity":
+              return b.registered - a.registered;
+            default:
+              return 0;
+          }
+        }),
+    [events, selectedCategory, searchQuery, sortBy],
+  );
 
   // Card actions are siblings of the details link (never nested inside it):
   // HeroUI press events do not carry a working stopPropagation, so a button
   // inside a clickable card would both act and navigate.
   const toggleSaveEvent = useCallback((eventId: string) => {
-    setSavedEvents(prev => {
+    setSavedEvents((prev) => {
       const newSaved = prev.includes(eventId)
-        ? prev.filter(id => id !== eventId)
+        ? prev.filter((id) => id !== eventId)
         : [...prev, eventId];
+
       localStorage.setItem("savedEvents", JSON.stringify(newSaved));
+
       return newSaved;
     });
   }, []);
 
-  const toggleRegisterEvent = useCallback(async (eventId: string) => {
-    if (!user) {
-      toast.error("Please login to register for events");
-      router.push("/login");
-      return;
-    }
+  const toggleRegisterEvent = useCallback(
+    async (eventId: string) => {
+      if (!user) {
+        toast.error("Please login to register for events");
+        router.push("/login");
 
-    const currentStatus = registrationStatus[eventId];
-    const isRegistered = Boolean(currentStatus);
-    if (isRegistered && !confirm("Are you sure you want to cancel your registration for this event?")) return;
-
-    setRegistering(eventId);
-    try {
-      if (isRegistered) {
-        const response = await fetch(`/api/events/register?eventId=${encodeURIComponent(eventId)}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId }),
-        });
-        const data = await response.json().catch(() => ({})) as { error?: string };
-        if (!response.ok) throw new Error(readApiError(data, "Unable to cancel this registration"));
-        setRegistrationStatus(prev => {
-          const next = { ...prev };
-          delete next[eventId];
-          return next;
-        });
-        toast.success("Registration cancelled");
-      } else {
-        const event = events.find(e => e.$id === eventId);
-        if (!event) throw new Error("Event not found");
-
-        const response = await fetch("/api/events/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId }),
-        });
-        const data = await response.json().catch(() => ({})) as {
-          error?: string;
-          status?: "approved" | "pending" | "waitlisted";
-          ticket?: { ticketCode?: string } | null;
-        };
-        if (!response.ok) throw new Error(readApiError(data, "Unable to register for this event"));
-
-        setRegistrationStatus(prev => ({ ...prev, [eventId]: data.status || "approved" }));
-
-        if (data.status === "waitlisted") {
-          toast.warning("Added to the waitlist", {
-            description: `${event.title} is at capacity. We will contact you if a place opens up.`,
-          });
-        } else if (data.status === "pending") {
-          toast.info("Registration submitted for approval", { description: event.title });
-        } else {
-          toast.success(`Registered for ${event.title}`, {
-            description: data.ticket?.ticketCode
-              ? `Your ticket code is ${data.ticket.ticketCode}. Find it under “My Tickets”.`
-              : undefined,
-          });
-        }
+        return;
       }
 
-      await loadEvents();
-    } catch (error) {
-      const message = getErrorMessage(error);
-      console.error("Registration error:", message);
-      toast.error(message);
-    } finally {
-      setRegistering(null);
-    }
-  }, [user, router, registrationStatus, events, loadEvents]);
+      const currentStatus = registrationStatus[eventId];
+      const isRegistered = Boolean(currentStatus);
+
+      if (
+        isRegistered &&
+        !confirm(
+          "Are you sure you want to cancel your registration for this event?",
+        )
+      )
+        return;
+
+      setRegistering(eventId);
+      try {
+        if (isRegistered) {
+          const response = await fetch(
+            `/api/events/register?eventId=${encodeURIComponent(eventId)}`,
+            {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ eventId }),
+            },
+          );
+          const data = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+
+          if (!response.ok)
+            throw new Error(
+              readApiError(data, "Unable to cancel this registration"),
+            );
+          setRegistrationStatus((prev) => {
+            const next = { ...prev };
+
+            delete next[eventId];
+
+            return next;
+          });
+          toast.success("Registration cancelled");
+        } else {
+          const event = events.find((e) => e.$id === eventId);
+
+          if (!event) throw new Error("Event not found");
+
+          const response = await fetch("/api/events/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventId }),
+          });
+          const data = (await response.json().catch(() => ({}))) as {
+            error?: string;
+            status?: "approved" | "pending" | "waitlisted";
+            ticket?: { ticketCode?: string } | null;
+          };
+
+          if (!response.ok)
+            throw new Error(
+              readApiError(data, "Unable to register for this event"),
+            );
+
+          setRegistrationStatus((prev) => ({
+            ...prev,
+            [eventId]: data.status || "approved",
+          }));
+
+          if (data.status === "waitlisted") {
+            toast.warning("Added to the waitlist", {
+              description: `${event.title} is at capacity. We will contact you if a place opens up.`,
+            });
+          } else if (data.status === "pending") {
+            toast.info("Registration submitted for approval", {
+              description: event.title,
+            });
+          } else {
+            toast.success(`Registered for ${event.title}`, {
+              description: data.ticket?.ticketCode
+                ? `Your ticket code is ${data.ticket.ticketCode}. Find it under “My Tickets”.`
+                : undefined,
+            });
+          }
+        }
+
+        await loadEvents();
+      } catch (error) {
+        const message = getErrorMessage(error);
+
+        logError("Registration error:", message);
+        toast.error(message);
+      } finally {
+        setRegistering(null);
+      }
+    },
+    [user, router, registrationStatus, events, loadEvents],
+  );
 
   if (loading) {
     return (
@@ -273,12 +369,15 @@ export default function EventsPage() {
           Events
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-          Workshops, meetups, CTFs, and competitions. Open ones say so —
-          just register and show up.
+          Workshops, meetups, CTFs, and competitions. Open ones say so — just
+          register and show up.
         </p>
         {canProposeEvents && (
           <div className="mt-6">
-            <Button variant="primary" onPress={() => router.push("/admin/events/create")}>
+            <Button
+              variant="primary"
+              onPress={() => router.push("/admin/events/create")}
+            >
               Propose an event
             </Button>
           </div>
@@ -287,22 +386,24 @@ export default function EventsPage() {
 
       {/* Filters and Search */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <Card variant="secondary" className="border-none shadow-lg">
+        <Card className="border-none shadow-lg" variant="secondary">
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex-1 w-full lg:max-w-md">
                 <Input
-                  placeholder="Search events, topics, or locations..."
                   aria-label="Search events, topics, or locations"
+                  placeholder="Search events, topics, or locations..."
                   value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSearchQuery(e.target.value)
+                  }
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
                 <Select
-                  className="min-w-[150px]"
                   aria-label="Sort events"
+                  className="min-w-[150px]"
                   value={sortBy}
                   onChange={(value) => setSortBy(String(value ?? "date"))}
                 >
@@ -329,10 +430,12 @@ export default function EventsPage() {
                 </Select>
 
                 <Select
-                  className="min-w-[150px]"
                   aria-label="Filter by category"
+                  className="min-w-[150px]"
                   value={selectedCategory}
-                  onChange={(value) => setSelectedCategory(String(value ?? "all"))}
+                  onChange={(value) =>
+                    setSelectedCategory(String(value ?? "all"))
+                  }
                 >
                   <Select.Trigger>
                     <Select.Value />
@@ -340,8 +443,12 @@ export default function EventsPage() {
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      {categories.map(category => (
-                        <ListBox.Item key={category.key} id={category.key} textValue={category.label}>
+                      {categories.map((category) => (
+                        <ListBox.Item
+                          key={category.key}
+                          id={category.key}
+                          textValue={category.label}
+                        >
                           {category.label}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -358,217 +465,282 @@ export default function EventsPage() {
       {/* Events Grid */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {filteredEvents.map((event) => {
+          {filteredEvents.map((event) => {
             const status = registrationStatus[event.$id!];
             const isRegistered = Boolean(status);
             const past = isPastEvent(event);
             const registerLabel =
-              status === "waitlisted" ? "Waitlisted"
-              : status === "pending" ? "Pending approval"
-              : status ? "Registered"
-              : "Register";
+              status === "waitlisted"
+                ? "Waitlisted"
+                : status === "pending"
+                  ? "Pending approval"
+                  : status
+                    ? "Registered"
+                    : "Register";
             const remaining = spotsLeft(event);
+
             return (
-            <Card
-              key={event.$id}
-              className="border-none transition-shadow duration-200 hover:shadow-lg group" variant="secondary"
-            >
-              <CardContent className="p-0 overflow-hidden">
-                <div className="relative">
-                  <Link href={`/events/${event.$id}`} aria-label={`View details for ${event.title}`}>
-                    <img
-                      src={event.image}
-                      alt={event.title}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                      className="w-full h-48 object-cover bg-surface-secondary"
-                    />
-                  </Link>
+              <Card
+                key={event.$id}
+                className="border-none transition-shadow duration-200 hover:shadow-lg group"
+                variant="secondary"
+              >
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="relative">
+                    <Link
+                      aria-label={`View details for ${event.title}`}
+                      href={`/events/${event.$id}`}
+                    >
+                      {event.image ? (
+                        <Image
+                          unoptimized
+                          alt={event.title}
+                          className="w-full h-48 object-cover bg-surface-secondary"
+                          height={192}
+                          loading="lazy"
+                          src={event.image}
+                          width={800}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : null}
+                    </Link>
 
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {past && (
-                      <Chip color="default" variant="primary" size="sm" className="font-bold">
-                        Ended
-                      </Chip>
-                    )}
-                    {event.isFeatured && (
-                      <Chip color="accent" variant="primary" size="sm" className="font-bold">
-                        <StarIcon className="w-3 h-3 mr-1" />
-                        Featured
-                      </Chip>
-                    )}
-                    {event.isPremium && (
-                      <Chip color="warning" variant="primary" size="sm" className="font-bold">
-                        <CrownIcon className="w-3 h-3 mr-1" />
-                        Premium
-                      </Chip>
-                    )}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {past && (
+                        <Chip
+                          className="font-bold"
+                          color="default"
+                          size="sm"
+                          variant="primary"
+                        >
+                          Ended
+                        </Chip>
+                      )}
+                      {event.isFeatured && (
+                        <Chip
+                          className="font-bold"
+                          color="accent"
+                          size="sm"
+                          variant="primary"
+                        >
+                          <StarIcon className="w-3 h-3 mr-1" />
+                          Featured
+                        </Chip>
+                      )}
+                      {event.isPremium && (
+                        <Chip
+                          className="font-bold"
+                          color="warning"
+                          size="sm"
+                          variant="primary"
+                        >
+                          <CrownIcon className="w-3 h-3 mr-1" />
+                          Premium
+                        </Chip>
+                      )}
+                    </div>
+
+                    <Button
+                      isIconOnly
+                      aria-label={
+                        savedEvents.includes(event.$id!)
+                          ? "Unsave event"
+                          : "Save event"
+                      }
+                      className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
+                      size="sm"
+                      variant="primary"
+                      onPress={() => toggleSaveEvent(event.$id!)}
+                    >
+                      <HeartIcon
+                        className={`w-4 h-4 ${
+                          savedEvents.includes(event.$id!)
+                            ? "fill-danger text-danger"
+                            : "text-muted"
+                        }`}
+                      />
+                    </Button>
+
+                    {event.discountPrice &&
+                      event.discountPrice < event.price &&
+                      calculateDiscount(event.price, event.discountPrice) >
+                        0 && (
+                        <div className="absolute bottom-4 left-4">
+                          <Chip color="success" size="sm" variant="primary">
+                            {calculateDiscount(
+                              event.price,
+                              event.discountPrice,
+                            )}
+                            % OFF
+                          </Chip>
+                        </div>
+                      )}
                   </div>
 
-                  <Button
-                    isIconOnly
-                    variant="primary"
-                    className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm"
-                    size="sm"
-                    aria-label={savedEvents.includes(event.$id!) ? "Unsave event" : "Save event"}
-                    onPress={() => toggleSaveEvent(event.$id!)}
-                  >
-                    <HeartIcon 
-                      className={`w-4 h-4 ${
-                        savedEvents.includes(event.$id!) 
-                          ? "fill-danger text-danger" 
-                          : "text-muted"
-                      }`} 
-                    />
-                  </Button>
-
-                  {event.discountPrice && event.discountPrice < event.price && calculateDiscount(event.price, event.discountPrice) > 0 && (
-                    <div className="absolute bottom-4 left-4">
-                      <Chip color="success" variant="primary" size="sm">
-                        {calculateDiscount(event.price, event.discountPrice)}% OFF
-                      </Chip>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-xl line-clamp-2 group-hover:text-primary transition-colors">
-                      <Link href={`/events/${event.$id}`} className="hover:text-primary">
-                        {event.title}
-                      </Link>
-                    </h3>
-                  </div>
-
-                  <p className="text-default-600 line-clamp-2">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <CalendarIcon className="w-4 h-4" />
-                      <span>{formatDate(event.date)}</span>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-bold text-xl line-clamp-2 group-hover:text-primary transition-colors">
+                        <Link
+                          className="hover:text-primary"
+                          href={`/events/${event.$id}`}
+                        >
+                          {event.title}
+                        </Link>
+                      </h3>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <MapPinIcon className="w-4 h-4" />
-                      <span>{event.location}</span>
+                    <p className="text-default-600 line-clamp-2">
+                      {event.description}
+                    </p>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-default-500">
+                        <CalendarIcon className="w-4 h-4" />
+                        <span>{formatDate(event.date)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-default-500">
+                        <MapPinIcon className="w-4 h-4" />
+                        <span>{event.location}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-default-500">
+                        <UsersIcon className="w-4 h-4" />
+                        <span>{event.registered ?? 0} registered</span>
+                        {remaining !== null && (
+                          <span className="text-xs text-default-400">
+                            • {remaining} {remaining === 1 ? "spot" : "spots"}{" "}
+                            left
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-default-500">
-                      <UsersIcon className="w-4 h-4" />
-                      <span>{event.registered ?? 0} registered</span>
-                      {remaining !== null && (
-                        <span className="text-xs text-default-400">
-                          • {remaining} {remaining === 1 ? "spot" : "spots"} left
-                        </span>
+                    {event.capacity ? (
+                      <ProgressBar
+                        aria-label="Registration progress"
+                        className="mt-2"
+                        size="sm"
+                        value={registrationProgress(event)}
+                      >
+                        <ProgressBar.Track>
+                          <ProgressBar.Fill />
+                        </ProgressBar.Track>
+                      </ProgressBar>
+                    ) : null}
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {(event.tags || []).slice(0, 3).map((tag, index) => (
+                        <Chip key={index} size="sm" variant="primary">
+                          {tag}
+                        </Chip>
+                      ))}
+                      {(event.tags || []).length > 3 && (
+                        <Chip size="sm" variant="primary">
+                          +{(event.tags || []).length - 3}
+                        </Chip>
                       )}
                     </div>
                   </div>
+                </CardContent>
 
-                  {event.capacity ? (
-                    <ProgressBar
-                      value={registrationProgress(event)}
-                      size="sm"
-                      className="mt-2"
-                      aria-label="Registration progress"
-                    >
-                      <ProgressBar.Track>
-                        <ProgressBar.Fill />
-                      </ProgressBar.Track>
-                    </ProgressBar>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(event.tags || []).slice(0, 3).map((tag, index) => (
-                      <Chip key={index} size="sm" variant="primary">
-                        {tag}
-                      </Chip>
-                    ))}
-                    {(event.tags || []).length > 3 && (
-                      <Chip size="sm" variant="primary">
-                        +{(event.tags || []).length - 3}
-                      </Chip>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-
-              <CardFooter className="px-6 pb-6 pt-0">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    {event.price === 0 ? (
-                      <span className="text-2xl font-bold text-foreground">
-                        Free
-                      </span>
-                    ) : event.discountPrice && event.discountPrice < event.price ? (
-                      <>
+                <CardFooter className="px-6 pb-6 pt-0">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      {event.price === 0 ? (
                         <span className="text-2xl font-bold text-foreground">
-                          ${event.discountPrice}
+                          Free
                         </span>
-                        <span className="text-lg text-default-400 line-through">
+                      ) : event.discountPrice &&
+                        event.discountPrice < event.price ? (
+                        <>
+                          <span className="text-2xl font-bold text-foreground">
+                            ${event.discountPrice}
+                          </span>
+                          <span className="text-lg text-default-400 line-through">
+                            ${event.price}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-2xl font-bold text-foreground">
                           ${event.price}
                         </span>
-                      </>
+                      )}
+                    </div>
+
+                    {past ? (
+                      <Button
+                        isDisabled
+                        aria-label={`${event.title} has ended`}
+                        variant="secondary"
+                      >
+                        Ended
+                      </Button>
                     ) : (
-                      <span className="text-2xl font-bold text-foreground">
-                        ${event.price}
-                      </span>
+                      <Button
+                        aria-label={
+                          isRegistered
+                            ? `${registerLabel} for ${event.title} (activate to cancel)`
+                            : `Register for ${event.title}`
+                        }
+                        isPending={registering === event.$id}
+                        variant={isRegistered ? "secondary" : "primary"}
+                        onPress={() => toggleRegisterEvent(event.$id!)}
+                      >
+                        {registerLabel}
+                      </Button>
                     )}
                   </div>
-
-                  {past ? (
-                    <Button variant="secondary" isDisabled aria-label={`${event.title} has ended`}>
-                      Ended
-                    </Button>
-                  ) : (
-                    <Button
-                      variant={isRegistered ? "secondary" : "primary"}
-                      isPending={registering === event.$id}
-                      aria-label={isRegistered ? `${registerLabel} for ${event.title} (activate to cancel)` : `Register for ${event.title}`}
-                      onPress={() => toggleRegisterEvent(event.$id!)}
-                    >
-                      {registerLabel}
-                    </Button>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
+                </CardFooter>
+              </Card>
             );
           })}
         </div>
 
         {loadError ? (
           <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
-            <img
-              src="/Assets/Media/try-again.webp"
+            <Image
               alt=""
               aria-hidden="true"
-              loading="lazy"
               className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+              height={192}
+              loading="lazy"
+              src="/Assets/Media/try-again.webp"
+              width={192}
             />
             <h3 className="text-xl font-semibold">Couldn&apos;t load events</h3>
             <p className="text-default-500">{loadError}</p>
-            <Button variant="primary" onPress={() => { setLoading(true); loadEvents(); }}>
+            <Button
+              variant="primary"
+              onPress={() => {
+                setLoading(true);
+                loadEvents();
+              }}
+            >
               Try again
             </Button>
           </div>
-        ) : filteredEvents.length === 0 && (
-          <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
-            <img
-              src="/Assets/Media/walking-confused.gif"
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
-            />
-            <h3 className="text-xl font-semibold">Nothing on this trail</h3>
-            <p className="text-default-500">
-              No events match that search. Try fewer words, or a different category.
-            </p>
-          </div>
+        ) : (
+          filteredEvents.length === 0 && (
+            <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+                height={224}
+                loading="lazy"
+                src="/Assets/Media/walking-confused.gif"
+                width={224}
+              />
+              <h3 className="text-xl font-semibold">Nothing on this trail</h3>
+              <p className="text-default-500">
+                No events match that search. Try fewer words, or a different
+                category.
+              </p>
+            </div>
+          )
         )}
       </div>
     </div>

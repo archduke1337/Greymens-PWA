@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button, Card, CardContent, CardHeader, Chip } from "@heroui/react";
 import {
   DatabaseIcon,
@@ -73,10 +74,10 @@ export default function DiagnosticsPage() {
           status: "disconnected",
           message: "Missing required environment variables",
           details: {
-              endpoint: endpoint ? "Set" : "Missing",
-              projectId: projectId ? "Set" : "Missing",
-              databaseId: databaseId ? "Set" : "Missing",
-            },
+            endpoint: endpoint ? "Set" : "Missing",
+            projectId: projectId ? "Set" : "Missing",
+            databaseId: databaseId ? "Set" : "Missing",
+          },
         });
       } else {
         data.services.push({
@@ -86,7 +87,9 @@ export default function DiagnosticsPage() {
           details: {
             endpoint: endpoint.substring(0, 50) + "...",
             projectId: projectId.substring(0, 12) + "...",
-            databaseId: databaseId ? databaseId.substring(0, 12) + "..." : "Not set",
+            databaseId: databaseId
+              ? databaseId.substring(0, 12) + "..."
+              : "Not set",
           },
         });
 
@@ -100,6 +103,7 @@ export default function DiagnosticsPage() {
             headers: { Accept: "application/json" },
           });
           const reachable = response.ok;
+
           data.services.push({
             name: "Appwrite Endpoint",
             status: reachable ? "connected" : "unknown",
@@ -121,6 +125,7 @@ export default function DiagnosticsPage() {
       // EMAILJS_SERVICE_ID in lib/contact-mailer.ts) — so "unknown" here
       // means "not visible to this check", never "broken". Report honestly.
       const emailJsServiceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+
       data.services.push({
         name: "EmailJS Configuration",
         status: emailJsServiceId ? "connected" : "unknown",
@@ -148,7 +153,7 @@ export default function DiagnosticsPage() {
   };
 
   const getStatusColor = (
-    status: string
+    status: string,
   ): "success" | "danger" | "warning" | "default" => {
     switch (status) {
       case "connected":
@@ -171,21 +176,27 @@ export default function DiagnosticsPage() {
             </h1>
             <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">
               Something not loading? This page interrogates the backend and
-              reports back honestly — so you know whether to retry, re-login,
-              or fetch an officer.
+              reports back honestly — so you know whether to retry, re-login, or
+              fetch an officer.
             </p>
           </div>
-          <img
-            src="/Assets/Media/burden.gif"
+          <Image
             alt="A line figure bent under the weight of a giant cursor arrow"
-            loading="lazy"
             className="h-28 w-28 shrink-0 rounded-3xl border border-default-200/70 object-cover"
+            height={1080}
+            loading="lazy"
+            src="/Assets/Media/burden.gif"
+            width={1080}
           />
         </div>
 
         {loading ? (
           <Card>
-            <CardContent className="py-12 text-center" role="status" aria-label="Loading diagnostics">
+            <CardContent
+              aria-label="Loading diagnostics"
+              className="py-12 text-center"
+              role="status"
+            >
               <div className="text-default-500">Loading diagnostics...</div>
             </CardContent>
           </Card>
@@ -206,7 +217,12 @@ export default function DiagnosticsPage() {
                 </div>
                 <div>
                   <p className="text-default-500 text-sm">Env Variables</p>
-                  <Chip color={diagnostics.environment.hasEnvVars ? "success" : "danger"} variant="soft">
+                  <Chip
+                    color={
+                      diagnostics.environment.hasEnvVars ? "success" : "danger"
+                    }
+                    variant="soft"
+                  >
                     {diagnostics.environment.hasEnvVars
                       ? "Configured"
                       : "Missing"}
@@ -233,13 +249,17 @@ export default function DiagnosticsPage() {
                     key={service.name}
                     className="flex items-start gap-4 p-4 bg-surface-secondary rounded-2xl border border-default-200/70"
                   >
-                    <div className="mt-1">
-                      {getStatusIcon(service.status)}
-                    </div>
+                    <div className="mt-1">{getStatusIcon(service.status)}</div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-bold text-foreground">{service.name}</h3>
-                        <Chip color={getStatusColor(service.status)} size="sm" variant="soft">
+                        <h3 className="font-bold text-foreground">
+                          {service.name}
+                        </h3>
+                        <Chip
+                          color={getStatusColor(service.status)}
+                          size="sm"
+                          variant="soft"
+                        >
                           {service.status}
                         </Chip>
                       </div>
@@ -258,7 +278,7 @@ export default function DiagnosticsPage() {
                                   {value}
                                 </span>
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       )}
@@ -276,10 +296,16 @@ export default function DiagnosticsPage() {
               </CardHeader>
               <CardContent className="py-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button variant="primary" onPress={() => router.push("/connectivity-check")}>
+                  <Button
+                    variant="primary"
+                    onPress={() => router.push("/connectivity-check")}
+                  >
                     Connection Test
                   </Button>
-                  <Button variant="primary" onPress={() => router.push("/events")}>
+                  <Button
+                    variant="primary"
+                    onPress={() => router.push("/events")}
+                  >
                     Test Events Page
                   </Button>
                 </div>

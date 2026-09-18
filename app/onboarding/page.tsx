@@ -1,13 +1,25 @@
 "use client";
 
+import type { Department } from "@/lib/types";
+
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { toast } from "sonner";
+import {
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextArea,
+} from "@heroui/react";
+
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { toast } from "sonner";
 import { readApiError } from "@/lib/errorHandler";
-import { Button, Checkbox, Input, Label, ListBox, Select, TextArea } from "@heroui/react";
-import type { Department } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const STEPS = [
   { id: 1, title: "Personal Info", description: "Basic personal details" },
@@ -84,6 +96,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function stringArray(value: unknown): string[] | null {
   if (!Array.isArray(value)) return null;
   if (!value.every((item) => typeof item === "string")) return null;
+
   return value as string[];
 }
 
@@ -104,6 +117,7 @@ function mergeDraft(
 
   for (const key of Object.keys(base) as Array<keyof OnboardingForm>) {
     const incoming = draft[key];
+
     if (incoming === undefined || incoming === null) continue;
     const current = base[key];
 
@@ -113,11 +127,13 @@ function mergeDraft(
       }
     } else if (Array.isArray(current)) {
       const list = stringArray(incoming);
+
       if (list && list.length > 0) (next[key] as string[]) = list;
     } else if (typeof current === "boolean") {
       if (typeof incoming === "boolean") (next[key] as boolean) = incoming;
     }
   }
+
   return next;
 }
 
@@ -129,8 +145,10 @@ function readDraft(userId: string): {
   try {
     if (typeof window === "undefined" || !window.localStorage) return null;
     const raw = window.localStorage.getItem(draftKey(userId));
+
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
+
     if (!isRecord(parsed) || parsed.v !== DRAFT_VERSION) return null;
     const step =
       typeof parsed.step === "number" &&
@@ -147,6 +165,7 @@ function readDraft(userId: string): {
           ? value.length > 0
           : value === true,
     );
+
     return { step, form, hasContent };
   } catch {
     return null;
@@ -156,7 +175,13 @@ function readDraft(userId: string): {
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { status, application, profile, loading: permLoading, refresh } = usePermissions();
+  const {
+    status,
+    application,
+    profile,
+    loading: permLoading,
+    refresh,
+  } = usePermissions();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -204,6 +229,7 @@ export default function OnboardingPage() {
     initializedRef.current = user.$id;
 
     let next: OnboardingForm = { ...EMPTY_FORM };
+
     if (profile || application) {
       // Direct nullish picks (no generic helper: it widens key inference and
       // breaks field types). Server values fill gaps; blanks keep current.
@@ -235,6 +261,7 @@ export default function OnboardingPage() {
     }
 
     const draft = readDraft(user.$id);
+
     if (draft) {
       next = mergeDraft(next, draft.form);
       setStep(draft.step);
@@ -258,21 +285,29 @@ export default function OnboardingPage() {
         if (typeof window === "undefined" || !window.localStorage) return;
         window.localStorage.setItem(
           draftKey(user.$id),
-          JSON.stringify({ v: DRAFT_VERSION, savedAt: Date.now(), step, form: formData }),
+          JSON.stringify({
+            v: DRAFT_VERSION,
+            savedAt: Date.now(),
+            step,
+            form: formData,
+          }),
         );
       } catch {
         // Private mode / quota: the form still works, it just won't persist.
       }
     }, 400);
+
     return () => clearTimeout(timer);
   }, [formData, step, user]);
 
   useEffect(() => {
     let cancelled = false;
+
     setDeptLoading(true);
     fetch("/api/departments", { credentials: "include" })
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load departments");
+
         return (await response.json()) as { departments?: Department[] };
       })
       .then((payload) => {
@@ -284,7 +319,7 @@ export default function OnboardingPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error("Department catalogue error:", error);
+          logError("Department catalogue error:", error);
           setDeptError(true);
           setDeptLoading(false);
           // No toast: the inline banner below already explains + offers retry.
@@ -301,12 +336,18 @@ export default function OnboardingPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayField = (field: "preferredDepartments" | "skills" | "interests", value: string) => {
+  const toggleArrayField = (
+    field: "preferredDepartments" | "skills" | "interests",
+    value: string,
+  ) => {
     setFormData((prev) => {
       const arr = prev[field] as string[];
+
       return {
         ...prev,
-        [field]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
+        [field]: arr.includes(value)
+          ? arr.filter((v) => v !== value)
+          : [...arr, value],
       };
     });
   };
@@ -316,52 +357,66 @@ export default function OnboardingPage() {
       case 1:
         if (!formData.phone.trim()) {
           toast.error("Phone number is required");
+
           return false;
         }
         if (!formData.urn.trim()) {
           toast.error("University roll number is required");
+
           return false;
         }
         if (!formData.dateOfBirth) {
           toast.error("Date of birth is required");
+
           return false;
         }
         if (!formData.gender) {
           toast.error("Gender is required");
+
           return false;
         }
+
         return true;
       case 2:
         if (!formData.program) {
           toast.error("Program is required");
+
           return false;
         }
         if (!formData.branch) {
           toast.error("Branch is required");
+
           return false;
         }
         if (!formData.year) {
           toast.error("Year is required");
+
           return false;
         }
         if (!formData.semester) {
           toast.error("Semester is required");
+
           return false;
         }
+
         return true;
       case 3:
         if (formData.preferredDepartments.length < 1) {
           toast.error("Select at least one department");
+
           return false;
         }
         if (!formData.whyJoin.trim()) {
           toast.error("Please tell us why you want to join");
+
           return false;
         }
         if (!formData.availability) {
           toast.error("Availability is required");
+
           return false;
         }
+
         return true;
       default:
         return true;
@@ -375,6 +430,7 @@ export default function OnboardingPage() {
           ? "Departments are still loading. Please wait a moment."
           : "Departments could not be loaded. Retry below before continuing.",
       );
+
       return;
     }
     if (!validateStep(step)) return;
@@ -385,10 +441,16 @@ export default function OnboardingPage() {
     if (!user) {
       toast.error("Please login to submit your application");
       router.push("/login");
+
       return;
     }
-    if (!formData.oathAccepted || !formData.termsAccepted || !formData.constitutionAccepted) {
+    if (
+      !formData.oathAccepted ||
+      !formData.termsAccepted ||
+      !formData.constitutionAccepted
+    ) {
       toast.error("Please accept all terms and oaths");
+
       return;
     }
     if (
@@ -404,10 +466,12 @@ export default function OnboardingPage() {
       !formData.availability
     ) {
       toast.error("Please fill all required fields");
+
       return;
     }
     if (formData.preferredDepartments.length < 1) {
       toast.error("Select at least one department");
+
       return;
     }
 
@@ -459,20 +523,28 @@ export default function OnboardingPage() {
         // form: an existing application belongs on the dashboard, an expired
         // session belongs on login.
         if (response.status === 409) {
-          toast.error("You already have an application under review — check your dashboard.");
+          toast.error(
+            "You already have an application under review — check your dashboard.",
+          );
           router.push("/dashboard");
+
           return;
         }
         if (response.status === 429) {
-          throw new Error("Too many attempts. Please wait a few minutes and try again.");
+          throw new Error(
+            "Too many attempts. Please wait a few minutes and try again.",
+          );
         }
         if (response.status === 401) {
           toast.error("Your session expired. Please log in again.");
           router.push("/login?next=%2Fonboarding");
+
           return;
         }
         if (response.status === 403) {
-          throw new Error("This account can't submit applications right now. Contact an administrator.");
+          throw new Error(
+            "This account can't submit applications right now. Contact an administrator.",
+          );
         }
         throw new Error(readApiError(payload, "Failed to submit application"));
       }
@@ -494,7 +566,7 @@ export default function OnboardingPage() {
       router.push("/dashboard");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to submit application"
+        error instanceof Error ? error.message : "Failed to submit application",
       );
     } finally {
       setLoading(false);
@@ -514,15 +586,21 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 space-y-3">
-          <img
-            src="/Assets/Objects/welcome.png"
+          <Image
             alt=""
             aria-hidden="true"
-            loading="lazy"
             className="mx-auto h-20 w-20 rounded-3xl border border-default-200/70 bg-background object-cover"
+            height={160}
+            loading="lazy"
+            src="/Assets/Objects/welcome.png"
+            width={160}
           />
-          <h1 className="text-3xl font-bold tracking-tight">Join Greymens Club</h1>
-          <p className="text-muted-foreground mt-2">Complete your membership application</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Join Greymens Club
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Complete your membership application
+          </p>
           <p className="text-xs text-muted-foreground mt-1" role="note">
             {draftRestored
               ? "Restored your saved progress — it keeps saving as you type."
@@ -533,31 +611,45 @@ export default function OnboardingPage() {
         {/* Progress: completed steps are buttons back to that step; the
             current step is marked for assistive tech. Forward jumps stay
             gated by validation on Next. */}
-        <div className="flex items-center justify-between mb-8" role="list" aria-label="Onboarding progress">
+        <div
+          aria-label="Onboarding progress"
+          className="flex items-center justify-between mb-8"
+          role="list"
+        >
           {STEPS.map((s, i) => {
             const completed = s.id < step;
+
             return (
-              <div key={s.id} className="flex items-center" role="listitem" aria-current={step === s.id ? "step" : undefined}>
+              <div
+                key={s.id}
+                aria-current={step === s.id ? "step" : undefined}
+                className="flex items-center"
+                role="listitem"
+              >
                 {completed ? (
                   <button
-                    type="button"
-                    onClick={() => setStep(s.id)}
                     aria-label={`Back to step ${s.id}: ${s.title}`}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-primary"
+                    type="button"
+                    onClick={() => setStep(s.id)}
                   >
                     {s.id}
                   </button>
                 ) : (
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step >= s.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      step >= s.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {s.id}
                   </div>
                 )}
                 {i < STEPS.length - 1 && (
-                  <div className={`w-12 h-0.5 mx-1 ${step > s.id ? "bg-primary" : "bg-muted"}`} />
+                  <div
+                    className={`w-12 h-0.5 mx-1 ${step > s.id ? "bg-primary" : "bg-muted"}`}
+                  />
                 )}
               </div>
             );
@@ -567,7 +659,9 @@ export default function OnboardingPage() {
         {/* Step title */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold">{STEPS[step - 1].title}</h2>
-          <p className="text-sm text-muted-foreground">{STEPS[step - 1].description}</p>
+          <p className="text-sm text-muted-foreground">
+            {STEPS[step - 1].description}
+          </p>
         </div>
 
         {/* Form */}
@@ -577,32 +671,32 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-phone">Phone Number *</Label>
                 <Input
-                  id="onboarding-phone"
-                  type="tel"
                   fullWidth
+                  id="onboarding-phone"
+                  placeholder="+91 9876543210"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
-                  placeholder="+91 9876543210"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="onboarding-urn">University Roll Number *</Label>
                 <Input
-                  id="onboarding-urn"
-                  type="text"
                   fullWidth
+                  id="onboarding-urn"
+                  placeholder="e.g., 2100320100001"
+                  type="text"
                   value={formData.urn}
                   onChange={(e) => updateField("urn", e.target.value)}
-                  placeholder="e.g., 2100320100001"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="onboarding-dob">Date of Birth *</Label>
                   <Input
+                    fullWidth
                     id="onboarding-dob"
                     type="date"
-                    fullWidth
                     value={formData.dateOfBirth}
                     onChange={(e) => updateField("dateOfBirth", e.target.value)}
                   />
@@ -612,7 +706,9 @@ export default function OnboardingPage() {
                     fullWidth
                     placeholder="Select"
                     value={formData.gender === "" ? null : formData.gender}
-                    onChange={(value) => updateField("gender", String(value ?? ""))}
+                    onChange={(value) =>
+                      updateField("gender", String(value ?? ""))
+                    }
                   >
                     <Label>Gender *</Label>
                     <Select.Trigger>
@@ -633,7 +729,10 @@ export default function OnboardingPage() {
                           Other
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="prefer_not_to_say" textValue="Prefer not to say">
+                        <ListBox.Item
+                          id="prefer_not_to_say"
+                          textValue="Prefer not to say"
+                        >
                           Prefer not to say
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -645,12 +744,12 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-address">Address</Label>
                 <TextArea
-                  id="onboarding-address"
                   fullWidth
+                  id="onboarding-address"
+                  placeholder="Residential address"
+                  rows={2}
                   value={formData.address}
                   onChange={(e) => updateField("address", e.target.value)}
-                  rows={2}
-                  placeholder="Residential address"
                 />
               </div>
             </>
@@ -663,7 +762,9 @@ export default function OnboardingPage() {
                   fullWidth
                   placeholder="Select"
                   value={formData.program === "" ? null : formData.program}
-                  onChange={(value) => updateField("program", String(value ?? ""))}
+                  onChange={(value) =>
+                    updateField("program", String(value ?? ""))
+                  }
                 >
                   <Label>Program *</Label>
                   <Select.Trigger>
@@ -672,8 +773,21 @@ export default function OnboardingPage() {
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      {["B.Tech", "M.Tech", "BCA", "MCA", "B.Sc", "M.Sc", "MBA", "PhD"].map((program) => (
-                        <ListBox.Item key={program} id={program} textValue={program}>
+                      {[
+                        "B.Tech",
+                        "M.Tech",
+                        "BCA",
+                        "MCA",
+                        "B.Sc",
+                        "M.Sc",
+                        "MBA",
+                        "PhD",
+                      ].map((program) => (
+                        <ListBox.Item
+                          key={program}
+                          id={program}
+                          textValue={program}
+                        >
                           {program}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -687,7 +801,9 @@ export default function OnboardingPage() {
                   fullWidth
                   placeholder="Select"
                   value={formData.branch === "" ? null : formData.branch}
-                  onChange={(value) => updateField("branch", String(value ?? ""))}
+                  onChange={(value) =>
+                    updateField("branch", String(value ?? ""))
+                  }
                 >
                   <Label>Branch *</Label>
                   <Select.Trigger>
@@ -696,8 +812,20 @@ export default function OnboardingPage() {
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      {["Computer Science", "Information Technology", "Electronics", "Electrical", "Mechanical", "Civil", "Other"].map((branch) => (
-                        <ListBox.Item key={branch} id={branch} textValue={branch}>
+                      {[
+                        "Computer Science",
+                        "Information Technology",
+                        "Electronics",
+                        "Electrical",
+                        "Mechanical",
+                        "Civil",
+                        "Other",
+                      ].map((branch) => (
+                        <ListBox.Item
+                          key={branch}
+                          id={branch}
+                          textValue={branch}
+                        >
                           {branch}
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
@@ -712,7 +840,9 @@ export default function OnboardingPage() {
                     fullWidth
                     placeholder="Select"
                     value={formData.year === "" ? null : formData.year}
-                    onChange={(value) => updateField("year", String(value ?? ""))}
+                    onChange={(value) =>
+                      updateField("year", String(value ?? ""))
+                    }
                   >
                     <Label>Year *</Label>
                     <Select.Trigger>
@@ -722,7 +852,11 @@ export default function OnboardingPage() {
                     <Select.Popover>
                       <ListBox>
                         {["1st", "2nd", "3rd", "4th"].map((year) => (
-                          <ListBox.Item key={year} id={year} textValue={`${year} Year`}>
+                          <ListBox.Item
+                            key={year}
+                            id={year}
+                            textValue={`${year} Year`}
+                          >
                             {year} Year
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -736,7 +870,9 @@ export default function OnboardingPage() {
                     fullWidth
                     placeholder="Select"
                     value={formData.semester === "" ? null : formData.semester}
-                    onChange={(value) => updateField("semester", String(value ?? ""))}
+                    onChange={(value) =>
+                      updateField("semester", String(value ?? ""))
+                    }
                   >
                     <Label>Semester *</Label>
                     <Select.Trigger>
@@ -746,7 +882,11 @@ export default function OnboardingPage() {
                     <Select.Popover>
                       <ListBox>
                         {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                          <ListBox.Item key={s} id={String(s)} textValue={`Semester ${s}`}>
+                          <ListBox.Item
+                            key={s}
+                            id={String(s)}
+                            textValue={`Semester ${s}`}
+                          >
                             Semester {s}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
@@ -762,44 +902,72 @@ export default function OnboardingPage() {
           {step === 3 && (
             <>
               <div>
-                <span id="onboarding-depts-label" className="text-sm font-medium">Preferred Departments * (select at least 1)</span>
+                <span
+                  className="text-sm font-medium"
+                  id="onboarding-depts-label"
+                >
+                  Preferred Departments * (select at least 1)
+                </span>
                 {deptLoading ? (
-                  <div className="grid grid-cols-2 gap-2 mt-2" aria-label="Loading departments" role="status">
+                  <div
+                    aria-label="Loading departments"
+                    className="grid grid-cols-2 gap-2 mt-2"
+                    role="status"
+                  >
                     {[0, 1, 2, 3].map((n) => (
-                      <div key={n} className="h-10 animate-pulse rounded-md bg-surface-secondary" />
+                      <div
+                        key={n}
+                        className="h-10 animate-pulse rounded-md bg-surface-secondary"
+                      />
                     ))}
                   </div>
                 ) : deptError ? (
-                  <div role="alert" className="mt-2 flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger/5 p-3">
-                    <p className="text-sm text-muted">Departments couldn&apos;t be loaded.</p>
+                  <div
+                    className="mt-2 flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger/5 p-3"
+                    role="alert"
+                  >
+                    <p className="text-sm text-muted">
+                      Departments couldn&apos;t be loaded.
+                    </p>
                     <Button
-                      type="button"
+                      className="shrink-0 rounded-full"
                       size="sm"
+                      type="button"
                       variant="secondary"
                       onPress={() => setDeptReloadKey((k) => k + 1)}
-                      className="shrink-0 rounded-full"
                     >
                       Retry
                     </Button>
                   </div>
                 ) : departments.length === 0 ? (
-                  <p role="status" className="mt-2 rounded-md border border-default-200/70 p-3 text-sm text-muted">
-                    No departments are open for applications right now. Check back
-                    later — your progress on this device stays as entered.
+                  <p
+                    className="mt-2 rounded-md border border-default-200/70 p-3 text-sm text-muted"
+                    role="status"
+                  >
+                    No departments are open for applications right now. Check
+                    back later — your progress on this device stays as entered.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 mt-2" role="group" aria-labelledby="onboarding-depts-label">
+                  <div
+                    aria-labelledby="onboarding-depts-label"
+                    className="grid grid-cols-2 gap-2 mt-2"
+                    role="group"
+                  >
                     {departments.map((dept) => (
                       <button
                         key={dept.$id}
-                        type="button"
-                        aria-pressed={formData.preferredDepartments.includes(dept.$id!)}
-                        onClick={() => toggleArrayField("preferredDepartments", dept.$id!)}
+                        aria-pressed={formData.preferredDepartments.includes(
+                          dept.$id!,
+                        )}
                         className={`p-2 rounded-md border text-left text-sm ${
                           formData.preferredDepartments.includes(dept.$id!)
                             ? "border-primary bg-primary/10"
                             : "border-border"
                         }`}
+                        type="button"
+                        onClick={() =>
+                          toggleArrayField("preferredDepartments", dept.$id!)
+                        }
                       >
                         {dept.icon} {dept.name}
                       </button>
@@ -810,10 +978,10 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-skills">Skills</Label>
                 <Input
-                  id="onboarding-skills"
-                  type="text"
                   fullWidth
+                  id="onboarding-skills"
                   placeholder="React, Python, Design (comma separated)"
+                  type="text"
                   value={skillsText}
                   onChange={(e) => {
                     setSkillsText(e.target.value);
@@ -824,10 +992,10 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-interests">Interests</Label>
                 <Input
-                  id="onboarding-interests"
-                  type="text"
                   fullWidth
+                  id="onboarding-interests"
                   placeholder="AI, Web Dev, Cybersecurity (comma separated)"
+                  type="text"
                   value={interestsText}
                   onChange={(e) => {
                     setInterestsText(e.target.value);
@@ -838,30 +1006,34 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-experience">Prior Experience</Label>
                 <TextArea
-                  id="onboarding-experience"
                   fullWidth
+                  id="onboarding-experience"
+                  placeholder="Any prior club experience or relevant projects..."
+                  rows={3}
                   value={formData.experience}
                   onChange={(e) => updateField("experience", e.target.value)}
-                  rows={3}
-                  placeholder="Any prior club experience or relevant projects..."
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-whyjoin">Why do you want to join? *</Label>
+                <Label htmlFor="onboarding-whyjoin">
+                  Why do you want to join? *
+                </Label>
                 <TextArea
-                  id="onboarding-whyjoin"
                   fullWidth
+                  id="onboarding-whyjoin"
+                  placeholder="Tell us why you want to join Greymens Club..."
+                  rows={3}
                   value={formData.whyJoin}
                   onChange={(e) => updateField("whyJoin", e.target.value)}
-                  rows={3}
-                  placeholder="Tell us why you want to join Greymens Club..."
                 />
               </div>
               <div>
                 <Select
                   fullWidth
                   value={formData.availability}
-                  onChange={(value) => updateField("availability", String(value ?? "full"))}
+                  onChange={(value) =>
+                    updateField("availability", String(value ?? "full"))
+                  }
                 >
                   <Label>Availability *</Label>
                   <Select.Trigger>
@@ -890,7 +1062,12 @@ export default function OnboardingPage() {
                 <Select
                   fullWidth
                   value={formData.profileVisibility}
-                  onChange={(value) => updateField("profileVisibility", String(value ?? "members_only"))}
+                  onChange={(value) =>
+                    updateField(
+                      "profileVisibility",
+                      String(value ?? "members_only"),
+                    )
+                  }
                 >
                   <Label>Who can see your profile</Label>
                   <Select.Trigger>
@@ -923,56 +1100,68 @@ export default function OnboardingPage() {
               <div className="space-y-1">
                 <Label htmlFor="onboarding-bio">Bio</Label>
                 <TextArea
-                  id="onboarding-bio"
                   fullWidth
+                  id="onboarding-bio"
+                  placeholder="A short bio about yourself..."
+                  rows={3}
                   value={formData.bio}
                   onChange={(e) => updateField("bio", e.target.value)}
-                  rows={3}
-                  placeholder="A short bio about yourself..."
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-github">GitHub URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Label htmlFor="onboarding-github">
+                  GitHub URL{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </Label>
                 <Input
-                  id="onboarding-github"
-                  type="url"
                   fullWidth
+                  id="onboarding-github"
+                  placeholder="https://github.com/username"
+                  type="url"
                   value={formData.githubUrl}
                   onChange={(e) => updateField("githubUrl", e.target.value)}
-                  placeholder="https://github.com/username"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-linkedin">LinkedIn URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Label htmlFor="onboarding-linkedin">
+                  LinkedIn URL{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </Label>
                 <Input
-                  id="onboarding-linkedin"
-                  type="url"
                   fullWidth
+                  id="onboarding-linkedin"
+                  placeholder="https://linkedin.com/in/username"
+                  type="url"
                   value={formData.linkedinUrl}
                   onChange={(e) => updateField("linkedinUrl", e.target.value)}
-                  placeholder="https://linkedin.com/in/username"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-portfolio">Portfolio URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Label htmlFor="onboarding-portfolio">
+                  Portfolio URL{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </Label>
                 <Input
-                  id="onboarding-portfolio"
-                  type="url"
                   fullWidth
+                  id="onboarding-portfolio"
+                  placeholder="https://yourportfolio.com"
+                  type="url"
                   value={formData.portfolioUrl}
                   onChange={(e) => updateField("portfolioUrl", e.target.value)}
-                  placeholder="https://yourportfolio.com"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-instagram">Instagram URL <span className="font-normal text-muted">(optional)</span></Label>
+                <Label htmlFor="onboarding-instagram">
+                  Instagram URL{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </Label>
                 <Input
-                  id="onboarding-instagram"
-                  type="url"
                   fullWidth
+                  id="onboarding-instagram"
+                  placeholder="https://instagram.com/username"
+                  type="url"
                   value={formData.instagramUrl}
                   onChange={(e) => updateField("instagramUrl", e.target.value)}
-                  placeholder="https://instagram.com/username"
                 />
               </div>
             </>
@@ -982,9 +1171,9 @@ export default function OnboardingPage() {
             <>
               <div className="space-y-4">
                 <Checkbox
+                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
                   isSelected={formData.oathAccepted}
                   onChange={(value) => updateField("oathAccepted", value)}
-                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
                 >
                   <Checkbox.Content>
                     <Checkbox.Control>
@@ -993,16 +1182,18 @@ export default function OnboardingPage() {
                     <div>
                       <div className="font-medium">Club Oath</div>
                       <div className="text-sm text-muted-foreground">
-                        I solemnly pledge to uphold the values and mission of Greymens Club, to contribute actively
-                        to its growth, and to maintain the highest standards of integrity and collaboration.
+                        I solemnly pledge to uphold the values and mission of
+                        Greymens Club, to contribute actively to its growth, and
+                        to maintain the highest standards of integrity and
+                        collaboration.
                       </div>
                     </div>
                   </Checkbox.Content>
                 </Checkbox>
                 <Checkbox
+                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
                   isSelected={formData.termsAccepted}
                   onChange={(value) => updateField("termsAccepted", value)}
-                  className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
                 >
                   <Checkbox.Content>
                     <Checkbox.Control>
@@ -1011,24 +1202,30 @@ export default function OnboardingPage() {
                     <div>
                       <div className="font-medium">Terms of Service</div>
                       <div className="text-sm text-muted-foreground">
-                        I agree to the terms of service and code of conduct of Greymens Club.
+                        I agree to the terms of service and code of conduct of
+                        Greymens Club.
                       </div>
                     </div>
                   </Checkbox.Content>
                 </Checkbox>
                 <Checkbox
-                  isSelected={formData.constitutionAccepted}
-                  onChange={(value) => updateField("constitutionAccepted", value)}
                   className="flex items-start gap-3 p-4 rounded-md border cursor-pointer"
+                  isSelected={formData.constitutionAccepted}
+                  onChange={(value) =>
+                    updateField("constitutionAccepted", value)
+                  }
                 >
                   <Checkbox.Content>
                     <Checkbox.Control>
                       <Checkbox.Indicator />
                     </Checkbox.Control>
                     <div>
-                      <div className="font-medium">Constitution Acknowledgment</div>
+                      <div className="font-medium">
+                        Constitution Acknowledgment
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        I have read and acknowledge the constitution and bylaws of Greymens Club.
+                        I have read and acknowledge the constitution and bylaws
+                        of Greymens Club.
                       </div>
                     </div>
                   </Checkbox.Content>
@@ -1048,14 +1245,12 @@ export default function OnboardingPage() {
             <div />
           )}
           {step < STEPS.length ? (
-            <Button onPress={handleNext}>
-              Next
-            </Button>
+            <Button onPress={handleNext}>Next</Button>
           ) : (
             <Button
-              onPress={handleSubmit}
-              isPending={loading}
               isDisabled={deptLoading || deptError}
+              isPending={loading}
+              onPress={handleSubmit}
             >
               {deptLoading ? "Loading departments..." : "Submit Application"}
             </Button>

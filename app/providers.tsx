@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ThemeProvider as NextThemesProvider, type Attribute } from "next-themes";
+import {
+  ThemeProvider as NextThemesProvider,
+  type Attribute,
+} from "next-themes";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -13,7 +16,5 @@ export interface ProvidersProps {
 }
 
 export function Providers({ children, themeProps }: ProvidersProps) {
-  return (
-    <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
-  );
+  return <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>;
 }

@@ -1,13 +1,37 @@
 // app/settings/page.tsx
 "use client";
+import type { ExtendedUser } from "@/lib/types";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Description,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContainer,
+  ModalDialog,
+  ModalFooter,
+  ModalHeader,
+  Separator,
+  Switch,
+  TextField,
+  useOverlayState,
+} from "@heroui/react";
+
 import { account, authService } from "@/lib/appwrite";
-import type { ExtendedUser } from "@/lib/types";
-import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, Modal, ModalBackdrop, ModalBody, ModalContainer, ModalDialog, ModalFooter, ModalHeader, Separator, Switch, TextField, useOverlayState } from "@heroui/react";
+import { useAuth } from "@/context/AuthContext";
 
 // Notification preference keys stored on the authenticated account.
 const EMAIL_NOTIFICATIONS_PREF = "emailNotifications";
@@ -36,9 +60,17 @@ export default function SettingsPage() {
     },
     [],
   );
-  const { isOpen: isPhoneModalOpen, open: onPhoneModalOpen, close: onPhoneModalClose } = useOverlayState();
-  const { isOpen: isVerifyModalOpen, open: onVerifyModalOpen, close: onVerifyModalClose } = useOverlayState();
-  
+  const {
+    isOpen: isPhoneModalOpen,
+    open: onPhoneModalOpen,
+    close: onPhoneModalClose,
+  } = useOverlayState();
+  const {
+    isOpen: isVerifyModalOpen,
+    open: onVerifyModalOpen,
+    close: onVerifyModalClose,
+  } = useOverlayState();
+
   // Password change state
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -84,6 +116,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     const prefs = (user.prefs ?? {}) as Record<string, unknown>;
+
     setEmailNotifications(prefs[EMAIL_NOTIFICATIONS_PREF] !== false);
     setPushNotifications(prefs[PUSH_NOTIFICATIONS_PREF] !== false);
   }, [user]);
@@ -91,6 +124,7 @@ export default function SettingsPage() {
   const updateNotificationPreference = async (key: string, value: boolean) => {
     if (!user) return;
     const previous = value === false;
+
     setSavingPreference(key);
     if (key === EMAIL_NOTIFICATIONS_PREF) setEmailNotifications(value);
     else setPushNotifications(value);
@@ -116,11 +150,13 @@ export default function SettingsPage() {
 
     if (newPassword !== confirmNewPassword) {
       setPasswordError("New passwords do not match");
+
       return;
     }
 
     if (newPassword.length < 8) {
       setPasswordError("New password must be at least 8 characters");
+
       return;
     }
 
@@ -132,7 +168,7 @@ export default function SettingsPage() {
       setOldPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-      
+
       later(() => {
         setPasswordSuccess(false);
       }, 3000);
@@ -149,7 +185,9 @@ export default function SettingsPage() {
     setVerificationLoading(true);
 
     try {
-      await account.createEmailVerification({ url: `${window.location.origin}/verify-email` });
+      await account.createEmailVerification({
+        url: `${window.location.origin}/verify-email`,
+      });
       setVerificationSuccess(true);
       // One email per tap is quota: brief cooldown before another may send.
       setEmailCooldown(true);
@@ -159,7 +197,9 @@ export default function SettingsPage() {
         setVerificationSuccess(false);
       }, 5000);
     } catch (err) {
-      setVerificationError(errorMessage(err, "Failed to send verification email"));
+      setVerificationError(
+        errorMessage(err, "Failed to send verification email"),
+      );
     } finally {
       setVerificationLoading(false);
     }
@@ -175,9 +215,13 @@ export default function SettingsPage() {
       // E.164: + followed by 7–15 digits. The server re-validates; this
       // catches typos before a round trip.
       const digits = phoneNumber.replace(/[\s()-]/g, "");
+
       if (!/^\+\d{7,15}$/.test(digits)) {
-        setPhoneError("Enter a valid phone number with country code (e.g., +911234567890)");
+        setPhoneError(
+          "Enter a valid phone number with country code (e.g., +911234567890)",
+        );
         setPhoneLoading(false);
+
         return;
       }
 
@@ -234,7 +278,9 @@ export default function SettingsPage() {
       setSmsCooldown(true);
       later(() => setSmsCooldown(false), 60000);
     } catch (err) {
-      setPhoneVerifyError(errorMessage(err, "Failed to send verification code"));
+      setPhoneVerifyError(
+        errorMessage(err, "Failed to send verification code"),
+      );
     } finally {
       setPhoneResending(false);
     }
@@ -271,9 +317,15 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div role="status" className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div
+        className="flex items-center justify-center min-h-[calc(100vh-200px)]"
+        role="status"
+      >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
+          <div
+            aria-hidden="true"
+            className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"
+          />
           <p className="mt-4 text-default-500">Loading settings...</p>
         </div>
       </div>
@@ -283,9 +335,18 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <div className="text-center" role="status" aria-label="Redirecting to login">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" aria-hidden="true" />
-          <p className="mt-4 text-default-500">Sign in required — taking you to login...</p>
+        <div
+          aria-label="Redirecting to login"
+          className="text-center"
+          role="status"
+        >
+          <div
+            aria-hidden="true"
+            className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"
+          />
+          <p className="mt-4 text-default-500">
+            Sign in required — taking you to login...
+          </p>
         </div>
       </div>
     );
@@ -304,7 +365,11 @@ export default function SettingsPage() {
           {/* Change Password */}
           <div>
             <h3 className="text-lg font-medium mb-4">Change Password</h3>
-            <Form validationBehavior="aria" onSubmit={handlePasswordChange} className="space-y-4">
+            <Form
+              className="space-y-4"
+              validationBehavior="aria"
+              onSubmit={handlePasswordChange}
+            >
               <TextField
                 isRequired
                 isDisabled={passwordLoading}
@@ -326,7 +391,9 @@ export default function SettingsPage() {
                 name="newPassword"
                 type="password"
                 validate={(value) =>
-                  value.length >= 8 ? null : "New password must be at least 8 characters"
+                  value.length >= 8
+                    ? null
+                    : "New password must be at least 8 characters"
                 }
                 value={newPassword}
                 onChange={setNewPassword}
@@ -362,7 +429,9 @@ export default function SettingsPage() {
                 <Alert role="alert" status="danger">
                   <Alert.Indicator />
                   <Alert.Content>
-                    <Alert.Title>Couldn&apos;t change your password</Alert.Title>
+                    <Alert.Title>
+                      Couldn&apos;t change your password
+                    </Alert.Title>
                     <Alert.Description>{passwordError}</Alert.Description>
                   </Alert.Content>
                 </Alert>
@@ -399,30 +468,32 @@ export default function SettingsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-default-500">
-                  Status: {user.emailVerification ? (
+                  Status:{" "}
+                  {user.emailVerification ? (
                     <span className="text-success">Verified</span>
                   ) : (
                     <span className="text-warning">Not verified</span>
                   )}
                 </p>
-                <p className="text-sm text-default-500 mt-1">
-                  {user.email}
-                </p>
+                <p className="text-sm text-default-500 mt-1">{user.email}</p>
               </div>
               {!user.emailVerification && (
-                <Button variant="primary"
-                  size="sm"
-                  isPending={verificationLoading}
+                <Button
                   isDisabled={emailCooldown}
+                  isPending={verificationLoading}
+                  size="sm"
+                  variant="primary"
                   onPress={handleSendVerification}
                 >
-                  {emailCooldown ? "Email sent — wait to resend" : "Send Verification Email"}
+                  {emailCooldown
+                    ? "Email sent — wait to resend"
+                    : "Send Verification Email"}
                 </Button>
               )}
             </div>
 
             {verificationError && (
-              <Alert role="alert" status="danger" className="mt-2">
+              <Alert className="mt-2" role="alert" status="danger">
                 <Alert.Indicator />
                 <Alert.Content>
                   <Alert.Title>Couldn&apos;t send the email</Alert.Title>
@@ -432,7 +503,7 @@ export default function SettingsPage() {
             )}
 
             {verificationSuccess && (
-              <Alert role="status" status="success" className="mt-2">
+              <Alert className="mt-2" role="status" status="success">
                 <Alert.Indicator />
                 <Alert.Content>
                   <Alert.Title>Verification email sent</Alert.Title>
@@ -450,7 +521,8 @@ export default function SettingsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-default-500">
-                  Status: {user.phoneVerification ? (
+                  Status:{" "}
+                  {user.phoneVerification ? (
                     <span className="text-success">Verified</span>
                   ) : user.phone ? (
                     <span className="text-warning">Not verified</span>
@@ -464,24 +536,18 @@ export default function SettingsPage() {
               </div>
               <div className="flex gap-2 flex-wrap">
                 {user.phone && !user.phoneVerification && (
-                  <Button variant="primary"
-                    size="sm"
-                    onPress={openVerifyModal}
-                  >
+                  <Button size="sm" variant="primary" onPress={openVerifyModal}>
                     Verify Phone
                   </Button>
                 )}
-                <Button variant="primary"
-                  size="sm"
-                  onPress={openPhoneModal}
-                >
+                <Button size="sm" variant="primary" onPress={openPhoneModal}>
                   {user.phone ? "Update" : "Add"} Phone
                 </Button>
               </div>
             </div>
 
             {phoneError && (
-              <Alert role="alert" status="danger" className="mt-2">
+              <Alert className="mt-2" role="alert" status="danger">
                 <Alert.Indicator />
                 <Alert.Content>
                   <Alert.Title>Couldn&apos;t save the phone number</Alert.Title>
@@ -491,7 +557,7 @@ export default function SettingsPage() {
             )}
 
             {phoneSuccess && (
-              <Alert role="status" status="success" className="mt-2">
+              <Alert className="mt-2" role="status" status="success">
                 <Alert.Indicator />
                 <Alert.Content>
                   <Alert.Title>Phone number saved</Alert.Title>
@@ -517,9 +583,9 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={emailNotifications}
-              isDisabled={savingPreference !== null}
               aria-label="Email notifications"
+              isDisabled={savingPreference !== null}
+              isSelected={emailNotifications}
               onChange={(value: boolean) =>
                 updateNotificationPreference(EMAIL_NOTIFICATIONS_PREF, value)
               }
@@ -542,9 +608,9 @@ export default function SettingsPage() {
               </p>
             </div>
             <Switch
-              isSelected={pushNotifications}
-              isDisabled={savingPreference !== null}
               aria-label="Push notifications"
+              isDisabled={savingPreference !== null}
+              isSelected={pushNotifications}
               onChange={(value: boolean) =>
                 updateNotificationPreference(PUSH_NOTIFICATIONS_PREF, value)
               }
@@ -569,14 +635,15 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Request account deletion</p>
               <p className="text-sm text-default-500">
-                Membership and governance records are retained under the club charter, so
-                deletion is completed by an administrator. Requesting deletion starts that
-                process and does not remove anything immediately.
+                Membership and governance records are retained under the club
+                charter, so deletion is completed by an administrator.
+                Requesting deletion starts that process and does not remove
+                anything immediately.
               </p>
             </div>
             <Link
-              href="/contact"
               className="inline-flex items-center rounded-lg border border-danger px-4 py-2 text-sm font-medium text-danger hover:bg-danger-50 transition-colors"
+              href="/contact"
             >
               Request deletion
             </Link>
@@ -585,12 +652,13 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Connection diagnostics</p>
               <p className="text-sm text-default-500">
-                Check backend reachability and configuration when something is not loading.
+                Check backend reachability and configuration when something is
+                not loading.
               </p>
             </div>
             <Link
-              href="/diagnostics"
               className="inline-flex items-center rounded-lg border border-default-300 px-4 py-2 text-sm font-medium hover:bg-default-100 transition-colors"
+              href="/diagnostics"
             >
               Open diagnostics
             </Link>
@@ -600,7 +668,12 @@ export default function SettingsPage() {
 
       {/* Add/Update Phone Modal */}
       <Modal>
-        <ModalBackdrop isOpen={isPhoneModalOpen} onOpenChange={(open: boolean) => { if (!open) onPhoneModalClose(); }}>
+        <ModalBackdrop
+          isOpen={isPhoneModalOpen}
+          onOpenChange={(open: boolean) => {
+            if (!open) onPhoneModalClose();
+          }}
+        >
           <ModalContainer>
             <ModalDialog>
               <Form validationBehavior="aria" onSubmit={handleAddPhone}>
@@ -649,14 +722,20 @@ export default function SettingsPage() {
                     <Alert role="alert" status="danger">
                       <Alert.Indicator />
                       <Alert.Content>
-                        <Alert.Title>Couldn&apos;t save the phone number</Alert.Title>
+                        <Alert.Title>
+                          Couldn&apos;t save the phone number
+                        </Alert.Title>
                         <Alert.Description>{phoneError}</Alert.Description>
                       </Alert.Content>
                     </Alert>
                   )}
                 </ModalBody>
                 <ModalFooter>
-                  <Button type="button" variant="ghost" onPress={onPhoneModalClose}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onPress={onPhoneModalClose}
+                  >
                     Cancel
                   </Button>
                   <Button
@@ -675,13 +754,16 @@ export default function SettingsPage() {
 
       {/* Verify Phone Modal */}
       <Modal>
-        <ModalBackdrop isOpen={isVerifyModalOpen} onOpenChange={(open: boolean) => { if (!open) onVerifyModalClose(); }}>
+        <ModalBackdrop
+          isOpen={isVerifyModalOpen}
+          onOpenChange={(open: boolean) => {
+            if (!open) onVerifyModalClose();
+          }}
+        >
           <ModalContainer>
             <ModalDialog>
               <Form validationBehavior="aria" onSubmit={handleVerifyPhone}>
-                <ModalHeader>
-                  Verify Phone Number
-                </ModalHeader>
+                <ModalHeader>Verify Phone Number</ModalHeader>
                 <ModalBody>
                   <p className="text-sm text-default-500 mb-4">
                     Enter the verification code sent to your phone number
@@ -710,7 +792,9 @@ export default function SettingsPage() {
                       <Alert.Indicator />
                       <Alert.Content>
                         <Alert.Title>Couldn&apos;t verify the code</Alert.Title>
-                        <Alert.Description>{phoneVerifyError}</Alert.Description>
+                        <Alert.Description>
+                          {phoneVerifyError}
+                        </Alert.Description>
                       </Alert.Content>
                     </Alert>
                   )}
@@ -726,16 +810,20 @@ export default function SettingsPage() {
                     className="mt-2"
                     isDisabled={phoneVerifyLoading || smsCooldown}
                     isPending={phoneResending}
-                    onPress={handleSendPhoneVerification}
                     size="sm"
                     type="button"
                     variant="primary"
+                    onPress={handleSendPhoneVerification}
                   >
                     {smsCooldown ? "Code sent — wait to resend" : "Resend Code"}
                   </Button>
                 </ModalBody>
                 <ModalFooter>
-                  <Button type="button" variant="ghost" onPress={onVerifyModalClose}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onPress={onVerifyModalClose}
+                  >
                     Cancel
                   </Button>
                   <Button

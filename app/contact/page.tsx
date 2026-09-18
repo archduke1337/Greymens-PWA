@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Alert,
   Button,
@@ -113,8 +114,7 @@ export default function ContactPage() {
         </h1>
         <p className="text-[15px] leading-relaxed text-muted">
           Joining, sponsoring, reporting, or just curious — write below. A
-          student officer reads everything and replies within 2–3 working
-          days.
+          student officer reads everything and replies within 2–3 working days.
         </p>
       </header>
 
@@ -255,11 +255,13 @@ export default function ContactPage() {
         <aside className="space-y-4">
           <figure className="space-y-2">
             <div className="mx-auto max-w-[220px] overflow-hidden rounded-3xl border border-default-200/70 bg-white">
-              <img
+              <Image
                 alt="A hand giving a thumbs-up"
                 className="w-full object-cover"
+                height={1300}
                 loading="lazy"
                 src="/Assets/Media/thumb-up.webp"
+                width={1280}
               />
             </div>
             <figcaption className="text-center text-sm text-muted">
@@ -273,7 +275,7 @@ export default function ContactPage() {
                 {CHANNELS.map(({ Icon, name, pace, cta, href, external }) => (
                   <li key={name} className="flex items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      <Icon aria-hidden="true" className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium">{name}</span>
@@ -281,26 +283,26 @@ export default function ContactPage() {
                     </span>
                     {external ? (
                       <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         aria-label={`${cta} (opens in a new tab)`}
                         className="inline-flex shrink-0 items-center gap-1 text-xs font-medium underline underline-offset-4"
+                        href={href}
+                        rel="noopener noreferrer"
+                        target="_blank"
                       >
                         {cta}
-                        <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                        <ArrowUpRight aria-hidden="true" className="h-3 w-3" />
                       </a>
                     ) : href.startsWith("/") ? (
                       <Link
-                        href={href}
                         className="shrink-0 text-xs font-medium underline underline-offset-4"
+                        href={href}
                       >
                         {cta}
                       </Link>
                     ) : (
                       <a
-                        href={href}
                         className="shrink-0 break-all text-xs font-medium underline underline-offset-4"
+                        href={href}
                       >
                         {cta}
                       </a>

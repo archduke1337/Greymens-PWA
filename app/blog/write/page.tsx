@@ -1,16 +1,38 @@
 // app/blog/write/page.tsx
 "use client";
 
-import { useState, useEffect, useRef, type ChangeEvent } from "react";
+import type { ExtendedUser } from "@/lib/types";
+
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { blogCategories, generateSlug, calculateReadTime } from "@/lib/blog-format";
+import Image from "next/image";
+import { toast } from "sonner";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Description,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+
+import {
+  blogCategories,
+  generateSlug,
+  calculateReadTime,
+} from "@/lib/blog-format";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
-import type { ExtendedUser } from "@/lib/types";
-import { toast } from "sonner";
-import { ArrowLeftIcon, SendIcon, ImageIcon } from "lucide-react";
-import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -40,6 +62,7 @@ export default function WriteBlogPage() {
     if (!user) {
       toast.error("Please login to write a blog");
       router.push("/login");
+
       return;
     }
     // Create mode needs blog.create. Edit mode admits any signed-in user:
@@ -66,13 +89,16 @@ export default function WriteBlogPage() {
             cache: "no-store",
             credentials: "include",
           });
+
           if (!response.ok) return [];
           const payload = (await response.json().catch(() => null)) as {
             blogs?: Array<Record<string, unknown>>;
           } | null;
+
           return payload?.blogs ?? [];
         };
         let found = (await fetchScope("mine")).find((b) => b.$id === editId);
+
         if (!found && hasCapability("blog.review")) {
           found = (await fetchScope("all")).find((b) => b.$id === editId);
         }
@@ -80,6 +106,7 @@ export default function WriteBlogPage() {
         if (!found) {
           toast.error("Post not found, or not yours to edit");
           router.push("/blog");
+
           return;
         }
         setFormData({
@@ -88,13 +115,15 @@ export default function WriteBlogPage() {
           content: String(found.content ?? ""),
           coverImage: String(found.coverImage ?? ""),
           category: String(found.category ?? ""),
-          tags: Array.isArray(found.tags) ? (found.tags as string[]).join(", ") : "",
+          tags: Array.isArray(found.tags)
+            ? (found.tags as string[]).join(", ")
+            : "",
         });
         setEditSlug(typeof found.slug === "string" ? found.slug : null);
         setIsEditing(true);
       } catch (error) {
         if (!cancelled) {
-          console.error("Error loading post for edit:", error);
+          logError("Error loading post for edit:", error);
           toast.error("Could not load that post for editing");
           router.push("/blog");
         }
@@ -102,26 +131,30 @@ export default function WriteBlogPage() {
         if (!cancelled) setLoadingPost(false);
       }
     };
+
     void load();
+
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId, permLoading, user]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
+
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size must be less than 5MB");
+
       return;
     }
 
@@ -131,19 +164,28 @@ export default function WriteBlogPage() {
       // validated and stored by the server, which also enforces the
       // `blog.create` capability.
       const body = new FormData();
+
       body.set("file", file);
-      const response = await fetch("/api/blogs/image", { method: "POST", body });
-      const payload = await response.json().catch(() => null) as { url?: string; error?: string } | null;
+      const response = await fetch("/api/blogs/image", {
+        method: "POST",
+        body,
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        url?: string;
+        error?: string;
+      } | null;
+
       if (!response.ok || !payload?.url) {
         throw new Error(readApiError(payload, "Failed to upload image"));
       }
       // Functional update: the user may keep typing while the upload is in
       // flight, and a stale formData spread would clobber those edits.
       const coverUrl = payload.url;
+
       setFormData((prev) => ({ ...prev, coverImage: coverUrl }));
       toast.success("Image uploaded successfully!");
     } catch (error) {
-      console.error("Error uploading image:", error);
+      logError("Error uploading image:", error);
       toast.error(getErrorMessage(error) || "Failed to upload image");
     } finally {
       setUploadingImage(false);
@@ -159,24 +201,30 @@ export default function WriteBlogPage() {
     if (!user) {
       toast.error("Please login to submit a blog");
       router.push("/login");
+
       return;
     }
 
     // Validation
     if (!formData.title || !formData.content || !formData.category) {
       toast.error("Please fill in all required fields");
+
       return;
     }
 
     // The server caps excerpts at 500 characters — catch it here with the
     // field in view instead of a generic 400 toast after submit.
     if (formData.excerpt.length > 500) {
-      toast.error(`Excerpt is ${formData.excerpt.length}/500 characters — please shorten it`);
+      toast.error(
+        `Excerpt is ${formData.excerpt.length}/500 characters — please shorten it`,
+      );
+
       return;
     }
 
     if (!formData.coverImage) {
       toast.error("Please add a cover image");
+
       return;
     }
 
@@ -209,15 +257,17 @@ export default function WriteBlogPage() {
           error?: unknown;
           resetToPending?: boolean;
         } | null;
+
         if (!response.ok) {
           throw new Error(readApiError(payload, "Failed to save the edit"));
         }
         toast.success(
           payload?.resetToPending
             ? "Saved — a live post goes back for review after an author edit."
-            : "Post updated."
+            : "Post updated.",
         );
         router.push(editSlug ? `/blog/${editSlug}` : "/blog");
+
         return;
       }
 
@@ -239,18 +289,21 @@ export default function WriteBlogPage() {
           readTime,
         }),
       });
+
       if (!response.ok) {
         const data = await response.json().catch(() => null);
+
         throw new Error(readApiError(data, "Failed to submit blog"));
       }
 
       toast.success(
-        "Blog submitted successfully! It will be reviewed by our team before publishing."
+        "Blog submitted successfully! It will be reviewed by our team before publishing.",
       );
       router.push("/blog");
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Error submitting blog:", message);
+
+      logError("Error submitting blog:", message);
       toast.error(message || "Failed to submit blog");
     } finally {
       setSubmitting(false);
@@ -259,9 +312,15 @@ export default function WriteBlogPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-4xl text-center" role="status" aria-label="Redirecting to login">
+      <div
+        aria-label="Redirecting to login"
+        className="container mx-auto px-4 py-16 max-w-4xl text-center"
+        role="status"
+      >
         <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-default-500 mt-4">Sign in required — taking you to login...</p>
+        <p className="text-default-500 mt-4">
+          Sign in required — taking you to login...
+        </p>
       </div>
     );
   }
@@ -270,12 +329,14 @@ export default function WriteBlogPage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
-        <img
-          src="/Assets/Media/throwing-paper.gif"
+        <Image
           alt=""
           aria-hidden="true"
-          loading="lazy"
           className="h-20 w-20 shrink-0 rounded-3xl border border-default-200/70 object-cover"
+          height={160}
+          loading="lazy"
+          src="/Assets/Media/throwing-paper.gif"
+          width={160}
         />
         <div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -292,233 +353,257 @@ export default function WriteBlogPage() {
       {/* Form */}
       {editId && loadingPost && !isEditing ? (
         <Card>
-          <CardContent className="space-y-3 p-8" aria-label="Loading post">
+          <CardContent aria-label="Loading post" className="space-y-3 p-8">
             <div className="h-6 w-1/2 animate-pulse rounded-full bg-surface-secondary" />
             <div className="h-3.5 w-full animate-pulse rounded-full bg-surface-secondary" />
             <div className="h-3.5 w-2/3 animate-pulse rounded-full bg-surface-secondary" />
           </CardContent>
         </Card>
       ) : (
-      <Card className="border-none shadow-xl">
-        <CardHeader className="bg-muted">
-          <h2 className="text-xl font-bold">Blog Details</h2>
-        </CardHeader>
-        <CardContent className="p-8">
-          <Form validationBehavior="aria" onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <TextField
-              isRequired
-              isDisabled={submitting}
-              name="title"
-              validate={(value) => {
-                const trimmed = value.trim();
-                if (!trimmed) return "Give the post a title";
-                if (trimmed.length > 255) return "Keep the title under 255 characters";
-                return null;
-              }}
-              value={formData.title}
-              onChange={(value) => setFormData({ ...formData, title: value })}
+        <Card className="border-none shadow-xl">
+          <CardHeader className="bg-muted">
+            <h2 className="text-xl font-bold">Blog Details</h2>
+          </CardHeader>
+          <CardContent className="p-8">
+            <Form
+              className="space-y-6"
+              validationBehavior="aria"
+              onSubmit={handleSubmit}
             >
-              <Label>Title</Label>
-              <Input
-                maxLength={255}
-                placeholder="Enter an engaging title..."
-              />
-              <FieldError />
-            </TextField>
+              {/* Title */}
+              <TextField
+                isRequired
+                isDisabled={submitting}
+                name="title"
+                validate={(value) => {
+                  const trimmed = value.trim();
 
-            {/* Excerpt */}
-            <TextField
-              isDisabled={submitting}
-              name="excerpt"
-              validate={(value) =>
-                value.length > 500 ? "Shorten the excerpt to 500 characters" : null
-              }
-              value={formData.excerpt}
-              onChange={(value) => setFormData({ ...formData, excerpt: value })}
-            >
-              <Label>Excerpt</Label>
-              <TextArea
-                maxLength={500}
-                placeholder="Brief summary of your blog..."
-                rows={3}
-              />
-              <Description aria-live="polite">
-                {formData.excerpt.length}/500
-              </Description>
-              <FieldError />
-            </TextField>
+                  if (!trimmed) return "Give the post a title";
+                  if (trimmed.length > 255)
+                    return "Keep the title under 255 characters";
 
-            {/* Category */}
-            <div>
-              <Select
-                fullWidth
-                placeholder="Select a category"
-                value={formData.category === "" ? null : formData.category}
+                  return null;
+                }}
+                value={formData.title}
+                onChange={(value) => setFormData({ ...formData, title: value })}
+              >
+                <Label>Title</Label>
+                <Input
+                  maxLength={255}
+                  placeholder="Enter an engaging title..."
+                />
+                <FieldError />
+              </TextField>
+
+              {/* Excerpt */}
+              <TextField
+                isDisabled={submitting}
+                name="excerpt"
+                validate={(value) =>
+                  value.length > 500
+                    ? "Shorten the excerpt to 500 characters"
+                    : null
+                }
+                value={formData.excerpt}
                 onChange={(value) =>
-                  setFormData({ ...formData, category: String(value ?? "") })
+                  setFormData({ ...formData, excerpt: value })
                 }
               >
-                <Label>Category (required)</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {blogCategories.map((cat) => (
-                      <ListBox.Item key={cat.value} id={cat.value} textValue={cat.label}>
-                        {cat.label}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
+                <Label>Excerpt</Label>
+                <TextArea
+                  maxLength={500}
+                  placeholder="Brief summary of your blog..."
+                  rows={3}
+                />
+                <Description aria-live="polite">
+                  {formData.excerpt.length}/500
+                </Description>
+                <FieldError />
+              </TextField>
 
-            {/* Tags */}
-            <TextField
-              isDisabled={submitting}
-              name="tags"
-              value={formData.tags}
-              onChange={(value) => setFormData({ ...formData, tags: value })}
-            >
-              <Label>Tags</Label>
-              <Input
-                placeholder="react, javascript, tutorial (comma separated)"
-              />
-              <Description>Comma-separated, up to 20.</Description>
-            </TextField>
-
-            {/* Cover Image */}
-            <fieldset className="space-y-4">
-              <legend className="text-sm font-medium">
-                Cover image (required)
-              </legend>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Upload Button */}
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="sr-only"
-                    id="cover-image-upload"
-                    title="Upload cover image"
-                    aria-label="Upload cover image"
-                  />
-                  <Button
-                    type="button"
-                    variant="primary"
-                    isPending={uploadingImage}
-                    isDisabled={uploadingImage || submitting}
-                    className="w-full"
-                    onPress={() => fileInputRef.current?.click()}
-                  >
-                    {uploadingImage ? "Uploading..." : "Upload Image"}
-                  </Button>
-                  <p className="text-xs text-default-500 mt-2">
-                    Max 5MB (JPG, PNG, WebP)
-                  </p>
-                </div>
-
-                {/* Or URL Input */}
-                <TextField
-                  isDisabled={uploadingImage || submitting}
-                  name="coverImage"
-                  value={formData.coverImage}
-                  onChange={(value) => setFormData({ ...formData, coverImage: value })}
+              {/* Category */}
+              <div>
+                <Select
+                  fullWidth
+                  placeholder="Select a category"
+                  value={formData.category === "" ? null : formData.category}
+                  onChange={(value) =>
+                    setFormData({ ...formData, category: String(value ?? "") })
+                  }
                 >
-                  <Label>Paste an image URL instead</Label>
-                  <Input placeholder="Or paste image URL" />
-                </TextField>
+                  <Label>Category (required)</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {blogCategories.map((cat) => (
+                        <ListBox.Item
+                          key={cat.value}
+                          id={cat.value}
+                          textValue={cat.label}
+                        >
+                          {cat.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
 
-              {/* Image Preview */}
-              {formData.coverImage && (
-                <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
-                  <p className="text-sm font-medium mb-2">Preview:</p>
-                  <img
-                    key={formData.coverImage}
-                    src={formData.coverImage}
-                    alt="Cover preview"
-                    className="w-full h-48 object-cover rounded-lg"
-                    onError={(e) => {
-                      // A transient preview failure (hotlink block, flaky
-                      // network) must not wipe a valid URL and force a
-                      // re-upload. Hide this render; editing the URL remounts
-                      // via key and retries.
-                      e.currentTarget.style.display = "none";
-                      toast.error("Cover preview failed to load — the URL is kept. Open it in a new tab to check.");
-                    }}
-                  />
+              {/* Tags */}
+              <TextField
+                isDisabled={submitting}
+                name="tags"
+                value={formData.tags}
+                onChange={(value) => setFormData({ ...formData, tags: value })}
+              >
+                <Label>Tags</Label>
+                <Input placeholder="react, javascript, tutorial (comma separated)" />
+                <Description>Comma-separated, up to 20.</Description>
+              </TextField>
+
+              {/* Cover Image */}
+              <fieldset className="space-y-4">
+                <legend className="text-sm font-medium">
+                  Cover image (required)
+                </legend>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Upload Button */}
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      accept="image/*"
+                      aria-label="Upload cover image"
+                      className="sr-only"
+                      id="cover-image-upload"
+                      title="Upload cover image"
+                      type="file"
+                      onChange={handleImageUpload}
+                    />
+                    <Button
+                      className="w-full"
+                      isDisabled={uploadingImage || submitting}
+                      isPending={uploadingImage}
+                      type="button"
+                      variant="primary"
+                      onPress={() => fileInputRef.current?.click()}
+                    >
+                      {uploadingImage ? "Uploading..." : "Upload Image"}
+                    </Button>
+                    <p className="text-xs text-default-500 mt-2">
+                      Max 5MB (JPG, PNG, WebP)
+                    </p>
+                  </div>
+
+                  {/* Or URL Input */}
+                  <TextField
+                    isDisabled={uploadingImage || submitting}
+                    name="coverImage"
+                    value={formData.coverImage}
+                    onChange={(value) =>
+                      setFormData({ ...formData, coverImage: value })
+                    }
+                  >
+                    <Label>Paste an image URL instead</Label>
+                    <Input placeholder="Or paste image URL" />
+                  </TextField>
                 </div>
-              )}
-            </fieldset>
 
-            {/* Content */}
-            <TextField
-              isRequired
-              isDisabled={submitting}
-              name="content"
-              validate={(value) =>
-                value.trim() ? null : "Write the post content"
-              }
-              value={formData.content}
-              onChange={(value) => setFormData({ ...formData, content: value })}
-            >
-              <Label>Content</Label>
-              <TextArea
-                placeholder="Write your blog content here... Markdown works: # headings, **bold**, lists, code, tables"
-                rows={15}
-              />
-              <Description>
-                {formData.content.split(/\s+/).filter((w) => w).length} words •{" "}
-                {calculateReadTime(formData.content)} min read
-              </Description>
-              <FieldError />
-            </TextField>
+                {/* Image Preview */}
+                {formData.coverImage && (
+                  <div className="border-2 border-dashed border-default-300 rounded-lg p-4">
+                    <p className="text-sm font-medium mb-2">Preview:</p>
+                    <Image
+                      key={formData.coverImage}
+                      unoptimized
+                      alt="Cover preview"
+                      className="w-full h-48 object-cover rounded-lg"
+                      height={192}
+                      src={formData.coverImage}
+                      width={896}
+                      onError={(e) => {
+                        // A transient preview failure (hotlink block, flaky
+                        // network) must not wipe a valid URL and force a
+                        // re-upload. Hide this render; editing the URL remounts
+                        // via key and retries.
+                        e.currentTarget.style.display = "none";
+                        toast.error(
+                          "Cover preview failed to load — the URL is kept. Open it in a new tab to check.",
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+              </fieldset>
 
-            {/* Submit Button */}
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                className="flex-1"
-                onPress={() => router.push("/blog")}
+              {/* Content */}
+              <TextField
+                isRequired
+                isDisabled={submitting}
+                name="content"
+                validate={(value) =>
+                  value.trim() ? null : "Write the post content"
+                }
+                value={formData.content}
+                onChange={(value) =>
+                  setFormData({ ...formData, content: value })
+                }
               >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                isDisabled={submitting || loadingPost}
-                isPending={submitting}
-                type="submit"
-              >
-                {isEditing ? "Save edit" : "Submit for Review"}
-              </Button>
-            </div>
+                <Label>Content</Label>
+                <TextArea
+                  placeholder="Write your blog content here... Markdown works: # headings, **bold**, lists, code, tables"
+                  rows={15}
+                />
+                <Description>
+                  {formData.content.split(/\s+/).filter((w) => w).length} words
+                  • {calculateReadTime(formData.content)} min read
+                </Description>
+                <FieldError />
+              </TextField>
 
-            {/* Info */}
-            <Alert status="accent">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>
-                  {isEditing ? "Edits keep the same link" : "Reviewed before publishing"}
-                </Alert.Title>
-                <Alert.Description>
-                  {isEditing
-                    ? "Author edits to a live post return it to the review queue; reviewer touch-ups keep it live."
-                    : "Our team reviews every post. You'll be notified once it's approved."}
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
-          </Form>
-        </CardContent>
-      </Card>
+              {/* Submit Button */}
+              <div className="flex gap-4 pt-4">
+                <Button
+                  className="flex-1"
+                  type="button"
+                  variant="ghost"
+                  onPress={() => router.push("/blog")}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  isDisabled={submitting || loadingPost}
+                  isPending={submitting}
+                  type="submit"
+                >
+                  {isEditing ? "Save edit" : "Submit for Review"}
+                </Button>
+              </div>
+
+              {/* Info */}
+              <Alert status="accent">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>
+                    {isEditing
+                      ? "Edits keep the same link"
+                      : "Reviewed before publishing"}
+                  </Alert.Title>
+                  <Alert.Description>
+                    {isEditing
+                      ? "Author edits to a live post return it to the review queue; reviewer touch-ups keep it live."
+                      : "Our team reviews every post. You'll be notified once it's approved."}
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert>
+            </Form>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { Card, Chip } from "@heroui/react";
 import {
   FileText,
@@ -88,7 +89,7 @@ export default function DocsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6">
       <header className="max-w-2xl space-y-3">
-        <Chip color="accent" variant="soft" size="sm">
+        <Chip color="accent" size="sm" variant="soft">
           Member handbook
         </Chip>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -100,39 +101,50 @@ export default function DocsPage() {
         </p>
       </header>
 
-      <div className="overflow-hidden rounded-3xl border border-default-200/70" aria-hidden="true">
-        <img
-          src="/Assets/Background/texture.png"
+      <div
+        aria-hidden="true"
+        className="overflow-hidden rounded-3xl border border-default-200/70"
+      >
+        <Image
           alt=""
-          loading="lazy"
           className="h-28 w-full object-cover sm:h-36"
+          height={2133}
+          loading="lazy"
+          src="/Assets/Background/texture.png"
+          width={2400}
         />
       </div>
 
-      <section aria-label="Guides" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section
+        aria-label="Guides"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {GUIDES.map((guide) => {
           const Icon = guide.Icon;
+
           return (
             <Link
               key={guide.href}
-              href={guide.href}
               className="group rounded-3xl focus-visible:outline-2 focus-visible:outline-accent"
+              href={guide.href}
             >
               <Card className="h-full transition-shadow duration-200 group-hover:shadow-lg">
                 <Card.Content className="space-y-3 p-6">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-soft text-accent-soft-foreground">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <Icon aria-hidden="true" className="h-5 w-5" />
                   </span>
                   <div className="flex items-center justify-between gap-2">
                     <h2 className="font-semibold transition-colors group-hover:text-accent">
                       {guide.title}
                     </h2>
                     <ArrowUpRight
-                      className="h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                       aria-hidden="true"
+                      className="h-4 w-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     />
                   </div>
-                  <p className="text-sm leading-relaxed text-muted">{guide.text}</p>
+                  <p className="text-sm leading-relaxed text-muted">
+                    {guide.text}
+                  </p>
                   <p className="text-xs font-medium text-muted">{guide.meta}</p>
                 </Card.Content>
               </Card>
@@ -150,11 +162,11 @@ export default function DocsPage() {
                 <h3 className="font-semibold">{item.q}</h3>
                 <p className="text-sm leading-relaxed text-muted">{item.a}</p>
                 <Link
-                  href={item.href}
                   className="inline-flex items-center gap-1 text-sm font-medium text-accent"
+                  href={item.href}
                 >
                   {item.cta}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
                 </Link>
               </Card.Content>
             </Card>

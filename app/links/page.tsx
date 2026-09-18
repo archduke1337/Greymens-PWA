@@ -274,6 +274,7 @@ export default async function LinksPage() {
           : section,
       )
     : SECTIONS;
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-10 sm:px-6 sm:py-14">
       <header className="max-w-2xl space-y-3">

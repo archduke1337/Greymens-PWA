@@ -10,8 +10,11 @@ export default function EventsError({
   reset: () => void;
 }) {
   return (
-    <RouteError error={error} reset={reset} title="Events Unavailable"
+    <RouteError
       description="We couldn't load events right now. Please try again."
+      error={error}
+      reset={reset}
+      title="Events Unavailable"
     />
   );
 }

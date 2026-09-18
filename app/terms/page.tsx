@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
 import {
   Accordion,
@@ -106,38 +107,53 @@ export default function TermsPage() {
     <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-10 sm:px-6">
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Chip color="accent" variant="soft" size="sm">
-            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+          <Chip color="accent" size="sm" variant="soft">
+            <FileText aria-hidden="true" className="h-3.5 w-3.5" />
             Member agreement
           </Chip>
           <Chip size="sm" variant="soft">
             Last updated · {LAST_UPDATED}
           </Chip>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Terms of Service</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Terms of Service
+        </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted">
-          The everyday rules for being part of Greymens Club — written to be read,
-          not to be scrolled past. Students first, lawyers second.
+          The everyday rules for being part of Greymens Club — written to be
+          read, not to be scrolled past. Students first, lawyers second.
         </p>
       </header>
 
       <Card>
         <Card.Header>
           <Card.Title>The short version</Card.Title>
-          <Card.Description>Everything below, in thirty seconds</Card.Description>
+          <Card.Description>
+            Everything below, in thirty seconds
+          </Card.Description>
         </Card.Header>
         <Card.Content>
           <ul className="grid gap-2.5 text-sm leading-relaxed text-muted sm:grid-cols-3">
             <li className="flex gap-2">
-              <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              Be kind, show up, and respect other people&apos;s work and privacy.
+              <Handshake
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
+              Be kind, show up, and respect other people&apos;s work and
+              privacy.
             </li>
             <li className="flex gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              Never test or touch a system you don&apos;t have explicit permission for.
+              <ShieldCheck
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
+              Never test or touch a system you don&apos;t have explicit
+              permission for.
             </li>
             <li className="flex gap-2">
-              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+              <FileText
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
               The Constitution governs; these terms explain it in plain words.
             </li>
           </ul>
@@ -148,7 +164,11 @@ export default function TermsPage() {
         <Card.Content className="p-2 sm:p-4">
           <Accordion>
             {SECTIONS.map((section) => (
-              <AccordionItem key={section.id} id={section.id} className="text-sm">
+              <AccordionItem
+                key={section.id}
+                className="text-sm"
+                id={section.id}
+              >
                 <AccordionHeading>
                   <AccordionTrigger>
                     {section.title}
@@ -176,15 +196,24 @@ export default function TermsPage() {
 
       <p className="text-center text-sm text-muted">
         Disagree with something, or spotted a gap?{" "}
-        <Link href="/contact" className="font-medium text-foreground underline underline-offset-4">
+        <Link
+          className="font-medium text-foreground underline underline-offset-4"
+          href="/contact"
+        >
           Tell us
         </Link>{" "}
         — or read the full{" "}
-        <Link href="/constitution" className="font-medium text-foreground underline underline-offset-4">
+        <Link
+          className="font-medium text-foreground underline underline-offset-4"
+          href="/constitution"
+        >
           Constitution
         </Link>{" "}
         and our{" "}
-        <Link href="/privacy" className="font-medium text-foreground underline underline-offset-4">
+        <Link
+          className="font-medium text-foreground underline underline-offset-4"
+          href="/privacy"
+        >
           Privacy Policy
         </Link>
         .

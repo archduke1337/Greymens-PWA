@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
 import { cookies } from "next/headers";
+import Image from "next/image";
 import { Query } from "appwrite";
+import { Alert, Card, Chip } from "@heroui/react";
+
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getAccountNames } from "@/lib/server-users";
 import { TeamDirectory, type TeamGroup } from "@/components/team/TeamDirectory";
 import LinkButton from "@/components/ui/LinkButton";
-import { Alert, Button, Card, Chip } from "@heroui/react";
+import { logError } from "@/lib/logger";
 
 export const metadata: Metadata = {
   title: "Leadership",
@@ -62,7 +65,10 @@ interface ProfileRow {
  */
 function isPubliclyVisible(profile: ProfileRow): boolean {
   if (profile.profileVisibility === "private") return false;
-  return profile.showOnAboutPage === true || profile.profileVisibility === "public";
+
+  return (
+    profile.showOnAboutPage === true || profile.profileVisibility === "public"
+  );
 }
 
 async function loadLeadership(): Promise<TeamGroup[]> {
@@ -70,23 +76,34 @@ async function loadLeadership(): Promise<TeamGroup[]> {
 
   // Level 4 and above are the club's officer and lead tiers; anything lower is a
   // working designation and is not published as leadership.
-  const designations = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
-    Query.equal("isActive", [true]),
-    Query.greaterThanEqual("level", 4),
-    Query.orderDesc("level"),
-    Query.limit(50),
-  ]);
+  const designations = await databases.listDocuments(
+    DATABASE_ID,
+    COLLECTIONS.DESIGNATIONS,
+    [
+      Query.equal("isActive", [true]),
+      Query.greaterThanEqual("level", 4),
+      Query.orderDesc("level"),
+      Query.limit(50),
+    ],
+  );
+
   if (designations.documents.length === 0) return [];
 
   const designationRows = designations.documents as unknown as DesignationRow[];
   const designationIds = designationRows.map((row) => row.$id);
 
-  const assignments = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-    Query.equal("designationId", designationIds),
-    Query.equal("isActive", [true]),
-    Query.limit(500),
-  ]);
-  const assignmentRows = assignments.documents as unknown as UserDesignationRow[];
+  const assignments = await databases.listDocuments(
+    DATABASE_ID,
+    COLLECTIONS.USER_DESIGNATIONS,
+    [
+      Query.equal("designationId", designationIds),
+      Query.equal("isActive", [true]),
+      Query.limit(500),
+    ],
+  );
+  const assignmentRows =
+    assignments.documents as unknown as UserDesignationRow[];
+
   if (assignmentRows.length === 0) return [];
 
   const userIds = [...new Set(assignmentRows.map((row) => row.userId))];
@@ -101,7 +118,7 @@ async function loadLeadership(): Promise<TeamGroup[]> {
   const visibleProfiles = new Map(
     (profiles.documents as unknown as ProfileRow[])
       .filter(isPubliclyVisible)
-      .map((profile) => [profile.userId, profile])
+      .map((profile) => [profile.userId, profile]),
   );
 
   return designationRows
@@ -111,7 +128,9 @@ async function loadLeadership(): Promise<TeamGroup[]> {
         .map((assignment) => {
           const profile = visibleProfiles.get(assignment.userId);
           const name = names.get(assignment.userId);
+
           if (!profile || !name) return null;
+
           return {
             userId: assignment.userId,
             name,
@@ -123,7 +142,9 @@ async function loadLeadership(): Promise<TeamGroup[]> {
             portfolioUrl: profile.portfolioUrl,
           };
         })
-        .filter((member): member is NonNullable<typeof member> => member !== null);
+        .filter(
+          (member): member is NonNullable<typeof member> => member !== null,
+        );
 
       return {
         designation: designation.name,
@@ -146,7 +167,7 @@ export default async function TeamPage() {
   try {
     groups = await loadLeadership();
   } catch (error) {
-    console.error("Leadership lookup error:", error);
+    logError("Leadership lookup error:", error);
     failed = true;
   }
 
@@ -156,21 +177,25 @@ export default async function TeamPage() {
         <Chip size="sm" variant="soft">
           Governance
         </Chip>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Who runs the club</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+          Who runs the club
+        </h1>
         <p className="text-default-600">
-          Officers and leads, exactly as recorded in the club&apos;s
-          designation register — no honorary names, no filler. If someone
-          holds a title here, they hold the work that comes with it.
+          Officers and leads, exactly as recorded in the club&apos;s designation
+          register — no honorary names, no filler. If someone holds a title
+          here, they hold the work that comes with it.
         </p>
       </header>
 
       <figure className="space-y-2">
-        <div className="overflow-hidden rounded-3xl border border-default-200/70">
-          <img
-            src="/Assets/Banners/clut.jpg"
+        <div className="relative h-44 overflow-hidden rounded-3xl border border-default-200/70 sm:h-60">
+          <Image
+            fill
             alt="A crowd in black and white with one figure lit in green binary code"
+            className="object-cover"
             loading="lazy"
-            className="h-44 w-full object-cover sm:h-60"
+            sizes="100vw"
+            src="/Assets/Banners/clut.jpg"
           />
         </div>
         <figcaption className="text-center text-sm text-muted">
@@ -206,11 +231,11 @@ export default async function TeamPage() {
             </p>
           </div>
           {isAuthed ? (
-            <LinkButton href="/events" className="shrink-0 rounded-full px-6">
+            <LinkButton className="shrink-0 rounded-full px-6" href="/events">
               See events
             </LinkButton>
           ) : (
-            <LinkButton href="/register" className="shrink-0 rounded-full px-6">
+            <LinkButton className="shrink-0 rounded-full px-6" href="/register">
               Join the club
             </LinkButton>
           )}

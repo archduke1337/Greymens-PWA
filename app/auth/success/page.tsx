@@ -5,14 +5,16 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Alert, Button, Spinner } from "@heroui/react";
 
 import { account } from "@/lib/appwrite";
 import { useAuth } from "@/context/AuthContext";
-import { Alert, Button, Spinner } from "@heroui/react";
+import { logError } from "@/lib/logger";
 
 function getSafeNext(next: string | null): string {
   if (!next) return "/dashboard";
   if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard";
+
   return next;
 }
 
@@ -33,8 +35,11 @@ function SuccessHandler() {
         url.searchParams.get("secret") ?? searchParams.get("secret");
       const userId =
         url.searchParams.get("userId") ?? searchParams.get("userId");
+
       if (!secret || !userId) {
-        if (!cancelled) setError("Missing OAuth credentials. Please try again.");
+        if (!cancelled)
+          setError("Missing OAuth credentials. Please try again.");
+
         return;
       }
       try {
@@ -43,8 +48,10 @@ function SuccessHandler() {
         await refreshUser().catch(() => null);
         if (cancelled) return;
         let next = "/dashboard";
+
         try {
           const stored = sessionStorage.getItem("post_auth_next");
+
           sessionStorage.removeItem("post_auth_next");
           next = getSafeNext(stored);
         } catch {
@@ -52,13 +59,14 @@ function SuccessHandler() {
         }
         router.push(next);
       } catch (err) {
-        console.error("OAuth session creation failed:", err);
+        logError("OAuth session creation failed:", err);
         if (!cancelled)
           setError("Could not complete sign-in. Please try again.");
       }
     };
 
     void handleOAuthSuccess();
+
     return () => {
       cancelled = true;
     };
@@ -92,7 +100,11 @@ function SuccessHandler() {
 
   return (
     <div className="flex min-h-[calc(100vh-200px)] items-center justify-center">
-      <div className="space-y-4 text-center" role="status" aria-label="Completing sign in">
+      <div
+        aria-label="Completing sign in"
+        className="space-y-4 text-center"
+        role="status"
+      >
         <Spinner size="lg" />
         <p className="text-muted">Completing GitHub sign-in…</p>
       </div>

@@ -1,38 +1,32 @@
 // app/events/[id]/tickets/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import type { Ticket } from "@/lib/types";
 import type { Event } from "@/lib/types";
-import TicketCard from "@/components/tickets/TicketCard";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
+
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Ticket as TicketIcon,
   CheckCircle,
   XCircle,
-  Search,
   ArrowLeft,
   Users,
   Clock,
   Filter,
   Loader2,
-  QrCode,
   ShieldCheck,
   Ban,
   User,
-  Mail,
   Hash,
 } from "lucide-react";
-import {
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Input,
-} from "@heroui/react";
+import { Button, Card, CardContent, Chip, Input } from "@heroui/react";
+
+import { useAuth } from "@/context/AuthContext";
+import TicketCard from "@/components/tickets/TicketCard";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function EventTicketsPage() {
   const { user } = useAuth();
@@ -57,12 +51,24 @@ export default function EventTicketsPage() {
    */
   const loadData = useCallback(async () => {
     try {
-      const eventResponse = await fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { credentials: "include" });
-      const eventPayload = await eventResponse.json().catch(() => null) as { event?: Event; error?: string } | null;
-      if (!eventResponse.ok) throw new Error(readApiError(eventPayload, "Failed to load event"));
+      const eventResponse = await fetch(
+        `/api/events?eventId=${encodeURIComponent(eventId)}`,
+        { credentials: "include" },
+      );
+      const eventPayload = (await eventResponse.json().catch(() => null)) as {
+        event?: Event;
+        error?: string;
+      } | null;
+
+      if (!eventResponse.ok)
+        throw new Error(readApiError(eventPayload, "Failed to load event"));
       setEvent(eventPayload?.event ?? null);
 
-      const ticketsResponse = await fetch(`/api/tickets/verify?${new URLSearchParams({ eventId, limit: "500", offset: "0" })}`, { cache: "no-store", credentials: "include" });
+      const ticketsResponse = await fetch(
+        `/api/tickets/verify?${new URLSearchParams({ eventId, limit: "500", offset: "0" })}`,
+        { cache: "no-store", credentials: "include" },
+      );
+
       if (ticketsResponse.status === 403) {
         // No door authority: fall back to the member view (caller's own ticket).
         setDoorForbidden(true);
@@ -70,14 +76,29 @@ export default function EventTicketsPage() {
           credentials: "include",
           cache: "no-store",
         });
-        const registerPayload = await registerResponse.json().catch(() => null) as {
-          tickets?: Array<{ $id?: string; eventId: string; ticketCode: string; qrData?: string | null; status: string; issuedAt?: string }>;
+        const registerPayload = (await registerResponse
+          .json()
+          .catch(() => null)) as {
+          tickets?: Array<{
+            $id?: string;
+            eventId: string;
+            ticketCode: string;
+            qrData?: string | null;
+            status: string;
+            issuedAt?: string;
+          }>;
           error?: string;
         } | null;
+
         if (!registerResponse.ok) {
-          throw new Error(readApiError(registerPayload, "Failed to load your ticket"));
+          throw new Error(
+            readApiError(registerPayload, "Failed to load your ticket"),
+          );
         }
-        const mine = (registerPayload?.tickets ?? []).find((t) => t.eventId === eventId) ?? null;
+        const mine =
+          (registerPayload?.tickets ?? []).find((t) => t.eventId === eventId) ??
+          null;
+
         setOwnTicket(
           mine
             ? {
@@ -90,22 +111,30 @@ export default function EventTicketsPage() {
                 // copyable blob the door downgrades to manual_search. The
                 // fabricated fallback only covers legacy rows issued before
                 // signing reached this endpoint.
-                qrData: mine.qrData || JSON.stringify({ ticketCode: mine.ticketCode, eventId }),
+                qrData:
+                  mine.qrData ||
+                  JSON.stringify({ ticketCode: mine.ticketCode, eventId }),
                 status: (mine.status as Ticket["status"]) ?? "issued",
                 issuedAt: mine.issuedAt,
                 entryCount: 0,
                 maxEntries: 1,
               }
-            : null
+            : null,
         );
         setTickets([]);
+
         return;
       }
       setDoorForbidden(false);
 
       // Walk every page: a capped first page would hide attendees at the door.
       // The initial response above is page one; continue only if rows remain.
-      const firstPage = await ticketsResponse.json().catch(() => null) as { tickets?: Ticket[]; total?: number; error?: string } | null;
+      const firstPage = (await ticketsResponse.json().catch(() => null)) as {
+        tickets?: Ticket[];
+        total?: number;
+        error?: string;
+      } | null;
+
       if (!ticketsResponse.ok) {
         throw new Error(readApiError(firstPage, "Failed to load tickets"));
       }
@@ -113,23 +142,29 @@ export default function EventTicketsPage() {
       const total = firstPage?.total ?? allTickets.length;
       let offset = allTickets.length;
       const pageSize = 500;
+
       while (allTickets.length < total) {
         const pageResponse = await fetch(
           `/api/tickets/verify?${new URLSearchParams({ eventId, limit: String(pageSize), offset: String(offset) })}`,
           { cache: "no-store", credentials: "include" },
         );
-        const payload = await pageResponse.json().catch(() => null) as { tickets?: Ticket[]; error?: string } | null;
+        const payload = (await pageResponse.json().catch(() => null)) as {
+          tickets?: Ticket[];
+          error?: string;
+        } | null;
+
         if (!pageResponse.ok) {
           throw new Error(readApiError(payload, "Failed to load tickets"));
         }
         const rows = payload?.tickets ?? [];
+
         if (rows.length === 0) break;
         allTickets.push(...rows);
         offset += rows.length;
       }
       setTickets(allTickets);
     } catch (error) {
-      console.error("Error loading tickets:", error);
+      logError("Error loading tickets:", error);
       toast.error(getErrorMessage(error) || "Failed to load tickets");
     } finally {
       setLoading(false);
@@ -140,30 +175,47 @@ export default function EventTicketsPage() {
     loadData();
   }, [loadData]);
 
-  const applyTicketAction = useCallback(async (
-    ticketId: string,
-    action: "checkIn" | "invalidate",
-    body: Record<string, unknown> = {}
-  ) => {
-    const response = await fetch("/api/tickets/verify", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticketId, action, method: "manual_search", ...body }),
-    });
-    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-    if (!response.ok) throw new Error(readApiError(payload, "The ticket could not be updated"));
-    return payload;
-  }, []);
+  const applyTicketAction = useCallback(
+    async (
+      ticketId: string,
+      action: "checkIn" | "invalidate",
+      body: Record<string, unknown> = {},
+    ) => {
+      const response = await fetch("/api/tickets/verify", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticketId,
+          action,
+          method: "manual_search",
+          ...body,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        message?: string;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "The ticket could not be updated"),
+        );
+
+      return payload;
+    },
+    [],
+  );
 
   const handleCheckIn = async (ticketId: string) => {
     setCheckingIn(ticketId);
     try {
       const payload = await applyTicketAction(ticketId, "checkIn");
+
       toast.success(payload?.message || "Checked in");
       await loadData();
     } catch (error) {
-      console.error("Check-in error:", error);
+      logError("Check-in error:", error);
       toast.error(getErrorMessage(error) || "Failed to check in ticket");
     } finally {
       setCheckingIn(null);
@@ -171,16 +223,21 @@ export default function EventTicketsPage() {
   };
 
   const handleInvalidate = async (ticketId: string) => {
-    const confirmed = window.confirm("Invalidate this ticket? It will no longer be accepted at the door.");
+    const confirmed = window.confirm(
+      "Invalidate this ticket? It will no longer be accepted at the door.",
+    );
+
     if (!confirmed) return;
 
     setCheckingIn(ticketId);
     try {
-      await applyTicketAction(ticketId, "invalidate", { reason: "Invalidated from the event ticket list" });
+      await applyTicketAction(ticketId, "invalidate", {
+        reason: "Invalidated from the event ticket list",
+      });
       toast.success("Ticket invalidated");
       await loadData();
     } catch (error) {
-      console.error("Invalidate error:", error);
+      logError("Invalidate error:", error);
       toast.error(getErrorMessage(error) || "Failed to invalidate ticket");
     } finally {
       setCheckingIn(null);
@@ -189,7 +246,9 @@ export default function EventTicketsPage() {
 
   const stats = {
     total: tickets.length,
-    issued: tickets.filter((t) => t.status === "issued" || t.status === "active").length,
+    issued: tickets.filter(
+      (t) => t.status === "issued" || t.status === "active",
+    ).length,
     checkedIn: tickets.filter((t) => t.status === "checked_in").length,
     invalidated: tickets.filter((t) => t.status === "invalidated").length,
   };
@@ -202,18 +261,24 @@ export default function EventTicketsPage() {
 
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "active" && (ticket.status === "issued" || ticket.status === "active")) ||
+      (statusFilter === "active" &&
+        (ticket.status === "issued" || ticket.status === "active")) ||
       (statusFilter === "checked_in" && ticket.status === "checked_in") ||
       (statusFilter === "invalidated" && ticket.status === "invalidated");
 
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusChip = (status: string): { color: "accent" | "success" | "danger" | "default"; label: string } => {
+  const getStatusChip = (
+    status: string,
+  ): { color: "accent" | "success" | "danger" | "default"; label: string } => {
     switch (status) {
       case "issued":
       case "active":
-        return { color: "accent", label: status === "issued" ? "Issued" : "Active" };
+        return {
+          color: "accent",
+          label: status === "issued" ? "Issued" : "Active",
+        };
       case "checked_in":
         return { color: "success", label: "Checked In" };
       case "invalidated":
@@ -225,10 +290,6 @@ export default function EventTicketsPage() {
       default:
         return { color: "default", label: status };
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    return getStatusChip(status).label;
   };
 
   if (loading) {
@@ -263,9 +324,9 @@ export default function EventTicketsPage() {
     return (
       <div className="max-w-xl mx-auto px-4 md:px-6 py-6 md:py-8">
         <Button
+          className="mb-6"
           variant="ghost"
           onPress={() => router.push(`/events/${eventId}`)}
-          className="mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Event
@@ -276,18 +337,23 @@ export default function EventTicketsPage() {
             Your Ticket
           </h1>
           <p className="text-default-500 mt-1">
-            {event.title} &mdash; {new Date(event.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            {event.title} &mdash;{" "}
+            {new Date(event.date).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
           </p>
         </div>
 
         {ownTicket ? (
           <TicketCard
-            ticket={ownTicket}
-            eventTitle={event.title}
             eventDate={event.date}
-            eventTime={event.time}
-            eventVenue={event.venue}
             eventLocation={event.location}
+            eventTime={event.time}
+            eventTitle={event.title}
+            eventVenue={event.venue}
+            ticket={ownTicket}
           />
         ) : (
           <Card className="border-none shadow-md">
@@ -313,9 +379,9 @@ export default function EventTicketsPage() {
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
       {/* Back Button */}
       <Button
+        className="mb-6"
         variant="ghost"
         onPress={() => router.push(`/events/${eventId}`)}
-        className="mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Event
@@ -327,7 +393,12 @@ export default function EventTicketsPage() {
           Ticket Management
         </h1>
         <p className="text-default-500 mt-1">
-          {event.title} &mdash; {new Date(event.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          {event.title} &mdash;{" "}
+          {new Date(event.date).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
         </p>
       </div>
 
@@ -395,7 +466,7 @@ export default function EventTicketsPage() {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <label htmlFor="ticket-search" className="sr-only">
+              <label className="sr-only" htmlFor="ticket-search">
                 Search tickets by code or attendee
               </label>
               <Input
@@ -403,7 +474,6 @@ export default function EventTicketsPage() {
                 placeholder="Search by ticket code or user ID..."
                 value={searchQuery}
                 onChange={(e: any) => setSearchQuery(e.target.value)}
-
               />
             </div>
             <div className="flex gap-2">
@@ -415,8 +485,8 @@ export default function EventTicketsPage() {
               ].map((filter) => (
                 <Button
                   key={filter.key}
-                  variant={statusFilter === filter.key ? "primary" : "ghost"}
                   size="sm"
+                  variant={statusFilter === filter.key ? "primary" : "ghost"}
                   onPress={() => setStatusFilter(filter.key)}
                 >
                   <Filter className="w-3 h-3 mr-1" />
@@ -452,7 +522,11 @@ export default function EventTicketsPage() {
                   {/* Ticket Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <Chip color={getStatusChip(ticket.status).color} size="lg" variant="soft">
+                      <Chip
+                        color={getStatusChip(ticket.status).color}
+                        size="lg"
+                        variant="soft"
+                      >
                         {getStatusChip(ticket.status).label}
                       </Chip>
                       <span className="text-sm font-mono text-default-500">
@@ -462,28 +536,49 @@ export default function EventTicketsPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-2 text-default-600">
-                        <User className="w-4 h-4 text-default-400 flex-shrink-0" aria-hidden="true" />
-                        <span className="truncate" title={ticket.userId}>Attendee: {ticket.userId.slice(0, 8)}…</span>
+                        <User
+                          aria-hidden="true"
+                          className="w-4 h-4 text-default-400 flex-shrink-0"
+                        />
+                        <span className="truncate" title={ticket.userId}>
+                          Attendee: {ticket.userId.slice(0, 8)}…
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-default-600">
-                        <Hash className="w-4 h-4 text-default-400 flex-shrink-0" aria-hidden="true" />
-                        <span className="truncate font-mono" title={ticket.ticketCode}>{ticket.ticketCode}</span>
+                        <Hash
+                          aria-hidden="true"
+                          className="w-4 h-4 text-default-400 flex-shrink-0"
+                        />
+                        <span
+                          className="truncate font-mono"
+                          title={ticket.ticketCode}
+                        >
+                          {ticket.ticketCode}
+                        </span>
                       </div>
                       {ticket.issuedAt && (
                         <div className="flex items-center gap-2 text-default-600">
                           <Clock className="w-4 h-4 text-default-400 flex-shrink-0" />
-                          <span>Issued: {new Date(ticket.issuedAt).toLocaleDateString()}</span>
+                          <span>
+                            Issued:{" "}
+                            {new Date(ticket.issuedAt).toLocaleDateString()}
+                          </span>
                         </div>
                       )}
                       {ticket.checkedInAt && (
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                          <span>Checked in: {new Date(ticket.checkedInAt).toLocaleString()}</span>
+                          <span>
+                            Checked in:{" "}
+                            {new Date(ticket.checkedInAt).toLocaleString()}
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-default-600">
                         <Users className="w-4 h-4 text-default-400 flex-shrink-0" />
-                        <span>Entries: {ticket.entryCount}/{ticket.maxEntries}</span>
+                        <span>
+                          Entries: {ticket.entryCount}/{ticket.maxEntries}
+                        </span>
                       </div>
                     </div>
 
@@ -498,29 +593,31 @@ export default function EventTicketsPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 flex-shrink-0">
-                    {(ticket.status === "issued" || ticket.status === "active") && (
+                    {(ticket.status === "issued" ||
+                      ticket.status === "active") && (
                       <Button
-                        variant="primary"
-                        size="sm"
-                        onPress={() => handleCheckIn(ticket.$id!)}
-                        isPending={checkingIn === ticket.$id}
                         className="bg-green-600 hover:bg-green-700"
+                        isPending={checkingIn === ticket.$id}
+                        size="sm"
+                        variant="primary"
+                        onPress={() => handleCheckIn(ticket.$id!)}
                       >
                         <CheckCircle className="w-4 h-4 mr-1" />
                         Check In
                       </Button>
                     )}
-                    {ticket.status !== "invalidated" && ticket.status !== "checked_in" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onPress={() => handleInvalidate(ticket.$id!)}
-                        className="text-danger hover:bg-danger-50 dark:hover:bg-danger-900/20"
-                      >
-                        <Ban className="w-4 h-4 mr-1" />
-                        Invalidate
-                      </Button>
-                    )}
+                    {ticket.status !== "invalidated" &&
+                      ticket.status !== "checked_in" && (
+                        <Button
+                          className="text-danger hover:bg-danger-50 dark:hover:bg-danger-900/20"
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => handleInvalidate(ticket.$id!)}
+                        >
+                          <Ban className="w-4 h-4 mr-1" />
+                          Invalidate
+                        </Button>
+                      )}
                   </div>
                 </div>
               </CardContent>

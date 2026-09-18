@@ -3,7 +3,6 @@
 "use client";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
 import { Alert, Button, Card } from "@heroui/react";
 
 function FailureContent() {

@@ -28,7 +28,12 @@ export default function ConnectivityCheckPage() {
 
   const checkConnectivity = async () => {
     setLoading(true);
-    setResult({ status: "checking", message: "Testing connection...", details: {}, errors: [] });
+    setResult({
+      status: "checking",
+      message: "Testing connection...",
+      details: {},
+      errors: [],
+    });
 
     try {
       // Check environment variables
@@ -46,6 +51,7 @@ export default function ConnectivityCheckPage() {
           ].filter(Boolean),
         });
         setLoading(false);
+
         return;
       }
 
@@ -75,7 +81,9 @@ export default function ConnectivityCheckPage() {
             databaseReachable: reachable,
             timestamp: new Date().toISOString(),
           },
-          errors: reachable ? [] : [`Endpoint returned status ${response.status}`],
+          errors: reachable
+            ? []
+            : [`Endpoint returned status ${response.status}`],
         });
       } catch (error) {
         setResult({
@@ -121,11 +129,12 @@ export default function ConnectivityCheckPage() {
 
         <Card className="mb-6 border-0 bg-slate-800">
           <CardContent className="py-8">
-            <Button size="lg"
+            <Button
               className="w-full"
-              onPress={checkConnectivity}
-              isPending={loading}
               isDisabled={loading}
+              isPending={loading}
+              size="lg"
+              onPress={checkConnectivity}
             >
               {loading ? "Testing connection..." : "Run Connectivity Test"}
             </Button>
@@ -133,109 +142,120 @@ export default function ConnectivityCheckPage() {
         </Card>
 
         <div aria-live="polite">
-        {result && (
-          <>
-            <Card className="mb-6 border-0 bg-slate-800">
-              <CardHeader className="flex gap-3 bg-slate-700/50">
-                <div className="flex items-center gap-2">
-                  {result.status === "success" ? (
-                    <CheckCircleIcon className="w-6 h-6 text-green-500" aria-hidden="true" />
-                  ) : result.status === "error" ? (
-                    <XCircleIcon className="w-6 h-6 text-red-500" aria-hidden="true" />
-                  ) : (
-                    <AlertCircleIcon className="w-6 h-6 text-yellow-500" aria-hidden="true" />
-                  )}
-                  <h2 className="text-xl font-bold text-white">
-                    {result.message}
-                  </h2>
-                </div>
-              </CardHeader>
-              <CardContent className="py-6 space-y-4">
-                {result.details.endpoint && (
-                  <div>
-                    <p className="text-slate-400 text-sm">Endpoint:</p>
-                    <p className="text-white font-mono text-sm break-all">
-                      {result.details.endpoint}
-                    </p>
+          {result && (
+            <>
+              <Card className="mb-6 border-0 bg-slate-800">
+                <CardHeader className="flex gap-3 bg-slate-700/50">
+                  <div className="flex items-center gap-2">
+                    {result.status === "success" ? (
+                      <CheckCircleIcon
+                        aria-hidden="true"
+                        className="w-6 h-6 text-green-500"
+                      />
+                    ) : result.status === "error" ? (
+                      <XCircleIcon
+                        aria-hidden="true"
+                        className="w-6 h-6 text-red-500"
+                      />
+                    ) : (
+                      <AlertCircleIcon
+                        aria-hidden="true"
+                        className="w-6 h-6 text-yellow-500"
+                      />
+                    )}
+                    <h2 className="text-xl font-bold text-white">
+                      {result.message}
+                    </h2>
                   </div>
-                )}
-
-                {result.details.projectId && (
-                  <div>
-                    <p className="text-slate-400 text-sm">Project ID:</p>
-                    <p className="text-white font-mono text-sm">
-                      {result.details.projectId}
-                    </p>
-                  </div>
-                )}
-
-                {result.details.appwriteReachable !== undefined && (
-                  <div>
-                    <p className="text-slate-400 text-sm">Appwrite Reachable:</p>
-                    <p
-                      className={`font-bold ${
-                        result.details.appwriteReachable
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {result.details.appwriteReachable ? "✓ Yes" : "✗ No"}
-                    </p>
-                  </div>
-                )}
-
-                {result.details.databaseReachable !== undefined && (
-                  <div>
-                    <p className="text-slate-400 text-sm">
-                      Database Reachable:
-                    </p>
-                    <p
-                      className={`font-bold ${
-                        result.details.databaseReachable
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {result.details.databaseReachable ? "✓ Yes" : "✗ No"}
-                    </p>
-                  </div>
-                )}
-
-                {result.details.timestamp && (
-                  <div>
-                    <p className="text-slate-400 text-sm">Checked at:</p>
-                    <p className="text-white text-sm">
-                      {new Date(result.details.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {result.errors.length > 0 && (
-              <Card className="border-0 bg-red-900/20 border-l-4 border-red-500">
-                <CardHeader className="bg-red-900/30">
-                  <h3 className="text-lg font-bold text-red-400">
-                    Errors ({result.errors.length})
-                  </h3>
                 </CardHeader>
-                <CardContent className="py-4">
-                  <ul className="space-y-2">
-                    {result.errors.map((error, idx) => (
-                      <li
-                        key={idx}
-                        className="text-red-300 text-sm flex gap-2"
+                <CardContent className="py-6 space-y-4">
+                  {result.details.endpoint && (
+                    <div>
+                      <p className="text-slate-400 text-sm">Endpoint:</p>
+                      <p className="text-white font-mono text-sm break-all">
+                        {result.details.endpoint}
+                      </p>
+                    </div>
+                  )}
+
+                  {result.details.projectId && (
+                    <div>
+                      <p className="text-slate-400 text-sm">Project ID:</p>
+                      <p className="text-white font-mono text-sm">
+                        {result.details.projectId}
+                      </p>
+                    </div>
+                  )}
+
+                  {result.details.appwriteReachable !== undefined && (
+                    <div>
+                      <p className="text-slate-400 text-sm">
+                        Appwrite Reachable:
+                      </p>
+                      <p
+                        className={`font-bold ${
+                          result.details.appwriteReachable
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}
                       >
-                        <span className="text-red-500 font-bold">•</span>
-                        <span>{error}</span>
-                      </li>
-                    ))}
-                  </ul>
+                        {result.details.appwriteReachable ? "✓ Yes" : "✗ No"}
+                      </p>
+                    </div>
+                  )}
+
+                  {result.details.databaseReachable !== undefined && (
+                    <div>
+                      <p className="text-slate-400 text-sm">
+                        Database Reachable:
+                      </p>
+                      <p
+                        className={`font-bold ${
+                          result.details.databaseReachable
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}
+                      >
+                        {result.details.databaseReachable ? "✓ Yes" : "✗ No"}
+                      </p>
+                    </div>
+                  )}
+
+                  {result.details.timestamp && (
+                    <div>
+                      <p className="text-slate-400 text-sm">Checked at:</p>
+                      <p className="text-white text-sm">
+                        {new Date(result.details.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
-          </>
-        )}
+
+              {result.errors.length > 0 && (
+                <Card className="border-0 bg-red-900/20 border-l-4 border-red-500">
+                  <CardHeader className="bg-red-900/30">
+                    <h3 className="text-lg font-bold text-red-400">
+                      Errors ({result.errors.length})
+                    </h3>
+                  </CardHeader>
+                  <CardContent className="py-4">
+                    <ul className="space-y-2">
+                      {result.errors.map((error, idx) => (
+                        <li
+                          key={idx}
+                          className="text-red-300 text-sm flex gap-2"
+                        >
+                          <span className="text-red-500 font-bold">•</span>
+                          <span>{error}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </div>
 
         <Card className="mt-8 border-0 bg-slate-800/50">
@@ -244,7 +264,9 @@ export default function ConnectivityCheckPage() {
           </CardHeader>
           <CardContent className="text-slate-300 text-sm space-y-3">
             <div>
-              <p className="font-bold text-white mb-1">1. Missing Environment Variables</p>
+              <p className="font-bold text-white mb-1">
+                1. Missing Environment Variables
+              </p>
               <p>
                 Ensure your .env.local file contains all required Appwrite
                 configuration. Copy from .env.example and fill in actual values.
@@ -265,7 +287,9 @@ export default function ConnectivityCheckPage() {
               </p>
             </div>
             <div>
-              <p className="font-bold text-white mb-1">4. Check Appwrite Status</p>
+              <p className="font-bold text-white mb-1">
+                4. Check Appwrite Status
+              </p>
               <p>
                 Verify that your Appwrite instance is running and accessible.
                 For Appwrite Cloud, check their status page.

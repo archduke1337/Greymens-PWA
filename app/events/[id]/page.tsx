@@ -1,11 +1,11 @@
 // app/events/[id]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import type { Event as EventType } from "@/lib/types";
-import {getErrorMessage, readApiError} from "@/lib/errorHandler";
+
+import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Calendar,
@@ -17,14 +17,28 @@ import {
   Share,
   Ticket,
   Crown,
-  ArrowLeft,
   Building,
   Tag,
   CheckCircle,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarImage, AvatarFallback, Button, Card, CardContent, CardHeader, Chip, ProgressBar, Separator } from "@heroui/react";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
+  ProgressBar,
+  Separator,
+} from "@heroui/react";
+
+import { useAuth } from "@/context/AuthContext";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
@@ -38,7 +52,9 @@ export default function EventDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(
+    null,
+  );
   const [ticketId, setTicketId] = useState<string>("");
 
   const isRegistered = registrationStatus !== null;
@@ -58,18 +74,27 @@ export default function EventDetailPage() {
     try {
       setLoadError(null);
       setNotFound(false);
-      const response = await fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { credentials: "include" });
-      const payload = (await response.json()) as { event?: EventType; error?: string };
+      const response = await fetch(
+        `/api/events?eventId=${encodeURIComponent(eventId)}`,
+        { credentials: "include" },
+      );
+      const payload = (await response.json()) as {
+        event?: EventType;
+        error?: string;
+      };
+
       if (response.status === 404) {
         setNotFound(true);
         setEvent(null);
+
         return;
       }
-      if (!response.ok) throw new Error(readApiError(payload, "Unable to load event"));
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to load event"));
       setEvent(payload.event ?? null);
       if (!payload.event) setNotFound(true);
     } catch (error) {
-      console.error("Error loading event:", error);
+      logError("Error loading event:", error);
       setLoadError(getErrorMessage(error) || "Unable to load event");
     } finally {
       setLoading(false);
@@ -79,8 +104,10 @@ export default function EventDetailPage() {
   const checkSavedStatus = () => {
     try {
       const saved = localStorage.getItem("savedEvents");
+
       if (saved) {
         const savedEvents = JSON.parse(saved);
+
         setIsSaved(savedEvents.includes(eventId));
       }
     } catch {
@@ -101,20 +128,31 @@ export default function EventDetailPage() {
     if (!user) {
       setRegistrationStatus(null);
       setTicketId("");
+
       return;
     }
     try {
-      const response = await fetch("/api/events/register", { cache: "no-store", credentials: "include" });
+      const response = await fetch("/api/events/register", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
       if (!response.ok) return;
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         registrations?: Array<{ eventId: string; status?: string }>;
         tickets?: Array<{ eventId: string; ticketCode: string }>;
       };
-      const mine = (data.registrations ?? []).find((registration) => registration.eventId === eventId);
+      const mine = (data.registrations ?? []).find(
+        (registration) => registration.eventId === eventId,
+      );
+
       setRegistrationStatus(mine ? mine.status || "approved" : null);
-      setTicketId((data.tickets ?? []).find((ticket) => ticket.eventId === eventId)?.ticketCode ?? "");
+      setTicketId(
+        (data.tickets ?? []).find((ticket) => ticket.eventId === eventId)
+          ?.ticketCode ?? "",
+      );
     } catch (error) {
-      console.error("Error loading registration state:", error);
+      logError("Error loading registration state:", error);
     }
   };
 
@@ -122,9 +160,10 @@ export default function EventDetailPage() {
     try {
       const saved = localStorage.getItem("savedEvents");
       const savedEvents = saved ? JSON.parse(saved) : [];
-      
+
       if (isSaved) {
         const filtered = savedEvents.filter((id: string) => id !== eventId);
+
         localStorage.setItem("savedEvents", JSON.stringify(filtered));
         setIsSaved(false);
       } else {
@@ -142,22 +181,35 @@ export default function EventDetailPage() {
     if (!user) {
       toast.error("Please login to register for events");
       router.push("/login");
+
       return;
     }
 
     if (isRegistered) {
-      const confirmed = window.confirm("Are you sure you want to cancel your registration for this event?");
+      const confirmed = window.confirm(
+        "Are you sure you want to cancel your registration for this event?",
+      );
+
       if (!confirmed) return;
 
       setRegistering(true);
       try {
-        const response = await fetch(`/api/events/register?eventId=${encodeURIComponent(eventId)}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId }),
-        });
-        const data = await response.json().catch(() => ({})) as { error?: string };
-        if (!response.ok) throw new Error(readApiError(data, "Unable to cancel this registration"));
+        const response = await fetch(
+          `/api/events/register?eventId=${encodeURIComponent(eventId)}`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventId }),
+          },
+        );
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+
+        if (!response.ok)
+          throw new Error(
+            readApiError(data, "Unable to cancel this registration"),
+          );
         setRegistrationStatus(null);
         setTicketId("");
         toast.success("Registration cancelled");
@@ -166,6 +218,7 @@ export default function EventDetailPage() {
       } finally {
         setRegistering(false);
       }
+
       return;
     }
 
@@ -176,19 +229,24 @@ export default function EventDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ eventId }),
       });
-      const data = await response.json().catch(() => ({})) as {
+      const data = (await response.json().catch(() => ({}))) as {
         error?: string;
         status?: "approved" | "pending" | "waitlisted";
         ticket?: { ticketCode?: string } | null;
       };
-      if (!response.ok) throw new Error(readApiError(data, "Unable to register for this event"));
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(data, "Unable to register for this event"),
+        );
 
       setRegistrationStatus(data.status || "approved");
       setTicketId(data.ticket?.ticketCode ?? "");
 
       if (data.status === "waitlisted") {
         toast.warning("Added to the waitlist", {
-          description: "This event is at capacity. We will contact you if a place opens up.",
+          description:
+            "This event is at capacity. We will contact you if a place opens up.",
         });
       } else if (data.status === "pending") {
         toast.info("Registration submitted for approval");
@@ -203,7 +261,8 @@ export default function EventDetailPage() {
       await loadEvent();
     } catch (error) {
       const message = getErrorMessage(error);
-      console.error("Registration error:", message);
+
+      logError("Registration error:", message);
       toast.error(message || "Failed to register for event");
     } finally {
       setRegistering(false);
@@ -234,42 +293,53 @@ export default function EventDetailPage() {
     }
   };
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return "Date TBA";
-  const time = new Date(dateString).getTime();
-  if (!Number.isFinite(time)) return "Date TBA";
-  return new Date(time).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
-};
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Date TBA";
+    const time = new Date(dateString).getTime();
 
-/** An event whose day has passed can be read, not joined. */
-const isPastEvent = (dateString?: string | null) => {
-  if (!dateString) return false;
-  const day = new Date(dateString);
-  if (!Number.isFinite(day.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return day < today;
-};
+    if (!Number.isFinite(time)) return "Date TBA";
+
+    return new Date(time).toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  /** An event whose day has passed can be read, not joined. */
+  const isPastEvent = (dateString?: string | null) => {
+    if (!dateString) return false;
+    const day = new Date(dateString);
+
+    if (!Number.isFinite(day.getTime())) return false;
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    return day < today;
+  };
 
   const calculateDiscount = (original: number, discount: number) => {
     if (!Number.isFinite(original) || original <= 0) return 0;
     if (!Number.isFinite(discount) || discount < 0) return 0;
+
     return Math.max(0, Math.round(((original - discount) / original) * 100));
   };
 
   const getSpotsLeft = () => {
     if (!event?.capacity || event.capacity <= 0) return null;
+
     return Math.max(0, event.capacity - (event.registered ?? 0));
   };
 
   const getRegistrationPercentage = () => {
     if (!event?.capacity || event.capacity <= 0) return 0;
-    return Math.min(100, Math.max(0, ((event.registered ?? 0) / event.capacity) * 100));
+
+    return Math.min(
+      100,
+      Math.max(0, ((event.registered ?? 0) / event.capacity) * 100),
+    );
   };
 
   if (loading) {
@@ -287,24 +357,29 @@ const isPastEvent = (dateString?: string | null) => {
   // explicit notFound flag (or an empty success) means "does not exist".
   if ((loadError && !event) || (!event && !loading) || notFound) {
     const missing = !loadError && (notFound || !event);
+
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4">
         <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
           {missing ? (
-            <img
-              src="/Assets/Media/walking-confused.gif"
+            <Image
               alt=""
               aria-hidden="true"
-              loading="lazy"
               className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+              height={224}
+              loading="lazy"
+              src="/Assets/Media/walking-confused.gif"
+              width={224}
             />
           ) : (
-            <img
-              src="/Assets/Media/try-again.webp"
+            <Image
               alt=""
               aria-hidden="true"
-              loading="lazy"
               className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+              height={192}
+              loading="lazy"
+              src="/Assets/Media/try-again.webp"
+              width={192}
             />
           )}
           <h2 className="text-2xl font-bold">
@@ -317,7 +392,13 @@ const isPastEvent = (dateString?: string | null) => {
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             {!missing && (
-              <Button variant="primary" onPress={() => { setLoading(true); loadEvent(); }}>
+              <Button
+                variant="primary"
+                onPress={() => {
+                  setLoading(true);
+                  loadEvent();
+                }}
+              >
                 Try again
               </Button>
             )}
@@ -342,29 +423,24 @@ const isPastEvent = (dateString?: string | null) => {
     <div className="pb-20">
       {/* Top row: back + actions */}
       <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between gap-3">
-        <Button
-          variant="ghost"
-          onPress={() => router.push("/events")}
-        >
+        <Button variant="ghost" onPress={() => router.push("/events")}>
           Back to Events
         </Button>
         <div className="flex gap-2">
           <Button
             isIconOnly
-            variant="secondary"
             aria-label={isSaved ? "Unsave event" : "Save event"}
+            variant="secondary"
             onPress={toggleSave}
           >
             <Heart
-              className={`w-5 h-5 ${
-                isSaved ? "fill-danger text-danger" : ""
-              }`}
+              className={`w-5 h-5 ${isSaved ? "fill-danger text-danger" : ""}`}
             />
           </Button>
           <Button
             isIconOnly
-            variant="secondary"
             aria-label="Share event"
+            variant="secondary"
             onPress={handleShare}
           >
             <Share className="w-5 h-5" />
@@ -376,13 +452,23 @@ const isPastEvent = (dateString?: string | null) => {
       <div className="max-w-7xl mx-auto px-6 pb-2">
         <div className="flex flex-wrap gap-2 mb-4">
           {event.isFeatured && (
-            <Chip color="accent" variant="primary" size="sm" className="font-bold">
+            <Chip
+              className="font-bold"
+              color="accent"
+              size="sm"
+              variant="primary"
+            >
               <Star className="w-3 h-3 mr-1" />
               Featured
             </Chip>
           )}
           {event.isPremium && (
-            <Chip color="warning" variant="primary" size="sm" className="font-bold">
+            <Chip
+              className="font-bold"
+              color="warning"
+              size="sm"
+              variant="primary"
+            >
               <Crown className="w-3 h-3 mr-1" />
               Premium
             </Chip>
@@ -489,11 +575,11 @@ const isPastEvent = (dateString?: string | null) => {
                 <CardContent className="pt-4">
                   <div className="flex flex-wrap gap-2">
                     {(event.tags || []).map((tag, index) => (
-                      <Chip 
-                        key={index} 
-                        size="lg" 
-                        variant="primary"
+                      <Chip
+                        key={index}
                         className="font-medium"
+                        size="lg"
+                        variant="primary"
                       >
                         {tag}
                       </Chip>
@@ -510,11 +596,14 @@ const isPastEvent = (dateString?: string | null) => {
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-4">
-                  <Avatar
-                    className="w-16 h-16"
-                  >
-                    <AvatarImage src={event.organizerAvatar} alt={event.organizerName} />
-                    <AvatarFallback>{event.organizerName?.charAt(0) || 'O'}</AvatarFallback>
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage
+                      alt={event.organizerName}
+                      src={event.organizerAvatar}
+                    />
+                    <AvatarFallback>
+                      {event.organizerName?.charAt(0) || "O"}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-bold text-lg">{event.organizerName}</p>
@@ -536,7 +625,8 @@ const isPastEvent = (dateString?: string | null) => {
                       <span className="text-4xl font-bold text-foreground">
                         Free
                       </span>
-                    ) : event.discountPrice && event.discountPrice < event.price ? (
+                    ) : event.discountPrice &&
+                      event.discountPrice < event.price ? (
                       <>
                         <span className="text-4xl font-bold text-foreground">
                           ${event.discountPrice}
@@ -551,11 +641,15 @@ const isPastEvent = (dateString?: string | null) => {
                       </span>
                     )}
                   </div>
-                  {event.discountPrice && event.discountPrice < event.price && calculateDiscount(event.price, event.discountPrice) > 0 && (
-                    <Chip color="success" variant="soft" size="lg">
-                      Save ${event.price - event.discountPrice} ({calculateDiscount(event.price, event.discountPrice)}% OFF)
-                    </Chip>
-                  )}
+                  {event.discountPrice &&
+                    event.discountPrice < event.price &&
+                    calculateDiscount(event.price, event.discountPrice) > 0 && (
+                      <Chip color="success" size="lg" variant="soft">
+                        Save ${event.price - event.discountPrice} (
+                        {calculateDiscount(event.price, event.discountPrice)}%
+                        OFF)
+                      </Chip>
+                    )}
                 </div>
 
                 <Separator />
@@ -568,21 +662,25 @@ const isPastEvent = (dateString?: string | null) => {
                       <span className="text-default-600">Registered</span>
                     </div>
                     <span className="font-bold text-lg">
-                      {event.registered ?? 0}{event.capacity && `/${event.capacity}`}
+                      {event.registered ?? 0}
+                      {event.capacity && `/${event.capacity}`}
                     </span>
                   </div>
 
                   {event.capacity && (
                     <>
                       <ProgressBar
-                        value={getRegistrationPercentage()}
-                        size="md"
-                        color={
-                          getRegistrationPercentage() > 90 ? "danger" :
-                          getRegistrationPercentage() > 70 ? "warning" : "accent"
-                        }
-                        className="mt-2"
                         aria-label="Registration progress"
+                        className="mt-2"
+                        color={
+                          getRegistrationPercentage() > 90
+                            ? "danger"
+                            : getRegistrationPercentage() > 70
+                              ? "warning"
+                              : "accent"
+                        }
+                        size="md"
+                        value={getRegistrationPercentage()}
                       >
                         <ProgressBar.Track>
                           <ProgressBar.Fill />
@@ -592,10 +690,15 @@ const isPastEvent = (dateString?: string | null) => {
                         <span className="text-default-500">
                           {getSpotsLeft()} spots remaining
                         </span>
-                        <span className={`font-semibold ${
-                          getRegistrationPercentage() > 90 ? "text-danger" : 
-                          getRegistrationPercentage() > 70 ? "text-warning" : "text-success"
-                        }`}>
+                        <span
+                          className={`font-semibold ${
+                            getRegistrationPercentage() > 90
+                              ? "text-danger"
+                              : getRegistrationPercentage() > 70
+                                ? "text-warning"
+                                : "text-success"
+                          }`}
+                        >
                           {Math.round(getRegistrationPercentage())}% filled
                         </span>
                       </div>
@@ -609,25 +712,29 @@ const isPastEvent = (dateString?: string | null) => {
                 <div className="space-y-3">
                   {isPastEvent(event.date) ? (
                     <Button
-                      variant="secondary"
-                      className="w-full font-bold text-lg"
                       isDisabled
                       aria-label={`${event.title} has ended`}
+                      className="w-full font-bold text-lg"
+                      variant="secondary"
                     >
                       Event ended
                     </Button>
                   ) : (
                     <Button
-                      onPress={handleRegister}
-                      variant={isRegistered ? "secondary" : "primary"}
                       className="w-full font-bold text-lg"
                       isPending={registering}
+                      variant={isRegistered ? "secondary" : "primary"}
+                      onPress={handleRegister}
                     >
-                      {registering ? "Registering..."
-                        : registrationStatus === "waitlisted" ? "You're on the Waitlist"
-                        : registrationStatus === "pending" ? "Pending Approval"
-                        : isRegistered ? "You're Registered!"
-                        : "Register Now"}
+                      {registering
+                        ? "Registering..."
+                        : registrationStatus === "waitlisted"
+                          ? "You're on the Waitlist"
+                          : registrationStatus === "pending"
+                            ? "Pending Approval"
+                            : isRegistered
+                              ? "You're Registered!"
+                              : "Register Now"}
                     </Button>
                   )}
 
@@ -649,15 +756,16 @@ const isPastEvent = (dateString?: string | null) => {
                                 {ticketId}
                               </p>
                               <Link
-                                href={`/events/${eventId}/tickets`}
                                 className="text-xs text-success-700 dark:text-success-300 mt-1 inline-block underline underline-offset-2"
+                                href={`/events/${eventId}/tickets`}
                               >
                                 View and download your ticket
                               </Link>
                             </>
                           ) : (
                             <p className="text-xs text-success-700 dark:text-success-300 mt-1">
-                              Your place is reserved. A ticket will be issued once the organiser confirms your registration.
+                              Your place is reserved. A ticket will be issued
+                              once the organiser confirms your registration.
                             </p>
                           )}
                         </div>
@@ -668,7 +776,10 @@ const isPastEvent = (dateString?: string | null) => {
                   {isRegistered && registrationStatus === "waitlisted" && (
                     <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-xl border border-warning-200 dark:border-warning-800">
                       <p className="text-sm text-warning-700 dark:text-warning-300">
-                        <span className="font-semibold">You&apos;re on the waitlist.</span> We&apos;ll notify you if a place opens up.
+                        <span className="font-semibold">
+                          You&apos;re on the waitlist.
+                        </span>{" "}
+                        We&apos;ll notify you if a place opens up.
                       </p>
                     </div>
                   )}
@@ -676,21 +787,28 @@ const isPastEvent = (dateString?: string | null) => {
                   {isRegistered && registrationStatus === "pending" && (
                     <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
                       <p className="text-sm text-default-600">
-                        <span className="font-semibold">Awaiting approval.</span> The organiser reviews exclusive-event registrations before issuing tickets.
+                        <span className="font-semibold">
+                          Awaiting approval.
+                        </span>{" "}
+                        The organiser reviews exclusive-event registrations
+                        before issuing tickets.
                       </p>
                     </div>
                   )}
 
-                  {!isRegistered && getSpotsLeft() !== null && getSpotsLeft()! < 10 && (
-                    <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-xl border border-warning-200 dark:border-warning-800">
-                      <div className="flex items-start gap-2">
-                        <TrendingUp className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-warning-700 dark:text-warning-300">
-                          <span className="font-semibold">Filling fast!</span> Only {getSpotsLeft()} spots left
-                        </p>
+                  {!isRegistered &&
+                    getSpotsLeft() !== null &&
+                    getSpotsLeft()! < 10 && (
+                      <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-xl border border-warning-200 dark:border-warning-800">
+                        <div className="flex items-start gap-2">
+                          <TrendingUp className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-warning-700 dark:text-warning-300">
+                            <span className="font-semibold">Filling fast!</span>{" "}
+                            Only {getSpotsLeft()} spots left
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </CardContent>
             </Card>

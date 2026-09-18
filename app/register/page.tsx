@@ -2,9 +2,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-import { useAuth } from "@/context/AuthContext";
-import GitHubIcon from "@/components/auth/GitHubIcon";
+import Image from "next/image";
 import {
   Alert,
   Button,
@@ -19,14 +17,20 @@ import {
   TextField,
 } from "@heroui/react";
 
+import { useAuth } from "@/context/AuthContext";
+import GitHubIcon from "@/components/auth/GitHubIcon";
+import { logError } from "@/lib/logger";
+
 function getSafeNext(next: string | null): string {
   if (!next) return "/";
   if (!next.startsWith("/") || next.startsWith("//")) return "/";
+
   return next;
 }
 
 function mapRegisterError(err: unknown): string {
   const message = err instanceof Error ? err.message.toLowerCase() : "";
+
   if (
     message.includes("already exists") ||
     message.includes("already in use") ||
@@ -43,6 +47,7 @@ function mapRegisterError(err: unknown): string {
   ) {
     return "Network error. Check your connection and retry.";
   }
+
   return "Something went wrong. Please try again.";
 }
 
@@ -72,11 +77,13 @@ function RegisterForm() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+
       return;
     }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+
       return;
     }
 
@@ -87,7 +94,8 @@ function RegisterForm() {
       router.push(next);
     } catch (err: unknown) {
       const mapped = mapRegisterError(err);
-      console.error("Registration failed:", mapped);
+
+      logError("Registration failed:", mapped);
       setError(mapped);
     } finally {
       setLoading(false);
@@ -112,7 +120,8 @@ function RegisterForm() {
         // Ignore storage errors on the failure path too.
       }
       const mapped = mapRegisterError(err);
-      console.error("GitHub signup failed:", mapped);
+
+      logError("GitHub signup failed:", mapped);
       setError(mapped);
       setGithubLoading(false);
     }
@@ -122,22 +131,26 @@ function RegisterForm() {
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
       {/* Compact art strip on small screens */}
       <figure className="overflow-hidden rounded-3xl border border-default-200/70 lg:hidden">
-        <img
-          src="/Assets/Objects/register.png"
+        <Image
           alt=""
           aria-hidden="true"
-          loading="lazy"
           className="h-36 w-full object-cover object-top sm:h-44"
+          height={1024}
+          loading="lazy"
+          src="/Assets/Objects/register.png"
+          width={1536}
         />
       </figure>
 
       {/* Art panel on large screens */}
       <figure className="hidden space-y-3 lg:block">
         <div className="overflow-hidden rounded-3xl border border-default-200/70">
-          <img
-            src="/Assets/Objects/register.png"
+          <Image
             alt="A hand-drawn newcomer filling in the Greymens register: curious, willing to learn, not here just for a certificate"
             className="w-full object-cover"
+            height={1024}
+            src="/Assets/Objects/register.png"
+            width={1536}
           />
         </div>
         <figcaption className="text-center text-sm text-muted">
@@ -153,7 +166,7 @@ function RegisterForm() {
             Takes a minute. A human reads every application after.
           </Card.Description>
         </Card.Header>
-        <Form onSubmit={handleSubmit} validationBehavior="aria">
+        <Form validationBehavior="aria" onSubmit={handleSubmit}>
           <Card.Content className="space-y-4">
             <TextField
               isRequired
@@ -191,7 +204,9 @@ function RegisterForm() {
                 name="password"
                 type="password"
                 validate={(value) =>
-                  value.length >= 8 ? null : "Password must be at least 8 characters."
+                  value.length >= 8
+                    ? null
+                    : "Password must be at least 8 characters."
                 }
                 value={password}
                 onChange={setPassword}
@@ -246,7 +261,7 @@ function RegisterForm() {
               )}
             </Button>
 
-            <div className="flex items-center gap-3" aria-hidden="true">
+            <div aria-hidden="true" className="flex items-center gap-3">
               <span className="h-px flex-1 bg-default-200" />
               <span className="text-xs text-muted">OR</span>
               <span className="h-px flex-1 bg-default-200" />
@@ -254,10 +269,10 @@ function RegisterForm() {
             <Button
               fullWidth
               className="rounded-full"
+              isDisabled={loading || githubLoading}
+              isPending={githubLoading}
               variant="secondary"
               onPress={handleGithubSignup}
-              isPending={githubLoading}
-              isDisabled={loading || githubLoading}
             >
               {({ isPending }) => (
                 <>
@@ -274,8 +289,12 @@ function RegisterForm() {
             <p className="text-center text-sm text-muted">
               Already have an account?{" "}
               <Link
-                href={next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login"}
                 className="font-medium text-foreground underline underline-offset-4"
+                href={
+                  next !== "/"
+                    ? `/login?next=${encodeURIComponent(next)}`
+                    : "/login"
+                }
               >
                 Log in
               </Link>

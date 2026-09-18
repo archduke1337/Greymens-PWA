@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
 import { Card, Chip, Separator } from "@heroui/react";
 import { ScrollText, ArrowRight, ShieldCheck } from "lucide-react";
@@ -852,14 +853,14 @@ export default function ConstitutionPage() {
             className="sticky top-24 max-h-[calc(100vh-7rem)] space-y-1 overflow-y-auto rounded-2xl border border-default-200/70 bg-background p-4"
           >
             <p className="flex items-center gap-2 px-2 pb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-              <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />
+              <ScrollText aria-hidden="true" className="h-3.5 w-3.5" />
               Contents
             </p>
             {PARTS.map((part) => (
               <a
                 key={part.n}
-                href={`#part-${part.n.toLowerCase()}`}
                 className="block rounded-lg px-2.5 py-1.5 text-[13px] leading-snug text-muted transition-colors hover:bg-surface-secondary hover:text-foreground"
+                href={`#part-${part.n.toLowerCase()}`}
               >
                 <span className="mr-1.5 font-mono text-[11px]">{part.n}</span>
                 {part.title}
@@ -880,7 +881,7 @@ export default function ConstitutionPage() {
                 Constitution &amp; Governance Charter
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <Chip color="success" variant="soft" size="sm">
+                <Chip color="success" size="sm" variant="soft">
                   In Force
                 </Chip>
                 <Chip size="sm" variant="soft">
@@ -890,15 +891,17 @@ export default function ConstitutionPage() {
               <p className="mx-auto max-w-xl font-serif text-base italic leading-relaxed text-muted sm:text-lg">
                 This Charter establishes the governing structure, authority,
                 membership, responsibilities, conduct standards, technical
-                governance, disciplinary framework, and continuity of
-                Greymens Club.
+                governance, disciplinary framework, and continuity of Greymens
+                Club.
               </p>
             </div>
 
             <div className="space-y-10 px-6 py-10 sm:px-12">
               {/* Document control */}
               <section aria-label="Document control">
-                <h2 className="font-serif text-xl font-bold">Document control</h2>
+                <h2 className="font-serif text-xl font-bold">
+                  Document control
+                </h2>
                 <dl className="mt-4 overflow-hidden rounded-2xl border border-default-200/70">
                   {CONTROL_ROWS.map(([term, value], index) => (
                     <div
@@ -915,8 +918,8 @@ export default function ConstitutionPage() {
                 <Card className="mt-4">
                   <Card.Content className="flex gap-3 p-5">
                     <ScrollText
-                      className="mt-0.5 h-5 w-5 shrink-0"
                       aria-hidden="true"
+                      className="mt-0.5 h-5 w-5 shrink-0"
                     />
                     <p className="text-sm leading-relaxed text-muted">
                       <span className="font-semibold text-foreground">
@@ -933,21 +936,23 @@ export default function ConstitutionPage() {
               {/* How to read this */}
               <Card variant="secondary">
                 <Card.Content className="space-y-2 p-5">
-                  <h2 className="font-semibold">New here? Read it in this order</h2>
+                  <h2 className="font-semibold">
+                    New here? Read it in this order
+                  </h2>
                   <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-muted">
                     <li>
                       Start with the{" "}
                       <Link
-                        href="/governance"
                         className="font-medium text-foreground underline underline-offset-4"
+                        href="/governance"
                       >
                         governance tour
                       </Link>{" "}
                       — the friendly version of what follows.
                     </li>
                     <li>
-                      Then Part II (purpose) and Part III (membership) — the
-                      two parts that apply to everyone.
+                      Then Part II (purpose) and Part III (membership) — the two
+                      parts that apply to everyone.
                     </li>
                     <li>
                       Standing for office or running something? Read the parts
@@ -969,10 +974,12 @@ export default function ConstitutionPage() {
                   {PARTS.map((part) => (
                     <li key={part.n}>
                       <a
-                        href={`#part-${part.n.toLowerCase()}`}
                         className="block rounded-lg px-2 py-1.5 text-sm text-muted hover:bg-surface-secondary hover:text-foreground"
+                        href={`#part-${part.n.toLowerCase()}`}
                       >
-                        <span className="mr-1.5 font-mono text-xs">{part.n}</span>
+                        <span className="mr-1.5 font-mono text-xs">
+                          {part.n}
+                        </span>
                         {part.title}
                       </a>
                     </li>
@@ -984,9 +991,9 @@ export default function ConstitutionPage() {
               {PARTS.map((part) => (
                 <section
                   key={part.n}
-                  id={`part-${part.n.toLowerCase()}`}
                   aria-label={`Part ${part.n}: ${part.title}`}
                   className="scroll-mt-28 space-y-6"
+                  id={`part-${part.n.toLowerCase()}`}
                 >
                   <div className="space-y-1 border-b-2 border-foreground/80 pb-3">
                     <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted">
@@ -999,8 +1006,8 @@ export default function ConstitutionPage() {
                   {part.articles.map((article) => (
                     <div
                       key={article.n}
-                      id={`art-${article.n.toLowerCase()}`}
                       className="scroll-mt-28 space-y-3"
+                      id={`art-${article.n.toLowerCase()}`}
                     >
                       <h3 className="font-serif text-lg font-bold">
                         <span className="mr-2 font-mono text-sm font-semibold text-accent">
@@ -1046,17 +1053,17 @@ export default function ConstitutionPage() {
                 </p>
                 <div className="flex flex-wrap gap-2.5 pt-1">
                   <Link
-                    href="/governance"
                     className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[13px] font-semibold text-background transition-opacity hover:opacity-90"
+                    href="/governance"
                   >
                     How governance works
-                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
                   </Link>
                   <Link
-                    href="/security/report"
                     className="inline-flex items-center gap-1.5 rounded-full border border-default-300 px-4 py-2 text-[13px] font-semibold transition-colors hover:bg-surface-secondary"
+                    href="/security/report"
                   >
-                    <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                    <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
                     Authorization &amp; incident reporting
                   </Link>
                 </div>

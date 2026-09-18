@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
@@ -70,12 +71,12 @@ export default function Home() {
           headline is the first thing a visitor should read. */}
       <section className="relative flex h-[min(88vh,900px)] min-h-[560px] w-full items-end overflow-hidden">
         <Image
-          src="/Assets/Banners/clut.jpg"
-          alt="A crowd of students at a Greymens gathering"
           fill
           priority
-          sizes="100vw"
+          alt="A crowd of students at a Greymens gathering"
           className="object-cover"
+          sizes="100vw"
+          src="/Assets/Banners/clut.jpg"
         />
         <div
           aria-hidden="true"
@@ -99,21 +100,21 @@ export default function Home() {
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-muted">
             Greymens is ADYPU&apos;s student cybersecurity club. Weekly
-            workshops, real projects, and people who pair with you from day
-            one — no experience needed.
+            workshops, real projects, and people who pair with you from day one
+            — no experience needed.
           </p>
           <div className="flex flex-col gap-3 pt-1 sm:flex-row">
             <HeroCta />
             <LinkButton
-              size="lg"
-              variant="secondary"
-              href={siteConfig.links.discord}
-              target="_blank"
-              rel="noopener noreferrer"
               className="rounded-full px-8"
+              href={siteConfig.links.discord}
+              rel="noopener noreferrer"
+              size="lg"
+              target="_blank"
+              variant="secondary"
             >
               Join the Discord
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
             </LinkButton>
           </div>
           <p className="text-sm text-muted">
@@ -126,18 +127,20 @@ export default function Home() {
 
       {/* Learn / Build — image first on small screens, alternating on large */}
       <section
-        id="what-happens-here"
-        className="mx-auto w-full max-w-5xl space-y-16 px-4 pt-20 sm:px-6 sm:pt-28"
         aria-label="What happens here"
+        className="mx-auto w-full max-w-5xl space-y-16 px-4 pt-20 sm:px-6 sm:pt-28"
+        id="what-happens-here"
       >
         <div className="grid items-center gap-8 lg:grid-cols-2">
           <figure>
-            <div className="overflow-hidden rounded-3xl border border-default-200/70">
-              <img
-                src={LEARN_ROW.src}
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-default-200/70">
+              <Image
+                fill
                 alt={LEARN_ROW.alt}
+                className="object-cover"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                src={LEARN_ROW.src}
               />
             </div>
           </figure>
@@ -149,23 +152,25 @@ export default function Home() {
               {LEARN_ROW.text}
             </p>
             <Link
-              href={LEARN_ROW.href}
               className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+              href={LEARN_ROW.href}
             >
               {LEARN_ROW.cta}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
 
         <div className="grid items-center gap-8 lg:grid-cols-2">
           <figure className="lg:order-2">
-            <div className="overflow-hidden rounded-3xl border border-default-200/70">
-              <img
-                src={BUILD_ROW.src}
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-default-200/70">
+              <Image
+                fill
                 alt={BUILD_ROW.alt}
+                className="object-cover"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                src={BUILD_ROW.src}
               />
             </div>
           </figure>
@@ -177,11 +182,11 @@ export default function Home() {
               {BUILD_ROW.text}
             </p>
             <Link
-              href={BUILD_ROW.href}
               className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
+              href={BUILD_ROW.href}
             >
               {BUILD_ROW.cta}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
@@ -190,9 +195,9 @@ export default function Home() {
       {/* First month — an ordered path, so the numbers are earned.
           Ends in a CTA: a funnel with no next step leaks everyone. */}
       <section
-        id="first-month"
-        className="mx-auto w-full max-w-5xl px-4 pt-20 sm:px-6 sm:pt-28"
         aria-label="Your first month"
+        className="mx-auto w-full max-w-5xl px-4 pt-20 sm:px-6 sm:pt-28"
+        id="first-month"
       >
         <div className="max-w-xl space-y-2">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -204,7 +209,10 @@ export default function Home() {
         </div>
         <ol className="grid gap-8 pt-8 sm:grid-cols-3">
           {FIRST_MONTH.map((step) => (
-            <li key={step.n} className="space-y-2 border-t-2 border-foreground/80 pt-4">
+            <li
+              key={step.n}
+              className="space-y-2 border-t-2 border-foreground/80 pt-4"
+            >
               <p className="font-mono text-xs text-muted">{step.n}</p>
               <h3 className="font-bold tracking-tight">{step.title}</h3>
               <p className="text-sm leading-relaxed text-muted">{step.text}</p>
@@ -212,11 +220,15 @@ export default function Home() {
           ))}
         </ol>
         <div className="flex flex-col gap-3 pt-8 sm:flex-row">
-          <LinkButton href="/events" className="rounded-full px-6">
+          <LinkButton className="rounded-full px-6" href="/events">
             Start with step one
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </LinkButton>
-          <LinkButton href="/register" variant="secondary" className="rounded-full px-6">
+          <LinkButton
+            className="rounded-full px-6"
+            href="/register"
+            variant="secondary"
+          >
             Skip to the form
           </LinkButton>
         </div>

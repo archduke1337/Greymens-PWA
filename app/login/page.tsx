@@ -2,9 +2,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-import { useAuth } from "@/context/AuthContext";
-import GitHubIcon from "@/components/auth/GitHubIcon";
+import Image from "next/image";
 import {
   Alert,
   Button,
@@ -18,14 +16,20 @@ import {
   TextField,
 } from "@heroui/react";
 
+import { useAuth } from "@/context/AuthContext";
+import GitHubIcon from "@/components/auth/GitHubIcon";
+import { logError } from "@/lib/logger";
+
 function getSafeNext(next: string | null): string {
   if (!next) return "/";
   if (!next.startsWith("/") || next.startsWith("//")) return "/";
+
   return next;
 }
 
 function mapLoginError(err: unknown): string {
   const message = err instanceof Error ? err.message.toLowerCase() : "";
+
   if (
     message.includes("invalid credential") ||
     message.includes("invalid email") ||
@@ -44,6 +48,7 @@ function mapLoginError(err: unknown): string {
   ) {
     return "Network error. Check your connection and retry.";
   }
+
   return "Something went wrong. Please try again.";
 }
 
@@ -79,6 +84,7 @@ function LoginForm() {
     // A trailing space from autocomplete is the classic "correct password,
     // rejected anyway" report — trim the identifier, never the secret.
     const cleanEmail = email.trim();
+
     setLoading(true);
 
     try {
@@ -88,7 +94,8 @@ function LoginForm() {
       // Log the mapped message, never the raw error: auth errors can carry
       // the attempted identifier into console/log tooling.
       const mapped = mapLoginError(err);
-      console.error("Login failed:", mapped);
+
+      logError("Login failed:", mapped);
       setError(mapped);
     } finally {
       setLoading(false);
@@ -113,7 +120,8 @@ function LoginForm() {
         // Ignore storage errors on the failure path too.
       }
       const mapped = mapLoginError(err);
-      console.error("GitHub login failed:", mapped);
+
+      logError("GitHub login failed:", mapped);
       setError(mapped);
       setGithubLoading(false);
     }
@@ -123,22 +131,26 @@ function LoginForm() {
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
       {/* Compact art strip on small screens */}
       <figure className="overflow-hidden rounded-3xl border border-default-200/70 lg:hidden">
-        <img
-          src="/Assets/Objects/login.png"
+        <Image
           alt=""
           aria-hidden="true"
-          loading="lazy"
           className="h-36 w-full object-cover object-top sm:h-44"
+          height={1024}
+          loading="lazy"
+          src="/Assets/Objects/login.png"
+          width={1536}
         />
       </figure>
 
       {/* Art panel on large screens */}
       <figure className="hidden space-y-3 lg:block">
         <div className="overflow-hidden rounded-3xl border border-default-200/70">
-          <img
-            src="/Assets/Objects/login.png"
+          <Image
             alt="A hand-drawn member puzzling over a Greymens login screen that reads trust but verify"
             className="w-full object-cover"
+            height={1024}
+            src="/Assets/Objects/login.png"
+            width={1536}
           />
         </div>
         <figcaption className="text-center text-sm text-muted">
@@ -154,7 +166,7 @@ function LoginForm() {
             Log in with your club email and password — or continue with GitHub.
           </Card.Description>
         </Card.Header>
-        <Form onSubmit={handleSubmit} validationBehavior="aria">
+        <Form validationBehavior="aria" onSubmit={handleSubmit}>
           <Card.Content className="space-y-4">
             <TextField
               isRequired
@@ -212,7 +224,7 @@ function LoginForm() {
               )}
             </Button>
 
-            <div className="flex items-center gap-3" aria-hidden="true">
+            <div aria-hidden="true" className="flex items-center gap-3">
               <span className="h-px flex-1 bg-default-200" />
               <span className="text-xs text-muted">OR</span>
               <span className="h-px flex-1 bg-default-200" />
@@ -220,10 +232,10 @@ function LoginForm() {
             <Button
               fullWidth
               className="rounded-full"
+              isDisabled={loading || githubLoading}
+              isPending={githubLoading}
               variant="secondary"
               onPress={handleGithubLogin}
-              isPending={githubLoading}
-              isDisabled={loading || githubLoading}
             >
               {({ isPending }) => (
                 <>
@@ -240,8 +252,12 @@ function LoginForm() {
             <p className="text-center text-sm text-muted">
               New here?{" "}
               <Link
-                href={next !== "/" ? `/register?next=${encodeURIComponent(next)}` : "/register"}
                 className="font-medium text-foreground underline underline-offset-4"
+                href={
+                  next !== "/"
+                    ? `/register?next=${encodeURIComponent(next)}`
+                    : "/register"
+                }
               >
                 Create an account
               </Link>

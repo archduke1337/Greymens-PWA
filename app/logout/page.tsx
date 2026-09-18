@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@heroui/react";
+
+import { useAuth } from "@/context/AuthContext";
+import { logError } from "@/lib/logger";
 
 /**
  * Sign-out confirmation.
@@ -24,8 +26,9 @@ export default function LogoutPage() {
     // Best-effort cache + service-worker cleanup on successful logout.
     // Must never block the redirect.
     try {
-      if (typeof caches !== 'undefined' && caches.keys) {
+      if (typeof caches !== "undefined" && caches.keys) {
         const keys = await caches.keys().catch(() => [] as string[]);
+
         await Promise.all(
           (keys || []).map((key) => caches.delete(key).catch(() => false)),
         );
@@ -37,6 +40,7 @@ export default function LogoutPage() {
       const registrations = await navigator.serviceWorker
         ?.getRegistrations()
         .catch(() => [] as ServiceWorkerRegistration[]);
+
       if (registrations) {
         await Promise.all(
           registrations.map((registration) =>
@@ -55,14 +59,14 @@ export default function LogoutPage() {
     try {
       await logout();
       await clearDeviceState();
-      router.push('/');
+      router.push("/");
     } catch (error) {
-      console.error('Logout failed:', error);
+      logError("Logout failed:", error);
       // Stay on the page so the user can retry instead of being
       // bounced home while still signed in.
       setFailed(true);
       setSigningOut(false);
-      toast.error('Logout failed. Please try again.');
+      toast.error("Logout failed. Please try again.");
     }
   };
 
@@ -91,11 +95,7 @@ export default function LogoutPage() {
               >
                 Stay signed in
               </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onPress={handleLogout}
-              >
+              <Button type="button" variant="danger" onPress={handleLogout}>
                 Sign out
               </Button>
             </div>

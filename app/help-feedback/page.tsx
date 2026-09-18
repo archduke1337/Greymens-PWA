@@ -1,10 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
+import Image from "next/image";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Description,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  TextArea,
+  TextField,
+} from "@heroui/react";
+
 import { readApiError } from "@/lib/errorHandler";
-import { Alert, Button, Card, CardContent, CardHeader, Description, FieldError, Form, Input, Label, ListBox, Select, TextArea, TextField } from "@heroui/react";
 
-type FeedbackType = 'bug' | 'feature' | 'general' | 'support';
+type FeedbackType = "bug" | "feature" | "general" | "support";
 
 interface FormData {
   name: string;
@@ -16,11 +33,11 @@ interface FormData {
 
 export default function HelpFeedbackPage() {
   const emptyForm: FormData = {
-    name: '',
-    email: '',
-    type: 'general',
-    subject: '',
-    message: '',
+    name: "",
+    email: "",
+    type: "general",
+    subject: "",
+    message: "",
   };
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,14 +54,20 @@ export default function HelpFeedbackPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
       if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
         throw new Error(readApiError(payload, "Failed to submit feedback"));
       }
       setSubmitted(true);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : "Failed to submit feedback. Please try again."
+        error instanceof Error
+          ? error.message
+          : "Failed to submit feedback. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -52,10 +75,10 @@ export default function HelpFeedbackPage() {
   };
 
   const feedbackTypes = [
-    { value: 'bug', label: 'Bug Report' },
-    { value: 'feature', label: 'Feature Request' },
-    { value: 'support', label: 'Support' },
-    { value: 'general', label: 'General Feedback' },
+    { value: "bug", label: "Bug Report" },
+    { value: "feature", label: "Feature Request" },
+    { value: "support", label: "Support" },
+    { value: "general", label: "General Feedback" },
   ];
 
   if (submitted) {
@@ -64,16 +87,30 @@ export default function HelpFeedbackPage() {
         <Card className="border border-default-200">
           <CardContent className="text-center py-16 space-y-4">
             <div className="w-16 h-16 mx-auto rounded-full bg-success-100 dark:bg-success-900/30 flex items-center justify-center">
-              <svg aria-hidden="true" className="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                aria-hidden="true"
+                className="w-8 h-8 text-success"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M5 13l4 4L19 7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                />
               </svg>
             </div>
-            <h1 tabIndex={-1} className="text-2xl font-bold">Heard. Thank you.</h1>
+            <h1 className="text-2xl font-bold" tabIndex={-1}>
+              Heard. Thank you.
+            </h1>
             <p className="text-default-500" role="status">
               Your message is with the volunteers who read every one. Bugs and
               support requests get priority; ideas get argued about — fondly.
             </p>
-            <Button variant="primary"
+            <Button
+              variant="primary"
               onPress={() => {
                 setFormData({ ...emptyForm });
                 setSubmitError(null);
@@ -91,20 +128,24 @@ export default function HelpFeedbackPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
       <div className="text-center space-y-3">
-        <img
-          src="/Assets/Media/lone-brain.gif"
+        <Image
           alt=""
           aria-hidden="true"
-          loading="lazy"
           className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+          height={708}
+          loading="lazy"
+          src="/Assets/Media/lone-brain.gif"
+          width={1000}
         />
-        <h1 className="text-3xl font-bold">Stuck? Spotted something? Tell us.</h1>
+        <h1 className="text-3xl font-bold">
+          Stuck? Spotted something? Tell us.
+        </h1>
         <p className="text-default-500">
           Bugs, support, ideas, complaints — a volunteer reads every one.
           Security issues go to{" "}
           <a
-            href="/security/report"
             className="font-medium text-foreground underline underline-offset-4"
+            href="/security/report"
           >
             responsible disclosure
           </a>{" "}
@@ -116,11 +157,18 @@ export default function HelpFeedbackPage() {
         <CardHeader className="px-6 pt-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Send us a message</h2>
-            <p className="text-sm text-default-500">No account needed. No response-time promises either — volunteers, remember?</p>
+            <p className="text-sm text-default-500">
+              No account needed. No response-time promises either — volunteers,
+              remember?
+            </p>
           </div>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          <Form validationBehavior="aria" onSubmit={handleSubmit} className="space-y-5">
+          <Form
+            className="space-y-5"
+            validationBehavior="aria"
+            onSubmit={handleSubmit}
+          >
             {submitError && (
               <Alert role="alert" status="danger">
                 <Alert.Indicator />
@@ -142,7 +190,7 @@ export default function HelpFeedbackPage() {
                 onChange={(value) => setFormData({ ...formData, name: value })}
               >
                 <Label>Name</Label>
-                <Input placeholder="Your name" autoComplete="name" />
+                <Input autoComplete="name" placeholder="Your name" />
                 <FieldError />
               </TextField>
               <TextField
@@ -159,7 +207,7 @@ export default function HelpFeedbackPage() {
                 onChange={(value) => setFormData({ ...formData, email: value })}
               >
                 <Label>Email</Label>
-                <Input placeholder="you@example.com" autoComplete="email" />
+                <Input autoComplete="email" placeholder="you@example.com" />
                 <Description>So we can reply. Nothing else.</Description>
                 <FieldError />
               </TextField>
@@ -169,7 +217,12 @@ export default function HelpFeedbackPage() {
               <Select
                 fullWidth
                 value={formData.type}
-                onChange={(value) => setFormData({ ...formData, type: String(value ?? "general") as FeedbackType })}
+                onChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    type: String(value ?? "general") as FeedbackType,
+                  })
+                }
               >
                 <Label>Feedback type</Label>
                 <Select.Trigger>
@@ -179,7 +232,11 @@ export default function HelpFeedbackPage() {
                 <Select.Popover>
                   <ListBox>
                     {feedbackTypes.map((type) => (
-                      <ListBox.Item key={type.value} id={type.value} textValue={type.label}>
+                      <ListBox.Item
+                        key={type.value}
+                        id={type.value}
+                        textValue={type.label}
+                      >
                         {type.label}
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
@@ -209,7 +266,9 @@ export default function HelpFeedbackPage() {
               isDisabled={isSubmitting}
               name="message"
               validate={(value) =>
-                value.trim().length >= 10 ? null : "Give us a little more to go on"
+                value.trim().length >= 10
+                  ? null
+                  : "Give us a little more to go on"
               }
               value={formData.message}
               onChange={(value) => setFormData({ ...formData, message: value })}
@@ -229,7 +288,7 @@ export default function HelpFeedbackPage() {
                 isPending={isSubmitting}
                 type="submit"
               >
-                {isSubmitting ? 'Sending...' : 'Send Feedback'}
+                {isSubmitting ? "Sending..." : "Send Feedback"}
               </Button>
             </div>
           </Form>
@@ -238,10 +297,10 @@ export default function HelpFeedbackPage() {
 
       <div className="text-center space-y-2">
         <p className="text-sm text-default-500">
-          You can also reach us at{' '}
+          You can also reach us at{" "}
           <a
-            href="mailto:support@greymens.club"
             className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors focus-visible:outline-2 focus-visible:outline-accent"
+            href="mailto:support@greymens.club"
           >
             support@greymens.club
           </a>

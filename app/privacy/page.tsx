@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
 import {
   Accordion,
@@ -16,7 +17,8 @@ import { Lock, EyeOff, UserCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "How Greymens Club collects, uses, and protects your personal data.",
+  description:
+    "How Greymens Club collects, uses, and protects your personal data.",
 };
 
 const LAST_UPDATED = "September 18, 2026";
@@ -95,8 +97,8 @@ export default function PrivacyPage() {
     <div className="mx-auto w-full max-w-4xl space-y-8 px-4 py-10 sm:px-6">
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Chip color="accent" variant="soft" size="sm">
-            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+          <Chip color="accent" size="sm" variant="soft">
+            <Lock aria-hidden="true" className="h-3.5 w-3.5" />
             Privacy Policy
           </Chip>
           <Chip size="sm" variant="soft">
@@ -107,8 +109,8 @@ export default function PrivacyPage() {
           Your data stays yours
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-muted">
-          We collect the minimum needed to run a student club, protect it like it
-          matters — because it does — and never sell it. Here is exactly what
+          We collect the minimum needed to run a student club, protect it like
+          it matters — because it does — and never sell it. Here is exactly what
           that means.
         </p>
       </header>
@@ -121,15 +123,26 @@ export default function PrivacyPage() {
         <Card.Content>
           <ul className="grid gap-2.5 text-sm leading-relaxed text-muted sm:grid-cols-3">
             <li className="flex gap-2">
-              <EyeOff className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              Private means private — your profile visibility choice is enforced everywhere.
+              <EyeOff
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
+              Private means private — your profile visibility choice is enforced
+              everywhere.
             </li>
             <li className="flex gap-2">
-              <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              Officers see only what their role needs. Everything sensitive is audited.
+              <UserCheck
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
+              Officers see only what their role needs. Everything sensitive is
+              audited.
             </li>
             <li className="flex gap-2">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+              <Lock
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+              />
               No sale of personal data, ever. Aggregates only, for sponsors.
             </li>
           </ul>
@@ -140,7 +153,11 @@ export default function PrivacyPage() {
         <Card.Content className="p-2 sm:p-4">
           <Accordion>
             {SECTIONS.map((section) => (
-              <AccordionItem key={section.id} id={section.id} className="text-sm">
+              <AccordionItem
+                key={section.id}
+                className="text-sm"
+                id={section.id}
+              >
                 <AccordionHeading>
                   <AccordionTrigger>
                     {section.title}
@@ -169,13 +186,16 @@ export default function PrivacyPage() {
       <p className="text-center text-sm text-muted">
         Questions about your data?{" "}
         <a
-          href="mailto:privacy@greymens.club"
           className="font-medium text-foreground underline underline-offset-4"
+          href="mailto:privacy@greymens.club"
         >
           privacy@greymens.club
         </a>{" "}
         · See also our{" "}
-        <Link href="/terms" className="font-medium text-foreground underline underline-offset-4">
+        <Link
+          className="font-medium text-foreground underline underline-offset-4"
+          href="/terms"
+        >
           Terms of Service
         </Link>
         .

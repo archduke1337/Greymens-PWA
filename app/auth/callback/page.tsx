@@ -2,6 +2,8 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
 import { useAuth } from "@/context/AuthContext";
 
 export default function AuthCallbackPage() {
@@ -17,19 +19,24 @@ export default function AuthCallbackPage() {
       // real failure.
       for (let attempt = 0; attempt < 3; attempt++) {
         const currentUser = await refreshUser().catch(() => null);
+
         if (cancelled) return;
         if (currentUser) {
           // Password logins carry ?next=; OAuth left the site, so the login
           // page stashed the destination beforehand. Same-origin only.
           let next = "/";
+
           try {
             const stored = sessionStorage.getItem("post_auth_next");
+
             sessionStorage.removeItem("post_auth_next");
-            if (stored && stored.startsWith("/") && !stored.startsWith("//")) next = stored;
+            if (stored && stored.startsWith("/") && !stored.startsWith("//"))
+              next = stored;
           } catch {
             // Storage unavailable: fall back to "/".
           }
           router.push(next);
+
           return;
         }
         if (attempt < 2) {
@@ -50,14 +57,22 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center space-y-4" role="status" aria-label="Completing sign in">
-        <img
-          src="/Assets/Media/yo-yo-globe.webp"
+      <div
+        aria-label="Completing sign in"
+        className="text-center space-y-4"
+        role="status"
+      >
+        <Image
           alt=""
           aria-hidden="true"
           className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+          height={1280}
+          src="/Assets/Media/yo-yo-globe.webp"
+          width={1280}
         />
-        <p className="text-default-500">Completing sign in — spinning the globe…</p>
+        <p className="text-default-500">
+          Completing sign in — spinning the globe…
+        </p>
       </div>
     </div>
   );

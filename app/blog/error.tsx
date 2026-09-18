@@ -10,8 +10,11 @@ export default function BlogError({
   reset: () => void;
 }) {
   return (
-    <RouteError error={error} reset={reset} title="Blog Unavailable"
+    <RouteError
       description="We couldn't load the blog right now. Your drafts are safe — please try again."
+      error={error}
+      reset={reset}
+      title="Blog Unavailable"
     />
   );
 }
