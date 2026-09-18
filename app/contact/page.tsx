@@ -14,10 +14,38 @@ import {
   TextArea,
   TextField,
 } from "@heroui/react";
+import { ArrowUpRight, Mail, MessagesSquare, ShieldCheck } from "lucide-react";
 
 import { readApiError } from "@/lib/errorHandler";
 
 const EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+
+const CHANNELS = [
+  {
+    Icon: MessagesSquare,
+    name: "Discord",
+    pace: "Often the fastest answer",
+    cta: "Join the server",
+    href: "https://discord.gg/6v89E3SaZT",
+    external: true,
+  },
+  {
+    Icon: Mail,
+    name: "Email",
+    pace: "Replies in 2–3 working days",
+    cta: "hello@greymens.club",
+    href: "mailto:hello@greymens.club",
+    external: false,
+  },
+  {
+    Icon: ShieldCheck,
+    name: "Security issues",
+    pace: "Confidential, handled first",
+    cta: "Disclose responsibly",
+    href: "/security/report",
+    external: false,
+  },
+];
 
 type SubmitStatus = {
   type: "success" | "error";
@@ -239,38 +267,46 @@ export default function ContactPage() {
             </figcaption>
           </figure>
           <Card variant="secondary">
-            <Card.Content className="space-y-3 p-5">
+            <Card.Content className="space-y-4 p-5">
               <h2 className="text-sm font-semibold">Other ways to reach us</h2>
-              <ul className="space-y-2 text-sm text-muted">
-                <li>
-                  Fastest —{" "}
-                  <a
-                    className="font-medium text-foreground underline underline-offset-4"
-                    href="https://discord.gg/6v89E3SaZT"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Discord
-                  </a>
-                </li>
-                <li>
-                  Formal —{" "}
-                  <a
-                    className="font-medium text-foreground underline underline-offset-4"
-                    href="mailto:hello@greymens.club"
-                  >
-                    hello@greymens.club
-                  </a>
-                </li>
-                <li>
-                  Vulnerability?{" "}
-                  <Link
-                    className="font-medium text-foreground underline underline-offset-4"
-                    href="/security/report"
-                  >
-                    Disclose responsibly
-                  </Link>
-                </li>
+              <ul className="space-y-3">
+                {CHANNELS.map(({ Icon, name, pace, cta, href, external }) => (
+                  <li key={name} className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">{name}</span>
+                      <span className="block text-xs text-muted">{pace}</span>
+                    </span>
+                    {external ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${cta} (opens in a new tab)`}
+                        className="inline-flex shrink-0 items-center gap-1 text-xs font-medium underline underline-offset-4"
+                      >
+                        {cta}
+                        <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                      </a>
+                    ) : href.startsWith("/") ? (
+                      <Link
+                        href={href}
+                        className="shrink-0 text-xs font-medium underline underline-offset-4"
+                      >
+                        {cta}
+                      </Link>
+                    ) : (
+                      <a
+                        href={href}
+                        className="shrink-0 break-all text-xs font-medium underline underline-offset-4"
+                      >
+                        {cta}
+                      </a>
+                    )}
+                  </li>
+                ))}
               </ul>
             </Card.Content>
           </Card>

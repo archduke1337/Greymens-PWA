@@ -65,7 +65,7 @@ export default function FeaturedSection() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4" role="status" aria-label="Loading featured events">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent" />
-            <p className="text-lg font-medium text-gray-600 dark:text-gray-400">
+            <p className="text-lg font-medium text-muted">
               Loading featured events...
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function FeaturedSection() {
               className="group motion-safe:animate-[fadeInUp_0.6s_ease-out_both] focus-visible:outline-2 focus-visible:outline-primary rounded-xl"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="relative bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-border">
+              <div className="relative bg-surface rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-default-200/70">
                 {/* Image Section */}
                 <div className="relative h-64 overflow-hidden">
                   <img
@@ -160,33 +160,33 @@ export default function FeaturedSection() {
                 {/* Content Section */}
                 <div className="p-6 space-y-4">
                   {/* Title */}
-                  <h3 className="text-2xl font-black text-gray-900 dark:text-white line-clamp-2 group-hover:text-primary transition-colors">
+                  <h3 className="text-2xl font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
                     {event.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                  <p className="text-muted line-clamp-2 leading-relaxed">
                     {event.description}
                   </p>
 
                   {/* Details */}
                   <div className="space-y-3 pt-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-sm text-muted">
+                      <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
                         <MapPin className="w-4 h-4 text-primary" />
                       </div>
                       <span className="font-medium">{event.location}</span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-sm text-muted">
+                      <div className="w-8 h-8 rounded-full bg-surface-secondary flex items-center justify-center">
                         <Users className="w-4 h-4 text-primary" />
                       </div>
                       <span className="font-medium">
                         {event.registered} registered
                       </span>
                       {remaining !== null && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted">
                           • {remaining} {remaining === 1 ? "spot" : "spots"} left
                         </span>
                       )}
@@ -198,7 +198,7 @@ export default function FeaturedSection() {
                     {(event.tags ?? []).slice(0, 3).map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 bg-muted text-muted-foreground text-xs rounded-full font-medium"
+                        className="px-3 py-1 bg-surface-secondary text-muted text-xs rounded-full font-medium"
                       >
                         {tag}
                       </span>
@@ -206,7 +206,7 @@ export default function FeaturedSection() {
                   </div>
 
                   {/* Price & CTA */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="flex items-center justify-between pt-4 border-t border-default-200/70">
                     <div>
                       {event.discountPrice &&
                       event.discountPrice < event.price ? (
@@ -214,7 +214,7 @@ export default function FeaturedSection() {
                           <span className="text-xl font-bold text-foreground tabular-nums">
                             ${event.discountPrice}
                           </span>
-                          <span className="text-sm text-muted-foreground line-through tabular-nums">
+                          <span className="text-sm text-muted line-through tabular-nums">
                             ${event.price}
                           </span>
                         </div>
@@ -244,10 +244,10 @@ export default function FeaturedSection() {
         {/* View All Button */}
         <div className="text-center mt-16">
           <Link
-            className="group inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-bold text-lg rounded-lg transition-opacity hover:opacity-90"
+            className="group inline-flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground font-semibold rounded-full transition-opacity hover:opacity-90"
             href="/events"
           >
-            <span>Explore All Events</span>
+            <span>See all events</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

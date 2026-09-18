@@ -49,9 +49,9 @@ const FIRST_MONTH = [
  * Live proof strip: upcoming events, tracked projects, published posts.
  *
  * Every number comes from the same read APIs the product pages use, counted
- * at render time. If any source fails, the strip stays hidden — a marketing
- * page must never show a zero it cannot defend or a stale number baked in
- * at build time.
+ * at render time, and each one links to the page it was counted from. While
+ * loading, a same-size skeleton holds the space so nothing below jumps; if
+ * any source fails, the strip stays hidden — no proof beats wrong proof.
  */
 function ProofStrip() {
   const [counts, setCounts] = useState<{
@@ -59,6 +59,7 @@ function ProofStrip() {
     projects: number;
     posts: number;
   } | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +87,7 @@ function ProofStrip() {
         });
       } catch {
         // Stay hidden: no proof is better than wrong proof.
+        if (!cancelled) setFailed(true);
       }
     };
 
@@ -95,63 +97,79 @@ function ProofStrip() {
     };
   }, []);
 
-  if (!counts) return null;
+  // Failed sources: render nothing. Loading: hold the strip's space with
+  // a skeleton so sections below never jump when the numbers land.
+  if (failed) return null;
+  if (!counts) {
+    return (
+      <section
+        aria-label="The club in numbers"
+        className="mx-auto w-full max-w-5xl space-y-4 px-4 pt-14 sm:px-6"
+      >
+        <div
+          aria-hidden="true"
+          className="grid grid-cols-3 gap-4 rounded-3xl border border-default-200/70 px-6 py-6 sm:gap-8"
+        >
+          {[0, 1, 2].map((n) => (
+            <div key={n} className="space-y-2 py-1">
+              <div className="mx-auto h-9 w-16 animate-pulse rounded-full bg-surface-secondary sm:h-10" />
+              <div className="mx-auto h-3 w-24 animate-pulse rounded-full bg-surface-secondary" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   const items = [
-    { value: counts.events, label: "Upcoming events" },
-    { value: counts.projects, label: "Projects tracked" },
-    { value: counts.posts, label: "Posts published" },
+    { value: counts.events, label: "Upcoming events", href: "/events" },
+    { value: counts.projects, label: "Projects tracked", href: "/projects" },
+    { value: counts.posts, label: "Posts published", href: "/blog" },
   ];
 
   return (
     <section
       aria-label="The club in numbers"
-      className="mx-auto w-full max-w-5xl px-4 pt-14 sm:px-6"
+      className="mx-auto w-full max-w-5xl space-y-4 px-4 pt-14 sm:px-6"
     >
       <dl className="grid grid-cols-3 gap-4 rounded-3xl border border-default-200/70 px-6 py-6 text-center sm:gap-8">
         {items.map((item) => (
           <div key={item.label} className="space-y-1">
             <dd className="text-3xl font-bold tracking-tight tabular-nums sm:text-4xl">
-              {item.value}
+              <Link
+                href={item.href}
+                className="rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
+                aria-label={`${item.value} ${item.label.toLowerCase()} — see all`}
+              >
+                {item.value}
+              </Link>
             </dd>
             <dt className="text-xs text-muted sm:text-sm">{item.label}</dt>
           </div>
         ))}
       </dl>
+      <p className="text-center font-serif text-[15px] italic text-muted">
+        “Technology should empower people, not control them.”{" "}
+        <span className="not-italic">— the Greymens Charter</span>
+      </p>
     </section>
   );
 }
 
 export default function Home() {
-  const [isLoaded, setIsLoaded] = useState(false);
   // Signed-in members already belong — point them at the dashboard, and the
   // recruitment band below stays for visitors only.
   const { user } = useAuth();
 
-  useEffect(() => {
-    // Motion-sensitive visitors skip the entrance entirely.
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setIsLoaded(true);
-      return;
-    }
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="w-full">
-      {/* Hero — type-only fold: language carries it, the desk waits below */}
+      {/* Hero — type-only fold: language carries it, the visual waits below.
+          CSS-only entrance (motion-safe): content is fully visible with JS
+          disabled or animations off — animation enhances, never gates. */}
       <section className="mx-auto w-full max-w-3xl px-4 pt-24 text-center sm:px-6 sm:pt-28">
-        <div
-          className={`space-y-6 transition-[opacity,transform] duration-700 ease-out motion-reduce:transition-none ${
-            isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          }`}
-        >
+        <div className="space-y-6 motion-safe:animate-[heroIn_0.7s_ease-out_both]">
           <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
-            Hack things. Fix things. Belong here.
+            Learn to break things. Stay to fix them.
           </h1>
           <p className="mx-auto max-w-xl text-lg leading-relaxed text-muted sm:text-xl">
             Greymens is ADYPU&apos;s student cybersecurity club. Every branch,
@@ -180,27 +198,40 @@ export default function Home() {
             </Link>
           </div>
           <p className="text-sm text-muted">
-            Free workshops · Open events · Students only
+            Free workshops · Open to every branch · No experience needed
           </p>
         </div>
       </section>
 
-      {/* The club on one desk — drawn, not rendered */}
+      {/* The club in one illustration — same hand, same ink as the story */}
       <section className="mx-auto w-full max-w-5xl px-4 pt-16 sm:px-6 sm:pt-20">
         <figure className="space-y-3">
-          <div className="overflow-hidden rounded-3xl border border-default-200/70">
+          <div className="overflow-hidden rounded-3xl border border-default-200/70 bg-black">
             <img
-              src="/Assets/Objects/about.png"
-              alt="A hand-drawn Greymens desk: mission poster, focus checklist, terminal, books, and a sleeping cat"
+              src="/Assets/Objects/intro.png"
+              alt="Hand-drawn Greymens scene: a member at a login screen under a watching eye, security books, a trust-no-one mug, and the club charter"
               loading="lazy"
               className="w-full object-cover"
             />
           </div>
           <figcaption className="text-center text-sm text-muted">
-            The whole club on one desk — learn, build, share, grow together.
+            Observe. Learn. Build. Operate. The whole club in one illustration.
           </figcaption>
         </figure>
       </section>
+
+      <style jsx>{`
+        @keyframes heroIn {
+          from {
+            opacity: 0;
+            transform: translateY(32px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
 
       <ProofStrip />
 
