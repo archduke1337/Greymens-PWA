@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
-import { Button, Card, CardContent, CardFooter, CardHeader, Input, Link } from "@heroui/react";
+import { Button, Card, CardContent, Input, Link } from "@heroui/react";
 
 function getSafeNext(next: string | null): string {
   if (!next) return "/";
@@ -40,8 +40,10 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { register, loginWithGoogle, user } = useAuth();
+  // OAuth is not configured yet — Google sign-up stays disabled until the
+  // provider is set up. See the commented block below.
+  // const [googleLoading, setGoogleLoading] = useState(false);
+  const { register, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
@@ -56,12 +58,12 @@ function RegisterForm() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Passwords do not match.");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -70,7 +72,7 @@ function RegisterForm() {
     try {
       await register(email, password, name);
       router.push(next);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const mapped = mapRegisterError(err);
       console.error("Registration failed:", mapped);
       setError(mapped);
@@ -79,6 +81,8 @@ function RegisterForm() {
     }
   };
 
+  /*
+  // TEMPORARILY DISABLED — enable once Google OAuth is configured.
   const handleGoogleSignup = async () => {
     setError("");
     setGoogleLoading(true);
@@ -89,7 +93,7 @@ function RegisterForm() {
         // Storage unavailable: callback falls back to "/".
       }
       await loginWithGoogle();
-    } catch (err: any) {
+    } catch (err: unknown) {
       try {
         sessionStorage.removeItem("post_auth_next");
       } catch {
@@ -101,88 +105,134 @@ function RegisterForm() {
       setGoogleLoading(false);
     }
   };
+  */
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1 items-start">
-          <h1 className="text-2xl font-bold">Create Account</h1>
-          <p className="text-small text-default-500">Sign up for Greymens</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Input
-              placeholder="Enter your name"
-              aria-label="Full name"
-              type="text"
-              value={name}
-              onChange={(e: any) => setName(e.target.value)}
-              required
-              disabled={loading}
-            />
-            <Input
-              placeholder="Enter your email"
-              aria-label="Email address"
-              type="email"
-              value={email}
-              onChange={(e: any) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-            />
-            <Input
-              placeholder="Create a password (min 8 characters)"
-              aria-label="Password"
-              type="password"
-              value={password}
-              onChange={(e: any) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-            <Input
-              placeholder="Confirm your password"
-              aria-label="Confirm password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e: any) => setConfirmPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
+    <div className="mx-auto grid w-full max-w-5xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2">
+      {/* Art panel */}
+      <figure className="hidden space-y-3 lg:block">
+        <div className="overflow-hidden rounded-3xl border border-default-200/70">
+          <img
+            src="/Assets/Objects/register.png"
+            alt="A hand-drawn newcomer filling in the Greymens register: curious, willing to learn, not here just for a certificate"
+            className="w-full object-cover"
+          />
+        </div>
+        <figcaption className="text-center text-sm text-muted">
+          One more hacker in the making? Could be you.
+        </figcaption>
+      </figure>
+
+      {/* Form */}
+      <Card className="w-full">
+        <CardContent className="space-y-5 p-6 sm:p-8">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+            <p className="text-sm text-muted">
+              Takes a minute. A human reads every application after.
+            </p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="register-name" className="text-sm font-medium">
+                Full name
+              </label>
+              <Input
+                id="register-name"
+                type="text"
+                autoComplete="name"
+                placeholder="Your name"
+                value={name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="register-email" className="text-sm font-medium">
+                Email
+              </label>
+              <Input
+                id="register-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="register-password" className="text-sm font-medium">
+                  Password
+                </label>
+                <Input
+                  id="register-password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="register-confirm" className="text-sm font-medium">
+                  Confirm password
+                </label>
+                <Input
+                  id="register-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Repeat it"
+                  value={confirmPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
             {error && (
-              <div className="text-danger text-small">{error}</div>
+              <p role="alert" className="text-sm text-danger">
+                {error}
+              </p>
             )}
-            <Button
-              type="submit"
-              isPending={loading}
-              className="w-full"
-            >
-              Create Account
+            <Button type="submit" isPending={loading} className="w-full rounded-full">
+              Create account
             </Button>
           </form>
 
-          <div className="relative flex py-5 items-center">
-            <div className="flex-grow border-t border-divider"></div>
-            <span className="flex-shrink mx-4 text-default-400 text-small">OR</span>
-            <div className="flex-grow border-t border-divider"></div>
+          {/*
+          TEMPORARILY DISABLED — Google OAuth is not configured yet.
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-default-200" />
+            <span className="text-xs text-muted">OR</span>
+            <span className="h-px flex-1 bg-default-200" />
           </div>
-
           <Button
-            className="w-full"
-            variant="outline"
+            className="w-full rounded-full"
+            variant="secondary"
             onPress={handleGoogleSignup}
             isPending={googleLoading}
             isDisabled={loading || googleLoading}
           >
             Continue with Google
           </Button>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-2">
-          <div className="text-small text-center">
+          */}
+
+          <p className="text-center text-sm text-muted">
             Already have an account?{" "}
-            <Link href={next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login"}>
-              Login
+            <Link
+              href={next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Log in
             </Link>
-          </div>
-        </CardFooter>
+          </p>
+        </CardContent>
       </Card>
     </div>
   );
