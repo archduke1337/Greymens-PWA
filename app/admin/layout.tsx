@@ -82,13 +82,13 @@ export const ADMIN_SECTIONS = [  {
     cap: "departments.manage",
   },
   {
-    // Offices and designations merged into one console: visible when the
-    // caller holds either capability. A single cap here would hide the page
-    // from half its entitled managers.
-    label: "Positions",
+    // Titles only. Offices moved to the Access console because an office
+    // grants capabilities; a designation grants none, so it is not access
+    // administration and does not belong next to it.
+    label: "Designations",
     href: "/admin/positions",
     Icon: Landmark,
-    cap: ["governance.manage_offices", "designations.assign"],
+    cap: "designations.assign",
   },
   { label: "Blogs", href: "/admin/blog", Icon: FileText, cap: "blog.review" },
   {
@@ -122,12 +122,13 @@ export const ADMIN_SECTIONS = [  {
     cap: "notifications.send",
   },
   {
-    // Roles and powers merged into one console: visible when the caller holds
-    // either capability (each tab is filtered again inside the page).
+    // Everything that grants authority: roles, charter offices (an office is a
+    // role plus a term) and operational powers. Visible when the caller holds
+    // any of the three capabilities; each tab is filtered again inside.
     label: "Access & Powers",
     href: "/admin/access",
     Icon: ShieldCheck,
-    cap: ["access.assign_roles", "powers.manage"],
+    cap: ["access.assign_roles", "powers.manage", "governance.manage_offices"],
   },
   {
     label: "Governance",
@@ -279,7 +280,7 @@ export default function AdminLayout({
       {/* Admin Sidebar */}
       <aside className="w-64 bg-card border-r border-border p-4 hidden lg:block">
         <div className="mb-6">
-          <h2 className="text-lg font-bold">Admin Panel</h2>
+          <h2 className="text-lg font-bold">Console</h2>
           <p className="text-sm text-muted-foreground">Club Management</p>
         </div>
         <nav className="space-y-1">

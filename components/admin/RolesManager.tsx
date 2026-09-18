@@ -26,6 +26,12 @@ type Role = {
   slug: string;
   description?: string;
   capabilities: string[];
+  /**
+   * Set when this template *is* a charter office. Offices and roles are the
+   * same grant in the same table; the office is the template plus a term, and
+   * it is assigned from the Offices tab.
+   */
+  officeId?: string;
   isActive: boolean;
 };
 
@@ -249,7 +255,11 @@ export default function RolesManager() {
 
   const visibleRoles = useMemo(() => {
     const q = roleFilter.trim().toLowerCase();
-    const active = roles.filter((item) => item.isActive);
+    // Office templates are excluded: an office carries a term and a
+    // single-holder rule that a plain role assignment cannot express, so
+    // assigning one here would be a second, termless route to the same
+    // authority. Offices are assigned from the Offices tab.
+    const active = roles.filter((item) => item.isActive && !item.officeId);
     if (!q) return active;
     return active.filter((item) => item.name.toLowerCase().includes(q) || item.slug.toLowerCase().includes(q));
   }, [roles, roleFilter]);
@@ -306,7 +316,9 @@ export default function RolesManager() {
     <>
       <p className="text-sm text-default-500 -mt-2">
         Role templates bundle capabilities; every assignment carries a scope and optional expiry. A role manager
-        can only grant capabilities they hold themselves.
+        can only grant capabilities they hold themselves. Charter offices are the same kind of grant — their
+        templates are listed here, marked <span className="font-medium">office</span>, but assigned from the
+        Offices tab, which also records the term.
       </p>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -624,6 +636,11 @@ export default function RolesManager() {
                       <p className="text-xs font-mono text-default-400">{item.slug}</p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-1.5">
+                      {item.officeId && (
+                        <Chip size="sm" variant="soft" title="Charter office — assign from the Offices tab">
+                          office
+                        </Chip>
+                      )}
                       <Chip size="sm" variant="soft">
                         {liveCountFor(item.$id)} active
                       </Chip>

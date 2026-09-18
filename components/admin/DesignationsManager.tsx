@@ -1,7 +1,7 @@
 // components/admin/DesignationsManager.tsx
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   PlusIcon,
@@ -16,10 +16,12 @@ import {
 
 import { getErrorMessage } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
+import { CAPABILITIES } from "@/lib/capabilities";
 import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Chip,
   Input,
   Label,
@@ -63,6 +65,7 @@ export default function DesignationsManager({ designations, departments, onChang
   const [editingDesig, setEditingDesig] = useState<Designation | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [capabilityQuery, setCapabilityQuery] = useState("");
 
   // Assign modal state
   const { isOpen: isAssignOpen, open: openAssign, close: closeAssign } = useOverlayState();
@@ -71,7 +74,18 @@ export default function DesignationsManager({ designations, departments, onChang
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [manualUserId, setManualUserId] = useState("");
+  const [directoryUnavailable, setDirectoryUnavailable] = useState(false);
   const [assigning, setAssigning] = useState(false);
+
+  /**
+   * Member search posts to `/api/admin/members/search`, which requires
+   * `users.view` — a capability this page's own gate (`designations.assign`)
+   * does not imply. An operations_head can therefore administer titles without
+   * being able to look members up, so the picker degrades to a pasted user ID
+   * instead of dead-ending on a 403.
+   */
+  const assignUserId = selectedUser?.userId ?? manualUserId.trim();
 
   // Revoke state
   const { isOpen: isRevokeOpen, open: openRevoke, close: closeRevoke } = useOverlayState();
@@ -90,9 +104,28 @@ export default function DesignationsManager({ designations, departments, onChang
     departmentId: undefined,
     badgeIcon: "",
     badgeColor: "#6366f1",
+    capabilities: [],
     isActive: true,
     maxHolders: undefined,
   });
+
+  const visibleCapabilities = useMemo(() => {
+    const q = capabilityQuery.trim().toLowerCase();
+    return q
+      ? CAPABILITIES.filter((capability) => capability.toLowerCase().includes(q))
+      : CAPABILITIES;
+  }, [capabilityQuery]);
+
+  const toggleCapability = (capability: string) =>
+    setFormData((current) => {
+      const selected = current.capabilities ?? [];
+      return {
+        ...current,
+        capabilities: selected.includes(capability)
+          ? selected.filter((item) => item !== capability)
+          : [...selected, capability],
+      };
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +186,7 @@ export default function DesignationsManager({ designations, departments, onChang
       departmentId: desig.departmentId,
       badgeIcon: desig.badgeIcon || "",
       badgeColor: desig.badgeColor || "#6366f1",
+      capabilities: desig.capabilities ?? [],
       isActive: desig.isActive,
       maxHolders: desig.maxHolders,
     });
@@ -191,6 +225,7 @@ export default function DesignationsManager({ designations, departments, onChang
     setSearchQuery("");
     setSearchResults([]);
     setSelectedUser(null);
+    setManualUserId("");
     openAssign();
   };
 
@@ -207,6 +242,7 @@ export default function DesignationsManager({ designations, departments, onChang
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Error searching users:", message);
+      if (/forbidden|403/i.test(message)) setDirectoryUnavailable(true);
       toast.error(message || "Failed to search users");
     } finally {
       setSearching(false);
@@ -214,7 +250,7 @@ export default function DesignationsManager({ designations, departments, onChang
   };
 
   const handleAssign = async () => {
-    if (!selectedUser || !assignTarget) return;
+    if (!assignTarget || !assignUserId) return;
     setAssigning(true);
     try {
       const response = await fetch("/api/admin/designations/assign", {
@@ -222,16 +258,17 @@ export default function DesignationsManager({ designations, departments, onChang
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          userId: selectedUser.userId,
+          userId: assignUserId,
           designationId: assignTarget.$id,
         }),
       });
       const payload = (await response.json().catch(() => null)) as { error?: string; alreadyAssigned?: boolean } | null;
       if (!response.ok) throw new Error(payload?.error || "Failed to assign designation");
+      const assignee = selectedUser?.urn || assignUserId;
       toast.success(
         payload?.alreadyAssigned
-          ? `${selectedUser.urn || selectedUser.userId} already holds "${assignTarget.name}".`
-          : `Designation "${assignTarget.name}" assigned to ${selectedUser.urn || selectedUser.userId}!`
+          ? `${assignee} already holds "${assignTarget.name}".`
+          : `Designation "${assignTarget.name}" assigned to ${assignee}!`
       );
       closeAssign();
       await onChanged();
@@ -312,6 +349,7 @@ export default function DesignationsManager({ designations, departments, onChang
       departmentId: undefined,
       badgeIcon: "",
       badgeColor: "#6366f1",
+      capabilities: [],
       isActive: true,
       maxHolders: undefined,
     });
@@ -429,6 +467,19 @@ export default function DesignationsManager({ designations, departments, onChang
                     <p className="text-xs text-default-400">
                       Max holders: {desig.maxHolders}
                     </p>
+                  )}
+
+                  {/* Capabilities: empty means an honour with no authority */}
+                  {desig.capabilities && desig.capabilities.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {desig.capabilities.map((capability) => (
+                        <Chip key={capability} size="sm" className="text-xs font-mono">
+                          {capability}
+                        </Chip>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-default-400">Grants no capabilities</p>
                   )}
 
                   {/* Status */}
@@ -674,6 +725,43 @@ export default function DesignationsManager({ designations, departments, onChang
                       </Select>
                     </div>
 
+                    <fieldset className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <legend className="text-sm font-medium">Capabilities (optional)</legend>
+                        <Input
+                          className="max-w-52"
+                          placeholder="Filter capabilities..."
+                          aria-label="Filter capabilities"
+                          value={capabilityQuery}
+                          onChange={(e: any) => setCapabilityQuery(e.target.value)}
+                        />
+                      </div>
+                      <p className="text-xs text-default-400">
+                        A title grants nothing unless listed here. Anything you add is checked
+                        against the capabilities you hold yourself, and it appears in the Access
+                        console alongside roles, offices and powers.
+                      </p>
+                      <div className="grid max-h-56 gap-1.5 overflow-y-auto rounded-lg border border-default-200 p-3 sm:grid-cols-2">
+                        {visibleCapabilities.map((capability) => (
+                          <Checkbox
+                            key={capability}
+                            isSelected={(formData.capabilities ?? []).includes(capability)}
+                            onChange={() => toggleCapability(capability)}
+                          >
+                            <Checkbox.Content>
+                              <Checkbox.Control>
+                                <Checkbox.Indicator />
+                              </Checkbox.Control>
+                              <span className="text-xs font-mono">{capability}</span>
+                            </Checkbox.Content>
+                          </Checkbox>
+                        ))}
+                        {visibleCapabilities.length === 0 && (
+                          <p className="text-xs text-default-400">No capability matches “{capabilityQuery}”.</p>
+                        )}
+                      </div>
+                    </fieldset>
+
                     <Switch
                       isSelected={formData.isActive}
                       onChange={(checked: any) =>
@@ -736,28 +824,44 @@ export default function DesignationsManager({ designations, departments, onChang
                   </ModalHeader>
 
                   <ModalBody className="py-6 space-y-4">
-                    {/* Search */}
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Search by URN, branch, or userId..."
-                        value={searchQuery}
-                        onChange={(e: any) => setSearchQuery(e.target.value)}
-                        onKeyPress={(e: any) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleSearchUsers();
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="primary"
-                        onPress={handleSearchUsers}
-                        isPending={searching}
-                      >
-                        <SearchIcon className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {/* Search, or a pasted ID when the directory is refused */}
+                    {directoryUnavailable ? (
+                      <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                        <p className="text-xs text-amber-200">
+                          Member search needs the users.view capability, which this
+                          account does not hold. Paste the member&apos;s user ID
+                          instead.
+                        </p>
+                        <Input
+                          placeholder="Appwrite user ID"
+                          aria-label="Member user ID"
+                          value={manualUserId}
+                          onChange={(e: any) => setManualUserId(e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Search by URN, branch, or userId..."
+                          value={searchQuery}
+                          onChange={(e: any) => setSearchQuery(e.target.value)}
+                          onKeyPress={(e: any) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleSearchUsers();
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="primary"
+                          onPress={handleSearchUsers}
+                          isPending={searching}
+                        >
+                          <SearchIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Search Results */}
                     <div className="max-h-64 overflow-y-auto space-y-2">
@@ -799,11 +903,11 @@ export default function DesignationsManager({ designations, departments, onChang
                     </div>
 
                     {/* Selected User */}
-                    {selectedUser && (
+                    {assignUserId && (
                       <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg">
                         <p className="text-sm font-semibold">Selected:</p>
                         <p className="text-sm">
-                          {selectedUser.urn || selectedUser.userId}
+                          {selectedUser?.urn || assignUserId}
                         </p>
                       </div>
                     )}
@@ -819,7 +923,7 @@ export default function DesignationsManager({ designations, departments, onChang
                     </Button>
                     <Button
                       isPending={assigning}
-                      isDisabled={!selectedUser}
+                      isDisabled={!assignUserId}
                       className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
                       onPress={handleAssign}
                     >

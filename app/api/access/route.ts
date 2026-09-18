@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
-import { CAPABILITIES, getAccessSummary, getEffectiveCapabilities, isCapability, requireCapability, hasServerCapability } from "@/lib/access-control";
+import { getAccessSummary, isCapability, requireCapability, hasServerCapability, unheldCapabilities } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -22,40 +22,70 @@ function validFutureDate(value: string): boolean {
 }
 
 /**
- * No-grant-beyond-hold: a role manager can only deal capabilities they hold
- * themselves (admins hold "*" and bypass). Without this, any holder of
- * access.assign_roles can mint themselves a superset role — self-escalation
- * through the front door.
+ * Read model for the Access console. Each half is gated on the capability that
+ * owns it, so an offices-only manager still gets the office list (and is told
+ * nothing about roles) rather than a 403 for the whole page.
  */
-async function unheldCapabilities(actorId: string, caps: string[]): Promise<string[]> {
-  const held = await getEffectiveCapabilities(actorId);
-  if (held.has("*")) return [];
-  return caps.filter((cap) => !held.has(cap));
-}
-
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
   if (!authenticated.user) return authenticated.response;
   try {
     const summary = await getAccessSummary(authenticated.user.$id);
-    const isAdmin = await hasServerCapability(authenticated.user.$id, "access.assign_roles");
-    if (!isAdmin) return ok(summary);
+    const [canAssignRoles, canManageOffices, canAssignDesignations] =
+      await Promise.all([
+        hasServerCapability(authenticated.user.$id, "access.assign_roles"),
+        hasServerCapability(authenticated.user.$id, "governance.manage_offices"),
+        hasServerCapability(authenticated.user.$id, "designations.assign"),
+      ]);
+    if (!canAssignRoles && !canManageOffices && !canAssignDesignations) {
+      return ok(summary);
+    }
 
+    const empty = Promise.resolve({ documents: [] as Array<Record<string, unknown>> });
     const { databases } = createServerDatabases();
-    const [roles, assignments] = await Promise.all([
-      // Only active templates: the authorizer ignores inactive roles, so
-      // offering them here would promise grants that never take effect.
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.equal("isActive", [true]), Query.orderAsc("name"), Query.limit(100)]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [Query.orderDesc("assignedAt"), Query.limit(200)]),
-    ]);
+    const [roles, assignments, officeAssignments, designations, designationAssignments] =
+      await Promise.all([
+        // Only active templates: the authorizer ignores inactive roles, so
+        // offering them here would promise grants that never take effect.
+        canAssignRoles
+          ? databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, [Query.equal("isActive", [true]), Query.orderAsc("name"), Query.limit(100)])
+          : empty,
+        canAssignRoles
+          ? databases.listDocuments(DATABASE_ID, COLLECTIONS.ROLE_ASSIGNMENTS, [Query.orderDesc("assignedAt"), Query.limit(200)])
+          : empty,
+        canManageOffices
+          ? databases.listDocuments(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, [Query.orderDesc("termStart"), Query.limit(200)])
+          : empty,
+        // A title can carry capabilities, so it is an authority grant and
+        // belongs in the same view. Gated on the capability that administers
+        // it: you see the grant types you administer.
+        canAssignDesignations
+          ? databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [Query.equal("isActive", [true]), Query.orderAsc("level"), Query.limit(100)])
+          : empty,
+        canAssignDesignations
+          ? databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [Query.equal("isActive", [true]), Query.limit(500)])
+          : empty,
+      ]);
     // Names live on the auth record — best-effort so a lookup failure never
     // fails the access center.
-    const assigneeIds = [...new Set(assignments.documents.map((item) => String(item.userId ?? "")).filter(Boolean))];
+    const assigneeIds = [...new Set([
+      ...assignments.documents.map((item) => String(item.userId ?? "")),
+      ...officeAssignments.documents.map((item) => String(item.userId ?? "")),
+      ...designationAssignments.documents.map((item) => String(item.userId ?? "")),
+    ].filter(Boolean))];
     const accountNames = await getAccountNames(assigneeIds).then(
       (names) => Object.fromEntries(names) as Record<string, string>,
       () => ({}) as Record<string, string>,
     );
-    return ok({ ...summary, capabilities: CAPABILITIES, roles: roles.documents, assignments: assignments.documents, accountNames });
+    return ok({
+      ...summary,
+      roles: roles.documents,
+      assignments: assignments.documents,
+      officeAssignments: officeAssignments.documents,
+      designations: designations.documents,
+      designationAssignments: designationAssignments.documents,
+      accountNames,
+    });
   } catch (error) {
     console.error("Access lookup error:", error);
     return fail("INTERNAL", "Unable to load access data", 500);

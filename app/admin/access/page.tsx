@@ -8,22 +8,35 @@ import { ArrowLeft, SearchIcon } from "lucide-react";
 import MemberAvatar from "@/components/MemberAvatar";
 import RolesManager from "@/components/admin/RolesManager";
 import PowersManager from "@/components/admin/PowersManager";
+import OfficesManager, {
+  type OfficeAssignment,
+  type MemberOption,
+} from "@/components/admin/OfficesManager";
+import { GOVERNANCE_OFFICES } from "@/lib/governance";
 import { usePermissions } from "@/context/PermissionContext";
 
-type TabKey = "people" | "roles" | "powers";
+type TabKey = "people" | "roles" | "offices" | "powers";
 
 /**
- * Merged Access console: roles (+ their assignments) and operational powers
- * used to live on separate pages, so "who can do what" took two visits and a
- * mental join. One console now answers it — the People tab is that join, the
- * other two tabs are where grants are made.
+ * The one place authority is granted and inspected.
  *
- * Tabs are capability-filtered like Positions: a caller entitled to only one
- * half sees only that half (the server filters its read models the same way).
+ * Roles, charter offices and operational powers were three consoles answering
+ * one question ("what can this account do?"), and each showed a different
+ * slice of the answer. They are one table-and-resolver now — an office is a
+ * role template carrying a term — so they are one console: the People tab joins
+ * all three, the other tabs are where grants are made.
+ *
+ * Tabs are capability-filtered: a caller entitled to only one half sees only
+ * that half (the server filters its read model the same way).
  */
 const TABS: Array<{ key: TabKey; label: string; cap: string | string[] }> = [
-  { key: "people", label: "People", cap: ["access.assign_roles", "powers.manage"] },
-  { key: "roles", label: "Roles & assignments", cap: "access.assign_roles" },
+  {
+    key: "people",
+    label: "People",
+    cap: ["access.assign_roles", "powers.manage", "governance.manage_offices"],
+  },
+  { key: "roles", label: "Roles", cap: "access.assign_roles" },
+  { key: "offices", label: "Offices", cap: "governance.manage_offices" },
   { key: "powers", label: "Powers", cap: "powers.manage" },
 ];
 
@@ -33,6 +46,20 @@ interface PersonRole {
   capabilities: string[];
   scope: string;
   expiresAt?: string;
+}
+
+interface PersonOffice {
+  assignmentId: string;
+  title: string;
+  selectionMethod: string;
+  termStart: string;
+  termEnd?: string;
+}
+
+interface PersonTitle {
+  assignmentId: string;
+  name: string;
+  capabilities: string[];
 }
 
 interface PersonPower {
@@ -49,6 +76,8 @@ interface PersonAccess {
   urn?: string;
   avatar?: string;
   roles: PersonRole[];
+  offices: PersonOffice[];
+  titles: PersonTitle[];
   powers: PersonPower[];
 }
 
@@ -61,6 +90,22 @@ interface AccessPayload {
     scopeType?: string;
     scopeId?: string;
     expiresAt?: string;
+    isActive?: boolean;
+  }>;
+  officeAssignments?: Array<{
+    $id: string;
+    officeId?: string;
+    userId?: string;
+    selectionMethod?: string;
+    termStart?: string;
+    termEnd?: string;
+    status?: string;
+  }>;
+  designations?: Array<{ $id: string; name?: unknown; capabilities?: unknown }>;
+  designationAssignments?: Array<{
+    $id: string;
+    userId?: string;
+    designationId?: string;
     isActive?: boolean;
   }>;
   accountNames?: Record<string, string>;
@@ -81,7 +126,9 @@ interface PowersPayload {
 }
 
 interface UsersPayload {
-  users?: Array<{ profile?: { userId?: string; urn?: string; avatar?: string } }>;
+  users?: Array<{
+    profile?: { userId?: string; urn?: string; avatar?: string };
+  }>;
   accountNames?: Record<string, string>;
 }
 
@@ -102,6 +149,12 @@ function isLive(entry: { isActive?: boolean; expiresAt?: string }) {
   return !entry.expiresAt || new Date(entry.expiresAt).getTime() > Date.now();
 }
 
+/** A term that has already ended stops granting, exactly like the resolver. */
+function isOfficeLive(entry: { status?: string; termEnd?: string }) {
+  if (entry.status !== "active") return false;
+  return !entry.termEnd || entry.termEnd >= new Date().toISOString().slice(0, 10);
+}
+
 function formatDate(value?: string) {
   if (!value) return "";
   const parsed = new Date(value);
@@ -119,6 +172,9 @@ function AccessConsole() {
   );
 
   const [people, setPeople] = useState<PersonAccess[]>([]);
+  const [officeAssignments, setOfficeAssignments] = useState<OfficeAssignment[]>([]);
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<string[]>([]);
   const [loadingPeople, setLoadingPeople] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -144,7 +200,7 @@ function AccessConsole() {
     try {
       // Three independent reads, joined client-side. Each can be refused
       // without taking the page down: an admin with only powers.manage still
-      // sees who holds powers and is told why the role half is missing.
+      // sees who holds powers and is told why the other halves are missing.
       const [accessResult, powersResult, usersResult] = await Promise.allSettled([
         fetchJson<AccessPayload>("/api/access"),
         fetchJson<PowersPayload>("/api/admin/powers"),
@@ -157,11 +213,23 @@ function AccessConsole() {
 
       const nextNotes: string[] = [];
       if (accessResult.status === "rejected") {
-        nextNotes.push(`Roles and assignments could not be read: ${accessResult.reason?.message ?? "unknown error"}.`);
-      } else if (!Array.isArray(accessPayload?.roles) || !Array.isArray(accessPayload?.assignments)) {
-        nextNotes.push(
-          "Roles and assignments are hidden here because this account does not hold access.assign_roles.",
-        );
+        nextNotes.push(`Roles, offices and assignments could not be read: ${accessResult.reason?.message ?? "unknown error"}.`);
+      } else {
+        if (!Array.isArray(accessPayload?.roles) || !Array.isArray(accessPayload?.assignments)) {
+          nextNotes.push(
+            "Roles and role assignments are hidden here because this account does not hold access.assign_roles.",
+          );
+        }
+        if (!Array.isArray(accessPayload?.officeAssignments)) {
+          nextNotes.push(
+            "Offices are hidden here because this account does not hold governance.manage_offices.",
+          );
+        }
+        if (!Array.isArray(accessPayload?.designationAssignments)) {
+          nextNotes.push(
+            "Designations are hidden here because this account does not hold designations.assign.",
+          );
+        }
       }
       if (powersResult.status === "rejected") {
         nextNotes.push(`Powers could not be read: ${powersResult.reason?.message ?? "unknown error"}.`);
@@ -174,6 +242,10 @@ function AccessConsole() {
       const roleById = new Map((accessPayload?.roles ?? []).map((role) => [role.$id, role]));
       const powerById = new Map((powersPayload?.powers ?? []).map((power) => [power.$id, power]));
       const departmentById = new Map((powersPayload?.departments ?? []).map((dept) => [dept.$id, dept]));
+      const titleByOffice = new Map(GOVERNANCE_OFFICES.map((office) => [office.id, office.title]));
+      const designationById = new Map(
+        (accessPayload?.designations ?? []).map((entry) => [entry.$id, entry]),
+      );
       const profileByUser = new Map(
         (usersPayload?.users ?? []).map((entry) => [String(entry.profile?.userId ?? ""), entry.profile ?? {}]),
       );
@@ -182,6 +254,22 @@ function AccessConsole() {
         ...(powersPayload?.accountNames ?? {}),
         ...(usersPayload?.accountNames ?? {}),
       };
+
+      setAccountNames(nameByUser);
+      setMembers(
+        (usersPayload?.users ?? [])
+          .map((entry): MemberOption | null => {
+            const userId = String(entry.profile?.userId ?? "");
+            if (!userId) return null;
+            return {
+              userId,
+              name: nameByUser[userId] || entry.profile?.urn || userId,
+              urn: entry.profile?.urn,
+            };
+          })
+          .filter((option): option is MemberOption => option !== null)
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
 
       const peopleByUser = new Map<string, PersonAccess>();
       const ensurePerson = (userId: string): PersonAccess => {
@@ -194,6 +282,8 @@ function AccessConsole() {
           urn: profile?.urn,
           avatar: profile?.avatar,
           roles: [],
+          offices: [],
+          titles: [],
           powers: [],
         };
         peopleByUser.set(userId, person);
@@ -212,6 +302,51 @@ function AccessConsole() {
             : [],
           scope: [assignment.scopeType || "global", assignment.scopeId].filter(Boolean).join(":"),
           expiresAt: assignment.expiresAt,
+        });
+      }
+
+      const offices: OfficeAssignment[] = [];
+      for (const row of accessPayload?.officeAssignments ?? []) {
+        const officeId = String(row.officeId ?? "");
+        const assignment: OfficeAssignment = {
+          $id: row.$id,
+          officeId,
+          userId: String(row.userId ?? ""),
+          selectionMethod: String(row.selectionMethod ?? ""),
+          termStart: String(row.termStart ?? ""),
+          termEnd: row.termEnd,
+          status: String(row.status ?? ""),
+        };
+        offices.push(assignment);
+        if (!assignment.userId || !isOfficeLive(assignment)) continue;
+        ensurePerson(assignment.userId).offices.push({
+          assignmentId: assignment.$id,
+          title: titleByOffice.get(officeId) ?? officeId,
+          selectionMethod: assignment.selectionMethod,
+          termStart: assignment.termStart,
+          termEnd: assignment.termEnd,
+        });
+      }
+      setOfficeAssignments(offices);
+
+      for (const assignment of accessPayload?.designationAssignments ?? []) {
+        const userId = String(assignment.userId ?? "");
+        if (!userId || !isLive(assignment)) continue;
+        const entry = assignment.designationId
+          ? designationById.get(String(assignment.designationId))
+          : undefined;
+        const capabilities = Array.isArray(entry?.capabilities)
+          ? entry.capabilities.filter(
+              (capability): capability is string => typeof capability === "string",
+            )
+          : [];
+        ensurePerson(userId).titles.push({
+          assignmentId: assignment.$id,
+          name:
+            typeof entry?.name === "string" && entry.name
+              ? entry.name
+              : String(assignment.designationId ?? "Unknown designation"),
+          capabilities,
         });
       }
 
@@ -258,6 +393,13 @@ function AccessConsole() {
         person.urn,
         person.userId,
         ...person.roles.flatMap((role) => [role.name, ...role.capabilities]),
+        ...person.offices.flatMap((office) => [
+          office.title,
+          office.selectionMethod,
+          office.termStart,
+          office.termEnd ?? "",
+        ]),
+        ...person.titles.flatMap((title) => [title.name, ...title.capabilities]),
         ...person.powers.map((power) => `${power.name} ${power.department ?? ""}`),
       ].some((value) => String(value ?? "").toLowerCase().includes(q)),
     );
@@ -268,7 +410,7 @@ function AccessConsole() {
       <main className="mx-auto max-w-6xl px-4 py-12">
         <Card className="border-none shadow-md">
           <CardContent className="p-8 text-center text-default-500">
-            The access console requires the access.assign_roles or powers.manage capability.
+            The access console requires access.assign_roles, governance.manage_offices, or powers.manage.
           </CardContent>
         </Card>
       </main>
@@ -286,8 +428,9 @@ function AccessConsole() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Access &amp; Powers</h1>
           <p className="text-default-500 mt-1 text-sm md:text-base max-w-3xl">
-            Who can do what, in one place. Role templates bundle capabilities on a scope with an optional
-            expiry; operational powers are fixed grants. The People tab joins the two.
+            Who can do what, in one place. A role bundles capabilities on a scope with an optional expiry; a
+            charter office is the same bundle plus a term; a designation carries capabilities only when they
+            are listed on it; operational powers are fixed grants. The People tab joins all four.
           </p>
         </div>
       </div>
@@ -317,12 +460,12 @@ function AccessConsole() {
       )}
 
       {activeTab === "people" && (
-        <section className="space-y-4" aria-label="Members with roles or powers">
+        <section className="space-y-4" aria-label="Members with roles, offices, or powers">
           <div className="flex flex-wrap items-center gap-3">
             <Input
               className="max-w-md"
-              placeholder="Search by name, URN, role, or power..."
-              aria-label="Search members, roles, and powers"
+              placeholder="Search by name, URN, role, office, or power..."
+              aria-label="Search members, roles, offices, and powers"
               value={searchQuery}
               onChange={(event: any) => setSearchQuery(event.target.value)}
             />
@@ -335,7 +478,7 @@ function AccessConsole() {
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                <p className="mt-4">Joining roles and powers...</p>
+                <p className="mt-4">Joining roles, offices and powers...</p>
               </div>
             </div>
           ) : loadError ? (
@@ -352,7 +495,7 @@ function AccessConsole() {
               <CardContent className="p-8 text-center text-default-500">
                 {searchQuery.trim()
                   ? "No member matches that search."
-                  : "No member currently holds an active role or power."}
+                  : "No member currently holds an active role, office, or power."}
               </CardContent>
             </Card>
           ) : (
@@ -377,6 +520,16 @@ function AccessConsole() {
                       {person.roles.length > 0 && (
                         <Chip size="sm" variant="soft">
                           {person.roles.length} role{person.roles.length === 1 ? "" : "s"}
+                        </Chip>
+                      )}
+                      {person.offices.length > 0 && (
+                        <Chip size="sm" variant="soft">
+                          {person.offices.length} office{person.offices.length === 1 ? "" : "s"}
+                        </Chip>
+                      )}
+                      {person.titles.length > 0 && (
+                        <Chip size="sm" variant="soft">
+                          {person.titles.length} title{person.titles.length === 1 ? "" : "s"}
                         </Chip>
                       )}
                       {person.powers.length > 0 && (
@@ -405,6 +558,43 @@ function AccessConsole() {
                     </div>
                   )}
 
+                  {person.offices.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Offices</span>
+                      {person.offices.map((office) => (
+                        <Chip
+                          key={office.assignmentId}
+                          size="sm"
+                          title={[office.selectionMethod, `from ${office.termStart}`, formatDate(office.termEnd)]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        >
+                          {office.title}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+
+                  {person.titles.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Titles</span>
+                      {person.titles.map((title) => (
+                        <Chip
+                          key={title.assignmentId}
+                          size="sm"
+                          variant="soft"
+                          title={
+                            title.capabilities.length > 0
+                              ? title.capabilities.join(", ")
+                              : "Honour only — grants no capabilities"
+                          }
+                        >
+                          {title.name}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+
                   {person.powers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wider text-default-400">Powers</span>
@@ -428,12 +618,21 @@ function AccessConsole() {
 
           <p className="flex items-center gap-1 text-xs text-default-400">
             <SearchIcon className="h-3 w-3" aria-hidden />
-            Revoked and expired grants are omitted here; the Roles and Powers tabs keep the full trail.
+            Revoked and expired grants are omitted here; the Roles, Offices and Powers tabs keep the full trail.
           </p>
         </section>
       )}
 
       {activeTab === "roles" && <RolesManager />}
+      {activeTab === "offices" && (
+        <OfficesManager
+          assignments={officeAssignments}
+          members={members}
+          accountNames={accountNames}
+          membersAvailable={members.length > 0}
+          onChanged={loadPeople}
+        />
+      )}
       {activeTab === "powers" && <PowersManager />}
     </main>
   );

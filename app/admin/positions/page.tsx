@@ -8,21 +8,10 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errorHandler";
 import { Button, Card, CardContent, Chip, Input } from "@heroui/react";
 import { Loader2, SearchIcon } from "lucide-react";
-import OfficesManager, { type OfficeAssignment, type MemberOption } from "@/components/admin/OfficesManager";
 import DesignationsManager from "@/components/admin/DesignationsManager";
 import type { Department, Designation } from "@/lib/types";
 
-type TabKey = "people" | "offices" | "designations";
-
-interface PersonOffices {
-  officeId: string;
-  title: string;
-  assignmentId: string;
-  selectionMethod: string;
-  termStart: string;
-  termEnd?: string;
-  status: string;
-}
+type TabKey = "people" | "designations";
 
 interface PersonDesignation {
   designationId: string;
@@ -33,16 +22,10 @@ interface Person {
   userId: string;
   name: string;
   urn?: string;
-  branch?: string;
-  offices: PersonOffices[];
   designations: PersonDesignation[];
 }
 
-interface PositionsData {
-  canManageOffices: boolean;
-  canAssignDesignations: boolean;
-  assignments: OfficeAssignment[];
-  members: MemberOption[];
+interface DesignationsData {
   designations: Array<Designation & { holderCount?: number }>;
   departments: Department[];
   people: Person[];
@@ -51,31 +34,39 @@ interface PositionsData {
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "people", label: "People" },
-  { key: "offices", label: "Offices" },
   { key: "designations", label: "Designations" },
 ];
 
-export default function AdminPositionsPage() {
+/**
+ * Titles and ranks.
+ *
+ * A designation is an honour by default and grants nothing. It only carries
+ * authority when an administrator lists capabilities on it, which makes it a
+ * grant like the other three — and therefore subject to the same
+ * no-grant-beyond-hold rule, and visible in the Access console's People tab.
+ * The distinction this page keeps is who administers it, not whether it can
+ * grant: titles are managed here, capability bundles elsewhere.
+ */
+export default function AdminDesignationsPage() {
   const { user, loading: authLoading } = useAuth();
   const { hasCapability } = usePermissions();
   const router = useRouter();
-  const [data, setData] = useState<PositionsData | null>(null);
+  const [data, setData] = useState<DesignationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("people");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const canOffices = hasCapability("governance.manage_offices");
-  const canDesignations = hasCapability("designations.assign");
+  const canAssign = hasCapability("designations.assign");
 
   const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/positions", { credentials: "include" });
-      const payload = (await response.json().catch(() => null)) as (PositionsData & { error?: string }) | null;
-      if (!response.ok) throw new Error(payload?.error || "Unable to load positions");
-      setData(payload as PositionsData);
+      const payload = (await response.json().catch(() => null)) as (DesignationsData & { error?: string }) | null;
+      if (!response.ok) throw new Error(payload?.error || "Unable to load designations");
+      setData(payload as DesignationsData);
     } catch (error) {
-      console.error("Error loading positions:", error);
-      toast.error(getErrorMessage(error) || "Failed to load positions");
+      console.error("Error loading designations:", error);
+      toast.error(getErrorMessage(error) || "Failed to load designations");
     } finally {
       setLoading(false);
     }
@@ -89,21 +80,6 @@ export default function AdminPositionsPage() {
     if (!authLoading && user) void loadData();
   }, [user, authLoading, router, loadData]);
 
-  const visibleTabs = useMemo(() => {
-    // A caller entitled to only one system sees only its tab — the server
-    // filters the read model the same way, so hidden tabs have no data.
-    if (canOffices && canDesignations) return TABS;
-    if (canOffices) return TABS.filter((tab) => tab.key !== "designations");
-    if (canDesignations) return TABS.filter((tab) => tab.key !== "offices");
-    return TABS;
-  }, [canOffices, canDesignations]);
-
-  useEffect(() => {
-    if (!visibleTabs.some((tab) => tab.key === activeTab)) {
-      setActiveTab(visibleTabs[0]?.key ?? "people");
-    }
-  }, [visibleTabs, activeTab]);
-
   const filteredPeople = useMemo(() => {
     const list = data?.people ?? [];
     const q = searchQuery.trim().toLowerCase();
@@ -112,9 +88,7 @@ export default function AdminPositionsPage() {
       [
         person.name,
         person.urn,
-        person.branch,
         person.userId,
-        ...person.offices.map((office) => office.title),
         ...person.designations.map((desig) => desig.name),
       ].some((value) => (value ?? "").toLowerCase().includes(q)),
     );
@@ -128,11 +102,11 @@ export default function AdminPositionsPage() {
     );
   }
   if (!user) return null;
-  if (!canOffices && !canDesignations) {
+  if (!canAssign) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-12">
         <Card><CardContent className="p-8 text-center text-[var(--muted)]">
-          Position management requires the offices or designations capability.
+          Designation management requires the designations.assign capability.
         </CardContent></Card>
       </main>
     );
@@ -145,17 +119,17 @@ export default function AdminPositionsPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Positions</h1>
+          <h1 className="text-3xl font-bold">Designations</h1>
           <p className="text-[var(--muted)]">
-            Constitutional offices and designations in one place. Offices grant
-            real capabilities and run on fixed terms; designations are titles
-            and ranks that grant none — the two are labelled, never merged.
+            Titles and ranks. A designation grants nothing unless capabilities
+            are listed on it — then it is an auditable grant, and it appears in
+            the Access console alongside roles, offices and powers.
           </p>
         </div>
       </div>
 
       <div className="flex gap-2">
-        {visibleTabs.map((tab) => (
+        {TABS.map((tab) => (
           <Button
             key={tab.key}
             size="sm"
@@ -171,14 +145,14 @@ export default function AdminPositionsPage() {
       {activeTab === "people" && (
         <div className="space-y-4">
           <Input
-            placeholder="Search by name, URN, branch, office, or designation..."
+            placeholder="Search by name, URN, or designation..."
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target.value)}
-            aria-label="Search position holders"
+            aria-label="Search title holders"
           />
           {filteredPeople.length === 0 ? (
             <Card><CardContent className="p-8 text-center text-[var(--muted)]">
-              {searchQuery.trim() ? "No holders match your search." : "No offices or designations are currently held."}
+              {searchQuery.trim() ? "No holders match your search." : "No designations are currently held."}
             </CardContent></Card>
           ) : (
             filteredPeople.map((person) => (
@@ -187,19 +161,9 @@ export default function AdminPositionsPage() {
                   <div>
                     <h3 className="font-semibold">{person.name}</h3>
                     <p className="text-xs text-[var(--muted)]">
-                      {[person.urn, person.branch].filter(Boolean).join(" · ") || person.userId}
+                      {person.urn || person.userId}
                     </p>
                   </div>
-                  {person.offices.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Offices</span>
-                      {person.offices.map((office) => (
-                        <Chip key={office.assignmentId} size="sm" color="accent" title={`${office.selectionMethod} · term from ${office.termStart}${office.termEnd ? ` to ${office.termEnd}` : ""}`}>
-                          {office.title}
-                        </Chip>
-                      ))}
-                    </div>
-                  )}
                   {person.designations.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Titles</span>
@@ -216,19 +180,10 @@ export default function AdminPositionsPage() {
           )}
           <p className="text-xs text-[var(--muted)]">
             <SearchIcon className="mr-1 inline h-3 w-3" />
-            Office chips carry capabilities; title chips are display-only.
+            A title with no capabilities listed is display-only. Anything that
+            grants authority shows up in the Access console.
           </p>
         </div>
-      )}
-
-      {activeTab === "offices" && data && (
-        <OfficesManager
-          assignments={data.assignments}
-          members={data.members}
-          membersAvailable={data.canManageOffices}
-          accountNames={data.accountNames}
-          onChanged={loadData}
-        />
       )}
 
       {activeTab === "designations" && data && (
