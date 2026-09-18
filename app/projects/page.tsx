@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LinkButton from "@/components/ui/LinkButton";
 import { title, subtitle } from "@/components/primitives";
 import { readApiError } from "@/lib/errorHandler";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -334,16 +335,12 @@ export default function ProjectsPage() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap justify-center gap-2">
-                <Link href="/events">
-                  <Button className="rounded-full px-5">
-                    Find a workshop
-                  </Button>
-                </Link>
-                <Link href="/contact">
-                  <Button variant="secondary" className="rounded-full px-5">
-                    Talk to us
-                  </Button>
-                </Link>
+                <LinkButton href="/events" className="rounded-full px-5">
+                  Find a workshop
+                </LinkButton>
+                <LinkButton href="/contact" variant="secondary" className="rounded-full px-5">
+                  Talk to us
+                </LinkButton>
               </div>
             </CardContent>
           </Card>
