@@ -1,7 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
@@ -24,6 +23,7 @@ import {
 
 import { usePermissions } from "@/context/PermissionContext";
 import { useAuth } from "@/context/AuthContext";
+import { Button, Header, Label, ListBox, Spinner } from "@heroui/react";
 
 /**
  * Every admin area that exists as a route, gated by capability (presentation only).
@@ -55,8 +55,7 @@ export const ADMIN_SECTIONS = [  {
     href: "/admin",
     Icon: LayoutDashboard,
     cap: "governance.manage",
-  },
-  {
+  },  {
     label: "Membership",
     href: "/admin/membership",
     Icon: Users,
@@ -144,6 +143,45 @@ export const ADMIN_SECTIONS = [  {
   },
 ];
 
+/**
+ * Sidebar grouping: sixteen flat entries are unscannable, so sections roll
+ * up under five headings. Groups render only when at least one of their
+ * sections is visible to the caller — office holders get a short sidebar,
+ * admins the full console.
+ */
+const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
+  { label: "Overview", hrefs: ["/admin"] },
+  { label: "People", hrefs: ["/admin/membership", "/admin/users", "/admin/positions"] },
+  {
+    label: "Content",
+    hrefs: [
+      "/admin/events",
+      "/admin/event-types",
+      "/admin/blog",
+      "/admin/resources",
+      "/admin/gallery",
+      "/admin/projects",
+      "/admin/sponsors",
+    ],
+  },
+  { label: "Engage", hrefs: ["/admin/notifications"] },
+  {
+    label: "Govern",
+    hrefs: ["/admin/access", "/admin/departments", "/admin/governance", "/admin/audit"],
+  },
+];
+
+/**
+ * Active-section match. Exact equality breaks on every nested route
+ * (/admin/events/abc, /admin/membership/approved), leaving the sidebar with
+ * nothing highlighted on most console screens. Prefix match instead — except
+ * /admin itself, which prefixes everything and must stay exact.
+ */
+export function isActiveSection(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -228,12 +266,8 @@ export default function AdminLayout({
   if (loading || permLoading || (admitted === null && !verifyFailed)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div
-            aria-label="Verifying access"
-            className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary"
-            role="status"
-          />
+        <div className="text-center space-y-4" role="status" aria-label="Verifying access">
+          <Spinner size="lg" />
           <p className="text-default-500">Verifying access...</p>
         </div>
       </div>
@@ -251,22 +285,18 @@ export default function AdminLayout({
             safe.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link
-              href="/dashboard"
-              className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-default-100 transition-colors"
-            >
+            <Button variant="secondary" onPress={() => router.push("/dashboard")}>
               Back to Dashboard
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
+            </Button>
+            <Button
+              variant="primary"
+              onPress={() => {
                 setVerifyFailed(false);
                 void refreshPermissions();
               }}
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
             >
               Check again
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -274,61 +304,108 @@ export default function AdminLayout({
   }
 
   const visibleSections = ADMIN_SECTIONS.filter((s) => sectionMatches(hasCapability, s.cap));
+  const byHref = new Map(visibleSections.map((s) => [s.href, s]));
+  const visibleGroups = SECTION_GROUPS.map((group) => ({
+    ...group,
+    sections: group.hrefs
+      .map((href) => byHref.get(href))
+      .filter((s): s is (typeof visibleSections)[number] => s !== undefined),
+  })).filter((group) => group.sections.length > 0);
+  // Deepest match wins: /admin/events/abc highlights Events, not Dashboard.
+  const currentSection = [...visibleSections]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find((s) => isActiveSection(pathname, s.href));
 
   return (
     <div className="flex min-h-screen">
-      {/* Admin Sidebar */}
-      <aside className="w-64 bg-card border-r border-border p-4 hidden lg:block">
-        <div className="mb-6">
-          <h2 className="text-lg font-bold">Console</h2>
-          <p className="text-sm text-muted-foreground">Club Management</p>
+      {/* Admin Sidebar: sticky full-height rail with grouped keyboard-
+          navigable sections. A ListBox (not raw links) gives arrow-key
+          movement, typeahead, and visible focus rings for free; Enter or
+          click routes via onAction. */}
+      <aside className="hidden w-72 shrink-0 border-r border-border bg-card lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto">
+        <div className="p-4 pb-2">
+          <h2 className="text-lg font-bold tracking-tight">Console</h2>
+          <p className="text-xs text-muted-foreground">Club Management</p>
         </div>
-        <nav className="space-y-1">
-          {visibleSections.map((section) => (
-            <Link
-              key={section.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                pathname === section.href
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-              href={section.href}
-            >
-              <section.Icon aria-hidden className="w-4 h-4 shrink-0" />
-              <span>{section.label}</span>
-            </Link>
+        <ListBox
+          aria-label="Console sections"
+          selectionMode="none"
+          onAction={(key) => router.push(String(key))}
+          className="px-3 pb-2"
+        >
+          {visibleGroups.map((group) => (
+            <ListBox.Section key={group.label}>
+              <Header className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </Header>
+              {group.sections.map((section) => {
+                const active = isActiveSection(pathname, section.href);
+                return (
+                  <ListBox.Item
+                    key={section.href}
+                    id={section.href}
+                    textValue={section.label}
+                    className={`rounded-xl ${active ? "bg-primary/10 font-medium text-primary" : ""}`}
+                  >
+                    <section.Icon aria-hidden className="size-4 shrink-0" />
+                    <Label>{section.label}</Label>
+                  </ListBox.Item>
+                );
+              })}
+            </ListBox.Section>
           ))}
-        </nav>
-        <div className="mt-6 pt-6 border-t border-border">
-          <Link
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            href="/dashboard"
+        </ListBox>
+        <div className="border-t border-border p-3">
+          <ListBox
+            aria-label="Console exit"
+            selectionMode="none"
+            onAction={(key) => router.push(String(key))}
           >
-            <ArrowLeft aria-hidden className="w-4 h-4 shrink-0" />
-            <span>Back to Dashboard</span>
-          </Link>
+            <ListBox.Item
+              key="/dashboard"
+              id="/dashboard"
+              textValue="Back to Dashboard"
+              className="rounded-xl"
+            >
+              <ArrowLeft aria-hidden className="size-4 shrink-0" />
+              <Label>Back to Dashboard</Label>
+            </ListBox.Item>
+          </ListBox>
+          {user?.email && (
+            <p className="truncate px-3 pb-1 pt-2 text-xs text-muted-foreground">
+              Signed in as {user.email}
+            </p>
+          )}
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {/* Compact section nav for viewports without the sidebar. */}
-        <nav aria-label="Admin sections" className="lg:hidden flex gap-2 overflow-x-auto p-3 border-b border-border bg-card sticky top-0 z-10">
-          {visibleSections.map((section) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-colors ${
-                pathname === section.href
-                  ? "bg-primary/10 text-primary border-primary/30 font-medium"
-                  : "text-muted-foreground border-border hover:text-foreground"
-              }`}
-            >
-              <section.Icon aria-hidden className="w-3.5 h-3.5 shrink-0" />
-              <span>{section.label}</span>
-            </Link>
-          ))}
-        </nav>
+      <main className="min-w-0 flex-1 overflow-auto">
+        {/* Compact section nav for viewports without the sidebar: the current
+            section up front, everything else a swipe away. */}
+        <div className="sticky top-0 z-10 border-b border-border bg-card lg:hidden">
+          <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Console{currentSection ? ` · ${currentSection.label}` : ""}
+          </p>
+          <nav aria-label="Admin sections" className="flex gap-2 overflow-x-auto px-3 pb-3">
+            {visibleSections.map((section) => {
+              const active = isActiveSection(pathname, section.href);
+              return (
+                <Button
+                  key={section.href}
+                  size="sm"
+                  variant={active ? "primary" : "secondary"}
+                  onPress={() => router.push(section.href)}
+                  aria-current={active ? "page" : undefined}
+                  className="shrink-0 rounded-full"
+                >
+                  <section.Icon aria-hidden className="size-3.5 shrink-0" />
+                  {section.label}
+                </Button>
+              );
+            })}
+          </nav>
+        </div>
         {/* Bootstrap escape hatch: ADMIN_EMAILS admits to the shell, but
             capability APIs need a real user_roles row. Say so plainly instead
             of rendering an empty console whose every screen 403s. */}
