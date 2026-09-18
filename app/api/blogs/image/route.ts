@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ID } from "appwrite";
-import { createAdminClient } from "@/lib/appwrite";
+import { createServerStorage } from "@/lib/appwrite-server";
 import { requireCapability } from "@/lib/access-control";
 import { PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof File) || !ALLOWED_TYPES.has(file.type) || file.size > MAX_FILE_SIZE) {
       return fail("VALIDATION", "Invalid image. Use JPG, PNG, GIF, or WebP under 10MB.", 400);
     }
-    const { storage } = createAdminClient();
+    const { storage } = createServerStorage();
     const uploaded = await storage.createFile(BUCKET_ID, ID.unique(), file, PUBLIC_FILE_PERMISSIONS);
     return ok({ url: storage.getFileView(BUCKET_ID, uploaded.$id).toString(), fileId: uploaded.$id }, 201);
   } catch (error) {
