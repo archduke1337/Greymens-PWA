@@ -148,6 +148,10 @@ export default function BlogPage() {
             <p className="text-foreground">
               Write it down. Someone out there is stuck exactly where you were.
             </p>
+            <p>
+              And it counts: every published post is recorded as contribution
+              toward Active Member standing. Writing is doing.
+            </p>
           </div>
         </Card.Content>
       </Card>
