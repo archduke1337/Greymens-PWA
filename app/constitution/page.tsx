@@ -930,6 +930,33 @@ export default function ConstitutionPage() {
                 </Card>
               </section>
 
+              {/* How to read this */}
+              <Card variant="secondary">
+                <Card.Content className="space-y-2 p-5">
+                  <h2 className="font-semibold">New here? Read it in this order</h2>
+                  <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-muted">
+                    <li>
+                      Start with the{" "}
+                      <Link
+                        href="/governance"
+                        className="font-medium text-foreground underline underline-offset-4"
+                      >
+                        governance tour
+                      </Link>{" "}
+                      — the friendly version of what follows.
+                    </li>
+                    <li>
+                      Then Part II (purpose) and Part III (membership) — the
+                      two parts that apply to everyone.
+                    </li>
+                    <li>
+                      Standing for office or running something? Read the parts
+                      on elections, finance, and discipline before you file.
+                    </li>
+                  </ol>
+                </Card.Content>
+              </Card>
+
               {/* Mobile contents */}
               <nav
                 aria-label="Constitution contents"
