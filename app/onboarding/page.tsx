@@ -763,23 +763,49 @@ export default function OnboardingPage() {
             <>
               <div>
                 <span id="onboarding-depts-label" className="text-sm font-medium">Preferred Departments * (select at least 1)</span>
-                <div className="grid grid-cols-2 gap-2 mt-2" role="group" aria-labelledby="onboarding-depts-label">
-                  {departments.map((dept) => (
-                    <button
-                      key={dept.$id}
+                {deptLoading ? (
+                  <div className="grid grid-cols-2 gap-2 mt-2" aria-label="Loading departments" role="status">
+                    {[0, 1, 2, 3].map((n) => (
+                      <div key={n} className="h-10 animate-pulse rounded-md bg-surface-secondary" />
+                    ))}
+                  </div>
+                ) : deptError ? (
+                  <div role="alert" className="mt-2 flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger/5 p-3">
+                    <p className="text-sm text-muted">Departments couldn&apos;t be loaded.</p>
+                    <Button
                       type="button"
-                      aria-pressed={formData.preferredDepartments.includes(dept.$id!)}
-                      onClick={() => toggleArrayField("preferredDepartments", dept.$id!)}
-                      className={`p-2 rounded-md border text-left text-sm ${
-                        formData.preferredDepartments.includes(dept.$id!)
-                          ? "border-primary bg-primary/10"
-                          : "border-border"
-                      }`}
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => setDeptReloadKey((k) => k + 1)}
+                      className="shrink-0 rounded-full"
                     >
-                      {dept.icon} {dept.name}
-                    </button>
-                  ))}
-                </div>
+                      Retry
+                    </Button>
+                  </div>
+                ) : departments.length === 0 ? (
+                  <p role="status" className="mt-2 rounded-md border border-default-200/70 p-3 text-sm text-muted">
+                    No departments are open for applications right now. Check back
+                    later — your progress on this device stays as entered.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 mt-2" role="group" aria-labelledby="onboarding-depts-label">
+                    {departments.map((dept) => (
+                      <button
+                        key={dept.$id}
+                        type="button"
+                        aria-pressed={formData.preferredDepartments.includes(dept.$id!)}
+                        onClick={() => toggleArrayField("preferredDepartments", dept.$id!)}
+                        className={`p-2 rounded-md border text-left text-sm ${
+                          formData.preferredDepartments.includes(dept.$id!)
+                            ? "border-primary bg-primary/10"
+                            : "border-border"
+                        }`}
+                      >
+                        {dept.icon} {dept.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="onboarding-skills">Skills</Label>
@@ -1011,41 +1037,6 @@ export default function OnboardingPage() {
             </>
           )}
         </div>
-
-        {/* Department load failure blocks submission until resolved */}
-        {deptError && (
-          <div
-            role="alert"
-            className="mt-6 p-4 rounded-md border border-destructive/30 bg-destructive/10 flex items-center justify-between gap-4"
-          >
-            <p className="text-sm">
-              Departments could not be loaded. Your application cannot be submitted until they are available.
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              onPress={() => setDeptReloadKey((k) => k + 1)}
-              className="flex-shrink-0"
-            >
-              Retry
-            </Button>
-          </div>
-        )}
-
-        {/* A legitimately empty catalogue still blocks step 3: say so plainly
-            instead of leaving validation to reject with no visible cause. */}
-        {!deptLoading && !deptError && departments.length === 0 && (
-          <div
-            role="alert"
-            className="mt-6 p-4 rounded-md border border-amber-500/30 bg-amber-500/5"
-          >
-            <p className="text-sm">
-              No departments are open for applications right now. Please check
-              back later or contact a club administrator — your progress on
-              this device stays as entered.
-            </p>
-          </div>
-        )}
 
         {/* Navigation */}
         <div className="flex justify-between mt-6">
