@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { blogService, type Blog } from "@/lib/blog";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
@@ -52,9 +53,34 @@ export default function BlogDetailPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ blogId: data.$id }),
           }).catch(() => undefined);
-        } else {
-          setBlog(null);
+          return;
         }
+        // The public lookup only serves approved/published posts. An author
+        // or reviewer opening a pending (or rejected) slug — e.g. the admin
+        // console's View button — falls back to the privileged scopes and
+        // matches by slug, so drafts are previewable instead of "missing".
+        // View counts stay publication-only: previews must not inflate them.
+        if (user) {
+          const fetchScope = async (scope: string) => {
+            const response = await fetch(`/api/blogs?scope=${scope}`, {
+              cache: "no-store",
+              credentials: "include",
+            });
+            if (!response.ok) return [];
+            const payload = (await response.json().catch(() => null)) as {
+              blogs?: Blog[];
+            } | null;
+            return payload?.blogs ?? [];
+          };
+          let found = (await fetchScope("mine")).find((b) => b.slug === slug);
+          if (!found && hasCapability("blog.review")) {
+            found = (await fetchScope("all")).find((b) => b.slug === slug);
+          }
+          if (cancelled) return;
+          setBlog(found ?? null);
+          return;
+        }
+        setBlog(null);
       } catch (error) {
         if (!cancelled) {
           console.error("Error loading blog:", error);
@@ -68,7 +94,8 @@ export default function BlogDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, user]);
 
   if (loading) {
     return (
@@ -106,6 +133,8 @@ export default function BlogDetailPage() {
     );
   }
 
+  const isPreview = blog?.status !== "approved" && blog?.status !== "published";
+
   return (
     <article className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between gap-3">
@@ -126,6 +155,17 @@ export default function BlogDetailPage() {
           </Link>
         )}
       </div>
+
+      {isPreview && (
+        <p
+          role="status"
+          className="rounded-2xl border border-default-200/70 bg-surface-secondary px-4 py-3 text-sm text-muted"
+        >
+          {blog.status === "pending" || blog.status === "draft"
+            ? "Awaiting review — visible only to the author and editors, and not counted in views."
+            : `Status: ${blog.status} — visible only to the author and editors.`}
+        </p>
+      )}
 
       {/* Cover */}
       <div className="relative overflow-hidden rounded-3xl bg-surface-secondary">
@@ -203,7 +243,7 @@ export default function BlogDetailPage() {
       <Card>
         <Card.Content className="p-6 sm:p-9">
           <div className="blog-body">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{blog.content}</ReactMarkdown>
           </div>
         </Card.Content>
       </Card>
