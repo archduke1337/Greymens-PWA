@@ -15,8 +15,6 @@ import {
   HeartIcon,
   StarIcon,
   CrownIcon,
-  CalendarXIcon,
-  TriangleAlertIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, Button, Card, CardContent, CardFooter, CardHeader, Chip, Input, Label, ListBox, ProgressBar, Select } from "@heroui/react";
@@ -249,26 +247,39 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-12 pb-20">
+    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 pb-20 sm:px-6">
       {/* Hero Section */}
-      <div className="mx-auto max-w-xl space-y-3 px-4 py-12 text-center sm:py-16">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Events
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
-            Workshops, meetups, CTFs, and competitions. Open ones say so —
-            just register and show up.
-          </p>
-          {canProposeEvents && (
-            <div className="mt-6">
-              <Button variant="primary" onPress={() => router.push("/admin/events/create")}>
-                Propose an event
-              </Button>
-            </div>
-          )}
-        </div>
+      <div className="mx-auto max-w-xl space-y-3 py-12 text-center sm:py-16">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Events
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">
+          Workshops, meetups, CTFs, and competitions. Open ones say so —
+          just register and show up.
+        </p>
+        {canProposeEvents && (
+          <div className="mt-6">
+            <Button variant="primary" onPress={() => router.push("/admin/events/create")}>
+              Propose an event
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* The crowd, from the back row */}
+      <figure className="space-y-2">
+        <div className="overflow-hidden rounded-3xl border border-default-200/70">
+          <img
+            src="/Assets/Objects/crowd.jpg"
+            alt="A crowd of members seen from behind, watching together"
+            loading="lazy"
+            className="h-40 w-full object-cover object-bottom sm:h-52"
+          />
+        </div>
+        <figcaption className="text-center text-sm text-muted">
+          Room for one more. Usually you.
+        </figcaption>
+      </figure>
 
       {/* Filters and Search */}
       <div className="max-w-7xl mx-auto px-6">
@@ -506,20 +517,32 @@ export default function EventsPage() {
         </div>
 
         {loadError ? (
-          <div className="text-center py-12">
-            <TriangleAlertIcon className="w-12 h-12 mx-auto mb-4 text-warning" />
-            <h3 className="text-xl font-semibold mb-2">Couldn&apos;t load events</h3>
-            <p className="text-default-500 mb-4">{loadError}</p>
+          <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
+            <img
+              src="/Assets/Media/try-again.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-24 w-24 rounded-3xl border border-default-200/70 object-cover"
+            />
+            <h3 className="text-xl font-semibold">Couldn&apos;t load events</h3>
+            <p className="text-default-500">{loadError}</p>
             <Button variant="primary" onPress={() => { setLoading(true); loadEvents(); }}>
               Try again
             </Button>
           </div>
         ) : filteredEvents.length === 0 && (
-          <div className="text-center py-12">
-            <CalendarXIcon className="w-12 h-12 mx-auto mb-4 text-default-300" />
-            <h3 className="text-xl font-semibold mb-2">No events found</h3>
+          <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
+            <img
+              src="/Assets/Media/walking-confused.gif"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="mx-auto h-28 w-28 rounded-3xl border border-default-200/70 object-cover"
+            />
+            <h3 className="text-xl font-semibold">Nothing on this trail</h3>
             <p className="text-default-500">
-              Try adjusting your search or filter criteria
+              No events match that search. Try fewer words, or a different category.
             </p>
           </div>
         )}
