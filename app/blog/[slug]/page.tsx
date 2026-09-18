@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import LinkButton from "@/components/ui/LinkButton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -148,11 +149,14 @@ export default function BlogDetailPage() {
           All posts
         </Button>
         {(user?.$id === blog.authorId || hasCapability("blog.review")) && (
-          <Link href={`/blog/write?edit=${blog.$id}`}>
-            <Button variant="secondary" size="sm" className="rounded-full">
-              Edit post
-            </Button>
-          </Link>
+          <LinkButton
+            href={`/blog/write?edit=${blog.$id}`}
+            variant="secondary"
+            size="sm"
+            className="rounded-full"
+          >
+            Edit post
+          </LinkButton>
         )}
       </div>
 
