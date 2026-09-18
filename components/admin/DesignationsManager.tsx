@@ -1,7 +1,7 @@
 // components/admin/DesignationsManager.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 import {
   PlusIcon,
@@ -550,7 +550,7 @@ export default function DesignationsManager({ designations, departments, onChang
             if (!open) resetForm();
           }}
         >
-          <ModalContainer>
+          <ModalContainer size="lg">
             <ModalDialog>
               {({ close: dialogClose }: { close: () => void }) => (
                 <form onSubmit={handleSubmit}>
@@ -571,7 +571,7 @@ export default function DesignationsManager({ designations, departments, onChang
                       <Input
                         placeholder="e.g., Head of Web Development"
                         value={formData.name}
-                        onChange={(e: any) =>
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
                         required
@@ -583,7 +583,7 @@ export default function DesignationsManager({ designations, departments, onChang
                       <TextArea
                         placeholder="What does this designation entail?"
                         value={formData.description}
-                        onChange={(e: any) =>
+                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                           setFormData({ ...formData, description: e.target.value })
                         }
                         rows={3}
@@ -636,7 +636,7 @@ export default function DesignationsManager({ designations, departments, onChang
                           max={9}
                           placeholder="1"
                           value={formData.level.toString()}
-                          onChange={(e: any) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const parsed = parseInt(e.target.value, 10);
                             const level = Number.isFinite(parsed) ? Math.min(9, Math.max(1, parsed)) : 1;
                             setFormData({ ...formData, level });
@@ -655,7 +655,7 @@ export default function DesignationsManager({ designations, departments, onChang
                         <Input
                           placeholder="Emoji or text"
                           value={formData.badgeIcon}
-                          onChange={(e: any) =>
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
                             setFormData({ ...formData, badgeIcon: e.target.value })
                           }
                         />
@@ -680,14 +680,17 @@ export default function DesignationsManager({ designations, departments, onChang
                         type="number"
                         placeholder="Leave empty for unlimited"
                         value={formData.maxHolders?.toString() || ""}
-                        onChange={(e: any) =>
-                          setFormData({
-                            ...formData,
-                            maxHolders: e.target.value
-                              ? parseInt(e.target.value)
-                              : undefined,
-                          })
-                        }
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setFormData({
+                              ...formData,
+                              maxHolders: e.target.value
+                                ? (() => {
+                                    const parsed = parseInt(e.target.value, 10);
+                                    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+                                  })()
+                                : undefined,
+                            })
+                          }
                       />
                     </div>
 
@@ -733,7 +736,7 @@ export default function DesignationsManager({ designations, departments, onChang
                           placeholder="Filter capabilities..."
                           aria-label="Filter capabilities"
                           value={capabilityQuery}
-                          onChange={(e: any) => setCapabilityQuery(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setCapabilityQuery(e.target.value)}
                         />
                       </div>
                       <p className="text-xs text-default-400">
@@ -764,7 +767,7 @@ export default function DesignationsManager({ designations, departments, onChang
 
                     <Switch
                       isSelected={formData.isActive}
-                      onChange={(checked: any) =>
+                      onChange={(checked: boolean) =>
                         setFormData({ ...formData, isActive: checked })
                       }
                     >
@@ -779,7 +782,7 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       className="w-full sm:w-auto"
                       onPress={resetForm}
                     >
@@ -836,7 +839,7 @@ export default function DesignationsManager({ designations, departments, onChang
                           placeholder="Appwrite user ID"
                           aria-label="Member user ID"
                           value={manualUserId}
-                          onChange={(e: any) => setManualUserId(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setManualUserId(e.target.value)}
                         />
                       </div>
                     ) : (
@@ -844,8 +847,8 @@ export default function DesignationsManager({ designations, departments, onChang
                         <Input
                           placeholder="Search by URN, branch, or userId..."
                           value={searchQuery}
-                          onChange={(e: any) => setSearchQuery(e.target.value)}
-                          onKeyPress={(e: any) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               handleSearchUsers();
@@ -915,7 +918,7 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       className="w-full sm:w-auto"
                       onPress={closeAssign}
                     >
@@ -1013,7 +1016,7 @@ export default function DesignationsManager({ designations, departments, onChang
 
                   <ModalFooter className="border-t pt-4">
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       className="w-full sm:w-auto"
                       onPress={() => {
                         setHolders([]);
