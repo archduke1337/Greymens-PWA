@@ -374,7 +374,7 @@ export default function AdminResourcesPage() {
                     <TextArea
                       placeholder="Brief description"
                       value={form.description}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, description: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm((p) => ({ ...p, description: e.target.value }))}
                       rows={2}
                     />
                   </div>
