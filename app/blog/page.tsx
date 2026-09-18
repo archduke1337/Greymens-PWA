@@ -103,10 +103,14 @@ export default function BlogPage() {
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6">
       {/* Hero */}
       <header className="mx-auto max-w-xl space-y-3 text-center">
+        <Chip size="sm" variant="soft">
+          <Newspaper className="h-3.5 w-3.5" aria-hidden="true" />
+          The club notebook
+        </Chip>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Blog</h1>
         <p className="text-[15px] leading-relaxed text-muted">
-          Walkthroughs, CTF write-ups, and project notes — written by members,
-          reviewed by the editorial board.
+          CTF write-ups, workshop recaps, and project notes — written by
+          members who did the thing, reviewed before they go up.
         </p>
         {user ? (
           <Button className="rounded-full px-6" onPress={() => router.push("/blog/write")}>
@@ -139,8 +143,8 @@ export default function BlogPage() {
               id="blog-search"
               placeholder="Search titles, excerpts, tags…"
               value={searchQuery}
-              onChange={(e: unknown) =>
-                setSearchQuery(String((e as { target: { value: string } }).target.value))
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearchQuery(e.target.value)
               }
               className="pl-9"
             />
