@@ -100,6 +100,15 @@ export default function DocsPage() {
         </p>
       </header>
 
+      <div className="overflow-hidden rounded-3xl border border-default-200/70" aria-hidden="true">
+        <img
+          src="/Assets/Background/texture.png"
+          alt=""
+          loading="lazy"
+          className="h-28 w-full object-cover sm:h-36"
+        />
+      </div>
+
       <section aria-label="Guides" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {GUIDES.map((guide) => {
           const Icon = guide.Icon;

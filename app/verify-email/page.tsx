@@ -122,8 +122,13 @@ function VerifyEmailContent() {
           )}
           {status === "error" && (
             <>
-              <div className="text-danger text-6xl" aria-hidden="true">✗</div>
-              <h2 className="text-xl font-bold mt-4 text-danger">Verification Failed</h2>
+              <img
+                src="/Assets/Media/try-again.webp"
+                alt=""
+                aria-hidden="true"
+                className="mx-auto h-20 w-20 rounded-3xl border border-default-200/70 object-cover"
+              />
+              <h2 className="text-xl font-bold mt-4">That link didn&apos;t work</h2>
             </>
           )}
         </CardHeader>

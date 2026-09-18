@@ -73,10 +73,10 @@ export default function DiagnosticsPage() {
           status: "disconnected",
           message: "Missing required environment variables",
           details: {
-            endpoint: endpoint ? "✓ Set" : "✗ Missing",
-            projectId: projectId ? "✓ Set" : "✗ Missing",
-            databaseId: databaseId ? "✓ Set" : "✗ Missing",
-          },
+              endpoint: endpoint ? "Set" : "Missing",
+              projectId: projectId ? "Set" : "Missing",
+              databaseId: databaseId ? "Set" : "Missing",
+            },
         });
       } else {
         data.services.push({
@@ -139,11 +139,11 @@ export default function DiagnosticsPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle2Icon className="w-5 h-5 text-green-500" />;
+        return <CheckCircle2Icon className="w-5 h-5 text-success" />;
       case "disconnected":
-        return <XCircleIcon className="w-5 h-5 text-red-500" />;
+        return <XCircleIcon className="w-5 h-5 text-danger" />;
       default:
-        return <AlertTriangleIcon className="w-5 h-5 text-yellow-500" />;
+        return <AlertTriangleIcon className="w-5 h-5 text-warning" />;
     }
   };
 
@@ -164,17 +164,27 @@ export default function DiagnosticsPage() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            System Diagnostics
-          </h1>
-          <p className="text-default-500">
-            Complete health check and connectivity status
-          </p>
+        <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              Is it us or is it you?
+            </h1>
+            <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">
+              Something not loading? This page interrogates the backend and
+              reports back honestly — so you know whether to retry, re-login,
+              or fetch an officer.
+            </p>
+          </div>
+          <img
+            src="/Assets/Media/burden.gif"
+            alt="A line figure bent under the weight of a giant cursor arrow"
+            loading="lazy"
+            className="h-28 w-28 shrink-0 rounded-3xl border border-default-200/70 object-cover"
+          />
         </div>
 
         {loading ? (
-          <Card className="bg-card border">
+          <Card>
             <CardContent className="py-12 text-center" role="status" aria-label="Loading diagnostics">
               <div className="text-default-500">Loading diagnostics...</div>
             </CardContent>
@@ -183,7 +193,7 @@ export default function DiagnosticsPage() {
           <>
             {/* Environment Info */}
             <Card className="mb-6 bg-card border">
-              <CardHeader className="bg-muted flex gap-2">
+              <CardHeader className="flex gap-2">
                 <ServerIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Environment</h2>
               </CardHeader>
@@ -198,8 +208,8 @@ export default function DiagnosticsPage() {
                   <p className="text-default-500 text-sm">Env Variables</p>
                   <Chip color={diagnostics.environment.hasEnvVars ? "success" : "danger"} variant="soft">
                     {diagnostics.environment.hasEnvVars
-                      ? "✓ Configured"
-                      : "✗ Missing"}
+                      ? "Configured"
+                      : "Missing"}
                   </Chip>
                 </div>
                 <div>
@@ -213,7 +223,7 @@ export default function DiagnosticsPage() {
 
             {/* Services Status */}
             <Card className="mb-6 bg-card border">
-              <CardHeader className="bg-muted flex gap-2">
+              <CardHeader className="flex gap-2">
                 <PlugIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Services</h2>
               </CardHeader>
@@ -221,7 +231,7 @@ export default function DiagnosticsPage() {
                 {diagnostics.services.map((service) => (
                   <div
                     key={service.name}
-                    className="flex items-start gap-4 p-4 bg-muted rounded-lg border"
+                    className="flex items-start gap-4 p-4 bg-surface-secondary rounded-2xl border border-default-200/70"
                   >
                     <div className="mt-1">
                       {getStatusIcon(service.status)}
@@ -259,8 +269,8 @@ export default function DiagnosticsPage() {
             </Card>
 
             {/* Quick Links */}
-            <Card className="bg-card border">
-              <CardHeader className="bg-muted flex gap-2">
+            <Card>
+              <CardHeader className="flex gap-2">
                 <DatabaseIcon className="w-5 h-5" />
                 <h2 className="text-xl font-bold">Quick Actions</h2>
               </CardHeader>
@@ -277,8 +287,8 @@ export default function DiagnosticsPage() {
             </Card>
           </>
         ) : (
-          <Card className="bg-card border">
-            <CardContent className="py-12 text-center text-red-400">
+          <Card>
+            <CardContent className="py-12 text-center text-danger">
               Failed to load diagnostics
             </CardContent>
           </Card>
