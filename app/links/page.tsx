@@ -4,6 +4,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowUpRight } from "lucide-react";
 
+import { siteConfig } from "@/config/site";
+
 export const metadata: Metadata = {
   title: "Links | Greymens",
   description:
@@ -235,7 +237,7 @@ const SECTIONS: LinkSection[] = [
       {
         title: "Discord",
         blurb: "Announcements, help, and late-night CTF channels.",
-        href: "https://discord.gg/6v89E3SaZT",
+        href: siteConfig.links.discord,
       },
       {
         title: "Instagram",
@@ -245,7 +247,7 @@ const SECTIONS: LinkSection[] = [
       {
         title: "LinkedIn",
         blurb: "The professional face — sponsors and alumni look here.",
-        href: "https://www.linkedin.com/company/greymens",
+        href: siteConfig.links.linkedin,
       },
       {
         title: "X (Twitter)",

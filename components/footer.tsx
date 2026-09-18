@@ -38,7 +38,7 @@ const TRUST_LINKS = [
 ];
 
 const SOCIALS = [
-  { label: "LinkedIn", href: "https://www.linkedin.com/company/greymens" },
+  { label: "LinkedIn", href: siteConfig.links.linkedin },
   {
     label: "Instagram",
     href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh",

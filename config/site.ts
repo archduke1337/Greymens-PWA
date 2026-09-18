@@ -20,5 +20,6 @@ export const siteConfig = {
   ],
   links: {
     discord: "https://discord.gg/6v89E3SaZT",
+    linkedin: "https://www.linkedin.com/company/greymen-s-club-adypu/",
   },
 };
