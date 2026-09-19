@@ -139,7 +139,7 @@ const EVENT_TYPES = [
     name: "seminar",
     displayName: "Seminar",
     description: "Educational sessions with speakers, topic-focused presentations, and knowledge sharing.",
-    icon: "🎓",
+    icon: "GraduationCap",
     displayOrder: 3,
     fields: JSON.stringify([
       { name: "speakers", type: "json", label: "Speakers", required: true },
@@ -158,7 +158,7 @@ const EVENT_TYPES = [
     name: "competition",
     displayName: "Competition",
     description: "Competitive events with scoring, rounds, submissions, and prizes.",
-    icon: "🏆",
+    icon: "Trophy",
     displayOrder: 4,
     fields: JSON.stringify([
       { name: "scoringRubric", type: "json", label: "Scoring Rubric", required: true },
@@ -176,7 +176,7 @@ const EVENT_TYPES = [
     name: "bootcamp",
     displayName: "Bootcamp",
     description: "Multi-day intensive training programs with curriculum, homework, and certification.",
-    icon: "🏕️",
+    icon: "Tent",
     displayOrder: 5,
     fields: JSON.stringify([
       { name: "durationWeeks", type: "number", label: "Duration (weeks)", required: true },
@@ -196,7 +196,7 @@ const EVENT_TYPES = [
     name: "meetup",
     displayName: "Meetup",
     description: "Casual networking and discussion events.",
-    icon: "☕",
+    icon: "Coffee",
     displayOrder: 6,
     fields: JSON.stringify([
       { name: "agenda", type: "json", label: "Agenda", required: false },
@@ -213,7 +213,7 @@ const EVENT_TYPES = [
     name: "guest_lecture",
     displayName: "Guest Lecture",
     description: "External expert presentations and industry talks.",
-    icon: "🎤",
+    icon: "Mic",
     displayOrder: 7,
     fields: JSON.stringify([
       { name: "speakerBio", type: "textarea", label: "Speaker Bio", required: true },
@@ -233,7 +233,7 @@ const EVENT_TYPES = [
     name: "certification_exam",
     displayName: "Certification Exam",
     description: "Formal certification examinations with scoring and validity tracking.",
-    icon: "📝",
+    icon: "FileText",
     displayOrder: 8,
     fields: JSON.stringify([
       { name: "examBody", type: "text", label: "Certifying Organization", required: true },
