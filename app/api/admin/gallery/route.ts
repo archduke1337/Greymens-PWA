@@ -73,13 +73,29 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = (await request.json()) as {
       imageId?: unknown;
+      imageIds?: unknown;
       action?: unknown;
       reason?: unknown;
     };
-    const imageId = typeof body.imageId === "string" ? body.imageId.trim() : "";
     const action = body.action;
+    const actionValid = action === "approve" || action === "reject";
+    // Bulk form: an array of ids decides many rows in one pass. A single id
+    // keeps working unchanged — both normalise to the same id list.
+    const rawIds = Array.isArray(body.imageIds)
+      ? body.imageIds
+      : body.imageId !== undefined
+        ? [body.imageId]
+        : [];
+    const imageIds = [
+      ...new Set(
+        rawIds
+          .filter((id): id is string => typeof id === "string")
+          .map((id) => id.trim())
+          .filter(Boolean),
+      ),
+    ].slice(0, 100);
 
-    if (!imageId || (action !== "approve" && action !== "reject")) {
+    if (imageIds.length === 0 || !actionValid) {
       return fail("VALIDATION", "Invalid gallery action", 400);
     }
     if (
@@ -108,72 +124,97 @@ export async function PATCH(request: NextRequest) {
             approvedBy: null,
             approvedAt: null,
           };
-    const image = await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTIONS.GALLERY,
-      imageId,
-      data,
-    );
+    // Each row decides independently: one bad id (deleted mid-review, typo)
+    // fails alone instead of 500ing the whole batch. Storage flips and
+    // uploader notices ride the same loop, exactly as the single path does.
+    const decided: Record<string, unknown>[] = [];
+    const failed: Array<{ id: string; error: string }> = [];
 
-    // The verdict decides whether the stored file is world-readable. Uploads
-    // now land members-only, so approving has to publish the file, and
-    // re-rejecting a previously approved image has to un-publish it again.
-    // A failure here is logged, not fatal: the moderation decision is already
-    // saved, and a link-only row has no file to flip.
-    const storageFileId = String(image.storageFileId ?? "");
+    for (const id of imageIds) {
+      try {
+        const image = await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.GALLERY,
+          id,
+          data,
+        );
 
-    if (storageFileId) {
-      const { storage } = createServerStorage();
+        // The verdict decides whether the stored file is world-readable.
+        // Uploads land members-only, so approving publishes the file and
+        // re-rejecting un-publishes it. A failure is logged, not fatal: the
+        // decision is saved, and a link-only row has no file to flip.
+        const storageFileId = String(image.storageFileId ?? "");
 
-      await storage
-        .updateFile({
-          bucketId: BUCKET_ID,
-          fileId: storageFileId,
-          permissions:
-            action === "approve"
-              ? PUBLIC_FILE_PERMISSIONS
-              : MEMBER_FILE_PERMISSIONS,
-        })
-        .catch((error) => {
-          logError("Gallery file permission update failed:", error);
+        if (storageFileId) {
+          const { storage } = createServerStorage();
+
+          await storage
+            .updateFile({
+              bucketId: BUCKET_ID,
+              fileId: storageFileId,
+              permissions:
+                action === "approve"
+                  ? PUBLIC_FILE_PERMISSIONS
+                  : MEMBER_FILE_PERMISSIONS,
+            })
+            .catch((error) => {
+              logError("Gallery file permission update failed:", error);
+            });
+        }
+
+        // Close the loop for the uploader: the verdict reaches the person,
+        // not just the row. Bulk-approving a member's album mails one notice
+        // per photo, which is noisy but honest; the alternative — batching
+        // per uploader — needs grouping the loop buys nothing at queue size.
+        const uploaderId = String(image.uploadedBy ?? "");
+        const imageTitle = String(image.title ?? "your image");
+
+        if (uploaderId) {
+          await dispatchNotification({
+            userId: uploaderId,
+            type: "submission_update",
+            title:
+              action === "approve" ? "Photo approved" : "Photo needs changes",
+            body:
+              action === "approve"
+                ? `"${imageTitle}" was approved and is now in the gallery.`
+                : `"${imageTitle}" was not approved yet. Reviewer note: ${
+                    reason || "no reason given"
+                  }`,
+          }).catch((error) => {
+            // The decision is saved; only the notice failed. Log it rather
+            // than letting a silent catch imply the uploader was told.
+            logError("Gallery decision notification failed:", error);
+          });
+        }
+
+        await recordAudit({
+          request,
+          actor: authenticated.user,
+          action: `gallery.${String(action)}`,
+          entityType: "gallery_image",
+          entityId: id,
+          details: { action: String(action), bulk: imageIds.length > 1 },
         });
+        decided.push(image);
+      } catch (rowError) {
+        failed.push({
+          id,
+          error: rowError instanceof Error ? rowError.message : "unknown error",
+        });
+        logError("Gallery bulk row update failed:", rowError);
+      }
     }
 
-    // Close the loop for the uploader: until now the verdict reached the row
-    // and the file, never the person — no in-app row, no mail, so a photo
-    // silently appeared or not with no explanation. Same dispatch as every
-    // other review queue.
-    const uploaderId = String(image.uploadedBy ?? "");
-    const imageTitle = String(image.title ?? "your image");
-
-    if (uploaderId) {
-      await dispatchNotification({
-        userId: uploaderId,
-        type: "submission_update",
-        title: action === "approve" ? "Photo approved" : "Photo needs changes",
-        body:
-          action === "approve"
-            ? `"${imageTitle}" was approved and is now in the gallery.`
-            : `"${imageTitle}" was not approved yet. Reviewer note: ${
-                reason || "no reason given"
-              }`,
-      }).catch((error) => {
-        // The decision is saved; only the notice failed. Log it rather than
-        // letting a silent catch imply the uploader was told.
-        logError("Gallery decision notification failed:", error);
-      });
+    if (decided.length === 0) {
+      return fail("INTERNAL", "Unable to update gallery image", 500);
     }
 
-    await recordAudit({
-      request,
-      actor: authenticated.user,
-      action: `gallery.${String(action)}`,
-      entityType: "gallery_image",
-      entityId: imageId,
-      details: { action: String(action) },
+    return ok({
+      images: decided,
+      decided: decided.length,
+      ...(failed.length > 0 ? { failed } : {}),
     });
-
-    return ok({ image });
   } catch (error) {
     logError("Admin gallery update error:", error);
 

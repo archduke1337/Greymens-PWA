@@ -48,6 +48,11 @@ export default function AdminGalleryPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Bulk selection, only meaningful on the pending tab. Keyed by row id;
+  // clearing on reload keeps a stale selection from approving something the
+  // list no longer shows.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [uploaderNames, setUploaderNames] = useState<Record<string, string>>(
     {},
@@ -96,6 +101,10 @@ export default function AdminGalleryPage() {
       const allImages = payload.images ?? [];
 
       setImages(allImages);
+      // Selection was for rows the previous load showed; a reload decides
+      // them or changes the queue, and a silent carryover would approve
+      // something the reviewer is no longer looking at.
+      setSelectedIds(new Set());
       setUploaderNames(payload.accountNames ?? {});
       setCounts({
         pending: allImages.filter((image) => statusOf(image) === "pending")
@@ -225,6 +234,68 @@ export default function AdminGalleryPage() {
     return matchesTab && matchesSearch;
   });
 
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  };
+
+  // Approve every selected row through the same endpoint the single path
+  // uses, then drop the selection: rows that decided keep no stale check.
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0 || bulkApproving) return;
+    if (
+      !confirm(
+        `Approve ${selectedIds.size} photo${selectedIds.size > 1 ? "s" : ""}? Each uploader is notified and each photo becomes public.`,
+      )
+    )
+      return;
+    setBulkApproving(true);
+    try {
+      const response = await fetch("/api/admin/gallery", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "approve",
+          imageIds: [...selectedIds],
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        decided?: number;
+        failed?: Array<{ id: string; error: string }>;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to approve images"));
+      const decided = payload?.decided ?? 0;
+      const failures = payload?.failed?.length ?? 0;
+
+      if (failures > 0) {
+        toast.warning(
+          `${decided} approved, ${failures} failed — retry the failed ones from the queue`,
+        );
+      } else {
+        toast.success(`${decided} photo${decided === 1 ? "" : "s"} approved`);
+      }
+      setSelectedIds(new Set());
+      await loadData();
+    } catch (error) {
+      logError("Bulk approve failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve images",
+      );
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -323,12 +394,48 @@ export default function AdminGalleryPage() {
                 </Button>
               ))}
             </div>
-            <div className="w-full md:w-64">
-              <Input
-                placeholder="Search images..."
-                value={searchQuery}
-                onChange={(e: any) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-2">
+              {activeTab === "pending" && canReview && filtered.length > 0 && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onPress={() =>
+                      setSelectedIds(
+                        selectedIds.size === filtered.length
+                          ? new Set()
+                          : new Set(
+                              filtered
+                                .map((img) => img.$id)
+                                .filter((id): id is string => Boolean(id)),
+                            ),
+                      )
+                    }
+                  >
+                    {selectedIds.size === filtered.length
+                      ? "Clear selection"
+                      : `Select all (${filtered.length})`}
+                  </Button>
+                  {selectedIds.size > 0 && (
+                    <Button
+                      isPending={bulkApproving}
+                      size="sm"
+                      variant="primary"
+                      onPress={handleBulkApprove}
+                    >
+                      <CheckCircle aria-hidden="true" className="w-4 h-4" />
+                      Approve {selectedIds.size}
+                    </Button>
+                  )}
+                </>
+              )}
+              <div className="w-full md:w-64">
+                <Input
+                  placeholder="Search images..."
+                  value={searchQuery}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -366,6 +473,19 @@ export default function AdminGalleryPage() {
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   src={image.imageUrl}
                 />
+                {canReview && activeTab === "pending" && image.$id && (
+                  <label
+                    aria-label={`Select ${image.title} for bulk approval`}
+                    className="absolute top-2 left-2 flex cursor-pointer items-center rounded-full bg-black/50 p-1.5"
+                  >
+                    <input
+                      checked={selectedIds.has(image.$id)}
+                      className="size-4 cursor-pointer"
+                      type="checkbox"
+                      onChange={() => toggleSelected(image.$id!)}
+                    />
+                  </label>
+                )}
                 <Chip
                   className="absolute top-2 right-2"
                   color={
