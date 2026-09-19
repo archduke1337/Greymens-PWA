@@ -34,6 +34,12 @@ function pickDepartmentFields(
     const value = body[key];
 
     if (value === undefined) continue;
+    // An untouched empty link field arrives as "" — store null (no link),
+    // never an empty string that a later read treats as a department id.
+    if ((key === "parentId" || key === "headId") && value === "") {
+      out[key] = null;
+      continue;
+    }
     out[key] = value;
   }
   // Activation state is server-forced on create; on update it is an explicit,
@@ -61,21 +67,31 @@ function validate(body: Record<string, unknown>) {
     return "Invalid department category";
   if (
     body.description !== undefined &&
+    body.description !== null &&
     (typeof body.description !== "string" || body.description.length > 65535)
   )
     return "Invalid department description";
   if (
     body.icon !== undefined &&
+    body.icon !== null &&
     (typeof body.icon !== "string" || body.icon.length > 100)
   )
     return "Invalid department icon";
   if (
     body.color !== undefined &&
+    body.color !== null &&
     (typeof body.color !== "string" || body.color.length > 20)
   )
     return "Invalid department color";
+  // Empty string and null both mean "no link" — normalize before validating
+  // so clearing a parent/head (or submitting an untouched empty field) never
+  // 400s. `null` is stored, which clears the column.
+  for (const key of ["parentId", "headId"] as const) {
+    if (body[key] === "" || body[key] === null) body[key] = null;
+  }
   if (
     body.parentId !== undefined &&
+    body.parentId !== null &&
     (typeof body.parentId !== "string" ||
       !body.parentId.trim() ||
       body.parentId.length > 36)
@@ -83,6 +99,7 @@ function validate(body: Record<string, unknown>) {
     return "Invalid parent department";
   if (
     body.headId !== undefined &&
+    body.headId !== null &&
     (typeof body.headId !== "string" ||
       !body.headId.trim() ||
       body.headId.length > 36)
@@ -187,6 +204,13 @@ export async function PATCH(request: NextRequest) {
       return fail("VALIDATION", "departmentId is required", 400);
     const { departmentId: _departmentId, ...rest } = body;
     const data = pickDepartmentFields(rest, true);
+
+    // A department cannot parent itself — the tree walk elsewhere assumes
+    // acyclic links, and a self-link would render the department inside
+    // itself.
+    if (data.parentId === departmentId) {
+      return fail("VALIDATION", "A department cannot be its own parent", 400);
+    }
     // PATCH keeps full-object semantics (name/slug/category required) so a
     // partial typo cannot silently blank a required column server-side.
     const validationError = validate(data);

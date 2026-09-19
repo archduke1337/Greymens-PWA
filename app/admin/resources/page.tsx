@@ -31,6 +31,7 @@ import {
   Video,
   FolderOpen,
   Newspaper,
+  Megaphone,
   Plus,
   Trash2,
   Edit,
@@ -48,9 +49,9 @@ const RESOURCE_TYPES = [
   { value: "video", label: "Video", icon: Video },
   { value: "file", label: "File", icon: FolderOpen },
   { value: "newsletter", label: "Newsletter", icon: Newspaper },
-  // NOTE: no "announcement" option — the legacy type survives in stored rows
-  // and the public list, but new uploads are document/link/video/file/
-  // newsletter and the server allowlist rejects anything else.
+  // Announcement is legacy — kept selectable so stored announcement rows stay
+  // editable; new uploads should use the four types above plus newsletter.
+  { value: "announcement", label: "Announcement", icon: Megaphone },
 ] as const;
 
 type StatusTab = "pending" | "approved" | "rejected";

@@ -1,4 +1,4 @@
-import { Client, Users } from "node-appwrite";
+import { Client, Query, Users } from "node-appwrite";
 
 /**
  * Server-only account lookups.
@@ -83,4 +83,44 @@ export async function findUserIdByEmail(email: string): Promise<string | null> {
   );
 
   return match?.$id ?? null;
+}
+
+export interface UserSearchHit {
+  userId: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Substring search over account display names through the Users API.
+ *
+ * Names live on the account, not on `profiles` (that table deliberately has
+ * no name column), so a "type a name, pick the person" picker cannot be
+ * served from profiles alone. Tolerant: any failure yields no hits rather
+ * than failing the caller's flow.
+ */
+export async function searchUsersByName(
+  query: string,
+  limit = 10,
+): Promise<UserSearchHit[]> {
+  const term = query.trim();
+
+  if (!term) return [];
+  try {
+    const users = createUsersClient();
+    const response = await users.list({
+      queries: [
+        Query.search("name", term),
+        Query.limit(Math.min(Math.max(limit, 1), 20)),
+      ],
+    });
+
+    return response.users.map((user) => ({
+      userId: user.$id,
+      name: user.name || user.email.split("@")[0],
+      email: user.email,
+    }));
+  } catch {
+    return [];
+  }
 }

@@ -535,6 +535,12 @@ export interface Resource {
   tags?: string[];
   uploadedBy: string;
   uploadedByName?: string;
+  /**
+   * Server-marked placeholder: the caller may know this exists (title +
+   * scope) but must not open it. Stubs never carry url, fileId,
+   * description, tags, or uploader fields.
+   */
+  locked?: boolean;
   status?: "pending" | "approved" | "rejected";
   approvedBy?: string;
   approvedAt?: string;

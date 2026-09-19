@@ -4,6 +4,8 @@ import { ID, Query } from "appwrite";
 import {
   createServerDatabases,
   createServerStorage,
+  type ServerDatabases,
+  type ServerRow,
 } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import {
@@ -28,12 +30,16 @@ const ALLOWED_TYPES = new Set([
   "application/zip",
 ]);
 const ALLOWED_CATEGORIES = new Set(["common", "department", "role"]);
+// Announcement is legacy — new uploads are document/link/video/file/
+// newsletter, but stored announcement rows render publicly and must stay
+// editable, so the allowlist keeps accepting them.
 const ALLOWED_RESOURCE_TYPES = new Set([
   "document",
   "link",
   "video",
   "file",
   "newsletter",
+  "announcement",
 ]);
 // Membership statuses a role-gated resource may require (compared against the
 // viewer's resolved status in GET).
@@ -50,6 +56,63 @@ function text(value: FormDataEntryValue | null, max: number) {
   return typeof value === "string" && value.length <= max ? value.trim() : "";
 }
 
+/**
+ * Active-resource read with a degraded fallback.
+ *
+ * The primary query predicates on `isActive`. If that column is missing or
+ * renamed on a given installation the predicate throws — and without a
+ * fallback the entire library 500s, which the client renders as its
+ * full-page "could not be loaded" error. The retry drops the predicate and
+ * filters in code instead, so schema drift degrades to (at worst) showing a
+ * soft-deleted row rather than hiding the whole library. Scope filtering
+ * below still applies either way: availability degrades open, access stays
+ * fail-closed.
+ */
+async function listActiveResources(databases: ServerDatabases) {
+  try {
+    return await databases.listDocuments(DATABASE_ID, COLLECTIONS.RESOURCES, [
+      Query.equal("isActive", [true]),
+      Query.orderDesc("$createdAt"),
+      Query.limit(100),
+    ]);
+  } catch {
+    const fallback = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.RESOURCES,
+      [Query.orderDesc("$createdAt"), Query.limit(100)],
+    );
+
+    return {
+      ...fallback,
+      documents: fallback.documents.filter(
+        (resource) => resource.isActive !== false,
+      ),
+    };
+  }
+}
+
+/**
+ * Locked placeholder for a resource the caller may know exists but must not
+ * open. Carries the title and the scope it is restricted to — enough to
+ * render a "locked for X department" card — and strips everything that opens
+ * or describes the content (url, file, description, tags, uploader, review
+ * fields).
+ */
+function lockStub(resource: ServerRow): ServerRow {
+  return {
+    $id: resource.$id,
+    title: String(resource.title ?? "Untitled resource"),
+    type: typeof resource.type === "string" ? resource.type : "document",
+    layer: resource.layer ?? resource.category ?? "common",
+    category: resource.category ?? resource.layer ?? "common",
+    departmentId:
+      typeof resource.departmentId === "string" ? resource.departmentId : null,
+    requiredRole:
+      typeof resource.requiredRole === "string" ? resource.requiredRole : null,
+    locked: true,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
@@ -62,15 +125,7 @@ export async function GET(request: NextRequest) {
       const admin = await requireCapability(request, "resources.manage");
 
       if (!admin.user) return admin.response;
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.RESOURCES,
-        [
-          Query.equal("isActive", [true]),
-          Query.orderDesc("$createdAt"),
-          Query.limit(100),
-        ],
-      );
+      const response = await listActiveResources(databases);
 
       return ok({ resources: response.documents });
     }
@@ -78,15 +133,7 @@ export async function GET(request: NextRequest) {
     // Rows written before the moderation columns existed carry no status —
     // treat a missing status as approved so legacy content stays visible
     // instead of vanishing from the library after the upgrade.
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.RESOURCES,
-      [
-        Query.equal("isActive", [true]),
-        Query.orderDesc("$createdAt"),
-        Query.limit(100),
-      ],
-    );
+    const response = await listActiveResources(databases);
     const approved = response.documents.filter(
       (resource) => resource.status === "approved" || !resource.status,
     );
@@ -118,13 +165,22 @@ export async function GET(request: NextRequest) {
         assignments.documents.map((row) => String(row.departmentId ?? "")),
       );
     }
-    const resources = approved.filter((resource) => {
-      if (resource.category === "common") return true;
-      if (!isMemberStatus(membershipStatus)) return false;
+    // Department/role material the caller may not open is returned as a
+    // locked stub (title + scope, no content) instead of being silently
+    // dropped — a non-cybersec member sees the cybersec file as "locked for
+    // that department" rather than wondering where it went. Pending/rejected
+    // items never appear here in any form; they live only in the review queue.
+    const resources = approved.flatMap((resource) => {
+      if (resource.category === "common") return [resource];
+      if (!isMemberStatus(membershipStatus)) return [];
       if (resource.category === "role") {
-        return (
-          !resource.requiredRole || resource.requiredRole === membershipStatus
-        );
+        if (
+          !resource.requiredRole ||
+          resource.requiredRole === membershipStatus
+        )
+          return [resource];
+
+        return [lockStub(resource)];
       }
       if (resource.category === "department") {
         const departmentId =
@@ -132,10 +188,13 @@ export async function GET(request: NextRequest) {
             ? resource.departmentId
             : "";
 
-        return Boolean(departmentId) && memberDepartmentIds.has(departmentId);
+        if (departmentId && memberDepartmentIds.has(departmentId))
+          return [resource];
+
+        return [lockStub(resource)];
       }
 
-      return false;
+      return [];
     });
 
     return ok({ resources });
@@ -250,7 +309,10 @@ export async function PATCH(request: NextRequest) {
     }
     // The legacy model contains both names for the same classification. Keep
     // them synchronized so public filtering (`category`) and admin display
-    // (`layer`) cannot disagree after an edit.
+    // (`layer`) cannot disagree after an edit — accepting `category` as an
+    // alias keeps older clients editable instead of 400ing them.
+    if (typeof updates.layer !== "string" && typeof body.category === "string")
+      updates.layer = body.category;
     if (typeof updates.layer === "string") updates.category = updates.layer;
     if (
       updates.tags !== undefined &&

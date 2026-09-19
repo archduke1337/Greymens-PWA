@@ -37,6 +37,7 @@ import {
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
+import MemberPicker from "@/components/admin/MemberPicker";
 import { useAuth } from "@/context/AuthContext";
 import { logError } from "@/lib/logger";
 
@@ -76,6 +77,19 @@ export default function AdminDepartmentsPage() {
     userId: "",
     role: "member",
   });
+  // Name/URN picker state for the add-member row. A pick is only honored
+  // while the input still shows the picked label — free text is treated as a
+  // pasted URN instead, so typing can never assign the wrong person.
+  const [memberQuery, setMemberQuery] = useState("");
+  const [pickedMemberId, setPickedMemberId] = useState<string | null>(null);
+  const [pickedMemberLabel, setPickedMemberLabel] = useState("");
+  // Same pattern for the department-head field in the create/edit modal.
+  const [headQuery, setHeadQuery] = useState("");
+  const [pickedHeadId, setPickedHeadId] = useState<string | null>(null);
+  const [pickedHeadLabel, setPickedHeadLabel] = useState("");
+  // Name the edit modal opened with — the slug is preserved while the name
+  // is untouched, and regenerated only on an actual rename.
+  const [editOriginalName, setEditOriginalName] = useState("");
 
   // Member counts
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
@@ -142,21 +156,33 @@ export default function AdminDepartmentsPage() {
 
       // Auto-generate slug from name. A symbol-only name ("!!!")
       // derives to "" and 400s server-side — block it here instead.
-      const slug = formData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
+      // On edit the existing slug is preserved while the name is untouched,
+      // so saving without renaming never collides with another row's slug.
+      const slug =
+        editingDept && formData.name.trim() === editOriginalName.trim()
+          ? editingDept.slug
+          : formData.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "");
 
       if (!slug) {
         toast.error(
-          "Department name must contain at least one letter or number",
+          editingDept
+            ? "The stored slug is missing — rename the department to regenerate it"
+            : "Department name must contain at least one letter or number",
         );
         setSubmitting(false);
 
         return;
       }
 
-      const payload = { ...formData, slug };
+      // The head counts only while the input still shows its picked label;
+      // anything else typed is not an account id and must not be stored.
+      // Clearing the field clears the head.
+      const headId =
+        headQuery === pickedHeadLabel && pickedHeadId ? pickedHeadId : null;
+      const payload = { ...formData, slug, headId };
 
       const response = await fetch("/api/admin/departments", {
         method: editingDept ? "PATCH" : "POST",
@@ -193,6 +219,15 @@ export default function AdminDepartmentsPage() {
 
   const handleEdit = (dept: Department) => {
     setEditingDept(dept);
+    setEditOriginalName(dept.name);
+    // Legacy rows may carry a missing or retired category — fall back to a
+    // valid one so the row stays editable instead of 400ing on submit.
+    const category = ["technical", "content", "operations"].includes(
+      dept.category,
+    )
+      ? dept.category
+      : "technical";
+
     setFormData({
       name: dept.name,
       slug: dept.slug,
@@ -203,8 +238,47 @@ export default function AdminDepartmentsPage() {
       headId: dept.headId,
       isActive: dept.isActive,
       displayOrder: dept.displayOrder || 0,
-      category: dept.category,
+      category,
     });
+    // Resolve the stored head id to a display label best-effort. Until it
+    // resolves the raw id stands as the pick, so submit still works.
+    setHeadQuery(dept.headId || "");
+    setPickedHeadId(dept.headId || null);
+    setPickedHeadLabel(dept.headId || "");
+    if (dept.headId) {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/admin/members/search?q=${encodeURIComponent(dept.headId!)}&limit=8`,
+            { credentials: "include" },
+          );
+
+          if (!response.ok) return;
+          const payload = (await response.json()) as {
+            candidates?: Array<{
+              userId: string;
+              name: string;
+              urn: string;
+            }>;
+          };
+          const match = payload.candidates?.find(
+            (c) => c.userId === dept.headId,
+          );
+
+          if (match) {
+            const label =
+              match.name && match.urn
+                ? `${match.name} (${match.urn})`
+                : match.name || match.urn || match.userId;
+
+            setHeadQuery(label);
+            setPickedHeadLabel(label);
+          }
+        } catch {
+          // Raw id remains — submit still works.
+        }
+      })();
+    }
     open();
   };
 
@@ -253,6 +327,9 @@ export default function AdminDepartmentsPage() {
 
     setExpandedDept(dept.$id!);
     setAddMemberForm({ userId: "", role: "member" });
+    setMemberQuery("");
+    setPickedMemberId(null);
+    setPickedMemberLabel("");
 
     if (!deptMembers[dept.$id!]) {
       setLoadingMembers(dept.$id!);
@@ -291,8 +368,16 @@ export default function AdminDepartmentsPage() {
   };
 
   const handleAddMember = async (deptId: string) => {
-    if (!addMemberForm.userId.trim()) {
-      toast.error("Enter the member's user ID");
+    // A pick counts only while the input still shows its label; anything
+    // else typed is a pasted URN for the server to resolve exactly.
+    const picked =
+      memberQuery === pickedMemberLabel && pickedMemberId
+        ? pickedMemberId
+        : null;
+    const pastedUrn = !picked ? memberQuery.trim() : "";
+
+    if (!picked && !pastedUrn) {
+      toast.error("Search for a member by name or URN, then pick them");
 
       return;
     }
@@ -303,7 +388,7 @@ export default function AdminDepartmentsPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          userId: addMemberForm.userId.trim(),
+          ...(picked ? { userId: picked } : { urn: pastedUrn }),
           departmentId: deptId,
           role: addMemberForm.role,
         }),
@@ -322,6 +407,9 @@ export default function AdminDepartmentsPage() {
           : "Member added to department",
       );
       setAddMemberForm({ userId: "", role: "member" });
+      setMemberQuery("");
+      setPickedMemberId(null);
+      setPickedMemberLabel("");
       // Refresh the cached roster for this department.
       setDeptMembers((prev) => {
         const next = { ...prev };
@@ -435,6 +523,10 @@ export default function AdminDepartmentsPage() {
       category: "technical",
     });
     setEditingDept(null);
+    setEditOriginalName("");
+    setHeadQuery("");
+    setPickedHeadId(null);
+    setPickedHeadLabel("");
     close();
   };
 
@@ -645,17 +737,23 @@ export default function AdminDepartmentsPage() {
                           void handleAddMember(dept.$id!);
                         }}
                       >
-                        <Input
-                          aria-label="User ID to add to department"
-                          placeholder="User ID to add"
-                          value={addMemberForm.userId}
-                          onChange={(e: any) =>
-                            setAddMemberForm({
-                              ...addMemberForm,
-                              userId: e.target.value,
-                            })
-                          }
+                        <MemberPicker
+                          ariaLabel={`Search members to add to ${dept.name}`}
+                          placeholder="Search name or URN…"
+                          query={memberQuery}
+                          onQueryChange={setMemberQuery}
+                          onSelect={(userId, label) => {
+                            setPickedMemberId(userId);
+                            setPickedMemberLabel(label);
+                            setMemberQuery(label);
+                          }}
                         />
+                        {memberQuery === pickedMemberLabel &&
+                          pickedMemberId && (
+                            <Chip color="success" size="sm" variant="soft">
+                              Picked
+                            </Chip>
+                          )}
                         <Select
                           aria-label="Role for new member"
                           fullWidth={false}
@@ -816,7 +914,10 @@ export default function AdminDepartmentsPage() {
                   <ModalBody className="py-6 space-y-5">
                     <div>
                       <label className="text-sm font-medium mb-1 block">
-                        Department Name
+                        Department Name{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
                       </label>
                       <Input
                         required
@@ -826,11 +927,29 @@ export default function AdminDepartmentsPage() {
                           setFormData({ ...formData, name: e.target.value })
                         }
                       />
+                      <p className="text-xs text-default-400 mt-1">
+                        Slug:{" "}
+                        <span className="font-mono">
+                          {editingDept &&
+                          formData.name.trim() === editOriginalName.trim()
+                            ? editingDept.slug
+                            : formData.name
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]+/g, "-")
+                                .replace(/(^-|-$)/g, "") || "…"}
+                        </span>
+                        {editingDept
+                          ? " (kept unless you rename)"
+                          : " (auto-generated)"}
+                      </p>
                     </div>
 
                     <div>
                       <label className="text-sm font-medium mb-1 block">
-                        Description
+                        Description{" "}
+                        <span className="font-normal text-default-400">
+                          (optional)
+                        </span>
                       </label>
                       <TextArea
                         placeholder="Brief description of the department..."
@@ -846,43 +965,54 @@ export default function AdminDepartmentsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Select
-                        fullWidth
-                        aria-label="Department category"
-                        value={formData.category}
-                        onChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            category: String(
-                              value ?? "technical",
-                            ) as Department["category"],
-                          })
-                        }
-                      >
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
-                            <ListBox.Item id="technical" textValue="Technical">
-                              Technical
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                            <ListBox.Item id="content" textValue="Content">
-                              Content
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                            <ListBox.Item
-                              id="operations"
-                              textValue="Operations"
-                            >
-                              Operations
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
+                      <div>
+                        <span className="text-sm font-medium mb-1 block">
+                          Category{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </span>
+                        <Select
+                          fullWidth
+                          aria-label="Department category"
+                          value={formData.category}
+                          onChange={(value) =>
+                            setFormData({
+                              ...formData,
+                              category: String(
+                                value ?? "technical",
+                              ) as Department["category"],
+                            })
+                          }
+                        >
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item
+                                id="technical"
+                                textValue="Technical"
+                              >
+                                Technical
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="content" textValue="Content">
+                                Content
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item
+                                id="operations"
+                                textValue="Operations"
+                              >
+                                Operations
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </div>
 
                       <div className="flex items-center gap-2">
                         <label className="text-sm font-medium">Color</label>
@@ -973,33 +1103,46 @@ export default function AdminDepartmentsPage() {
 
                     <div>
                       <label className="text-sm font-medium mb-1 block">
-                        Head User ID (optional)
+                        Head{" "}
+                        <span className="font-normal text-default-400">
+                          (optional — pick from search)
+                        </span>
                       </label>
-                      <Input
-                        placeholder="User ID of the department head"
-                        value={formData.headId || ""}
-                        onChange={(e: any) =>
-                          setFormData({
-                            ...formData,
-                            headId: e.target.value || undefined,
-                          })
-                        }
+                      <MemberPicker
+                        ariaLabel="Search department head by name or URN"
+                        placeholder="Search head by name or URN…"
+                        query={headQuery}
+                        onQueryChange={setHeadQuery}
+                        onSelect={(userId, label) => {
+                          setPickedHeadId(userId);
+                          setPickedHeadLabel(label);
+                          setHeadQuery(label);
+                        }}
                       />
+                      {headQuery === pickedHeadLabel && pickedHeadId && (
+                        <p className="text-xs text-success mt-1">
+                          Head picked — clearing the field removes the head.
+                        </p>
+                      )}
                     </div>
 
-                    <Switch
-                      isSelected={formData.isActive}
-                      onChange={(checked: any) =>
-                        setFormData({ ...formData, isActive: checked })
-                      }
-                    >
-                      <Switch.Content>
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                        Active
-                      </Switch.Content>
-                    </Switch>
+                    {/* Activation is server-forced on create — the toggle only
+                        matters when editing an existing department. */}
+                    {editingDept && (
+                      <Switch
+                        isSelected={formData.isActive}
+                        onChange={(checked: any) =>
+                          setFormData({ ...formData, isActive: checked })
+                        }
+                      >
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                          Active
+                        </Switch.Content>
+                      </Switch>
+                    )}
                   </ModalBody>
 
                   <ModalFooter className="border-t pt-4">

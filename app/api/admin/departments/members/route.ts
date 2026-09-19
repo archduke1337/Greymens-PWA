@@ -101,12 +101,17 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+  const urn = typeof body.urn === "string" ? body.urn.trim() : "";
   const departmentId =
     typeof body.departmentId === "string" ? body.departmentId.trim() : "";
   const role = typeof body.role === "string" ? body.role : "";
 
-  if (!userId || !departmentId) {
-    return fail("VALIDATION", "userId and departmentId are required", 400);
+  if ((!userId && !urn) || !departmentId) {
+    return fail(
+      "VALIDATION",
+      "userId (or urn) and departmentId are required",
+      400,
+    );
   }
   if (!["member", "core_member", "lead"].includes(role)) {
     return fail("VALIDATION", "role must be member, core_member, or lead", 400);
@@ -123,12 +128,35 @@ export async function POST(request: NextRequest) {
       return fail("NOT_FOUND", "Department not found", 404);
     }
 
+    // A pasted URN resolves to its account here, so the console never needs
+    // raw account ids. Exact match only — a near-miss must 404 with a clear
+    // message rather than attach the wrong person.
+    let resolvedUserId = userId;
+
+    if (!resolvedUserId) {
+      const profiles = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROFILES,
+        [Query.equal("urn", [urn]), Query.limit(1)],
+      );
+      const match = profiles.documents[0];
+
+      if (!match || typeof match.userId !== "string" || !match.userId) {
+        return fail(
+          "NOT_FOUND",
+          "No member found with that URN — search by name and pick them from the list",
+          404,
+        );
+      }
+      resolvedUserId = match.userId;
+    }
+
     // Idempotent: reactivate a soft-deleted assignment instead of duplicating.
     const existing = await databases.listDocuments(
       DATABASE_ID,
       COLLECTIONS.USER_DEPARTMENTS,
       [
-        Query.equal("userId", [userId]),
+        Query.equal("userId", [resolvedUserId]),
         Query.equal("departmentId", [departmentId]),
         Query.limit(100),
       ],
@@ -156,7 +184,12 @@ export async function POST(request: NextRequest) {
         action: "department_member.assign",
         entityType: "user_department",
         entityId: assignment.$id,
-        details: { userId, departmentId, role, reactivated: true },
+        details: {
+          userId: resolvedUserId,
+          departmentId,
+          role,
+          reactivated: true,
+        },
       });
 
       return ok({ assignment, reactivated: true });
@@ -170,7 +203,7 @@ export async function POST(request: NextRequest) {
       COLLECTIONS.USER_DEPARTMENTS,
       ID.unique(),
       {
-        userId,
+        userId: resolvedUserId,
         departmentId,
         role,
         assignedBy: authenticated.user.$id,
@@ -185,7 +218,7 @@ export async function POST(request: NextRequest) {
       action: "department_member.assign",
       entityType: "user_department",
       entityId: assignment.$id,
-      details: { userId, departmentId, role },
+      details: { userId: resolvedUserId, departmentId, role },
     });
 
     return ok({ assignment }, 201);

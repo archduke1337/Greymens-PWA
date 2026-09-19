@@ -1,6 +1,6 @@
 "use client";
 
-import type { Resource } from "@/lib/types";
+import type { Resource, Department } from "@/lib/types";
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, CardContent, Chip, Input, Link } from "@heroui/react";
@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Link2,
   Loader2,
+  Lock,
   Megaphone,
   Newspaper,
   Search,
@@ -41,6 +42,18 @@ const LAYER_LABELS: Record<Resource["layer"], string> = {
   role: "Role",
 };
 
+// Human-readable scope for locked placeholders. Mirrors the admin console's
+// ROLE_OPTIONS one-to-one so the card names exactly the status the server
+// compared against.
+const ROLE_LABELS: Record<string, string> = {
+  member: "Members",
+  core_member: "Core members",
+  lead: "Leads",
+  head: "Heads",
+  admin: "Admins",
+  dev: "Developers",
+};
+
 type LoadState = {
   status: "loading" | "ready" | "error";
   resources: Resource[];
@@ -69,6 +82,44 @@ export default function ResourcesPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState("");
   const [layer, setLayer] = useState<LayerFilter>("all");
+  const [departmentNames, setDepartmentNames] = useState<
+    Record<string, string>
+  >({});
+
+  useEffect(() => {
+    // Department names resolve the locked card's scope line ("Available to
+    // the Cybersec department"). Best-effort: without the catalogue the card
+    // falls back to a generic department label.
+    let cancelled = false;
+
+    const loadDepartments = async () => {
+      try {
+        const response = await fetch("/api/departments", {
+          credentials: "include",
+        });
+
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          departments?: Department[];
+        };
+        const names: Record<string, string> = {};
+
+        for (const department of payload.departments ?? []) {
+          if (department.$id && department.name)
+            names[department.$id] = department.name;
+        }
+        if (!cancelled) setDepartmentNames(names);
+      } catch {
+        // Catalogue unreadable — locked cards use the generic label.
+      }
+    };
+
+    void loadDepartments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // The fetch is started here and every state update happens after an await,
@@ -224,6 +275,47 @@ export default function ResourcesPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((resource) => {
+            // Locked placeholder: the server withheld the content, so there
+            // is no URL to open, no description to show, and no uploader to
+            // name — just the title and who it is restricted to.
+            if (resource.locked) {
+              const scope =
+                resource.layer === "department"
+                  ? (resource.departmentId &&
+                      departmentNames[resource.departmentId]) ||
+                    "a specific department"
+                  : ROLE_LABELS[resource.requiredRole ?? ""] ||
+                    "specific members";
+
+              return (
+                <Card
+                  key={resource.$id}
+                  className="border-none shadow-md opacity-90"
+                >
+                  <CardContent className="p-4 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-default-100 flex items-center justify-center flex-shrink-0">
+                      <Lock className="w-5 h-5 text-default-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold break-words">
+                        {resource.title}
+                      </h3>
+                      <p className="text-sm text-default-500 mt-1">
+                        Available to {scope} — join it to unlock this resource.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <Chip color="warning" size="sm" variant="soft">
+                          Restricted
+                        </Chip>
+                        <Chip color="accent" size="sm" variant="soft">
+                          {LAYER_LABELS[resource.layer] ?? resource.layer}
+                        </Chip>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
             const TypeIcon = TYPE_ICONS[resource.type] ?? FileText;
 
             return (
@@ -260,7 +352,7 @@ export default function ResourcesPage() {
                       ))}
                     </div>
                   </div>
-                  {resource.url && (
+                  {resource.url && !resource.locked && (
                     <Link
                       className="flex-shrink-0 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80"
                       href={resource.url}
