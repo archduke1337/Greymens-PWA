@@ -7,7 +7,6 @@ import {
   Alert,
   Button,
   Card,
-  Description,
   FieldError,
   Form,
   Input,
@@ -18,7 +17,8 @@ import {
 } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
-import GitHubIcon from "@/components/auth/GitHubIcon";
+import ProviderButtons from "@/components/auth/ProviderButtons";
+import PasswordField from "@/components/auth/PasswordField";
 import { logError } from "@/lib/logger";
 
 function getSafeNext(next: string | null): string {
@@ -60,16 +60,34 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
-  const { register, loginWithGithub, user } = useAuth();
+  const { register, loginWithGithub, loginWithGoogle, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
+  const busy = loading || googleLoading || githubLoading;
 
   // Already authenticated: leave (see login page — proxy no longer bounces).
   useEffect(() => {
     if (user) router.push(next);
   }, [user, router, next]);
+
+  const stashNext = () => {
+    try {
+      sessionStorage.setItem("post_auth_next", next);
+    } catch {
+      // Storage unavailable: callback falls back to "/dashboard".
+    }
+  };
+
+  const clearNext = () => {
+    try {
+      sessionStorage.removeItem("post_auth_next");
+    } catch {
+      // Ignore storage errors on the failure path too.
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,30 +120,35 @@ function RegisterForm() {
     }
   };
 
-  const handleGithubSignup = async () => {
-    setError("");
-    setGithubLoading(true);
-    try {
+  const startProvider =
+    (provider: "google" | "github", run: () => Promise<unknown>) =>
+    async () => {
+      setError("");
+      if (provider === "google") setGoogleLoading(true);
+      else setGithubLoading(true);
       try {
-        sessionStorage.setItem("post_auth_next", next);
-      } catch {
-        // Storage unavailable: callback falls back to "/dashboard".
-      }
-      // Token flow: navigates to GitHub; /auth/success creates the session.
-      await loginWithGithub();
-    } catch (err: unknown) {
-      try {
-        sessionStorage.removeItem("post_auth_next");
-      } catch {
-        // Ignore storage errors on the failure path too.
-      }
-      const mapped = mapRegisterError(err);
+        stashNext();
+        // Token flow: navigates to the provider; /auth/success creates the
+        // session. Do not redirect manually.
+        await run();
+      } catch (err: unknown) {
+        clearNext();
+        const mapped = mapRegisterError(err);
 
-      logError("GitHub signup failed:", mapped);
-      setError(mapped);
-      setGithubLoading(false);
-    }
-  };
+        logError(
+          provider === "google"
+            ? "Google signup failed:"
+            : "GitHub signup failed:",
+          mapped,
+        );
+        setError(mapped);
+        if (provider === "google") setGoogleLoading(false);
+        else setGithubLoading(false);
+      }
+    };
+
+  const handleGoogleSignup = startProvider("google", loginWithGoogle);
+  const handleGithubSignup = startProvider("github", loginWithGithub);
 
   return (
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
@@ -163,14 +186,36 @@ function RegisterForm() {
         <Card.Header>
           <Card.Title>Create your account</Card.Title>
           <Card.Description>
-            Takes a minute. A human reads every application after.
+            Continue with Google or GitHub — or register with email.
           </Card.Description>
         </Card.Header>
         <Form validationBehavior="aria" onSubmit={handleSubmit}>
           <Card.Content className="space-y-4">
+            {error && (
+              <Alert role="alert" status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t create your account</Alert.Title>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+            <ProviderButtons
+              disabled={busy}
+              githubPending={githubLoading}
+              googlePending={googleLoading}
+              mode="signup"
+              onGitHub={handleGithubSignup}
+              onGoogle={handleGoogleSignup}
+            />
+            <div aria-hidden="true" className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-default-200" />
+              <span className="text-xs text-muted">or with email</span>
+              <span className="h-px flex-1 bg-default-200" />
+            </div>
             <TextField
               isRequired
-              isDisabled={loading || githubLoading}
+              isDisabled={busy}
               name="name"
               validate={(value) =>
                 value.trim().length >= 2 ? null : "Enter your full name"
@@ -184,7 +229,7 @@ function RegisterForm() {
             </TextField>
             <TextField
               isRequired
-              isDisabled={loading || githubLoading}
+              isDisabled={busy}
               name="email"
               type="email"
               validate={(value) =>
@@ -198,11 +243,13 @@ function RegisterForm() {
               <FieldError />
             </TextField>
             <div className="grid gap-4 sm:grid-cols-2">
-              <TextField
-                isRequired
-                isDisabled={loading || githubLoading}
+              <PasswordField
+                autoComplete="new-password"
+                description="At least 8 characters."
+                disabled={busy}
+                label="Password"
                 name="password"
-                type="password"
+                placeholder="Min. 8 characters"
                 validate={(value) =>
                   value.length >= 8
                     ? null
@@ -210,46 +257,26 @@ function RegisterForm() {
                 }
                 value={password}
                 onChange={setPassword}
-              >
-                <Label>Password</Label>
-                <Input
-                  autoComplete="new-password"
-                  placeholder="Min. 8 characters"
-                />
-                <Description>At least 8 characters.</Description>
-                <FieldError />
-              </TextField>
-              <TextField
-                isRequired
-                isDisabled={loading || githubLoading}
+              />
+              <PasswordField
+                autoComplete="new-password"
+                disabled={busy}
+                label="Confirm password"
                 name="confirmPassword"
-                type="password"
+                placeholder="Repeat it"
                 validate={(value) =>
                   value === password ? null : "Passwords do not match"
                 }
                 value={confirmPassword}
                 onChange={setConfirmPassword}
-              >
-                <Label>Confirm password</Label>
-                <Input autoComplete="new-password" placeholder="Repeat it" />
-                <FieldError />
-              </TextField>
+              />
             </div>
-            {error && (
-              <Alert role="alert" status="danger">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>Couldn&apos;t create your account</Alert.Title>
-                  <Alert.Description>{error}</Alert.Description>
-                </Alert.Content>
-              </Alert>
-            )}
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
               fullWidth
               className="rounded-full"
-              isDisabled={loading || githubLoading}
+              isDisabled={busy}
               isPending={loading}
               type="submit"
             >
@@ -260,31 +287,23 @@ function RegisterForm() {
                 </>
               )}
             </Button>
-
-            <div aria-hidden="true" className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-default-200" />
-              <span className="text-xs text-muted">OR</span>
-              <span className="h-px flex-1 bg-default-200" />
-            </div>
-            <Button
-              fullWidth
-              className="rounded-full"
-              isDisabled={loading || githubLoading}
-              isPending={githubLoading}
-              variant="secondary"
-              onPress={handleGithubSignup}
-            >
-              {({ isPending }) => (
-                <>
-                  {isPending ? (
-                    <Spinner color="current" size="sm" />
-                  ) : (
-                    <GitHubIcon />
-                  )}
-                  {isPending ? "Connecting to GitHub…" : "Continue with GitHub"}
-                </>
-              )}
-            </Button>
+            <p className="text-center text-xs text-muted">
+              By continuing you agree to the{" "}
+              <Link
+                className="font-medium text-foreground underline underline-offset-4"
+                href="/terms"
+              >
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link
+                className="font-medium text-foreground underline underline-offset-4"
+                href="/privacy"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </p>
 
             <p className="text-center text-sm text-muted">
               Already have an account?{" "}

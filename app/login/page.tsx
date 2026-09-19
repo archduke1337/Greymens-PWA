@@ -17,7 +17,8 @@ import {
 } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
-import GitHubIcon from "@/components/auth/GitHubIcon";
+import ProviderButtons from "@/components/auth/ProviderButtons";
+import PasswordField from "@/components/auth/PasswordField";
 import { logError } from "@/lib/logger";
 
 function getSafeNext(next: string | null): string {
@@ -58,8 +59,9 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
-  const { login, loginWithGithub, user } = useAuth();
+  const { login, loginWithGithub, loginWithGoogle, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = getSafeNext(searchParams.get("next"));
@@ -67,15 +69,32 @@ function LoginForm() {
   // reading them here avoids a setState-in-effect cascade on load.
   const [error, setError] = useState(
     searchParams.get("error") === "oauth_failed"
-      ? "GitHub sign-in didn't complete. Please try again."
+      ? "Sign-in didn't complete. Please try again."
       : "",
   );
+  const busy = loading || googleLoading || githubLoading;
 
   // Already authenticated (verified context state, not a cookie that may be
   // forged): leave the auth page.
   useEffect(() => {
     if (user) router.push(next);
   }, [user, router, next]);
+
+  const stashNext = () => {
+    try {
+      sessionStorage.setItem("post_auth_next", next);
+    } catch {
+      // Storage unavailable: callback falls back to "/dashboard".
+    }
+  };
+
+  const clearNext = () => {
+    try {
+      sessionStorage.removeItem("post_auth_next");
+    } catch {
+      // Ignore storage errors on the failure path too.
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,30 +121,35 @@ function LoginForm() {
     }
   };
 
-  const handleGithubLogin = async () => {
-    setError("");
-    setGithubLoading(true);
-    try {
+  const startProvider =
+    (provider: "google" | "github", run: () => Promise<unknown>) =>
+    async () => {
+      setError("");
+      if (provider === "google") setGoogleLoading(true);
+      else setGithubLoading(true);
       try {
-        sessionStorage.setItem("post_auth_next", next);
-      } catch {
-        // Storage unavailable: callback falls back to "/dashboard".
-      }
-      // Token flow: navigates to GitHub; /auth/success creates the session.
-      await loginWithGithub();
-    } catch (err: unknown) {
-      try {
-        sessionStorage.removeItem("post_auth_next");
-      } catch {
-        // Ignore storage errors on the failure path too.
-      }
-      const mapped = mapLoginError(err);
+        stashNext();
+        // Token flow: navigates to the provider; /auth/success creates the
+        // session. Do not redirect manually.
+        await run();
+      } catch (err: unknown) {
+        clearNext();
+        const mapped = mapLoginError(err);
 
-      logError("GitHub login failed:", mapped);
-      setError(mapped);
-      setGithubLoading(false);
-    }
-  };
+        logError(
+          provider === "google"
+            ? "Google login failed:"
+            : "GitHub login failed:",
+          mapped,
+        );
+        setError(mapped);
+        if (provider === "google") setGoogleLoading(false);
+        else setGithubLoading(false);
+      }
+    };
+
+  const handleGoogleLogin = startProvider("google", loginWithGoogle);
+  const handleGithubLogin = startProvider("github", loginWithGithub);
 
   return (
     <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
@@ -163,14 +187,36 @@ function LoginForm() {
         <Card.Header>
           <Card.Title>Welcome back</Card.Title>
           <Card.Description>
-            Log in with your club email and password — or continue with GitHub.
+            Continue with Google or GitHub — or use your club email.
           </Card.Description>
         </Card.Header>
         <Form validationBehavior="aria" onSubmit={handleSubmit}>
           <Card.Content className="space-y-4">
+            {error && (
+              <Alert role="alert" status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Couldn&apos;t log you in</Alert.Title>
+                  <Alert.Description>{error}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            )}
+            <ProviderButtons
+              disabled={busy}
+              githubPending={githubLoading}
+              googlePending={googleLoading}
+              mode="login"
+              onGitHub={handleGithubLogin}
+              onGoogle={handleGoogleLogin}
+            />
+            <div aria-hidden="true" className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-default-200" />
+              <span className="text-xs text-muted">or with email</span>
+              <span className="h-px flex-1 bg-default-200" />
+            </div>
             <TextField
               isRequired
-              isDisabled={loading || githubLoading}
+              isDisabled={busy}
               name="email"
               type="email"
               validate={(value) =>
@@ -183,36 +229,21 @@ function LoginForm() {
               <Input autoComplete="email" placeholder="you@example.com" />
               <FieldError />
             </TextField>
-            <TextField
-              isRequired
-              isDisabled={loading || githubLoading}
+            <PasswordField
+              autoComplete="current-password"
+              disabled={busy}
+              label="Password"
               name="password"
-              type="password"
+              placeholder="Your password"
               value={password}
               onChange={setPassword}
-            >
-              <Label>Password</Label>
-              <Input
-                autoComplete="current-password"
-                placeholder="Your password"
-              />
-              <FieldError />
-            </TextField>
-            {error && (
-              <Alert role="alert" status="danger">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>Couldn&apos;t log you in</Alert.Title>
-                  <Alert.Description>{error}</Alert.Description>
-                </Alert.Content>
-              </Alert>
-            )}
+            />
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
               fullWidth
               className="rounded-full"
-              isDisabled={loading || githubLoading}
+              isDisabled={busy}
               isPending={loading}
               type="submit"
             >
@@ -220,31 +251,6 @@ function LoginForm() {
                 <>
                   {isPending ? <Spinner color="current" size="sm" /> : null}
                   {isPending ? "Logging in…" : "Log in"}
-                </>
-              )}
-            </Button>
-
-            <div aria-hidden="true" className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-default-200" />
-              <span className="text-xs text-muted">OR</span>
-              <span className="h-px flex-1 bg-default-200" />
-            </div>
-            <Button
-              fullWidth
-              className="rounded-full"
-              isDisabled={loading || githubLoading}
-              isPending={githubLoading}
-              variant="secondary"
-              onPress={handleGithubLogin}
-            >
-              {({ isPending }) => (
-                <>
-                  {isPending ? (
-                    <Spinner color="current" size="sm" />
-                  ) : (
-                    <GitHubIcon />
-                  )}
-                  {isPending ? "Connecting to GitHub…" : "Sign in with GitHub"}
                 </>
               )}
             </Button>

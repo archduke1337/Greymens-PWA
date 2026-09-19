@@ -113,6 +113,7 @@ function AuthScreen() {
             className="rounded-full"
             isDisabled={busy}
             isPending={googleLoading}
+            variant="tertiary"
             onPress={handleGoogleSignIn}
           >
             {({ isPending }) => (
@@ -131,7 +132,7 @@ function AuthScreen() {
             className="rounded-full"
             isDisabled={busy}
             isPending={githubLoading}
-            variant="secondary"
+            variant="tertiary"
             onPress={handleGithubSignIn}
           >
             {({ isPending }) => (
@@ -147,7 +148,7 @@ function AuthScreen() {
           </Button>
           <div aria-hidden="true" className="flex items-center gap-3">
             <span className="h-px flex-1 bg-default-200" />
-            <span className="text-xs text-muted">OR</span>
+            <span className="text-xs text-muted">or</span>
             <span className="h-px flex-1 bg-default-200" />
           </div>
           <div className="grid grid-cols-2 gap-3">
