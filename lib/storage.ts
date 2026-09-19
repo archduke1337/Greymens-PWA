@@ -16,3 +16,21 @@ export const PUBLIC_FILE_PERMISSIONS = [Permission.read(Role.any())];
 
 /** For content that should be limited to signed-in accounts. */
 export const MEMBER_FILE_PERMISSIONS = [Permission.read(Role.users())];
+
+/**
+ * Public view URL for a stored file.
+ *
+ * node-appwrite's `storage.getFileView()` downloads the file content
+ * (`Promise<ArrayBuffer>`) — it does not return a URL. Stringifying that
+ * promise stored `"[object Promise]"` as the URL on every upload, so all
+ * server upload routes must build the view URL with this helper instead.
+ */
+export function getStorageFileViewUrl(
+  bucketId: string,
+  fileId: string,
+): string {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+
+  return `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
+}

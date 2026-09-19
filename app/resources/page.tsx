@@ -234,6 +234,11 @@ export default function ResourcesPage() {
                     <h3 className="font-semibold break-words">
                       {resource.title}
                     </h3>
+                    {resource.uploadedByName && (
+                      <p className="text-xs text-default-500 mt-0.5">
+                        Shared by {resource.uploadedByName}
+                      </p>
+                    )}
                     {resource.description && (
                       <p className="text-sm text-default-500 mt-1 break-words">
                         {resource.description}

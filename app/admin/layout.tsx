@@ -360,15 +360,15 @@ export default function AdminLayout({
     .find((s) => isActiveSection(pathname, s.href));
 
   return (
-    <div className="flex min-h-screen">
-      {/* Admin Sidebar: sticky full-height rail with grouped keyboard-
+    <div className="flex min-h-screen gap-4 p-4 lg:gap-5 lg:p-5">
+      {/* Admin Sidebar: floating rounded panel with grouped keyboard-
           navigable sections. A ListBox (not raw links) gives arrow-key
           movement, typeahead, and visible focus rings for free; Enter or
           click routes via onAction. */}
-      <aside className="hidden w-72 shrink-0 border-r border-border bg-card lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto">
-        <div className="p-4 pb-2">
+      <aside className="hidden w-72 shrink-0 rounded-3xl border border-default-200/70 bg-surface lg:sticky lg:top-5 lg:block lg:h-[calc(100vh-2.5rem)] lg:overflow-y-auto">
+        <div className="p-5 pb-3">
           <h2 className="text-lg font-bold tracking-tight">Console</h2>
-          <p className="text-xs text-muted-foreground">Club Management</p>
+          <p className="text-xs text-muted">Club Management</p>
         </div>
         <ListBox
           aria-label="Console sections"
@@ -378,7 +378,7 @@ export default function AdminLayout({
         >
           {visibleGroups.map((group) => (
             <ListBox.Section key={group.label}>
-              <Header className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Header className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
                 {group.label}
               </Header>
               {group.sections.map((section) => {
@@ -387,7 +387,7 @@ export default function AdminLayout({
                 return (
                   <ListBox.Item
                     key={section.href}
-                    className={`rounded-xl ${active ? "bg-primary/10 font-medium text-primary" : ""}`}
+                    className={`rounded-xl ${active ? "bg-accent/15 font-medium text-accent" : ""}`}
                     id={section.href}
                     textValue={section.label}
                   >
@@ -399,7 +399,7 @@ export default function AdminLayout({
             </ListBox.Section>
           ))}
         </ListBox>
-        <div className="border-t border-border p-3">
+        <div className="border-t border-separator p-3">
           <ListBox
             aria-label="Console exit"
             selectionMode="none"
@@ -416,7 +416,7 @@ export default function AdminLayout({
             </ListBox.Item>
           </ListBox>
           {user?.email && (
-            <p className="truncate px-3 pb-1 pt-2 text-xs text-muted-foreground">
+            <p className="truncate px-3 pb-1 pt-2 text-xs text-muted">
               Signed in as {user.email}
             </p>
           )}
@@ -427,8 +427,8 @@ export default function AdminLayout({
       <main className="min-w-0 flex-1 overflow-auto">
         {/* Compact section nav for viewports without the sidebar: the current
             section up front, everything else a swipe away. */}
-        <div className="sticky top-0 z-10 border-b border-border bg-card lg:hidden">
-          <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="sticky top-4 z-10 rounded-2xl border border-default-200/70 bg-surface lg:hidden">
+          <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
             Console{currentSection ? ` · ${currentSection.label}` : ""}
           </p>
           <nav
@@ -462,7 +462,7 @@ export default function AdminLayout({
             <h2 className="font-semibold text-amber-200">
               Finish the admin setup
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted">
               Your account is recognised as a bootstrap administrator, but it
               has no governance role yet, so the admin APIs will refuse it.
               Create one with the bootstrap script, then reload:

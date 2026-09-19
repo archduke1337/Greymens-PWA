@@ -9,7 +9,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
 import { hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
-import { PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
+import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isHttpUrl } from "@/lib/validation";
 import { ok, fail } from "@/lib/api";
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         PUBLIC_FILE_PERMISSIONS,
       );
 
-      imageUrl = storage.getFileView(BUCKET_ID, stored.$id).toString();
+      imageUrl = getStorageFileViewUrl(BUCKET_ID, stored.$id);
     } else {
       const providedUrl = text(form.get("imageUrl"), 500);
 

@@ -530,9 +530,15 @@ export interface Resource {
   fileId?: string;
   layer: "common" | "department" | "role";
   departmentId?: string;
+  requiredRole?: string;
   designationId?: string;
   tags?: string[];
   uploadedBy: string;
+  uploadedByName?: string;
+  status?: "pending" | "approved" | "rejected";
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
   isActive: boolean;
   displayOrder?: number;
 }

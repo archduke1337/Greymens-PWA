@@ -10,11 +10,12 @@ import {
   getAuthenticatedUser,
   getMembershipStatus,
   isMemberStatus,
+  requireMember,
 } from "@/lib/server-auth";
-import { requireCapability } from "@/lib/access-control";
+import { hasServerCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { MEMBER_FILE_PERMISSIONS } from "@/lib/storage";
+import { MEMBER_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -47,23 +48,37 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
     const { databases } = createServerDatabases();
+
+    // Review queue: managers see every status; everyone else only sees
+    // approved records. The capability check runs before any query so a
+    // denied caller costs no read.
+    if (request.nextUrl.searchParams.get("all") === "true") {
+      const admin = await requireCapability(request, "resources.manage");
+
+      if (!admin.user) return admin.response;
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.RESOURCES,
+        [
+          Query.equal("isActive", [true]),
+          Query.orderDesc("$createdAt"),
+          Query.limit(100),
+        ],
+      );
+
+      return ok({ resources: response.documents });
+    }
+
     const response = await databases.listDocuments(
       DATABASE_ID,
       COLLECTIONS.RESOURCES,
       [
         Query.equal("isActive", [true]),
+        Query.equal("status", ["approved"]),
         Query.orderDesc("$createdAt"),
         Query.limit(100),
       ],
     );
-
-    if (request.nextUrl.searchParams.get("all") === "true") {
-      const admin = await requireCapability(request, "resources.manage");
-
-      if (!admin.user) return admin.response;
-
-      return ok({ resources: response.documents });
-    }
 
     if (!user) {
       return ok({
@@ -312,12 +327,11 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Same capability as its siblings: the console page lists through
-  // `?all=true` (resources.manage) and PATCH/DELETE require it, but upload
-  // asked for a `lead`-or-above membership status — a rung that no longer
-  // resolves for anyone but an administrator. Office holders such as
-  // documentation_lead could see and manage the library yet never add to it.
-  const authenticated = await requireCapability(request, "resources.manage");
+  // Moderation (gallery/blogs model): any member may submit, which queues the
+  // resource as `pending` — but a submission from a resources manager is the
+  // moderator's own decision and publishes immediately. The client cannot ask
+  // for a status; it is derived from verified authority, not the request body.
+  const authenticated = await requireMember(request);
 
   if (!authenticated.user) return authenticated.response;
   // 50 MB uploads spend storage fast: throttle per uploader.
@@ -345,6 +359,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .slice(0, 20);
     const departmentId = text(form.get("departmentId"), 36);
+    const requiredRole = text(form.get("requiredRole"), 50);
     const file = form.get("file");
 
     if (!title) return fail("VALIDATION", "Title is required", 400);
@@ -362,6 +377,18 @@ export async function POST(request: NextRequest) {
         "A department is required for department resources",
         400,
       );
+    }
+    // A role-layer resource without a status is visible to every member —
+    // require the scope at create, mirroring the department rule above.
+    if (category === "role" && !requiredRole) {
+      return fail(
+        "VALIDATION",
+        "A member status is required for role resources",
+        400,
+      );
+    }
+    if (requiredRole && !MEMBER_STATUSES.has(requiredRole)) {
+      return fail("VALIDATION", "Invalid required role", 400);
     }
     if (!url && !(file instanceof File))
       return fail("VALIDATION", "A URL or file is required", 400);
@@ -400,8 +427,13 @@ export async function POST(request: NextRequest) {
       );
 
       fileId = uploaded.$id;
-      fileUrl = storage.getFileView(BUCKET_ID, uploaded.$id).toString();
+      fileUrl = getStorageFileViewUrl(BUCKET_ID, uploaded.$id);
     }
+    const now = new Date().toISOString();
+    const canModerate = await hasServerCapability(
+      authenticated.user.$id,
+      "resources.manage",
+    );
     const resource = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.RESOURCES,
@@ -415,11 +447,16 @@ export async function POST(request: NextRequest) {
         url: fileUrl,
         fileId,
         departmentId: category === "department" ? departmentId : undefined,
+        requiredRole: category === "role" ? requiredRole : undefined,
         uploadedBy: authenticated.user.$id,
         uploadedByName: authenticated.user.name,
         tags,
         downloads: 0,
+        status: canModerate ? "approved" : "pending",
         isActive: true,
+        ...(canModerate
+          ? { approvedBy: authenticated.user.$id, approvedAt: now }
+          : {}),
       },
     );
 
@@ -434,6 +471,8 @@ export async function POST(request: NextRequest) {
         category,
         type,
         departmentId: category === "department" ? departmentId : null,
+        requiredRole: category === "role" ? requiredRole : null,
+        status: canModerate ? "approved" : "pending",
       },
     });
 

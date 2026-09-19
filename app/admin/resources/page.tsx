@@ -54,6 +54,18 @@ const LAYERS = [
   { value: "role", label: "Role-Specific" },
 ] as const;
 
+// Role-gated visibility is an exact status match ("Leads" does not include
+// "Heads") — mirror the server's MEMBER_STATUSES vocabulary one-to-one so the
+// form cannot submit a value the API would reject.
+const ROLE_OPTIONS = [
+  { value: "member", label: "Members" },
+  { value: "core_member", label: "Core members" },
+  { value: "lead", label: "Leads" },
+  { value: "head", label: "Heads" },
+  { value: "admin", label: "Admins" },
+  { value: "dev", label: "Developers" },
+] as const;
+
 export default function AdminResourcesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -75,6 +87,7 @@ export default function AdminResourcesPage() {
     url: "",
     layer: "common" as Resource["layer"],
     departmentId: "",
+    requiredRole: "",
     tags: "",
   });
 
@@ -125,6 +138,11 @@ export default function AdminResourcesPage() {
 
       return;
     }
+    if (form.layer === "role" && !form.requiredRole) {
+      toast.error("Choose which members can see this resource");
+
+      return;
+    }
     const url = form.url.trim();
 
     // The server requires a URL or an uploaded file on create, and the
@@ -158,6 +176,10 @@ export default function AdminResourcesPage() {
         // would be dropped from the JSON and the old link would persist.
         departmentId:
           form.layer === "department" ? form.departmentId || undefined : null,
+        // Role-gated visibility compares an exact status. Clearing the field
+        // (or leaving the role layer) must clear the stored value, otherwise
+        // an old requiredRole would keep hiding the resource.
+        requiredRole: form.layer === "role" ? form.requiredRole || null : null,
         tags: form.tags
           ? form.tags
               .split(",")
@@ -208,6 +230,7 @@ export default function AdminResourcesPage() {
         url: "",
         layer: "common",
         departmentId: "",
+        requiredRole: "",
         tags: "",
       });
       await loadData();
@@ -259,6 +282,7 @@ export default function AdminResourcesPage() {
       url: resource.url || "",
       layer: resource.layer,
       departmentId: resource.departmentId || "",
+      requiredRole: resource.requiredRole || "",
       tags: resource.tags?.join(", ") || "",
     });
     open();
@@ -274,6 +298,7 @@ export default function AdminResourcesPage() {
       url: "",
       layer: "common",
       departmentId: "",
+      requiredRole: "",
       tags: "",
     });
     open();
@@ -389,6 +414,11 @@ export default function AdminResourcesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{resource.title}</h3>
+                    {resource.uploadedByName && (
+                      <p className="text-xs text-default-500">
+                        Shared by {resource.uploadedByName}
+                      </p>
+                    )}
                     {resource.description && (
                       <p className="text-sm text-default-500 truncate">
                         {resource.description}
@@ -409,6 +439,13 @@ export default function AdminResourcesPage() {
                             )?.name || "Unknown department"}
                           </Chip>
                         )}
+                      {resource.layer === "role" && resource.requiredRole && (
+                        <Chip size="sm" variant="soft">
+                          {ROLE_OPTIONS.find(
+                            (r) => r.value === resource.requiredRole,
+                          )?.label || resource.requiredRole}
+                        </Chip>
+                      )}
                       {resource.tags?.slice(0, 3).map((tag) => (
                         <Chip key={tag} color="accent" size="sm" variant="soft">
                           {tag}
@@ -589,6 +626,46 @@ export default function AdminResourcesPage() {
                           </ListBox>
                         </Select.Popover>
                       </Select>
+                    </div>
+                  )}
+                  {form.layer === "role" && (
+                    <div>
+                      <Select
+                        fullWidth
+                        placeholder="Select who can see this"
+                        value={
+                          form.requiredRole === "" ? null : form.requiredRole
+                        }
+                        onChange={(value) =>
+                          setForm((p) => ({
+                            ...p,
+                            requiredRole: String(value ?? ""),
+                          }))
+                        }
+                      >
+                        <Label>Visible only to</Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {ROLE_OPTIONS.map((r) => (
+                              <ListBox.Item
+                                key={r.value}
+                                id={r.value}
+                                textValue={r.label}
+                              >
+                                {r.label}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      <p className="text-xs text-default-500 mt-1">
+                        Exact status match — Leads does not include Heads.
+                      </p>
                     </div>
                   )}
                   <div>

@@ -770,8 +770,13 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "requiredRole", type: "string", size: 100 },
     { key: "uploadedByName", type: "string", size: 255, required: true },
     { key: "downloads", type: "integer", required: true },
+    { key: "status", type: "string", size: 50, required: true },
+    { key: "approvedBy", type: "string", size: 36 },
+    { key: "approvedAt", type: "string", size: 30 },
+    { key: "rejectionReason", type: "string", size: 65535 },
   ], [
     { key: "idx_active", type: "key", columns: ["isActive"] },
+    { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_category", type: "key", columns: ["category"] },
     { key: "idx_dept", type: "key", columns: ["departmentId"] },
     { key: "idx_role", type: "key", columns: ["requiredRole"] },

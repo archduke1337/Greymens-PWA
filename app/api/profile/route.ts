@@ -13,6 +13,7 @@ import {
 import {
   MEMBER_FILE_PERMISSIONS,
   PUBLIC_FILE_PERMISSIONS,
+  getStorageFileViewUrl,
 } from "@/lib/storage";
 import { validateProfilePatch } from "@/lib/profile-fields";
 import { recordAudit } from "@/lib/server-audit";
@@ -217,9 +218,7 @@ export async function POST(request: NextRequest) {
       file,
       perms,
     );
-    const avatar = storage
-      .getFileView(PROFILE_IMAGE_BUCKET_ID, uploaded.$id)
-      .toString();
+    const avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, uploaded.$id);
     const profile = existing
       ? await databases.updateDocument(
           DATABASE_ID,

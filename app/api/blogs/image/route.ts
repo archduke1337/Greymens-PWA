@@ -3,7 +3,7 @@ import { ID } from "appwrite";
 
 import { createServerStorage } from "@/lib/appwrite-server";
 import { requireCapability } from "@/lib/access-control";
-import { PUBLIC_FILE_PERMISSIONS } from "@/lib/storage";
+import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     return ok(
       {
-        url: storage.getFileView(BUCKET_ID, uploaded.$id).toString(),
+        url: getStorageFileViewUrl(BUCKET_ID, uploaded.$id),
         fileId: uploaded.$id,
       },
       201,
