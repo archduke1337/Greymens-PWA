@@ -359,12 +359,13 @@ export default function AdminResourcesPage() {
     if (!window.confirm(`Delete "${resource.title}"?`)) return;
     setDeletingId(resource.$id);
     try {
-      const response = await fetch("/api/resources", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ resourceId: resource.$id }),
-      });
+      const response = await fetch(
+        `/api/resources?resourceId=${encodeURIComponent(resource.$id)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
