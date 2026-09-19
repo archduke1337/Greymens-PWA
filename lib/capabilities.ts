@@ -488,41 +488,49 @@ export const REVIEWER_ROLE_TEMPLATES: Array<{
 export const REVIEW_QUEUES: Array<{
   key: string;
   href: string;
+  label: string;
   capabilities: Capability[];
 }> = [
   {
     key: "membership",
     href: "/admin/membership",
+    label: "Membership applications",
     capabilities: ["membership.approve", "membership.reject"],
   },
   {
     key: "events",
     href: "/admin/events",
+    label: "Event proposals",
     capabilities: ["events.approve", "events.manage"],
   },
   {
     key: "blogs",
     href: "/admin/blog",
+    label: "Blog posts",
     capabilities: ["blog.review", "blog.approve"],
   },
   {
     key: "resources",
     href: "/admin/resources",
+    label: "Resource uploads",
     capabilities: ["resources.approve", "resources.manage"],
   },
   {
     key: "gallery",
     href: "/admin/gallery",
+    label: "Gallery photos",
     capabilities: ["gallery.approve", "gallery.manage"],
   },
   {
     key: "projects",
     href: "/admin/projects",
+    label: "Project proposals",
     capabilities: ["projects.approve", "projects.manage"],
   },
   {
     key: "sponsors",
     href: "/admin/sponsors",
+    label: "Sponsor proposals",
     capabilities: ["sponsors.approve", "sponsors.manage"],
   },
 ];

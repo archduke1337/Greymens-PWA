@@ -524,6 +524,9 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "interests", type: "string", size: 100, array: true },
     { key: "experience", type: "string", size: 65535 },
     { key: "whyJoin", type: "string", size: 65535 },
+    // Member preference for decision mail. Optional: a missing value reads as
+    // opted in, so accounts older than the switch keep getting notices.
+    { key: "emailNotifications", type: "boolean" },
     { key: "availability", type: "string", size: 30 },
     { key: "profileVisibility", type: "string", size: 30 },
     { key: "showOnAboutPage", type: "boolean" },

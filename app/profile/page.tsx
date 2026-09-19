@@ -93,6 +93,18 @@ interface ProfileForm {
   instagramUrl: string;
   skills: string[];
   interests: string[];
+  // Everything the onboarding form asked for: it was write-once, so a typo in
+  // a birth date or a changed "why did you join" meant mailing an officer.
+  dateOfBirth: string;
+  gender: string;
+  experience: string;
+  whyJoin: string;
+  // Preferences. `emailNotifications` is honoured by the notification
+  // dispatcher; the other two decide what other members see.
+  availability: string;
+  profileVisibility: string;
+  showOnAboutPage: boolean;
+  emailNotifications: boolean;
 }
 
 // Single mapping from stored profile to editable form state, so load and cancel
@@ -115,6 +127,15 @@ function toEditForm(profile: Profile | null, name: string): ProfileForm {
     instagramUrl: profile?.instagramUrl || "",
     skills: profile?.skills || [],
     interests: profile?.interests || [],
+    dateOfBirth: profile?.dateOfBirth || "",
+    gender: profile?.gender || "",
+    experience: profile?.experience || "",
+    whyJoin: profile?.whyJoin || "",
+    availability: profile?.availability || "full",
+    profileVisibility: profile?.profileVisibility || "members_only",
+    // Missing reads as shown / opted in: the switch only ever opts out.
+    showOnAboutPage: profile?.showOnAboutPage !== false,
+    emailNotifications: profile?.emailNotifications !== false,
   };
 }
 
@@ -290,6 +311,14 @@ export default function ProfilePage() {
           instagramUrl: editForm.instagramUrl,
           skills: editForm.skills,
           interests: editForm.interests,
+          dateOfBirth: editForm.dateOfBirth,
+          gender: editForm.gender,
+          experience: editForm.experience,
+          whyJoin: editForm.whyJoin,
+          availability: editForm.availability,
+          profileVisibility: editForm.profileVisibility,
+          showOnAboutPage: editForm.showOnAboutPage,
+          emailNotifications: editForm.emailNotifications,
         }),
       });
 
@@ -621,6 +650,303 @@ export default function ProfilePage() {
                   : "Not shared"}
               </p>
             )}
+          </div>
+
+          {/* Everything onboarding asked for. It used to be write-once: a
+              wrong birth date or a changed "why did you join" meant mailing an
+              officer to fix. */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-foreground"
+                htmlFor="profile-dob"
+              >
+                Date of birth
+              </label>
+              {isEditing ? (
+                <Input
+                  id="profile-dob"
+                  type="date"
+                  value={editForm.dateOfBirth}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      dateOfBirth: e.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                <p className="text-sm text-foreground">
+                  {profile?.dateOfBirth || "Not shared"}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              {isEditing ? (
+                <Select
+                  placeholder="Select gender"
+                  value={editForm.gender || undefined}
+                  onChange={(value) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      gender: String(value ?? ""),
+                    }))
+                  }
+                >
+                  <Label>Gender</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {[
+                        ["male", "Male"],
+                        ["female", "Female"],
+                        ["other", "Other"],
+                        ["prefer_not_to_say", "Prefer not to say"],
+                      ].map(([value, label]) => (
+                        <ListBox.Item key={value} id={value} textValue={label}>
+                          {label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-foreground">Gender</p>
+                  <p className="text-sm text-foreground">
+                    {profile?.gender === "male"
+                      ? "Male"
+                      : profile?.gender === "female"
+                        ? "Female"
+                        : profile?.gender === "other"
+                          ? "Other"
+                          : profile?.gender === "prefer_not_to_say"
+                            ? "Prefer not to say"
+                            : "Not shared"}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-2">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="profile-experience"
+            >
+              Experience
+            </label>
+            {isEditing ? (
+              <TextArea
+                id="profile-experience"
+                maxLength={5000}
+                placeholder="Projects, competitions, clubs you have been part of..."
+                rows={3}
+                value={editForm.experience}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    experience: e.target.value,
+                  }))
+                }
+              />
+            ) : (
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {profile?.experience || "Nothing added yet."}
+              </p>
+            )}
+          </div>
+
+          {/* Why join */}
+          <div className="space-y-2">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="profile-why-join"
+            >
+              Why I joined
+            </label>
+            {isEditing ? (
+              <TextArea
+                id="profile-why-join"
+                maxLength={5000}
+                placeholder="What you hoped to find here..."
+                rows={3}
+                value={editForm.whyJoin}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, whyJoin: e.target.value }))
+                }
+              />
+            ) : (
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {profile?.whyJoin || "Nothing added yet."}
+              </p>
+            )}
+          </div>
+
+          {/* Preferences: what the club shows, and what it mails. */}
+          <div className="space-y-4 rounded-xl border border-default-200/70 p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Preferences
+              </h3>
+              <p className="text-xs text-muted">
+                Who can see you, and which notices reach your inbox.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                {isEditing ? (
+                  <Select
+                    value={editForm.availability}
+                    onChange={(value) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        availability: String(value ?? "full"),
+                      }))
+                    }
+                  >
+                    <Label>Availability</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {[
+                          ["full", "Full time"],
+                          ["partial", "Part time"],
+                          ["event_only", "Events only"],
+                        ].map(([value, label]) => (
+                          <ListBox.Item
+                            key={value}
+                            id={value}
+                            textValue={label}
+                          >
+                            {label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-foreground">
+                      Availability
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {profile?.availability === "partial"
+                        ? "Part time"
+                        : profile?.availability === "event_only"
+                          ? "Events only"
+                          : "Full time"}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {isEditing ? (
+                  <Select
+                    value={editForm.profileVisibility}
+                    onChange={(value) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        profileVisibility: String(value ?? "members_only"),
+                      }))
+                    }
+                  >
+                    <Label>Profile visibility</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {[
+                          ["public", "Public"],
+                          ["members_only", "Members only"],
+                          ["private", "Private"],
+                        ].map(([value, label]) => (
+                          <ListBox.Item
+                            key={value}
+                            id={value}
+                            textValue={label}
+                          >
+                            {label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-foreground">
+                      Profile visibility
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {profile?.profileVisibility === "public"
+                        ? "Public"
+                        : profile?.profileVisibility === "private"
+                          ? "Private"
+                          : "Members only"}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  checked={editForm.showOnAboutPage}
+                  className="mt-1"
+                  disabled={!isEditing}
+                  type="checkbox"
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      showOnAboutPage: e.target.checked,
+                    }))
+                  }
+                />
+                <span>
+                  Show me on the club&apos;s about page
+                  <span className="block text-xs text-muted">
+                    Off keeps you out of the public team list; your profile is
+                    still visible to members who know you.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  checked={editForm.emailNotifications}
+                  className="mt-1"
+                  disabled={!isEditing}
+                  type="checkbox"
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      emailNotifications: e.target.checked,
+                    }))
+                  }
+                />
+                <span>
+                  Email me approval decisions
+                  <span className="block text-xs text-muted">
+                    Turn this off and verdicts still appear in your
+                    notifications — they just stop reaching your inbox.
+                  </span>
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Bio */}

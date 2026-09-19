@@ -95,6 +95,11 @@ export interface Profile {
   availability?: "full" | "partial" | "event_only";
   profileVisibility?: "public" | "members_only" | "private";
   showOnAboutPage?: boolean;
+  /**
+   * Member preference for decision mail. Missing reads as opted in, so
+   * accounts created before the switch existed keep receiving notices.
+   */
+  emailNotifications?: boolean;
   profilePictureId?: string;
 }
 

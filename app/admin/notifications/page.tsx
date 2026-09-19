@@ -27,6 +27,7 @@ import {
 } from "@heroui/react";
 import { Bell, Send, CheckCircle, XCircle, Clock } from "lucide-react";
 
+import { renderEmailHtml } from "@/lib/email-template";
 import { useAuth } from "@/context/AuthContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
@@ -485,6 +486,29 @@ export default function AdminNotificationsPage() {
                     <p className="text-xs text-default-400 mt-1 tabular-nums">
                       {form.body.length}/5000
                     </p>
+                  </div>
+                  {/* Live preview of the branded mail shell. The renderer is
+                      shared with the sender, so what the composer shows is
+                      exactly what lands in the inbox — no second template to
+                      drift from. */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Email preview</p>
+                    <div
+                      className="max-h-72 overflow-y-auto overflow-x-hidden rounded-xl border border-default-200 bg-white"
+                      // Safe: the shared shell escapes the title and body.
+                      dangerouslySetInnerHTML={{
+                        __html: renderEmailHtml(
+                          form.title.trim() || "Notification",
+                          form.body.trim() || "Your message will appear here.",
+                        ),
+                      }}
+                    />
+                    {!emailConfigured && (
+                      <p className="text-xs text-default-400">
+                        Email is not configured yet — this is what members will
+                        see once it is.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Select

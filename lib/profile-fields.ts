@@ -23,6 +23,10 @@ const STRING_FIELDS = new Map<string, number>([
   ["semester", 20],
   ["address", 2000],
   ["dateOfBirth", 30],
+  // Answers from the onboarding form that were write-once until members asked
+  // to correct them. Same rules for the member route and the admin console.
+  ["experience", 5000],
+  ["whyJoin", 5000],
 ]);
 
 const URL_FIELDS = new Set([
@@ -49,6 +53,13 @@ const ARRAY_FIELDS = new Map<string, number>([
 ]);
 
 /**
+ * Boolean preferences. Both are stored on the profile row: `showOnAboutPage`
+ * controls the public team page, `emailNotifications` is the member's switch
+ * for decision mail (the in-app notice is always written).
+ */
+const BOOLEAN_FIELDS = new Set(["showOnAboutPage", "emailNotifications"]);
+
+/**
  * The governance tiers an administrator may assign directly.
  *
  * Only `admin` and `dev` appear here, because only they are *stored* rather
@@ -64,7 +75,7 @@ export const EDITABLE_PROFILE_FIELDS = new Set([
   ...STRING_FIELDS.keys(),
   ...ENUM_FIELDS.keys(),
   ...ARRAY_FIELDS.keys(),
-  "showOnAboutPage",
+  ...BOOLEAN_FIELDS,
 ]);
 
 export function isValidHttpUrl(value: string): boolean {
@@ -156,10 +167,11 @@ export function validateProfilePatch(
     data[field] = cleaned;
   }
 
-  if (body.showOnAboutPage !== undefined) {
-    if (typeof body.showOnAboutPage !== "boolean")
-      return { error: "Invalid showOnAboutPage" };
-    data.showOnAboutPage = body.showOnAboutPage;
+  for (const field of BOOLEAN_FIELDS) {
+    if (body[field] === undefined) continue;
+    if (typeof body[field] !== "boolean")
+      return { error: `Invalid ${field}` };
+    data[field] = body[field];
   }
 
   return { data };

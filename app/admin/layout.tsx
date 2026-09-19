@@ -19,6 +19,7 @@ import {
   Shapes,
   ClipboardList,
   ArrowLeft,
+  Inbox,
 } from "lucide-react";
 import { Button, Header, Label, ListBox, Spinner } from "@heroui/react";
 
@@ -57,6 +58,15 @@ export const ADMIN_SECTIONS = [
     href: "/admin",
     Icon: LayoutDashboard,
     cap: "governance.manage",
+  },
+  {
+    // One screen for "what needs me now?". The capability list is derived from
+    // REVIEW_QUEUES so admitting a reviewer here can never disagree with the
+    // queue the overview actually shows them.
+    label: "Awaiting review",
+    href: "/admin/pending",
+    Icon: Inbox,
+    cap: REVIEW_QUEUES.flatMap((queue) => queue.capabilities),
   },
   {
     label: "Membership",
@@ -161,7 +171,7 @@ export const ADMIN_SECTIONS = [
  * admins the full console.
  */
 const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
-  { label: "Overview", hrefs: ["/admin"] },
+  { label: "Overview", hrefs: ["/admin", "/admin/pending"] },
   {
     label: "People",
     hrefs: ["/admin/membership", "/admin/users", "/admin/positions"],
@@ -379,6 +389,12 @@ export default function AdminLayout({
     sectionMatches(hasCapability, s.cap),
   );
   const queueByHref = new Map(REVIEW_QUEUES.map((q) => [q.href, q.key]));
+  // The overview badge is the sum of every queue the caller can decide — its
+  // own count, not a seventh number to drift from the six.
+  const pendingTotal = Object.values(queueCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const byHref = new Map(visibleSections.map((s) => [s.href, s]));
   const visibleGroups = SECTION_GROUPS.map((group) => ({
     ...group,
@@ -416,7 +432,12 @@ export default function AdminLayout({
               {group.sections.map((section) => {
                 const active = isActiveSection(pathname, section.href);
                 const queueKey = queueByHref.get(section.href);
-                const waiting = queueKey ? (queueCounts[queueKey] ?? 0) : 0;
+                const waiting =
+                  section.href === "/admin/pending"
+                    ? pendingTotal
+                    : queueKey
+                      ? (queueCounts[queueKey] ?? 0)
+                      : 0;
 
                 return (
                   <ListBox.Item

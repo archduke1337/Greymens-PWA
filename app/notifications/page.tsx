@@ -77,6 +77,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
@@ -289,16 +290,29 @@ export default function NotificationsPage() {
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button
-            isPending={markingAll}
-            size="sm"
-            variant="ghost"
-            onPress={handleMarkAllAsRead}
-          >
-            Mark all read
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {notifications.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input
+                checked={unreadOnly}
+                className="h-4 w-4"
+                type="checkbox"
+                onChange={(e) => setUnreadOnly(e.target.checked)}
+              />
+              Unread only
+            </label>
+          )}
+          {unreadCount > 0 && (
+            <Button
+              isPending={markingAll}
+              size="sm"
+              variant="ghost"
+              onPress={handleMarkAllAsRead}
+            >
+              Mark all read
+            </Button>
+          )}
+        </div>
       </div>
 
       {loadError && (
@@ -318,7 +332,8 @@ export default function NotificationsPage() {
         </Card>
       )}
 
-      {notifications.length === 0 ? (
+      {(unreadOnly ? notifications.filter((n) => !n.read) : notifications)
+        .length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <svg
@@ -335,15 +350,22 @@ export default function NotificationsPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            <p className="text-default-400">No notifications yet</p>
+            <p className="text-default-400">
+              {unreadOnly ? "Nothing unread" : "No notifications yet"}
+            </p>
             <p className="text-sm text-default-500">
-              Membership updates and event reminders will appear here.
+              {unreadOnly
+                ? 'Switch off "Unread only" to see everything you have been sent.'
+                : "Membership updates and event reminders will appear here."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {notifications.map((notification) => (
+          {(unreadOnly
+            ? notifications.filter((n) => !n.read)
+            : notifications
+          ).map((notification) => (
             <button
               key={notification.$id}
               aria-label={

@@ -13,7 +13,7 @@
  * (see POST /api/notifications).
  */
 
-import { ID } from "node-appwrite";
+import { ID, Query } from "node-appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
@@ -54,6 +54,30 @@ const NO_MAIL: EmailReport = {
   reason: "not_requested",
 };
 
+/**
+ * The member's mail preference, read fresh per send so a change takes effect
+ * on the next notice. A missing value (or a lookup failure) reads as opted in:
+ * a decision the member is waiting for must not be dropped because a profile
+ * row could not be read.
+ */
+async function emailOptedOut(userId: string): Promise<boolean> {
+  try {
+    const { databases } = createServerDatabases();
+    const rows = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.equal("userId", [userId]), Query.limit(1)],
+    );
+
+    return (
+      (rows.documents[0] as Record<string, unknown> | undefined)
+        ?.emailNotifications === false
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function dispatchNotification(
   input: DispatchInput,
 ): Promise<DispatchResult> {
@@ -76,7 +100,7 @@ export async function dispatchNotification(
 
   let email: EmailReport = NO_MAIL;
 
-  if (input.email !== false) {
+  if (input.email !== false && !(await emailOptedOut(input.userId))) {
     const contact = await getUserContact(input.userId);
 
     email = contact
