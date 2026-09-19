@@ -15,6 +15,8 @@ import {
   StarIcon,
   FolderIcon,
   LightbulbIcon,
+  CheckIcon,
+  XIcon,
 } from "lucide-react";
 import {
   Button,
@@ -91,21 +93,20 @@ export default function AdminProjectsPage() {
     { key: "web", label: "Web" },
     { key: "iot", label: "IoT" },
     { key: "quantum", label: "Quantum" },
+    { key: "cybersecurity", label: "Cybersecurity" },
   ];
 
   const statuses = [
-    { key: "planning", label: "📋 Planning" },
-    { key: "in-progress", label: "🚧 In progress" },
-    { key: "completed", label: "✅ Completed" },
+    { key: "planning", label: "Planning" },
+    { key: "in-progress", label: "In progress" },
+    { key: "completed", label: "Completed" },
   ];
 
   // Admin tips
   const adminTips = [
     "Use high-quality images from Unsplash for better project presentation",
     "Set realistic progress percentages to track project development accurately",
-    "Feature important projects to highlight them on the homepage",
     "Use commas to separate technologies and team members for better organization",
-    "Update project status regularly to keep members informed",
     "Add demo and repository links to showcase live projects",
   ];
 
@@ -414,6 +415,91 @@ export default function AdminProjectsPage() {
     }
   };
 
+  // Review queue: member proposals arrive as `review`; rows predating
+  // moderation carry no reviewStatus and read as approved legacy content.
+  type ReviewTab = "all" | "review" | "approved" | "rejected";
+
+  const [activeTab, setActiveTab] = useState<ReviewTab>("all");
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const reviewOf = (project: Project): "review" | "approved" | "rejected" => {
+    if (
+      project.reviewStatus === "review" ||
+      project.reviewStatus === "rejected"
+    )
+      return project.reviewStatus;
+
+    return "approved";
+  };
+
+  const reviewCounts = {
+    review: projects.filter((p) => reviewOf(p) === "review").length,
+    approved: projects.filter((p) => reviewOf(p) === "approved").length,
+    rejected: projects.filter((p) => reviewOf(p) === "rejected").length,
+  };
+
+  const visibleProjects = projects.filter(
+    (p) => activeTab === "all" || reviewOf(p) === activeTab,
+  );
+
+  const handleReview = async (
+    project: Project,
+    action: "approve" | "reject",
+  ) => {
+    if (!project.$id) return;
+    let reason = "";
+
+    if (action === "reject") {
+      const input = window.prompt(
+        `Why is "${project.title}" not approved? The proposer sees this.`,
+        project.rejectionReason ?? "",
+      );
+
+      if (input === null) return;
+      reason = input.trim();
+
+      if (!reason) {
+        toast.error("A rejection reason is required");
+
+        return;
+      }
+    } else if (
+      !confirm(`Approve "${project.title}"? It becomes publicly visible.`)
+    ) {
+      return;
+    }
+    setReviewingId(project.$id);
+    try {
+      const response = await fetch("/api/admin/projects", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          projectId: project.$id,
+          action,
+          reason: reason || undefined,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to review project"));
+      toast.success(
+        action === "approve" ? "Project approved" : "Project sent back",
+      );
+      fetchProjects();
+    } catch (error) {
+      const message = getErrorMessage(error);
+
+      logError("Error reviewing project:", message);
+      toast.error(`Failed to review project: ${message}`);
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -449,12 +535,12 @@ export default function AdminProjectsPage() {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
-        <div className="text-center space-y-4 relative">
-          <div className="relative z-10">
-            <h1 className="text-4xl font-bold text-foreground">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               Project Management
             </h1>
-            <p className="text-lg text-muted mt-2 max-w-2xl mx-auto">
+            <p className="text-muted mt-1 text-sm md:text-base">
               Manage and organize all club projects
             </p>
           </div>
@@ -468,9 +554,9 @@ export default function AdminProjectsPage() {
                 <LightbulbIcon className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground mb-3">
+                <h2 className="text-lg font-semibold text-foreground mb-3">
                   Admin Tips & Best Practices
-                </h3>
+                </h2>
                 <div className="grid md:grid-cols-2 gap-3">
                   {adminTips.map((tip, index) => (
                     <div
@@ -505,7 +591,7 @@ export default function AdminProjectsPage() {
                   </p>
                 </div>
                 <Button
-                  className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                  className="bg-primary text-primary-foreground font-semibold"
                   size="lg"
                   onPress={handleAdd}
                 >
@@ -513,6 +599,56 @@ export default function AdminProjectsPage() {
                 </Button>
               </CardHeader>
               <CardContent className="p-6">
+                <div
+                  aria-label="Filter by review status"
+                  className="flex flex-wrap gap-2 mb-4"
+                  role="group"
+                >
+                  {(
+                    [
+                      { value: "all", label: "All" },
+                      { value: "review", label: "Needs review" },
+                      { value: "approved", label: "Published" },
+                      { value: "rejected", label: "Sent back" },
+                    ] as const
+                  ).map((tab) => {
+                    const count =
+                      tab.value === "all"
+                        ? projects.length
+                        : reviewCounts[tab.value];
+
+                    return (
+                      <Button
+                        key={tab.value}
+                        size="sm"
+                        variant={
+                          activeTab === tab.value ? "primary" : "secondary"
+                        }
+                        onPress={() => setActiveTab(tab.value)}
+                      >
+                        {tab.label}
+                        {count > 0 && (
+                          <Chip
+                            className="ml-1 tabular-nums"
+                            color={
+                              tab.value === "approved"
+                                ? "success"
+                                : tab.value === "rejected"
+                                  ? "danger"
+                                  : tab.value === "review"
+                                    ? "warning"
+                                    : "default"
+                            }
+                            size="sm"
+                            variant="soft"
+                          >
+                            {count}
+                          </Chip>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
                 {loading ? (
                   <div
                     aria-label="Loading projects"
@@ -522,25 +658,34 @@ export default function AdminProjectsPage() {
                     <Spinner className="mb-4" size="lg" />
                     <p className="text-muted">Loading projects...</p>
                   </div>
-                ) : projects.length === 0 ? (
+                ) : visibleProjects.length === 0 ? (
                   <div className="text-center py-16">
                     <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
                       <FolderIcon className="w-12 h-12 text-primary" />
                     </div>
                     <h3 className="text-2xl font-bold text-foreground mb-2">
-                      No projects yet
+                      {activeTab === "review"
+                        ? "No proposals waiting"
+                        : activeTab === "rejected"
+                          ? "Nothing sent back"
+                          : "No projects yet"}
                     </h3>
                     <p className="text-muted mb-6 max-w-md mx-auto">
-                      Start by creating your first project to showcase your work
-                      and attract more contributors
+                      {activeTab === "all"
+                        ? "Start by creating your first project to showcase your work and attract more contributors"
+                        : activeTab === "review"
+                          ? "Member proposals appear here for approval."
+                          : "Projects in this state will appear here."}
                     </p>
-                    <Button
-                      className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
-                      size="lg"
-                      onPress={handleAdd}
-                    >
-                      Create First Project
-                    </Button>
+                    {activeTab === "all" && (
+                      <Button
+                        className="bg-primary text-primary-foreground font-semibold"
+                        size="lg"
+                        onPress={handleAdd}
+                      >
+                        Create First Project
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -571,10 +716,9 @@ export default function AdminProjectsPage() {
                             </TableColumn>
                           </TableHeader>
                           <TableBody>
-                            {projects.map((project) => (
+                            {visibleProjects.map((project) => (
                               <TableRow
                                 key={project.$id}
-                                className="hover:bg-surface-secondary transition-colors"
                               >
                                 <TableCell>
                                   <div className="flex items-center gap-4">
@@ -608,6 +752,29 @@ export default function AdminProjectsPage() {
                                       <p className="text-xs text-muted line-clamp-1 mt-1">
                                         {project.description}
                                       </p>
+                                      {reviewOf(project) !== "approved" && (
+                                        <p className="mt-1">
+                                          <Chip
+                                            color={
+                                              reviewOf(project) === "review"
+                                                ? "warning"
+                                                : "danger"
+                                            }
+                                            size="sm"
+                                            variant="soft"
+                                          >
+                                            {reviewOf(project) === "review"
+                                              ? "Needs review"
+                                              : "Sent back"}
+                                          </Chip>
+                                        </p>
+                                      )}
+                                      {reviewOf(project) === "rejected" &&
+                                        project.rejectionReason && (
+                                          <p className="text-xs text-danger mt-1 line-clamp-2">
+                                            {project.rejectionReason}
+                                          </p>
+                                        )}
                                     </div>
                                   </div>
                                 </TableCell>
@@ -635,9 +802,9 @@ export default function AdminProjectsPage() {
                                   <div className="flex items-center gap-3">
                                     <div className="w-20 bg-surface-secondary rounded-full h-2 flex-1">
                                       <div
-                                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                                        className="bg-primary h-2 rounded-full origin-left transition-transform duration-300 ease-out"
                                         style={{
-                                          width: `${project.progress}%`,
+                                          transform: `scaleX(${Math.min(100, Math.max(0, project.progress)) / 100})`,
                                         }}
                                       />
                                     </div>
@@ -662,6 +829,40 @@ export default function AdminProjectsPage() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex gap-2">
+                                    {reviewOf(project) !== "approved" && (
+                                      <Button
+                                        isIconOnly
+                                        aria-label={`Approve ${project.title}`}
+                                        isPending={reviewingId === project.$id}
+                                        size="sm"
+                                        variant="primary"
+                                        onPress={() =>
+                                          handleReview(project, "approve")
+                                        }
+                                      >
+                                        <CheckIcon
+                                          aria-hidden="true"
+                                          className="w-4 h-4"
+                                        />
+                                      </Button>
+                                    )}
+                                    {reviewOf(project) === "review" && (
+                                      <Button
+                                        isIconOnly
+                                        aria-label={`Send back ${project.title}`}
+                                        isPending={reviewingId === project.$id}
+                                        size="sm"
+                                        variant="danger-soft"
+                                        onPress={() =>
+                                          handleReview(project, "reject")
+                                        }
+                                      >
+                                        <XIcon
+                                          aria-hidden="true"
+                                          className="w-4 h-4"
+                                        />
+                                      </Button>
+                                    )}
                                     <Button
                                       isIconOnly
                                       aria-label={`Edit ${project.title}`}
@@ -1054,7 +1255,7 @@ export default function AdminProjectsPage() {
                         Cancel
                       </Button>
                       <Button
-                        className="bg-primary text-primary-foreground font-semibold transition-opacity hover:opacity-90"
+                        className="bg-primary text-primary-foreground font-semibold"
                         isPending={saving}
                         onPress={handleSave}
                       >

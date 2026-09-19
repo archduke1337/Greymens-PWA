@@ -476,9 +476,21 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "repoUrl", type: "string", size: 500, required: true },
     { key: "teamMembers", type: "string", size: 255, array: true },
     { key: "createdAt", type: "string", size: 30, required: true },
+    // Moderation (member proposals): reviewStatus is the review pipeline
+    // (review -> approved/rejected), independent of `status`, which tracks
+    // build progress (planning/in-progress/completed). Rows predating these
+    // columns read as approved — the API treats a missing reviewStatus as
+    // published legacy content.
+    { key: "ownerId", type: "string", size: 36 },
+    { key: "reviewStatus", type: "string", size: 50 },
+    { key: "approvedBy", type: "string", size: 36 },
+    { key: "approvedAt", type: "string", size: 30 },
+    { key: "rejectionReason", type: "string", size: 2000 },
   ], [
     { key: "idx_category", type: "key", columns: ["category"] },
     { key: "idx_featured", type: "key", columns: ["isFeatured"] },
+    { key: "idx_review", type: "key", columns: ["reviewStatus"] },
+    { key: "idx_owner", type: "key", columns: ["ownerId"] },
   ]);
 
   await createTable("profiles", "Profiles", [

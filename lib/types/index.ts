@@ -279,6 +279,16 @@ export interface Project {
   repoUrl: string;
   teamMembers: string[];
   createdAt: string;
+  /**
+   * Review pipeline for member proposals (review -> approved/rejected),
+   * independent of `status` (build progress). Missing on legacy rows, which
+   * read as approved.
+   */
+  reviewStatus?: "review" | "approved" | "rejected";
+  ownerId?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
 }
 
 // ============================================================

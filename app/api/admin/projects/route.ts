@@ -4,6 +4,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
+import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -156,6 +157,70 @@ export async function PATCH(request: NextRequest) {
 
     if (!projectId) return fail("VALIDATION", "projectId is required", 400);
     const { projectId: _projectId, ...rest } = body;
+
+    // Review decisions ride the same endpoint as metadata edits: approve or
+    // reject a member proposal, tell the proposer (in-app + mail), audit it.
+    if (rest.action === "approve" || rest.action === "reject") {
+      const action = rest.action as string;
+      const reason =
+        typeof rest.reason === "string"
+          ? rest.reason.trim().slice(0, 2000)
+          : "";
+
+      if (action === "reject" && !reason) {
+        return fail("VALIDATION", "A rejection reason is required", 400);
+      }
+      const { databases } = createServerDatabases();
+      const now = new Date().toISOString();
+      const project = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.PROJECTS,
+        projectId,
+        action === "approve"
+          ? {
+              reviewStatus: "approved",
+              approvedBy: authenticated.user.$id,
+              approvedAt: now,
+              rejectionReason: null,
+            }
+          : {
+              reviewStatus: "rejected",
+              rejectionReason: reason,
+              approvedBy: null,
+              approvedAt: null,
+            },
+      );
+
+      const ownerId = String(project.ownerId ?? "");
+      const title = String(project.title ?? "your project");
+
+      if (ownerId) {
+        await dispatchNotification({
+          userId: ownerId,
+          type: "general",
+          title:
+            action === "approve"
+              ? "Project proposal approved"
+              : "Project proposal needs changes",
+          body:
+            action === "approve"
+              ? `"${title}" was approved and is now visible on the projects page.`
+              : `"${title}" was not approved yet. Reviewer note: ${reason}`,
+        }).catch(() => null);
+      }
+
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: `project.${action}`,
+        entityType: "project",
+        entityId: projectId,
+        details: { action },
+      });
+
+      return ok({ project });
+    }
+
     const data = pickProjectFields(rest);
     const validationError = validateProject(data);
 

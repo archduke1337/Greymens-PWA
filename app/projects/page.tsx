@@ -12,7 +12,20 @@ import {
   CardContent,
   CardFooter,
   Chip,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   ProgressBar,
+  Select,
+  TextArea,
+  useOverlayState,
 } from "@heroui/react";
 import {
   CodeIcon,
@@ -22,10 +35,13 @@ import {
   CalendarIcon,
   RocketIcon,
   Loader2Icon,
+  PlusIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import LinkButton from "@/components/ui/LinkButton";
 import { title, subtitle } from "@/components/primitives";
+import { useAuth } from "@/context/AuthContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
@@ -37,6 +53,7 @@ const categories = [
   { key: "web", label: "Web" },
   { key: "iot", label: "IoT" },
   { key: "quantum", label: "Quantum" },
+  { key: "cybersecurity", label: "Cybersecurity" },
 ];
 
 const getStatusChip = (status: string) => {
@@ -53,16 +70,37 @@ const getStatusChip = (status: string) => {
 };
 
 export default function ProjectsPage() {
+  const { user } = useAuth();
+  const { isOpen, open, close } = useOverlayState();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    image: "",
+    category: "web",
+    technologies: "",
+    duration: "",
+    demoUrl: "",
+    repoUrl: "",
+    teamMembers: "",
+  });
 
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/projects");
+      // Signed-in members read with scope=mine so their own pending
+      // proposals ride along (marked in review); everyone else sees only
+      // published work. Credentials are required for the server to know who
+      // is asking.
+      const query = user ? "?scope=mine" : "";
+      const response = await fetch(`/api/projects${query}`, {
+        credentials: "include",
+      });
       const payload = (await response.json()) as {
         projects?: Project[];
         error?: string;
@@ -79,11 +117,91 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  const handlePropose = async () => {
+    if (
+      !form.title.trim() ||
+      !form.description.trim() ||
+      !form.image.trim() ||
+      !form.duration.trim()
+    ) {
+      toast.error("Title, description, image, and duration are required");
+
+      return;
+    }
+    if (!/^https?:\/\/.+/i.test(form.image.trim())) {
+      toast.error("Image must be a valid http(s) URL");
+
+      return;
+    }
+    for (const [value, label] of [
+      [form.demoUrl, "Demo URL"],
+      [form.repoUrl, "Repository URL"],
+    ] as const) {
+      if (value.trim() && !/^https?:\/\/.+/i.test(value.trim())) {
+        toast.error(`${label} must be a valid http(s) URL or left empty`);
+
+        return;
+      }
+    }
+    setSending(true);
+    try {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          image: form.image.trim(),
+          category: form.category,
+          technologies: form.technologies
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          duration: form.duration.trim(),
+          demoUrl: form.demoUrl.trim(),
+          repoUrl: form.repoUrl.trim(),
+          teamMembers: form.teamMembers
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to submit project"));
+      toast.success("Proposal submitted — visible after review");
+      close();
+      setForm({
+        title: "",
+        description: "",
+        image: "",
+        category: "web",
+        technologies: "",
+        duration: "",
+        demoUrl: "",
+        repoUrl: "",
+        teamMembers: "",
+      });
+      await fetchProjects();
+    } catch (caught) {
+      logError("Error proposing project:", caught);
+      toast.error(
+        caught instanceof Error ? caught.message : "Unable to submit project",
+      );
+    } finally {
+      setSending(false);
+    }
+  };
 
   const categoriesWithCount = useMemo(
     () =>
@@ -148,6 +266,17 @@ export default function ProjectsPage() {
             );
           })}
         </div>
+        {user && (
+          <div className="mt-6 text-center">
+            <Button variant="primary" onPress={open}>
+              <PlusIcon aria-hidden="true" className="w-4 h-4" />
+              Propose a project
+            </Button>
+            <p className="mt-2 text-xs text-default-400">
+              Member proposals appear here after review.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Loading state */}
@@ -213,7 +342,7 @@ export default function ProjectsPage() {
                           </Chip>
                         </div>
                       )}
-                      <div className="absolute right-4 top-4">
+                      <div className="absolute right-4 top-4 flex flex-col items-end gap-1.5">
                         <Chip
                           color={statusChip.color}
                           size="sm"
@@ -221,6 +350,11 @@ export default function ProjectsPage() {
                         >
                           {project.status.replace("-", " ")}
                         </Chip>
+                        {project.reviewStatus === "review" && (
+                          <Chip color="warning" size="sm" variant="soft">
+                            In review
+                          </Chip>
+                        )}
                       </div>
                     </div>
 
@@ -441,6 +575,212 @@ export default function ProjectsPage() {
           </Card>
         </div>
       )}
+
+      {/* Propose a project */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isOpen}
+          onOpenChange={(o) => {
+            if (!o) close();
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>Propose a project</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-sm text-default-500">
+                    Tell us what you want to build. A lead reviews every
+                    proposal before it appears here.
+                  </p>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Title{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="Project title"
+                      value={form.title}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setForm((p) => ({ ...p, title: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Description{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <TextArea
+                      placeholder="What does it do, who is it for?"
+                      rows={3}
+                      value={form.description}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setForm((p) => ({ ...p, description: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Select
+                        fullWidth
+                        value={form.category}
+                        onChange={(value) =>
+                          setForm((p) => ({
+                            ...p,
+                            category: String(value ?? "web"),
+                          }))
+                        }
+                      >
+                        <Label>
+                          Category{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {categories
+                              .filter((c) => c.key !== "all")
+                              .map((c) => (
+                                <ListBox.Item
+                                  key={c.key}
+                                  id={c.key}
+                                  textValue={c.label}
+                                >
+                                  {c.label}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        Duration{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </label>
+                      <Input
+                        placeholder="e.g. 6 weeks"
+                        value={form.duration}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((p) => ({ ...p, duration: e.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Image URL{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="https://…"
+                      value={form.image}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setForm((p) => ({ ...p, image: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Technologies{" "}
+                      <span className="font-normal text-default-400">
+                        (optional, comma separated)
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="Next.js, Appwrite, Tailwind"
+                      value={form.technologies}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setForm((p) => ({
+                          ...p,
+                          technologies: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        Demo URL{" "}
+                        <span className="font-normal text-default-400">
+                          (optional)
+                        </span>
+                      </label>
+                      <Input
+                        placeholder="https://…"
+                        value={form.demoUrl}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((p) => ({ ...p, demoUrl: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        Repository URL{" "}
+                        <span className="font-normal text-default-400">
+                          (optional)
+                        </span>
+                      </label>
+                      <Input
+                        placeholder="https://…"
+                        value={form.repoUrl}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((p) => ({ ...p, repoUrl: e.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Team members{" "}
+                      <span className="font-normal text-default-400">
+                        (optional, comma separated)
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="Who is building it with you?"
+                      value={form.teamMembers}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setForm((p) => ({
+                          ...p,
+                          teamMembers: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="secondary" onPress={close}>
+                  Cancel
+                </Button>
+                <Button
+                  isPending={sending}
+                  variant="primary"
+                  onPress={handlePropose}
+                >
+                  Submit proposal
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }
