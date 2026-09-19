@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       (async () => {
         try {
           return {
-            set: await getEffectiveCapabilities(userId),
+            set: await getEffectiveCapabilities(userId, undefined, undefined, authenticated.user!.email),
             failed: false,
           };
         } catch (error) {

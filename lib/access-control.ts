@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import type { Capability } from "@/lib/capabilities";
 
 import { Query } from "appwrite";
+import { Client as AdminClient, Users } from "node-appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
@@ -65,10 +66,36 @@ function activeDate(expiresAt: unknown): boolean {
   );
 }
 
+// Bootstrap admin email lookup — cached per request burst so repeated
+// capability checks for the same user don't hammer the Users API.
+const bootstrapEmailCache = new Map<string, string | null>();
+async function getBootstrapEmail(userId: string): Promise<string | null> {
+  if (bootstrapEmailCache.has(userId)) return bootstrapEmailCache.get(userId)!;
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
+  if (!endpoint || !projectId || !apiKey) {
+    bootstrapEmailCache.set(userId, null);
+    return null;
+  }
+  try {
+    const client = new AdminClient().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
+    const users = new Users(client);
+    const user = await users.get(userId);
+    const email = typeof user.email === "string" ? user.email : null;
+    bootstrapEmailCache.set(userId, email);
+    return email;
+  } catch {
+    bootstrapEmailCache.set(userId, null);
+    return null;
+  }
+}
+
 export async function getEffectiveCapabilities(
   userId: string,
   scope?: { type: string; id?: string },
   knownStatus?: string,
+  knownEmail?: string | null,
 ): Promise<Set<string>> {
   const { databases } = createServerDatabases();
 
@@ -82,6 +109,17 @@ export async function getEffectiveCapabilities(
 
   if (ADMIN_STATUSES.has(status)) return new Set(["*"]);
   if (RESTRICTED_STATUSES.has(status)) return new Set<string>();
+  // Bootstrap via ADMIN_EMAILS is the first admin before any user_roles row exists.
+  // It already bypasses requireCapability, but hasServerCapability and the
+  // permissions payload go through this function — without this, a bootstrap
+  // admin would have admin status but an empty capability set, hiding every
+  // console delete/manage button. Restriction already won above, so a banned
+  // bootstrap email still gets nothing.
+  if (knownEmail && isBootstrapAdmin(knownEmail)) return new Set(["*"]);
+  if (!knownEmail) {
+    const bootstrapEmail = await getBootstrapEmail(userId);
+    if (bootstrapEmail && isBootstrapAdmin(bootstrapEmail)) return new Set(["*"]);
+  }
 
   const powers = await databases.listDocuments(
     DATABASE_ID,
@@ -315,8 +353,9 @@ export async function hasServerCapability(
   userId: string,
   capability: string,
   scope?: { type: string; id?: string },
+  email?: string | null,
 ): Promise<boolean> {
-  const capabilities = await getEffectiveCapabilities(userId, scope);
+  const capabilities = await getEffectiveCapabilities(userId, scope, undefined, email);
 
   return capabilities.has("*") || capabilities.has(capability);
 }

@@ -36,6 +36,18 @@ const ALLOWED_TYPES = new Set([
   "text/plain",
   "text/csv",
   "application/zip",
+  "application/x-zip-compressed",
+  "application/x-rar-compressed",
+  "application/vnd.rar",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "audio/mpeg",
+  "audio/mp3",
 ]);
 const ALLOWED_CATEGORIES = new Set(["common", "department", "role"]);
 // Announcement is legacy — new uploads are document/link/video/file/
@@ -528,10 +540,12 @@ export async function POST(request: NextRequest) {
     // Moderation authority decides the row's status and the file's read
     // permission, so it is resolved before the upload rather than after.
     // Either half of the moderation authority publishes on upload: a full
-    // manager, or a reviewer scoped to resources.approve.
+    // manager, or a reviewer scoped to resources.approve. Pass email so a
+    // bootstrap admin via ADMIN_EMAILS is treated as admin even without a
+    // user_roles row.
     const canModerate =
-      (await hasServerCapability(authenticated.user.$id, "resources.manage")) ||
-      (await hasServerCapability(authenticated.user.$id, "resources.approve"));
+      (await hasServerCapability(authenticated.user.$id, "resources.manage", undefined, authenticated.user.email)) ||
+      (await hasServerCapability(authenticated.user.$id, "resources.approve", undefined, authenticated.user.email));
     let fileUrl = url || undefined;
     let fileId: string | null = null;
 
