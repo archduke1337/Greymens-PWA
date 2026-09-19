@@ -8,6 +8,7 @@ import {
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { MEMBER_FILE_PERMISSIONS, ownerFilePermissions } from "@/lib/storage";
 import { requireCapability } from "@/lib/access-control";
+import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -70,6 +71,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
+    const reason =
+      typeof body.reason === "string" ? body.reason.trim().slice(0, 2000) : "";
     const data =
       action === "approve"
         ? {
@@ -80,7 +83,7 @@ export async function PATCH(request: NextRequest) {
           }
         : {
             status: "rejected",
-            rejectionReason: String(body.reason).slice(0, 2000),
+            rejectionReason: reason,
             approvedBy: null,
             approvedAt: null,
           };
@@ -113,6 +116,32 @@ export async function PATCH(request: NextRequest) {
         .catch((error) => {
           logError("Resource file permission update failed:", error);
         });
+    }
+
+    // Close the loop for the submitter: the verdict reached the row and the
+    // file, but until now nothing reached the person who uploaded it — no
+    // in-app row, no mail. They had to reload the library and guess.
+    const resourceTitle = String(resource.title ?? "your resource");
+
+    if (uploaderId) {
+      await dispatchNotification({
+        userId: uploaderId,
+        type: "general",
+        title:
+          action === "approve"
+            ? "Resource published"
+            : "Resource needs changes",
+        body:
+          action === "approve"
+            ? `"${resourceTitle}" was approved and is now in the resource library.`
+            : `"${resourceTitle}" was not approved yet. Reviewer note: ${
+                reason || "no reason given"
+              }`,
+      }).catch((error) => {
+        // The decision is saved; only the notice failed. Log it rather than
+        // letting a silent catch imply the submitter was told.
+        logError("Resource decision notification failed:", error);
+      });
     }
 
     await recordAudit({

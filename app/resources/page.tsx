@@ -3,7 +3,26 @@
 import type { Resource, Department } from "@/lib/types";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, CardContent, Chip, Input, Link } from "@heroui/react";
+import {
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Input,
+  Label,
+  Link,
+  ListBox,
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContainer,
+  ModalDialog,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  TextArea,
+  useOverlayState,
+} from "@heroui/react";
 import {
   AlertCircle,
   ExternalLink,
@@ -16,10 +35,14 @@ import {
   Megaphone,
   Newspaper,
   Search,
+  Upload,
   Video,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
+import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { logError } from "@/lib/logger";
 
 const LAYERS = [
   { value: "all", label: "All" },
@@ -29,6 +52,40 @@ const LAYERS = [
 ] as const;
 
 type LayerFilter = (typeof LAYERS)[number]["value"];
+
+// What a member can submit. Mirrors the server allowlists in
+// /api/resources: `announcement` is legacy and deliberately not offered for
+// new uploads, and the role vocabulary is the membership status set.
+const UPLOAD_TYPES = [
+  { value: "document", label: "Document" },
+  { value: "link", label: "Link" },
+  { value: "video", label: "Video" },
+  { value: "file", label: "File" },
+  { value: "newsletter", label: "Newsletter" },
+] as const;
+
+const UPLOAD_LAYERS = [
+  { value: "common", label: "Everyone" },
+  { value: "department", label: "A department" },
+  { value: "role", label: "A member status" },
+] as const;
+
+const UPLOAD_ROLES = [
+  { value: "member", label: "Members" },
+  { value: "core_member", label: "Core members" },
+  { value: "lead", label: "Leads" },
+  { value: "head", label: "Heads" },
+  { value: "admin", label: "Admins" },
+  { value: "dev", label: "Developers" },
+] as const;
+
+const ALLOWED_FILE_TYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/zip",
+]);
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 const TYPE_ICONS: Record<Resource["type"], typeof FileText> = {
   document: FileText,
@@ -88,7 +145,6 @@ export default function ResourcesPage() {
   const [departmentNames, setDepartmentNames] = useState<
     Record<string, string>
   >({});
-  const { user } = useAuth();
   // Owner view: pending and sent-back uploads never appear in the library,
   // so this tab is the only place their submitter can see the verdict.
   const [view, setView] = useState<"library" | "mine">("library");
@@ -96,6 +152,36 @@ export default function ResourcesPage() {
     status: "loading",
     resources: [],
   });
+  const { isRoleOrAbove } = usePermissions();
+  // Mirrors the server: POST /api/resources requires membership.
+  const canUpload = isRoleOrAbove("member");
+  const {
+    isOpen: isUploadOpen,
+    open: openUpload,
+    close: closeUpload,
+  } = useOverlayState();
+  const [uploading, setUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadForm, setUploadForm] = useState({
+    title: "",
+    description: "",
+    category: "common" as "common" | "department" | "role",
+    type: "document" as Resource["type"],
+    url: "",
+    tags: "",
+    departmentId: "",
+    requiredRole: "member",
+  });
+  const emptyUploadForm = {
+    title: "",
+    description: "",
+    category: "common" as "common" | "department" | "role",
+    type: "document" as Resource["type"],
+    url: "",
+    tags: "",
+    departmentId: "",
+    requiredRole: "member",
+  };
 
   useEffect(() => {
     // Department names resolve the locked card's scope line ("Available to
@@ -163,7 +249,10 @@ export default function ResourcesPage() {
   }, [reloadKey]);
 
   useEffect(() => {
-    if (view !== "mine") return;
+    // Fetched for every signed-in member, not only while the tab is open: the
+    // count of waiting items is the one signal a submitter gets that something
+    // was sent back, and it doubles as the badge on the tab.
+    if (!canUpload) return;
     let cancelled = false;
 
     const load = async () => {
@@ -187,7 +276,95 @@ export default function ResourcesPage() {
     return () => {
       cancelled = true;
     };
-  }, [view, reloadKey]);
+  }, [canUpload, reloadKey]);
+
+  /**
+   * Member submission. The server queues it as `pending` (or publishes it on
+   * the spot for a resources manager), so the copy must match whatever the
+   * row actually came back as rather than promising a review that may not
+   * happen. Validation mirrors the server's expensive cases: the department
+   * and role scopes are required by layer, and a file must fit the bucket.
+   */
+  const handleUpload = async () => {
+    if (!uploadForm.title.trim()) {
+      toast.error("Title is required");
+
+      return;
+    }
+    if (uploadForm.category === "department" && !uploadForm.departmentId) {
+      toast.error("Choose which department this is for");
+
+      return;
+    }
+    if (uploadForm.category === "role" && !uploadForm.requiredRole) {
+      toast.error("Choose which member status may open this");
+
+      return;
+    }
+    if (!uploadFile && !uploadForm.url.trim()) {
+      toast.error("Add a link or attach a file");
+
+      return;
+    }
+    if (uploadFile && !ALLOWED_FILE_TYPES.has(uploadFile.type)) {
+      toast.error("Use a PDF, TXT, CSV, or ZIP file");
+
+      return;
+    }
+    if (uploadFile && uploadFile.size > MAX_FILE_BYTES) {
+      toast.error("Files must be 50MB or smaller");
+
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // The file and the record are both written by the server: the bucket and
+      // the resources table are closed to client writes.
+      const body = new FormData();
+
+      body.set("title", uploadForm.title.trim());
+      body.set("description", uploadForm.description.trim());
+      body.set("category", uploadForm.category);
+      body.set("type", uploadForm.type);
+      body.set("tags", uploadForm.tags);
+      if (uploadForm.url.trim()) body.set("url", uploadForm.url.trim());
+      if (uploadForm.category === "department")
+        body.set("departmentId", uploadForm.departmentId);
+      if (uploadForm.category === "role")
+        body.set("requiredRole", uploadForm.requiredRole);
+      if (uploadFile) body.set("file", uploadFile);
+
+      const response = await fetch("/api/resources", {
+        method: "POST",
+        body,
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        resource?: { status?: string };
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to upload resource"));
+      toast.success(
+        payload?.resource?.status === "approved"
+          ? "Resource published to the library."
+          : "Resource submitted — a resources manager reviews it before it appears.",
+      );
+      closeUpload();
+      setUploadForm(emptyUploadForm);
+      setUploadFile(null);
+      // Show the submitter their own item straight away, with its real status.
+      setMine({ status: "loading", resources: [] });
+      setView("mine");
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      logError("Resource upload error:", error);
+      toast.error(getErrorMessage(error) || "Unable to upload resource");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -218,6 +395,12 @@ export default function ResourcesPage() {
     setReloadKey((key) => key + 1);
   };
 
+  // Pending or sent back — what the uploader still has to act on.
+  const mineNeedsAttention = mine.resources.filter(
+    (resource) =>
+      resource.status === "pending" || resource.status === "rejected",
+  ).length;
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 md:px-6">
       <div className="mb-6 md:mb-8">
@@ -229,10 +412,10 @@ export default function ResourcesPage() {
         </p>
       </div>
 
-      {user && (
+      {canUpload && (
         <div
           aria-label="Choose a view"
-          className="mb-6 flex flex-wrap gap-2"
+          className="mb-6 flex flex-wrap items-center gap-2"
           role="group"
         >
           <Button
@@ -247,13 +430,30 @@ export default function ResourcesPage() {
             aria-pressed={view === "mine"}
             size="sm"
             variant={view === "mine" ? "primary" : "ghost"}
-            onPress={() => {
-              setMine({ status: "loading", resources: [] });
-              setView("mine");
-            }}
+            onPress={() => setView("mine")}
           >
             My uploads
+            {mineNeedsAttention > 0 && (
+              <Chip
+                className="ml-2 tabular-nums"
+                color="warning"
+                size="sm"
+                variant="soft"
+              >
+                {mineNeedsAttention}
+              </Chip>
+            )}
           </Button>
+          {canUpload && (
+            <Button
+              className="sm:ml-auto"
+              variant="secondary"
+              onPress={openUpload}
+            >
+              <Upload aria-hidden="true" className="w-4 h-4" />
+              Upload a resource
+            </Button>
+          )}
         </div>
       )}
 
@@ -551,6 +751,302 @@ export default function ResourcesPage() {
           })}
         </div>
       )}
+
+      {/* Submit a resource */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isUploadOpen}
+          onOpenChange={(next) => {
+            if (!next) closeUpload();
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>Upload a resource</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-sm text-default-500">
+                    Shared with your membership scope once a resources manager
+                    approves it. Nothing you submit is public.
+                  </p>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="resource-title"
+                    >
+                      Title{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      id="resource-title"
+                      placeholder="What is it?"
+                      value={uploadForm.title}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="resource-description"
+                    >
+                      Description{" "}
+                      <span className="font-normal text-default-400">
+                        (optional)
+                      </span>
+                    </label>
+                    <TextArea
+                      id="resource-description"
+                      placeholder="What is inside, and who is it for?"
+                      rows={3}
+                      value={uploadForm.description}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      fullWidth
+                      value={uploadForm.category}
+                      onChange={(value) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          category: String(value ?? "common") as
+                            "common" | "department" | "role",
+                        }))
+                      }
+                    >
+                      <Label>Who can open it</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {UPLOAD_LAYERS.map((option) => (
+                            <ListBox.Item
+                              key={option.value}
+                              id={option.value}
+                              textValue={option.label}
+                            >
+                              {option.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Select
+                      fullWidth
+                      value={uploadForm.type}
+                      onChange={(value) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          type: String(value ?? "document") as Resource["type"],
+                        }))
+                      }
+                    >
+                      <Label>Kind</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {UPLOAD_TYPES.map((option) => (
+                            <ListBox.Item
+                              key={option.value}
+                              id={option.value}
+                              textValue={option.label}
+                            >
+                              {option.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
+                  {/* A department resource has to name its department, and a
+                      role resource its status — the server rejects both
+                      otherwise, so ask in the same step. */}
+                  {uploadForm.category === "department" && (
+                    <Select
+                      fullWidth
+                      value={uploadForm.departmentId || null}
+                      onChange={(value) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          departmentId: String(value ?? ""),
+                        }))
+                      }
+                    >
+                      <Label>
+                        Department{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {Object.entries(departmentNames).map(([id, name]) => (
+                            <ListBox.Item key={id} id={id} textValue={name}>
+                              {name}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  )}
+                  {uploadForm.category === "role" && (
+                    <Select
+                      fullWidth
+                      value={uploadForm.requiredRole}
+                      onChange={(value) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          requiredRole: String(value ?? "member"),
+                        }))
+                      }
+                    >
+                      <Label>
+                        Minimum member status{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {UPLOAD_ROLES.map((role) => (
+                            <ListBox.Item
+                              key={role.value}
+                              id={role.value}
+                              textValue={role.label}
+                            >
+                              {role.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  )}
+
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="resource-url"
+                    >
+                      Link{" "}
+                      <span className="font-normal text-default-400">
+                        (or attach a file below)
+                      </span>
+                    </label>
+                    <Input
+                      id="resource-url"
+                      placeholder="https://…"
+                      value={uploadForm.url}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          url: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="resource-file"
+                    >
+                      File{" "}
+                      <span className="font-normal text-default-400">
+                        (PDF, TXT, CSV, or ZIP under 50MB)
+                      </span>
+                    </label>
+                    <input
+                      accept=".pdf,.txt,.csv,.zip"
+                      className="w-full text-sm text-default-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
+                      id="resource-file"
+                      type="file"
+                      onChange={(e) => {
+                        setUploadFile(e.target.files?.[0] ?? null);
+                        e.target.value = "";
+                      }}
+                    />
+                    {uploadFile && (
+                      <p className="mt-2 text-xs text-default-500">
+                        Attached: {uploadFile.name}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="resource-tags"
+                    >
+                      Tags{" "}
+                      <span className="font-normal text-default-400">
+                        (optional, comma separated)
+                      </span>
+                    </label>
+                    <Input
+                      id="resource-tags"
+                      placeholder="security, workshop, slides"
+                      value={uploadForm.tags}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setUploadForm((prev) => ({
+                          ...prev,
+                          tags: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    closeUpload();
+                    setUploadFile(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  isPending={uploading}
+                  variant="primary"
+                  onPress={handleUpload}
+                >
+                  Submit for review
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }
