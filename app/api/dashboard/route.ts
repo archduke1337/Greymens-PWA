@@ -8,32 +8,11 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/server-auth";
 import { ok, fail } from "@/lib/api";
+import { safe } from "@/lib/server-safe";
 import { getAccessSummary, hasServerCapability } from "@/lib/access-control";
 import { logError } from "@/lib/logger";
 
 const RESTRICTED = new Set(["banned", "suspended", "deactivated"]);
-
-/**
- * One failed sub-query must not 500 the whole dashboard: the route fans out
- * into ~20 Appwrite reads, and a transient driver error (or a table that has
- * not been migrated yet) in any one of them used to blank every section.
- * Degrade that section to its fallback instead — a member seeing events but
- * not notifications beats a member seeing an error page — and log loudly so
- * the gap is discoverable.
- */
-async function safe<T>(
-  label: string,
-  run: () => Promise<T>,
-  fallback: T,
-): Promise<T> {
-  try {
-    return await run();
-  } catch (error) {
-    logError(`Dashboard "${label}" query failed:`, error);
-
-    return fallback;
-  }
-}
 
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);

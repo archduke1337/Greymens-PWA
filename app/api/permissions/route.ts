@@ -9,6 +9,7 @@ import {
 } from "@/lib/server-auth";
 import { getEffectiveCapabilities } from "@/lib/access-control";
 import { ok, fail } from "@/lib/api";
+import { safe } from "@/lib/server-safe";
 import { logError } from "@/lib/logger";
 
 /**
@@ -56,50 +57,119 @@ export async function GET(request: NextRequest) {
       allPowers,
       capabilities,
     ] = await Promise.all([
-      getMembershipStatus(authenticated.user),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
-        Query.equal("userId", [userId]),
-        Query.limit(1),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
-        Query.equal("userId", [userId]),
-        Query.limit(1),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
-        Query.equal("userId", [userId]),
-        Query.limit(1),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
-        Query.equal("userId", [userId]),
-        Query.equal("isActive", [true]),
-        Query.limit(own.limit),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-        Query.equal("userId", [userId]),
-        Query.equal("isActive", [true]),
-        Query.limit(own.limit),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-        Query.equal("userId", [userId]),
-        Query.equal("isActive", [true]),
-        Query.limit(own.limit),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-        Query.equal("isActive", [true]),
-        Query.orderAsc("displayOrder"),
-        Query.limit(200),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
-        Query.equal("isActive", [true]),
-        Query.orderAsc("level"),
-        Query.limit(200),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.POWERS, [
-        Query.orderAsc("category"),
-        Query.limit(200),
-      ]),
-      getEffectiveCapabilities(userId),
+      // Fail-closed: a status read that errors must not widen what the
+      // client believes it may do, so it falls back to the unproven
+      // baseline, never "member" or "admin".
+      safe("status", () => getMembershipStatus(authenticated.user!), "account"),
+      safe(
+        "profile",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.PROFILES, [
+            Query.equal("userId", [userId]),
+            Query.limit(1),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "application",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+            Query.equal("userId", [userId]),
+            Query.limit(1),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "membership",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
+            Query.equal("userId", [userId]),
+            Query.limit(1),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "powers",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_POWERS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(own.limit),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "departments",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(own.limit),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "designations",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(own.limit),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "allDepartments",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+            Query.equal("isActive", [true]),
+            Query.orderAsc("displayOrder"),
+            Query.limit(200),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "allDesignations",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.DESIGNATIONS, [
+            Query.equal("isActive", [true]),
+            Query.orderAsc("level"),
+            Query.limit(200),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "allPowers",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.POWERS, [
+            Query.orderAsc("category"),
+            Query.limit(200),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      // Fail-closed: on error the client sees no capabilities rather than
+      // a stale set. Console buttons hide; the server re-checks anyway.
+      // Tracked separately from the plain safe() wrapper so the degrade
+      // flag below never fires for an ordinary member who merely holds
+      // no grants.
+      (async () => {
+        try {
+          return {
+            set: await getEffectiveCapabilities(userId),
+            failed: false,
+          };
+        } catch (error) {
+          logError('"capabilities" query failed:', error);
+
+          return { set: new Set<string>(), failed: true };
+        }
+      })(),
     ]);
+
+    // Degrade flags let the client tell "you hold nothing" apart from
+    // "the lookup itself failed", so a partial outage shows a banner
+    // instead of silently hiding console entry the user actually has.
+    const degraded = { capabilities: capabilities.failed };
 
     return ok({
       status,
@@ -112,7 +182,8 @@ export async function GET(request: NextRequest) {
       allDepartments: allDepartments.documents,
       allDesignations: allDesignations.documents,
       allPowers: allPowers.documents,
-      capabilities: Array.from(capabilities).sort(),
+      capabilities: Array.from(capabilities.set).sort(),
+      degraded,
     });
   } catch (error) {
     logError("Permission lookup error:", error);
