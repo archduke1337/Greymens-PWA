@@ -2,7 +2,7 @@
 
 import type { Notification, LetterData } from "@/lib/types";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, Card, CardContent, Chip } from "@heroui/react";
@@ -19,6 +19,30 @@ function parseLetterContent(raw: unknown): LetterData | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Chip labels for the type filter. The vocabulary is small and mostly
+ * self-describing; these are the ones a member would otherwise have to guess
+ * at. Unknown types fall back to their raw name — a new backend type must not
+ * render as an empty chip.
+ */
+const TYPE_LABELS: Record<string, string> = {
+  membership_approved: "Membership",
+  membership_rejected: "Membership",
+  submission_update: "My submissions",
+  event_update: "Events",
+  event_reminder: "Events",
+  promotion: "Promotions",
+  designation: "Titles",
+  admin_announcement: "Announcements",
+  system_update: "System",
+  welcome: "Welcome",
+  general: "General",
+};
+
+function typeLabel(type: string): string {
+  return TYPE_LABELS[type] ?? type.replace(/_/g, " ");
 }
 
 function SafeLetter({ letter }: { letter: unknown }) {
@@ -78,6 +102,53 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
+  // "all" shows everything; a type narrows to one family.
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  /**
+   * The filter chips are derived from what the caller was actually sent, not
+   * a hardcoded list: a fixed menu decays as types come and go, and an empty
+   * filter that matches nothing is worse than none.
+   */
+  const filterOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const notification of notifications) {
+      counts.set(notification.type, (counts.get(notification.type) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([value, count]) => ({ value, count }));
+  }, [notifications]);
+
+  const filtered = useMemo(
+    () =>
+      notifications.filter(
+        (n) =>
+          (!unreadOnly || !n.read) &&
+          (typeFilter === "all" || n.type === typeFilter),
+      ),
+    [notifications, unreadOnly, typeFilter],
+  );
+
+  // Newest first, grouped into Today / Earlier. Rows arrive ordered from the
+  // API, but grouping must not depend on that: it sorts its own copy.
+  const grouped = useMemo(() => {
+    const sorted = [...filtered].sort(
+      (a, b) =>
+        new Date(b.$createdAt ?? 0).getTime() -
+        new Date(a.$createdAt ?? 0).getTime(),
+    );
+    const startOfToday = new Date();
+
+    startOfToday.setHours(0, 0, 0, 0);
+
+    return {
+      today: sorted.filter((n) => new Date(n.$createdAt ?? 0) >= startOfToday),
+      earlier: sorted.filter((n) => new Date(n.$createdAt ?? 0) < startOfToday),
+    };
+  }, [filtered]);
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
@@ -332,8 +403,45 @@ export default function NotificationsPage() {
         </Card>
       )}
 
-      {(unreadOnly ? notifications.filter((n) => !n.read) : notifications)
-        .length === 0 ? (
+      {/* Type chips, derived from what was actually received. */}
+      {filterOptions.length > 1 && (
+        <div
+          aria-label="Filter by type"
+          className="flex flex-wrap gap-2"
+          role="group"
+        >
+          <button
+            aria-pressed={typeFilter === "all"}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              typeFilter === "all"
+                ? "border-foreground bg-foreground text-background"
+                : "border-default-300 text-default-600 hover:border-default-400"
+            }`}
+            type="button"
+            onClick={() => setTypeFilter("all")}
+          >
+            All
+          </button>
+          {filterOptions.map(({ value, count }) => (
+            <button
+              key={value}
+              aria-pressed={typeFilter === value}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                typeFilter === value
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-default-300 text-default-600 hover:border-default-400"
+              }`}
+              type="button"
+              onClick={() => setTypeFilter(value)}
+            >
+              {typeLabel(value)}
+              <span className="ml-1.5 tabular-nums opacity-60">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <svg
@@ -351,72 +459,87 @@ export default function NotificationsPage() {
               />
             </svg>
             <p className="text-default-400">
-              {unreadOnly ? "Nothing unread" : "No notifications yet"}
+              {notifications.length === 0
+                ? "No notifications yet"
+                : "Nothing matches these filters"}
             </p>
             <p className="text-sm text-default-500">
-              {unreadOnly
-                ? 'Switch off "Unread only" to see everything you have been sent.'
-                : "Membership updates and event reminders will appear here."}
+              {notifications.length === 0
+                ? "Membership updates and event reminders will appear here."
+                : 'Try a different type, or switch off "Unread only".'}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {(unreadOnly
-            ? notifications.filter((n) => !n.read)
-            : notifications
-          ).map((notification) => (
-            <button
-              key={notification.$id}
-              aria-label={
-                notification.read
-                  ? `Notification: ${notification.title}`
-                  : `Unread notification: ${notification.title}. Mark as read`
-              }
-              className="block w-full cursor-pointer text-left"
-              type="button"
-              onClick={() => handleMarkAsRead(notification)}
-            >
-              <Card
-                className={`transition-all ${
-                  !notification.read ? "border-foreground/40" : "opacity-60"
-                }`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold truncate">
-                          {notification.title}
-                        </p>
-                        {!notification.read && (
-                          <span
-                            aria-hidden="true"
-                            className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground"
-                          />
-                        )}
-                      </div>
-                      <p className="text-sm text-default-600 line-clamp-2">
-                        {notification.body}
-                      </p>
-                      <p className="text-xs text-default-400">
-                        {notification.$createdAt
-                          ? timeAgo(notification.$createdAt)
-                          : ""}
-                      </p>
+          {(
+            [
+              ...(grouped.today.length > 0
+                ? [{ heading: "Today", rows: grouped.today }]
+                : []),
+              ...(grouped.earlier.length > 0
+                ? [{ heading: "Earlier", rows: grouped.earlier }]
+                : []),
+            ] as Array<{ heading: string; rows: Notification[] }>
+          ).map(({ heading, rows }) => (
+            <section key={heading} className="space-y-3">
+              <h2 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {heading}
+              </h2>
+              {rows.map((notification) => (
+                <button
+                  key={notification.$id}
+                  aria-label={
+                    notification.read
+                      ? `Notification: ${notification.title}`
+                      : `Unread notification: ${notification.title}. Mark as read`
+                  }
+                  className="block w-full cursor-pointer text-left"
+                  type="button"
+                  onClick={() => handleMarkAsRead(notification)}
+                >
+                  <Card
+                    className={`transition-all ${
+                      !notification.read ? "border-foreground/40" : "opacity-60"
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold truncate">
+                              {notification.title}
+                            </p>
+                            {!notification.read && (
+                              <span
+                                aria-hidden="true"
+                                className="flex-shrink-0 w-2 h-2 rounded-full bg-foreground"
+                              />
+                            )}
+                          </div>
+                          <p className="text-sm text-default-600 line-clamp-2">
+                            {notification.body}
+                          </p>
+                          <p className="text-xs text-default-400">
+                            {notification.$createdAt
+                              ? timeAgo(notification.$createdAt)
+                              : ""}
+                          </p>
 
-                      {/* Letter Content */}
-                      {notification.letter && (
-                        <SafeLetter letter={notification.letter} />
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </button>
+                          {/* Letter Content */}
+                          {notification.letter && (
+                            <SafeLetter letter={notification.letter} />
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       )}
