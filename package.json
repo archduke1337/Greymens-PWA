@@ -15,7 +15,8 @@
     "test": "vitest run",
     "db:setup": "node scripts/setup-appwrite.js",
     "db:seed": "npx tsx scripts/seed-data.ts",
-    "grant-admin": "npx tsx scripts/grant-admin.ts"
+    "grant-admin": "npx tsx scripts/grant-admin.ts",
+    "backfill:event-status": "npx tsx scripts/backfill-event-rejections.ts"
   },
   "dependencies": {
     "@heroui/react": "^3.1.0",
