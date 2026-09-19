@@ -102,6 +102,9 @@ export default function GuitarStringDivider() {
     };
   }, []);
 
+  const glowId = `${gradientId}-glow`;
+  const neonGradientId = `${gradientId}-neon`;
+
   return (
     <div aria-hidden="true" className="relative w-full py-6 overflow-hidden">
       <div ref={stringRef} className="relative w-full h-24">
@@ -111,20 +114,50 @@ export default function GuitarStringDivider() {
           viewBox="0 0 1000 200"
         >
           <defs>
-            <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
-              <stop offset="0%" stopColor="#a855f7" />
+            <linearGradient id={neonGradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+              <stop offset="0%" stopColor="#00FF88" />
               <stop offset="50%" stopColor="#39FF14" />
-              <stop offset="100%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="#7FFF00" />
+            </linearGradient>
+            <filter id={glowId} x="-20%" y="-50%" width="140%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="blur" />
+              <feColorMatrix
+                type="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1.4 0"
+                result="brightBlur"
+              />
+              <feMerge>
+                <feMergeNode in="brightBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            {/* Keep legacy gradient id for backwards compat if referenced elsewhere */}
+            <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+              <stop offset="0%" stopColor="#00FF88" />
+              <stop offset="50%" stopColor="#39FF14" />
+              <stop offset="100%" stopColor="#7FFF00" />
             </linearGradient>
           </defs>
 
+          {/* Glow layer */}
+          <path
+            d="M 50 100 Q 500 100 950 100"
+            fill="none"
+            stroke={`url(#${neonGradientId})`}
+            strokeLinecap="round"
+            strokeWidth="7"
+            opacity="0.35"
+            style={{ filter: `url(#${glowId})` }}
+          />
+          {/* Core neon string */}
           <path
             ref={pathRef}
             d="M 50 100 Q 500 100 950 100"
             fill="none"
-            stroke={`url(#${gradientId})`}
+            stroke={`url(#${neonGradientId})`}
             strokeLinecap="round"
-            strokeWidth="3"
+            strokeWidth="3.5"
+            style={{ filter: `url(#${glowId})` }}
           />
         </svg>
       </div>
