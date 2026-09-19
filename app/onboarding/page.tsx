@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
 
 const STEPS = [
   { id: 1, title: "Personal Info", description: "Basic personal details" },
@@ -969,7 +970,7 @@ export default function OnboardingPage() {
                           toggleArrayField("preferredDepartments", dept.$id!)
                         }
                       >
-                        {dept.icon} {dept.name}
+                        <span className="inline-flex items-center gap-1.5"><DynamicIcon name={dept.icon} className="w-4 h-4" /> {dept.name}</span>
                       </button>
                     ))}
                   </div>

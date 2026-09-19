@@ -11,6 +11,7 @@ import {
 import { ExternalLinkIcon, Globe } from "lucide-react";
 
 import { GithubIcon } from "@/components/icons";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
 
 export interface TeamMember {
   userId: string;
@@ -124,8 +125,8 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
                       </Avatar>
                       <div className="min-w-0">
                         <p className="font-semibold truncate">{member.name}</p>
-                        <p className="text-xs text-default-500 truncate">
-                          {group.badgeIcon ? `${group.badgeIcon} ` : ""}
+                        <p className="inline-flex items-center gap-1.5 text-xs text-default-500 truncate">
+                          {group.badgeIcon ? <DynamicIcon name={group.badgeIcon} className="w-3.5 h-3.5" /> : null}
                           {group.designation}
                         </p>
                       </div>

@@ -50,6 +50,7 @@ import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import { CAPABILITIES } from "@/lib/capabilities";
 import { logError } from "@/lib/logger";
+import { IconBadge } from "@/components/ui/DynamicIcon";
 
 const CATEGORY_LABELS: Record<string, string> = {
   department: "Department",
@@ -514,10 +515,10 @@ export default function DesignationsManager({
                   {/* Badge & Name */}
                   <div className="flex items-start gap-3">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
                       style={{ backgroundColor: desig.badgeColor || "#6366f1" }}
                     >
-                      {desig.badgeIcon || desig.name.charAt(0)}
+                      <IconBadge name={desig.badgeIcon} fallbackLetter={desig.name} className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg">{desig.name}</h3>
@@ -814,8 +815,9 @@ export default function DesignationsManager({
                           setFormData({ ...formData, badgeIcon: value })
                         }
                       >
-                        <Label>Badge Icon</Label>
-                        <Input maxLength={100} placeholder="Emoji or text" />
+                        <Label>Badge Icon (lucide name)</Label>
+                        <Input maxLength={100} placeholder="e.g. Crown, Shield, Bot" />
+                        <Description>Use a lucide icon name — see lucide.dev/icons.</Description>
                         <FieldError />
                       </TextField>
 

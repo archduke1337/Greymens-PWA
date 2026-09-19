@@ -38,6 +38,7 @@ import {
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
 import MemberPicker from "@/components/admin/MemberPicker";
+import { IconBadge } from "@/components/ui/DynamicIcon";
 import { useAuth } from "@/context/AuthContext";
 import { logError } from "@/lib/logger";
 
@@ -591,7 +592,7 @@ export default function AdminDepartmentsPage() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                <span className="text-xl">&#128187;</span>
+                <IconBadge name="Laptop" fallbackLetter="T" className="w-6 h-6 text-accent" />
               </div>
             </div>
           </CardContent>
@@ -607,7 +608,7 @@ export default function AdminDepartmentsPage() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <span className="text-xl">&#9998;</span>
+                <IconBadge name="PenTool" fallbackLetter="C" className="w-6 h-6 text-default-600" />
               </div>
             </div>
           </CardContent>
@@ -626,7 +627,7 @@ export default function AdminDepartmentsPage() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
-                <span className="text-xl">&#9881;</span>
+                <IconBadge name="Settings" fallbackLetter="O" className="w-6 h-6 text-success" />
               </div>
             </div>
           </CardContent>
@@ -657,10 +658,10 @@ export default function AdminDepartmentsPage() {
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4">
                     {/* Icon & Color */}
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
                       style={{ backgroundColor: dept.color || "#6366f1" }}
                     >
-                      {dept.icon || dept.name.charAt(0)}
+                      <IconBadge name={dept.icon} fallbackLetter={dept.name} className="w-6 h-6 text-white" />
                     </div>
 
                     {/* Info */}
@@ -1030,15 +1031,16 @@ export default function AdminDepartmentsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium mb-1 block">
-                          Icon
+                          Icon (lucide name)
                         </label>
                         <Input
-                          placeholder="Emoji or text"
+                          placeholder="e.g. Shield, Bot, Globe"
                           value={formData.icon}
                           onChange={(e: any) =>
                             setFormData({ ...formData, icon: e.target.value })
                           }
                         />
+                        <p className="text-xs text-default-400 mt-1">Use a lucide icon name — see lucide.dev/icons.</p>
                       </div>
 
                       <div>

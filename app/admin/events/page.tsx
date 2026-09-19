@@ -993,8 +993,8 @@ export default function AdminEventsPage() {
                           </div>
 
                           <div className="p-4 bg-primary/10 rounded-xl">
-                            <p className="text-sm font-semibold text-primary mb-2">
-                              📍 Location Tips
+                            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary mb-2">
+                              <MapPinIcon className="w-4 h-4" aria-hidden="true" /> Location Tips
                             </p>
                             <ul className="text-sm text-muted space-y-1">
                               <li>• Be specific about the venue name</li>
@@ -1053,8 +1053,8 @@ export default function AdminEventsPage() {
                             formData.discountPrice &&
                             formData.discountPrice < formData.price && (
                               <div className="p-4 bg-success/10 rounded-xl border border-success/20">
-                                <p className="text-sm font-semibold text-success mb-1">
-                                  💰 Discount Applied!
+                                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success mb-1">
+                                  <DollarSignIcon className="w-4 h-4" aria-hidden="true" /> Discount Applied!
                                 </p>
                                 <p className="text-sm text-success tabular-nums">
                                   Attendees save $
@@ -1189,8 +1189,8 @@ export default function AdminEventsPage() {
                           </div>
 
                           <div className="p-4 bg-warning/10 rounded-xl">
-                            <p className="text-sm font-semibold text-warning mb-2">
-                              🏷️ Tag Best Practices
+                            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-warning mb-2">
+                              <TagIcon className="w-4 h-4" aria-hidden="true" /> Tag Best Practices
                             </p>
                             <ul className="text-sm text-muted space-y-1">
                               <li>• Use 3-5 relevant tags</li>

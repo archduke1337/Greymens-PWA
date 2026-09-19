@@ -23,6 +23,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { PlusIcon, EditIcon, TrashIcon } from "lucide-react";
+import { IconBadge } from "@/components/ui/DynamicIcon";
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
@@ -299,9 +300,9 @@ export default function AdminEventTypesPage() {
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div
                     aria-hidden="true"
-                    className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center text-xl flex-shrink-0"
+                    className="w-12 h-12 rounded-xl bg-default-100 flex items-center justify-center flex-shrink-0"
                   >
-                    {type.icon || type.displayName.charAt(0)}
+                    <IconBadge name={type.icon} fallbackLetter={type.displayName} className="w-6 h-6 text-default-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -412,14 +413,15 @@ export default function AdminEventTypesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Icon</Label>
+                        <Label>Icon (lucide name)</Label>
                         <Input
-                          placeholder="Emoji or text"
+                          placeholder="e.g. Wrench, Laptop, Trophy"
                           value={form.icon}
                           onChange={(e: any) =>
                             setForm({ ...form, icon: e.target.value })
                           }
                         />
+                        <p className="text-xs text-default-400 mt-1">Lucide icon name — see lucide.dev/icons.</p>
                       </div>
                       <div>
                         <Label>Display Order</Label>

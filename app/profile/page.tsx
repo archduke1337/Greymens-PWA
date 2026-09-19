@@ -34,6 +34,7 @@ import { usePermissions } from "@/context/PermissionContext";
 import { account } from "@/lib/appwrite";
 import { getAvatarUrl, timeAgo } from "@/lib/format";
 import { logError } from "@/lib/logger";
+import { DynamicIcon } from "@/components/ui/DynamicIcon";
 
 const PRONOUNS_OPTIONS = [
   { value: "he/him", label: "He/Him" },
@@ -546,7 +547,7 @@ export default function ProfilePage() {
               {userDesignationsResolved.length > 0 ? (
                 userDesignationsResolved.map((d) => (
                   <Chip key={d.$id} size="sm" variant="secondary">
-                    {d.badgeIcon && <span aria-hidden>{d.badgeIcon}</span>}
+                    {d.badgeIcon && <DynamicIcon name={d.badgeIcon} className="w-3.5 h-3.5 mr-1" />}
                     {d.name}
                     {d.badgeColor && (
                       <span

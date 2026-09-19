@@ -113,7 +113,7 @@ export default function GuitarStringDivider() {
           <defs>
             <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
               <stop offset="0%" stopColor="#a855f7" />
-              <stop offset="50%" stopColor="#ec4899" />
+              <stop offset="50%" stopColor="#39FF14" />
               <stop offset="100%" stopColor="#f97316" />
             </linearGradient>
           </defs>
