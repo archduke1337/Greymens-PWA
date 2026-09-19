@@ -28,6 +28,7 @@ import {
 import { Bell, Send, CheckCircle, XCircle, Clock } from "lucide-react";
 
 import { renderEmailHtml } from "@/lib/email-template";
+import { markdownToPlainText } from "@/lib/markdown";
 import { useAuth } from "@/context/AuthContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
@@ -312,7 +313,7 @@ export default function AdminNotificationsPage() {
                     )}
                   </div>
                   <p className="text-sm text-default-500 mt-1 line-clamp-2">
-                    {notif.body}
+                    {markdownToPlainText(notif.body)}
                   </p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-default-400">
                     <span className="flex items-center gap-1">
@@ -476,15 +477,17 @@ export default function AdminNotificationsPage() {
                     </label>
                     <TextArea
                       maxLength={5000}
-                      placeholder="Notification message..."
-                      rows={3}
+                      placeholder={"Hey everyone — quick update…\n\n**Friday session** moved to 5 PM in the lab.\n\n- Bring your laptops\n- Revisions: [notes](https://example.com/notes)"}
+                      rows={5}
                       value={form.body}
                       onChange={(e: any) =>
                         setForm((p) => ({ ...p, body: e.target.value }))
                       }
                     />
                     <p className="text-xs text-default-400 mt-1 tabular-nums">
-                      {form.body.length}/5000
+                      {form.body.length}/5000 · Markdown works: **bold**,
+                      *italic*, [link](https://…), lists, `code` — preview
+                      below shows the formatted mail
                     </p>
                   </div>
                   {/* Live preview of the branded mail shell. The renderer is

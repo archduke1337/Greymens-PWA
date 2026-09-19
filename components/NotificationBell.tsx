@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { notificationService } from "@/lib/notifications";
 import { timeAgo } from "@/lib/format";
+import { markdownToPlainText } from "@/lib/markdown";
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -274,7 +275,7 @@ export function NotificationBell() {
                           )}
                         </div>
                         <p className="text-xs text-default-500 line-clamp-2">
-                          {notification.body}
+                          {markdownToPlainText(notification.body)}
                         </p>
                         <p className="text-[10px] text-default-400">
                           {notification.$createdAt

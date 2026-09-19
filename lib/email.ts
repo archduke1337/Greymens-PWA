@@ -19,6 +19,7 @@ import { randomUUID } from "node:crypto";
 import { Resend } from "resend";
 
 import { escapeHtml, renderEmailHtml } from "@/lib/email-template";
+import { markdownToPlainText } from "@/lib/markdown";
 
 // Re-exported because this module has always been their public home.
 export { escapeHtml };
@@ -73,6 +74,9 @@ export async function sendBulkEmail(
 
   const resend = new Resend(apiKey);
   const html = renderEmailHtml(subject, body);
+  // The text part carries the words without the markers: a `**bold**` that
+  // survives into plain text reads like a formatting bug in the inbox.
+  const text = markdownToPlainText(body) || body;
   let sent = 0;
   let failed = 0;
   let detail: string | undefined;
@@ -86,7 +90,7 @@ export async function sendBulkEmail(
           from,
           to: batch,
           subject,
-          text: body,
+          text,
           html,
         },
         { idempotencyKey: `notification/${randomUUID()}` },

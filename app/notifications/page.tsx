@@ -10,6 +10,7 @@ import { Button, Card, CardContent, Chip } from "@heroui/react";
 import { useAuth } from "@/context/AuthContext";
 import { notificationService } from "@/lib/notifications";
 import { timeAgo } from "@/lib/format";
+import Markdown from "@/components/Markdown";
 
 function parseLetterContent(raw: unknown): LetterData | null {
   if (!raw) return null;
@@ -520,9 +521,7 @@ export default function NotificationsPage() {
                               />
                             )}
                           </div>
-                          <p className="text-sm text-default-600 line-clamp-2">
-                            {notification.body}
-                          </p>
+                          <Markdown>{notification.body}</Markdown>
                           <p className="text-xs text-default-400">
                             {notification.$createdAt
                               ? timeAgo(notification.$createdAt)

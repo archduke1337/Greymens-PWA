@@ -26,6 +26,7 @@ import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import AccessCard from "@/components/dashboards/AccessCard";
+import { markdownToPlainText } from "@/lib/markdown";
 import { logError } from "@/lib/logger";
 /** The caller's own issued tickets, as returned by /api/events/register. */
 type MemberTicket = {
@@ -458,7 +459,7 @@ export default function MemberDashboard() {
                           {notif.title}
                         </h4>
                         <p className="text-xs text-muted mt-0.5 line-clamp-2">
-                          {notif.body}
+                          {markdownToPlainText(notif.body)}
                         </p>
                       </div>
                     </div>
