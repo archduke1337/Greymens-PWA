@@ -148,7 +148,7 @@ export default function AdminResourcesPage() {
         departments?: Department[];
       };
 
-      setResources(resourcePayload.resources ?? []);
+      setResources((resourcePayload.resources ?? []).filter((r) => r.isActive !== false));
       setDepartments(departmentPayload.departments ?? []);
       // Decided rows vanish from pending on reload; clearing the selection
       // means a stale check can never approve what the reviewer no longer
@@ -373,6 +373,13 @@ export default function AdminResourcesPage() {
       if (!response.ok)
         throw new Error(readApiError(payload, "Unable to delete resource"));
       toast.success("Resource deleted");
+      // Optimistic removal so it vanishes even if replica lag still returns it
+      setResources((prev) => prev.filter((r) => r.$id !== resource.$id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resource.$id!);
+        return next;
+      });
       await loadData();
     } catch (error) {
       toast.error(
@@ -416,12 +423,13 @@ export default function AdminResourcesPage() {
   };
 
   const counts = {
-    pending: resources.filter((r) => resourceStatus(r) === "pending").length,
-    approved: resources.filter((r) => resourceStatus(r) === "approved").length,
-    rejected: resources.filter((r) => resourceStatus(r) === "rejected").length,
+    pending: resources.filter((r) => r.isActive !== false && resourceStatus(r) === "pending").length,
+    approved: resources.filter((r) => r.isActive !== false && resourceStatus(r) === "approved").length,
+    rejected: resources.filter((r) => r.isActive !== false && resourceStatus(r) === "rejected").length,
   };
 
   const filtered = resources.filter((r) => {
+    if (r.isActive === false) return false;
     const matchesTab = resourceStatus(r) === activeTab;
     const matchesLayer = layerFilter === "all" || r.layer === layerFilter;
     const matchesSearch =

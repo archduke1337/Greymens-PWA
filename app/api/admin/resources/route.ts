@@ -34,11 +34,26 @@ export async function GET(request: NextRequest) {
 
   try {
     const { databases } = createServerDatabases();
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.RESOURCES,
-      [Query.orderDesc("$createdAt"), Query.limit(100)],
-    );
+    let response: { documents: unknown[]; total: number };
+    try {
+      response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.RESOURCES, [
+        Query.equal("isActive", [true]),
+        Query.orderDesc("$createdAt"),
+        Query.limit(100),
+      ]);
+    } catch {
+      // Column missing on old DBs — fetch and filter in code
+      const fallback = await databases.listDocuments(DATABASE_ID, COLLECTIONS.RESOURCES, [
+        Query.orderDesc("$createdAt"),
+        Query.limit(100),
+      ]);
+      response = {
+        documents: (fallback.documents as unknown[]).filter(
+          (r) => (r as Record<string, unknown>).isActive !== false,
+        ),
+        total: fallback.total,
+      } as typeof fallback;
+    }
 
     return ok({ resources: response.documents, total: response.total });
   } catch (error) {
