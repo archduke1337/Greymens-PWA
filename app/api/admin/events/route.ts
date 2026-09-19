@@ -175,7 +175,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const PATCH_ACTIONS = new Set(["update", "approve", "reject", "publish"]);
+const PATCH_ACTIONS = new Set([
+  "update",
+  "approve",
+  "reject",
+  "publish",
+  "cancel",
+]);
 
 /**
  * Event lifecycle, one capability per step.
@@ -333,14 +339,52 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (!blanket) {
-      // Rejecting is an approval decision, so it shares events.approve.
+      // Each decision belongs to the capability its charter names: approving
+      // and rejecting share events.approve, publishing and cancelling share
+      // events.publish — pulling back something already live is the
+      // publisher's call, not a second review.
       const narrow = await requireAnyCapability(request, [
-        action === "publish" ? "events.publish" : "events.approve",
+        action === "publish" || action === "cancel"
+          ? "events.publish"
+          : "events.approve",
       ]);
 
       if (!narrow.user) return narrow.response;
     }
     const now = new Date().toISOString();
+    const reason =
+      typeof body.reason === "string" ? body.reason.trim().slice(0, 2000) : "";
+
+    if (action === "reject" || action === "cancel") {
+      // The two verdicts apply to different phases of an event's life, so
+      // check the phase before writing it. Rejecting a live event (or
+      // cancelling a draft) would otherwise record a state transition that
+      // never happened.
+      const current = await databases
+        .getDocument(DATABASE_ID, COLLECTIONS.EVENTS, eventId)
+        .catch(() => null);
+
+      if (!current) return fail("NOT_FOUND", "Event not found", 404);
+      const status = String(current.status ?? "");
+
+      if (action === "reject" && !["draft", "review"].includes(status)) {
+        return fail(
+          "VALIDATION",
+          "Only an unpublished event can be rejected",
+          400,
+        );
+      }
+      if (
+        action === "cancel" &&
+        !["approved", "published", "active"].includes(status)
+      ) {
+        return fail(
+          "VALIDATION",
+          "Only an approved or published event can be cancelled",
+          400,
+        );
+      }
+    }
     const data =
       action === "approve"
         ? {
@@ -350,13 +394,18 @@ export async function PATCH(request: NextRequest) {
           }
         : action === "publish"
           ? { status: "published", publishedAt: now }
-          : {
-              status: "cancelled",
-              rejectionReason:
-                typeof body.reason === "string"
-                  ? body.reason.slice(0, 2000)
-                  : "Rejected by administrator",
-            };
+          : action === "reject"
+            ? {
+                status: "rejected",
+                rejectionReason: reason || "Rejected by administrator",
+                approvedBy: null,
+                approvedAt: null,
+              }
+            : {
+                status: "cancelled",
+                cancellationReason: reason || "Cancelled by administrator",
+                cancelledAt: now,
+              };
     const event = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.EVENTS,
@@ -382,14 +431,15 @@ export async function PATCH(request: NextRequest) {
                 title: "Event published",
                 body: `"${eventTitle}" is now publicly visible and open for registration.`,
               }
-            : {
-                title: "Event not approved",
-                body: `"${eventTitle}" was not approved. Reason: ${
-                  typeof body.reason === "string" && body.reason.trim()
-                    ? body.reason.trim()
-                    : "no reason given"
-                }`,
-              };
+            : action === "reject"
+              ? {
+                  title: "Event not approved",
+                  body: `"${eventTitle}" was not approved. Reason: ${reason || "no reason given"}`,
+                }
+              : {
+                  title: "Event cancelled",
+                  body: `"${eventTitle}" was cancelled.${reason ? ` Reason: ${reason}` : ""}`,
+                };
 
       await dispatchNotification({
         userId: ownerId,

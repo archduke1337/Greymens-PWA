@@ -436,6 +436,11 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "eventWebsite", type: "string", size: 500 },
     { key: "contactEmail", type: "string", size: 255 },
     { key: "rejectionReason", type: "string", size: 2000 },
+    // Rejection and cancellation are different verdicts on different states
+    // (never-approved vs. called-off), so they keep their own status value and
+    // their own reason field instead of sharing one.
+    { key: "cancellationReason", type: "string", size: 2000 },
+    { key: "cancelledAt", type: "string", size: 30 },
   ], [
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_slug", type: "unique", columns: ["slug"] },

@@ -305,6 +305,11 @@ export interface Event {
   image?: string;
   eventTypeId: string;
   category?: string;
+  /**
+   * `rejected` is a review verdict on an unpublished event; `cancelled` takes
+   * back one that had already been approved or was live. They used to share
+   * `cancelled`, which made "never approved" and "called off" the same row.
+   */
   status:
     | "draft"
     | "review"
@@ -312,7 +317,8 @@ export interface Event {
     | "published"
     | "active"
     | "completed"
-    | "cancelled";
+    | "cancelled"
+    | "rejected";
   audience: "public" | "member_only" | "exclusive";
   date: string;
   time: string;
@@ -329,6 +335,11 @@ export interface Event {
   approvedBy?: string;
   approvedAt?: string;
   publishedAt?: string;
+  /** Reviewer's note on a rejection; `cancellationReason` is its mirror for a
+   * pulled-back live event, so the two histories stay distinguishable. */
+  rejectionReason?: string;
+  cancellationReason?: string;
+  cancelledAt?: string;
   tags?: string[];
   isFeatured: boolean;
   isPremium: boolean;

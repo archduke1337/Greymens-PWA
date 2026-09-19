@@ -90,6 +90,7 @@ export default function AdminEventsPage() {
     active: "success",
     completed: "default",
     cancelled: "danger",
+    rejected: "danger",
   };
 
   // Form state
@@ -302,15 +303,18 @@ export default function AdminEventsPage() {
 
   const handleLifecycle = async (
     eventId: string,
-    action: "approve" | "publish" | "reject",
+    action: "approve" | "publish" | "reject" | "cancel",
   ) => {
-    if (action === "reject") {
+    if (action === "reject" || action === "cancel") {
       const reason = window.prompt(
-        "Reason for rejection (shown to the organizer)?",
+        action === "reject"
+          ? "Reason for rejection (shown to the organizer)?"
+          : "Reason for cancelling (shown to the organizer)?",
         "",
       );
 
-      if (reason === null) return; // prompt cancelled — abort, do not reject
+      // prompt cancelled — abort, do not reject or cancel
+      if (reason === null) return;
 
       return void handleLifecycleConfirm(
         eventId,
@@ -330,7 +334,7 @@ export default function AdminEventsPage() {
 
   const handleLifecycleConfirm = async (
     eventId: string,
-    action: "approve" | "publish" | "reject",
+    action: "approve" | "publish" | "reject" | "cancel",
     reason?: string,
   ) => {
     setLifecycleId(eventId);
@@ -357,7 +361,9 @@ export default function AdminEventsPage() {
           ? "Event approved."
           : action === "publish"
             ? "Event published."
-            : "Event rejected.",
+            : action === "reject"
+              ? "Event rejected."
+              : "Event cancelled.",
       );
     } catch (error) {
       logError(`Error ${action} event:`, error);
@@ -679,22 +685,33 @@ export default function AdminEventsPage() {
                                 Publish
                               </Button>
                             )}
-                            {event.status !== "cancelled" &&
-                              event.status !== "completed" && (
-                                <Button
-                                  isPending={lifecycleId === event.$id}
-                                  size="sm"
-                                  variant="danger-soft"
-                                  onPress={() =>
-                                    handleLifecycle(event.$id!, "reject")
-                                  }
-                                >
-                                  {event.status === "published" ||
-                                  event.status === "active"
-                                    ? "Cancel"
-                                    : "Reject"}
-                                </Button>
-                              )}
+                            {(event.status === "draft" ||
+                              event.status === "review") && (
+                              <Button
+                                isPending={lifecycleId === event.$id}
+                                size="sm"
+                                variant="danger-soft"
+                                onPress={() =>
+                                  handleLifecycle(event.$id!, "reject")
+                                }
+                              >
+                                Reject
+                              </Button>
+                            )}
+                            {(event.status === "approved" ||
+                              event.status === "published" ||
+                              event.status === "active") && (
+                              <Button
+                                isPending={lifecycleId === event.$id}
+                                size="sm"
+                                variant="danger-soft"
+                                onPress={() =>
+                                  handleLifecycle(event.$id!, "cancel")
+                                }
+                              >
+                                Cancel
+                              </Button>
+                            )}
                             <Button
                               isIconOnly
                               size="sm"
