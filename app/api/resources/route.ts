@@ -375,6 +375,17 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
+    // Backfill required `status` for legacy link rows that predate moderation.
+    // Without this, any PATCH on an old row 500s with "Missing required
+    // attribute 'status'" even though the edit has nothing to do with status.
+    try {
+      const existing = (await databases.getDocument(DATABASE_ID, COLLECTIONS.RESOURCES, resourceId)) as unknown as Record<string, unknown>;
+      if (existing && !existing.status && (updates as Record<string, unknown>).status === undefined) {
+        (updates as Record<string, unknown>).status = "approved";
+      }
+    } catch {
+      // getDocument 404 will be surfaced by the update below
+    }
     let resource: unknown;
     try {
       resource = await databases.updateDocument(
@@ -437,13 +448,25 @@ export async function DELETE(request: NextRequest) {
     if (!resourceId) return fail("VALIDATION", "resourceId is required", 400);
     const { databases } = createServerDatabases();
 
+    // Legacy rows predating the moderation columns have no `status` — Appwrite
+    // validates required attributes on every update, so a bare {isActive:false}
+    // on a link-only row from before `status` existed 500s with
+    // "Missing required attribute 'status'". Backfill it here so soft-delete
+    // never fails on old data. Same for any future required column that was
+    // added after rows existed — fetch once, patch only what's missing.
+    let existing: Record<string, unknown> | null = null;
     try {
-      await databases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.RESOURCES,
-        resourceId,
-        { isActive: false },
-      );
+      existing = (await databases.getDocument(DATABASE_ID, COLLECTIONS.RESOURCES, resourceId)) as unknown as Record<string, unknown>;
+    } catch {
+      // getDocument 404 will be handled by the update path below
+    }
+    const patch: Record<string, unknown> = { isActive: false };
+    if (existing && !existing.status) patch.status = "approved";
+    // If the row is already missing other required fields (should not happen
+    // for link rows, but guard anyway), don't let a strict update 500 the
+    // delete — the soft-delete is what matters.
+    try {
+      await databases.updateDocument(DATABASE_ID, COLLECTIONS.RESOURCES, resourceId, patch);
     } catch (dbError: unknown) {
       const code = (dbError as { code?: number })?.code;
       const message = (dbError as { message?: string })?.message ?? String(dbError);
