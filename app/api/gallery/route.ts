@@ -17,6 +17,8 @@ import { logError } from "@/lib/logger";
 
 const BUCKET_ID = "gallery-images";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// One upload groups at most this many images under a shared title/album.
+const MAX_FILES = 10;
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -155,18 +157,50 @@ export async function POST(request: NextRequest) {
 
     const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
-    let imageUrl = "";
 
-    const file = form.get("file");
+    // One upload, one album: every file selected together shares the title,
+    // description, category, tags — and an albumId the gallery groups by.
+    // A lone image URL (no files) is a single-image album.
+    const files = form
+      .getAll("file")
+      .filter((entry): entry is File => entry instanceof File && entry.size > 0)
+      .slice(0, MAX_FILES);
 
-    if (file instanceof File && file.size > 0) {
-      if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_FILE_SIZE) {
+    if (form.getAll("file").some((entry) => entry instanceof File)) {
+      const nonEmpty = form
+        .getAll("file")
+        .filter(
+          (entry): entry is File => entry instanceof File && entry.size > 0,
+        );
+
+      if (nonEmpty.length > MAX_FILES) {
         return fail(
           "VALIDATION",
-          "Invalid image. Use JPG, PNG, GIF, or WebP under 10MB.",
+          `Upload at most ${MAX_FILES} images at once`,
           400,
         );
       }
+      const rejected = form
+        .getAll("file")
+        .filter(
+          (entry): entry is File =>
+            entry instanceof File &&
+            entry.size > 0 &&
+            (!ALLOWED_TYPES.has(entry.type) || entry.size > MAX_FILE_SIZE),
+        );
+
+      if (rejected.length > 0) {
+        return fail(
+          "VALIDATION",
+          `${rejected.length} file(s) rejected. Use JPG, PNG, GIF, or WebP under 10MB each (max ${MAX_FILES} per upload).`,
+          400,
+        );
+      }
+    }
+
+    const imageUrls: string[] = [];
+
+    for (const file of files) {
       const stored = await storage.createFile(
         BUCKET_ID,
         ID.unique(),
@@ -174,12 +208,14 @@ export async function POST(request: NextRequest) {
         PUBLIC_FILE_PERMISSIONS,
       );
 
-      imageUrl = getStorageFileViewUrl(BUCKET_ID, stored.$id);
-    } else {
+      imageUrls.push(getStorageFileViewUrl(BUCKET_ID, stored.$id));
+    }
+
+    if (imageUrls.length === 0) {
       const providedUrl = text(form.get("imageUrl"), 500);
 
       if (!providedUrl) {
-        return fail("VALIDATION", "Provide an image file or an image URL", 400);
+        return fail("VALIDATION", "Provide image files or an image URL", 400);
       }
       if (!isHttpUrl(providedUrl)) {
         return fail(
@@ -188,7 +224,7 @@ export async function POST(request: NextRequest) {
           400,
         );
       }
-      imageUrl = providedUrl;
+      imageUrls.push(providedUrl);
     }
 
     // Moderation authority is the capability, the same one /api/admin/gallery
@@ -200,36 +236,47 @@ export async function POST(request: NextRequest) {
       "gallery.manage",
     );
     const now = new Date().toISOString();
+    const albumId = ID.unique();
+    const images = [];
 
-    const image = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.GALLERY,
-      ID.unique(),
-      {
-        title,
-        description,
-        imageUrl,
-        category,
-        tags,
-        uploadedBy: authenticated.user.$id,
-        status: canModerate ? "approved" : "pending",
-        isActive: true,
-        ...(canModerate
-          ? { approvedBy: authenticated.user.$id, approvedAt: now }
-          : {}),
-      },
-    );
+    for (const imageUrl of imageUrls) {
+      const image = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.GALLERY,
+        ID.unique(),
+        {
+          title,
+          description,
+          imageUrl,
+          category,
+          tags,
+          uploadedBy: authenticated.user.$id,
+          albumId,
+          status: canModerate ? "approved" : "pending",
+          isActive: true,
+          ...(canModerate
+            ? { approvedBy: authenticated.user.$id, approvedAt: now }
+            : {}),
+        },
+      );
+
+      images.push(image);
+    }
 
     await recordAudit({
       request,
       actor: authenticated.user,
       action: "gallery.upload",
       entityType: "gallery_image",
-      entityId: image.$id,
-      details: { title, status: canModerate ? "approved" : "pending" },
+      entityId: albumId,
+      details: {
+        title,
+        count: images.length,
+        status: canModerate ? "approved" : "pending",
+      },
     });
 
-    return ok({ image }, 201);
+    return ok({ images, image: images[0] }, 201);
   } catch (error) {
     logError("Gallery upload error:", error);
 

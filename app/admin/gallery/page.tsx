@@ -3,7 +3,7 @@
 import type { GalleryImage } from "@/lib/gallery";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import {
@@ -51,6 +51,23 @@ export default function AdminGalleryPage() {
   const [uploaderNames, setUploaderNames] = useState<Record<string, string>>(
     {},
   );
+
+  // Album sizes for the current list: multi-photo uploads review per image,
+  // but the card names the shared title so siblings are recognizable.
+  const albumSizes = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const image of images) {
+      const key = image.albumId || image.$id || image.imageUrl;
+
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [images]);
+
+  const albumSizeFor = (image: GalleryImage) =>
+    albumSizes.get(image.albumId || image.$id || image.imageUrl) ?? 1;
 
   const loadData = useCallback(async () => {
     try {
@@ -353,7 +370,20 @@ export default function AdminGalleryPage() {
                 </Chip>
               </div>
               <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold truncate">{image.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-semibold truncate">{image.title}</h3>
+                  {albumSizeFor(image) > 1 && (
+                    <Chip
+                      className="flex-shrink-0 tabular-nums"
+                      color="accent"
+                      size="sm"
+                      title={`${albumSizeFor(image)} photos share this title`}
+                      variant="soft"
+                    >
+                      Album · {albumSizeFor(image)}
+                    </Chip>
+                  )}
+                </div>
                 {image.description && (
                   <p className="text-sm text-default-500 line-clamp-2">
                     {image.description}

@@ -627,6 +627,11 @@ export interface GalleryImage {
   tags?: string[];
   isActive: boolean;
   displayOrder?: number;
+  /**
+   * Shared by every image of one multi-file upload; the gallery renders one
+   * card per album. Missing on legacy rows, which group solo.
+   */
+  albumId?: string;
 }
 
 // ============================================================

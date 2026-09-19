@@ -844,12 +844,17 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "tags", type: "string", size: 100, array: true },
     { key: "isActive", type: "boolean", required: true },
     { key: "displayOrder", type: "integer" },
+    // Album grouping: one multi-file upload shares an albumId, and the
+    // gallery renders one card per album. Rows predating the column group
+    // solo by their own id.
+    { key: "albumId", type: "string", size: 36 },
   ], [
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_category", type: "key", columns: ["category"] },
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_order", type: "key", columns: ["displayOrder"] },
     { key: "idx_uploader", type: "key", columns: ["uploadedBy"] },
+    { key: "idx_album", type: "key", columns: ["albumId"] },
   ]);
 
   await createTable("approval_workflows", "Approval Workflows", [
