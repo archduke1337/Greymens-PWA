@@ -525,9 +525,21 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/events",
     label: "Event pipeline",
     office: "cto",
-    capabilities: ["events.manage"],
-    form: "draft -> review -> publish",
-    auditAction: "event.publish",
+    // The list and lifecycle PATCH admit every event capability, so the
+    // registry says so: a reviewer holding only events.approve reaches this
+    // page and its queue, not just the manager who created it.
+    capabilities: ["events.manage", "events.approve", "events.publish", "events.update"],
+    form: "draft -> review -> approve -> publish (reject / cancel per phase)",
+    auditAction: "event.approve / event.publish / event.reject / event.cancel",
+  },
+  {
+    // One screen for everything waiting on a decision across the queues the
+    // caller can act on — the capability union is derived from REVIEW_QUEUES,
+    // so this entry is documentation, not a second gate to drift from.
+    href: "/admin/pending",
+    label: "Awaiting review (all queues)",
+    office: "president",
+    capabilities: ["governance.manage"],
   },
   {
     href: "/admin/events/create",
@@ -551,17 +563,22 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/blog",
     label: "Editorial review",
     office: "editorial_lead",
-    capabilities: ["blog.review"],
-    form: "approve / request_revision / reject",
-    auditAction: "blog.review",
+    // The queue list admits any editorial capability; each action narrows
+    // server-side. Registering only blog.review would say approve-only
+    // reviewers reach no door, which stopped being true.
+    capabilities: ["blog.review", "blog.approve", "blog.publish", "blog.feature"],
+    form: "approve / reject + reason / publish / feature",
+    auditAction: "blog.approve / blog.reject / blog.publish",
   },
   {
     href: "/admin/gallery",
     label: "Gallery moderation",
-    office: "communications_lead",
+    // The social media lead holds the gallery queue; communications runs
+    // broadcasts. The old attribution named an office with no gallery grant.
+    office: "social_media_lead",
     capabilities: ["gallery.manage", "gallery.approve"],
-    form: "approve / reject",
-    auditAction: "gallery.moderate",
+    form: "approve / reject + reason",
+    auditAction: "gallery.approve / gallery.reject",
   },
   {
     href: "/admin/resources",
