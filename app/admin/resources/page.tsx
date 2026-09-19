@@ -109,6 +109,11 @@ export default function AdminResourcesPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  // Bulk selection, only meaningful on the pending tab. Survives tab switches
+  // (a reviewer picking across pending filters keeps their picks) and is
+  // dropped when the list reloads: decided rows must never stay checked.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Create-only attachment: PATCH edits metadata, the upload lane is POST.
@@ -145,6 +150,10 @@ export default function AdminResourcesPage() {
 
       setResources(resourcePayload.resources ?? []);
       setDepartments(departmentPayload.departments ?? []);
+      // Decided rows vanish from pending on reload; clearing the selection
+      // means a stale check can never approve what the reviewer no longer
+      // sees. Tab switches keep the selection — same list, different filter.
+      setSelectedIds(new Set());
     } catch (error) {
       logError("Error loading resources:", error);
       toast.error("Failed to load resources");
@@ -422,6 +431,70 @@ export default function AdminResourcesPage() {
     return matchesTab && matchesLayer && matchesSearch;
   });
 
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+  };
+
+  // Approve every selected row through the same endpoint the single path
+  // uses; the response reports per-row outcomes so partial failures are
+  // named instead of blanket-succeeded.
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0 || bulkApproving) return;
+    if (
+      !confirm(
+        `Approve ${selectedIds.size} resource${selectedIds.size > 1 ? "s" : ""}? Each submitter is notified and each item becomes available to its audience.`,
+      )
+    )
+      return;
+    setBulkApproving(true);
+    try {
+      const response = await fetch("/api/admin/resources", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "approve",
+          resourceIds: [...selectedIds],
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        decided?: number;
+        failed?: Array<{ id: string; error: string }>;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to approve resources"));
+      const decided = payload?.decided ?? 0;
+      const failures = payload?.failed?.length ?? 0;
+
+      if (failures > 0) {
+        toast.warning(
+          `${decided} approved, ${failures} failed — retry the failed ones from the queue`,
+        );
+      } else {
+        toast.success(
+          `${decided} resource${decided === 1 ? "" : "s"} approved`,
+        );
+      }
+      await loadData();
+    } catch (error) {
+      logError("Bulk approve failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve resources",
+      );
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     const found = RESOURCE_TYPES.find((t) => t.value === type);
 
@@ -500,6 +573,47 @@ export default function AdminResourcesPage() {
                 onChange={(e: any) => setSearchQuery(e.target.value)}
               />
             </div>
+            {activeTab === "pending" && canReview && filtered.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() =>
+                    setSelectedIds(
+                      filtered
+                        .map((r) => r.$id)
+                        .filter((id): id is string => Boolean(id))
+                        .every((id) => selectedIds.has(id))
+                        ? new Set()
+                        : new Set([
+                            ...selectedIds,
+                            ...filtered
+                              .map((r) => r.$id)
+                              .filter((id): id is string => Boolean(id)),
+                          ]),
+                    )
+                  }
+                >
+                  {filtered
+                    .map((r) => r.$id)
+                    .filter((id): id is string => Boolean(id))
+                    .every((id) => selectedIds.has(id))
+                    ? "Clear selection"
+                    : `Select all (${filtered.length})`}
+                </Button>
+                {selectedIds.size > 0 && (
+                  <Button
+                    isPending={bulkApproving}
+                    size="sm"
+                    variant="primary"
+                    onPress={handleBulkApprove}
+                  >
+                    <CheckCircle aria-hidden="true" className="w-4 h-4" />
+                    Approve {selectedIds.size}
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <Button
                 key="all"
@@ -619,6 +733,15 @@ export default function AdminResourcesPage() {
                       )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    {canReview && activeTab === "pending" && resource.$id && (
+                      <input
+                        aria-label={`Select ${resource.title} for bulk approval`}
+                        checked={selectedIds.has(resource.$id)}
+                        className="size-4 cursor-pointer mt-1.5"
+                        type="checkbox"
+                        onChange={() => toggleSelected(resource.$id!)}
+                      />
+                    )}
                     {canReview && resourceStatus(resource) !== "approved" && (
                       <Button
                         isIconOnly

@@ -48,9 +48,11 @@ export default function AdminGalleryPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // Bulk selection, only meaningful on the pending tab. Keyed by row id;
-  // clearing on reload keeps a stale selection from approving something the
-  // list no longer shows.
+  // Bulk selection, only meaningful on the pending tab. Kept across tab
+  // switches within the session — a reviewer picking through pending filters
+  // keeps their picks — and dropped when the list reloads: decided rows must
+  // never stay checked, or a stale check could approve what the reviewer no
+  // longer sees.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkApproving, setBulkApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -101,9 +103,8 @@ export default function AdminGalleryPage() {
       const allImages = payload.images ?? [];
 
       setImages(allImages);
-      // Selection was for rows the previous load showed; a reload decides
-      // them or changes the queue, and a silent carryover would approve
-      // something the reviewer is no longer looking at.
+      // Tab switches keep the selection (same list, different filter); only a
+      // real reload — which decides rows or changes the queue — clears it.
       setSelectedIds(new Set());
       setUploaderNames(payload.accountNames ?? {});
       setCounts({
