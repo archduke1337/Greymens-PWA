@@ -62,6 +62,7 @@ const ENFORCEMENT: Record<string, string> = {
   "resources.manage": "app/api/resources/route.ts",
   "gallery.manage": "app/api/admin/gallery/route.ts",
   "projects.manage": "app/api/admin/projects/route.ts",
+  "projects.approve": "app/api/admin/projects/route.ts",
   "sponsors.manage": "app/api/admin/sponsors/route.ts",
   "notifications.send": "app/api/notifications/route.ts",
   "audit.view": "app/api/audit/route.ts",
@@ -79,7 +80,7 @@ const ENFORCEMENT: Record<string, string> = {
 const INDIRECT: Record<string, string> = {
   "blog.approve": "app/api/blogs/route.ts",
   "blog.feature": "app/api/blogs/route.ts",
-  "blog.publish": "app/api/admin/blogs/route.ts",
+  "blog.publish": "app/api/blogs/route.ts",
   "membership.approve": "app/api/admin/membership/route.ts",
   "membership.reject": "app/api/admin/membership/route.ts",
 };

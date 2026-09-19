@@ -273,7 +273,7 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/projects",
     label: "Research portfolio",
     office: "research_projects_director",
-    capabilities: ["projects.manage"],
+    capabilities: ["projects.manage", "projects.approve"],
   },
   {
     href: "/admin/sponsors",

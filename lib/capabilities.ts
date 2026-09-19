@@ -52,6 +52,9 @@ export const CAPABILITIES = [
   "resources.manage",
   "gallery.manage",
   "projects.manage",
+  // Reviewing a member proposal is its own authority: a reviewer can decide
+  // the queue without gaining the power to rewrite or delete the portfolio.
+  "projects.approve",
   "sponsors.manage",
   "notifications.send",
   "audit.view",

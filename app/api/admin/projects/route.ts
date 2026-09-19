@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -122,7 +122,12 @@ function validateProject(
 }
 
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "projects.manage");
+  // Reviewers need the queue as much as managers: without the list a
+  // projects.approve holder has a tab that can only ever be empty.
+  const authenticated = await requireAnyCapability(request, [
+    "projects.manage",
+    "projects.approve",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
   try {
@@ -188,9 +193,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "projects.manage");
-
-  if (!authenticated.user) return authenticated.response;
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const projectId =
@@ -198,6 +200,21 @@ export async function PATCH(request: NextRequest) {
 
     if (!projectId) return fail("VALIDATION", "projectId is required", 400);
     const { projectId: _projectId, ...rest } = body;
+    const isDecision = rest.action === "approve" || rest.action === "reject";
+
+    // Two authorities on one endpoint, chosen by the action: deciding a
+    // proposal is projects.approve, editing one is projects.manage. The split
+    // exists so a reviewer can be scoped to the verdict alone — before it, a
+    // reviewer and a full editor were the same grant, and there was no way to
+    // hand out the queue without also handing out delete.
+    const authenticated = isDecision
+      ? await requireAnyCapability(request, [
+          "projects.approve",
+          "projects.manage",
+        ])
+      : await requireCapability(request, "projects.manage");
+
+    if (!authenticated.user) return authenticated.response;
 
     // Review decisions ride the same endpoint as metadata edits: approve or
     // reject a member proposal, tell the proposer (in-app + mail), audit it.
@@ -296,6 +313,8 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // Deleting stays with the full grant: a reviewer decides proposals, they do
+  // not get to remove the portfolio.
   const authenticated = await requireCapability(request, "projects.manage");
 
   if (!authenticated.user) return authenticated.response;

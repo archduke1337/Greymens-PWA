@@ -60,6 +60,9 @@ export default function AdminProjectsPage() {
   const { hasCapability } = usePermissions();
   const router = useRouter();
   const canManage = hasCapability("projects.manage");
+  // Reviewing is its own grant: a projects.approve holder decides the queue
+  // without being able to create, rewrite, or delete the portfolio.
+  const canReview = canManage || hasCapability("projects.approve");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -515,15 +518,16 @@ export default function AdminProjectsPage() {
     );
   }
   if (!user) return null;
-  if (!canManage) {
+  if (!canReview) {
     return (
       <div className="min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <Card>
             <CardContent className="p-8 text-center text-muted">
-              Project management requires the projects.manage capability — cto,
-              research, software/web, or AI/ML leads hold it. What you can see
-              publicly lives on the projects page.
+              This console needs projects.manage (full editing: cto, research,
+              software/web, and AI/ML leads) or projects.approve (reviewing
+              member proposals). What you can see publicly lives on the projects
+              page.
             </CardContent>
           </Card>
         </div>
@@ -590,13 +594,15 @@ export default function AdminProjectsPage() {
                     total
                   </p>
                 </div>
-                <Button
-                  className="bg-primary text-primary-foreground font-semibold"
-                  size="lg"
-                  onPress={handleAdd}
-                >
-                  New Project
-                </Button>
+                {canManage && (
+                  <Button
+                    className="bg-primary text-primary-foreground font-semibold"
+                    size="lg"
+                    onPress={handleAdd}
+                  >
+                    New Project
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="p-6">
                 <div
@@ -677,7 +683,7 @@ export default function AdminProjectsPage() {
                           ? "Member proposals appear here for approval."
                           : "Projects in this state will appear here."}
                     </p>
-                    {activeTab === "all" && (
+                    {activeTab === "all" && canManage && (
                       <Button
                         className="bg-primary text-primary-foreground font-semibold"
                         size="lg"
@@ -717,9 +723,7 @@ export default function AdminProjectsPage() {
                           </TableHeader>
                           <TableBody>
                             {visibleProjects.map((project) => (
-                              <TableRow
-                                key={project.$id}
-                              >
+                              <TableRow key={project.$id}>
                                 <TableCell>
                                   <div className="flex items-center gap-4">
                                     <div className="relative flex-shrink-0">
@@ -863,25 +867,31 @@ export default function AdminProjectsPage() {
                                         />
                                       </Button>
                                     )}
-                                    <Button
-                                      isIconOnly
-                                      aria-label={`Edit ${project.title}`}
-                                      size="sm"
-                                      variant="secondary"
-                                      onPress={() => handleEdit(project)}
-                                    >
-                                      <Edit2Icon className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      isIconOnly
-                                      aria-label={`Delete ${project.title}`}
-                                      isPending={deletingId === project.$id}
-                                      size="sm"
-                                      variant="danger-soft"
-                                      onPress={() => handleDelete(project.$id!)}
-                                    >
-                                      <TrashIcon className="w-4 h-4" />
-                                    </Button>
+                                    {canManage && (
+                                      <Button
+                                        isIconOnly
+                                        aria-label={`Edit ${project.title}`}
+                                        size="sm"
+                                        variant="secondary"
+                                        onPress={() => handleEdit(project)}
+                                      >
+                                        <Edit2Icon className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {canManage && (
+                                      <Button
+                                        isIconOnly
+                                        aria-label={`Delete ${project.title}`}
+                                        isPending={deletingId === project.$id}
+                                        size="sm"
+                                        variant="danger-soft"
+                                        onPress={() =>
+                                          handleDelete(project.$id!)
+                                        }
+                                      >
+                                        <TrashIcon className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </TableCell>
                               </TableRow>

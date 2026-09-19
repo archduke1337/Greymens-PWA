@@ -175,10 +175,11 @@ export async function POST(request: NextRequest) {
   try {
     const { databases } = createServerDatabases();
     const now = new Date().toISOString();
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "projects.manage",
-    );
+    // Holding either half of the authority is the moderator's own decision:
+    // a full manager, or a reviewer scoped to projects.approve.
+    const canModerate =
+      (await hasServerCapability(authenticated.user.$id, "projects.manage")) ||
+      (await hasServerCapability(authenticated.user.$id, "projects.approve"));
     const project = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.PROJECTS,

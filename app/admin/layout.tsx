@@ -116,7 +116,7 @@ export const ADMIN_SECTIONS = [
     label: "Projects",
     href: "/admin/projects",
     Icon: Rocket,
-    cap: "projects.manage",
+    cap: ["projects.manage", "projects.approve"],
   },
   {
     label: "Sponsors",
