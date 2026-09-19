@@ -124,3 +124,53 @@ export async function searchUsersByName(
     return [];
   }
 }
+
+export interface UserContact {
+  userId: string;
+  name: string;
+  email: string;
+}
+
+/** Single account's contact, or `null` when the account is gone. */
+export async function getUserContact(
+  userId: string,
+): Promise<UserContact | null> {
+  try {
+    const user = await createUsersClient().get({ userId });
+
+    if (!user.email) return null;
+
+    return {
+      userId: user.$id,
+      name: user.name || user.email.split("@")[0],
+      email: user.email,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One page of the account directory (bounded, tolerant). Used to resolve
+ * broadcast audiences to email addresses without loading the directory.
+ */
+export async function listUserContacts(
+  limit: number,
+  offset: number,
+): Promise<UserContact[]> {
+  try {
+    const response = await createUsersClient().list({
+      queries: [Query.limit(limit), Query.offset(offset)],
+    });
+
+    return response.users
+      .filter((user) => Boolean(user.email))
+      .map((user) => ({
+        userId: user.$id,
+        name: user.name || user.email.split("@")[0],
+        email: user.email,
+      }));
+  } catch {
+    return [];
+  }
+}

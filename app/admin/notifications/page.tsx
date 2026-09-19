@@ -13,6 +13,7 @@ import {
   Label,
   ListBox,
   Select,
+  Switch,
   TextArea,
   Modal,
   ModalBackdrop,
@@ -45,11 +46,14 @@ export default function AdminNotificationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, open, close } = useOverlayState();
   const [sending, setSending] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState(false);
   const [form, setForm] = useState({
+    audience: "single" as "single" | "all_members" | "all_users",
     userId: "",
     title: "",
     body: "",
     type: "admin_announcement",
+    sendEmail: false,
   });
 
   const loadData = useCallback(async () => {
@@ -60,6 +64,7 @@ export default function AdminNotificationsPage() {
       const payload = (await response.json()) as {
         notifications?: Notification[];
         accountNames?: Record<string, string>;
+        emailConfigured?: boolean;
         error?: string;
       };
 
@@ -67,6 +72,7 @@ export default function AdminNotificationsPage() {
         throw new Error(readApiError(payload, "Unable to load notifications"));
       setNotifications(payload.notifications ?? []);
       setRecipientNames(payload.accountNames ?? {});
+      setEmailConfigured(payload.emailConfigured === true);
     } catch (error) {
       logError("Error loading notifications:", error);
       toast.error("Failed to load notifications");
@@ -129,8 +135,21 @@ export default function AdminNotificationsPage() {
 
   const handleSend = async () => {
     if (!user) return;
-    if (!form.userId.trim() || !form.title.trim() || !form.body.trim()) {
-      toast.error("Recipient, title, and body are all required");
+    if (
+      (form.audience === "single" && !form.userId.trim()) ||
+      !form.title.trim() ||
+      !form.body.trim()
+    ) {
+      toast.error(
+        form.audience === "single"
+          ? "Recipient, title, and body are all required"
+          : "Title and body are both required",
+      );
+
+      return;
+    }
+    if (form.audience !== "single" && form.sendEmail && !emailConfigured) {
+      toast.error("Email is not configured — uncheck email or set it up");
 
       return;
     }
@@ -142,24 +161,49 @@ export default function AdminNotificationsPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          userId: form.userId.trim(),
+          ...(form.audience === "single"
+            ? { userId: form.userId.trim() }
+            : { audience: form.audience }),
           type: form.type,
           title: form.title.trim(),
           body: form.body.trim(),
+          sendEmail: form.sendEmail,
         }),
       });
       const payload = (await response.json().catch(() => null)) as {
+        sent?: number;
+        email?: { attempted?: boolean; sent?: number; failed?: number };
         error?: string;
       } | null;
 
       if (!response.ok)
         throw new Error(readApiError(payload, "Unable to send notification"));
 
-      toast.success(
-        `Notification sent to ${recipientNames[form.userId.trim()] || "member"}`,
-      );
+      const sent = payload?.sent ?? 0;
+      const email = payload?.email;
+      const audienceLabel =
+        form.audience === "single"
+          ? recipientNames[form.userId.trim()] || "member"
+          : form.audience === "all_members"
+            ? `${sent} members`
+            : `${sent} users`;
+      let message = `Notification sent to ${audienceLabel}`;
+
+      if (form.sendEmail) {
+        message += email?.attempted
+          ? ` · email to ${email.sent ?? 0}${email.failed ? ` (${email.failed} failed)` : ""}`
+          : " · email skipped (not configured)";
+      }
+      toast.success(message);
       close();
-      setForm({ userId: "", title: "", body: "", type: "admin_announcement" });
+      setForm({
+        audience: "single",
+        userId: "",
+        title: "",
+        body: "",
+        type: "admin_announcement",
+        sendEmail: false,
+      });
       await loadData();
     } catch (error) {
       logError("Error sending notification:", error);
@@ -303,71 +347,134 @@ export default function AdminNotificationsPage() {
               <ModalHeader>Send Notification</ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  {membersAvailable ? (
-                    <div>
-                      <Select
-                        fullWidth
-                        value={form.userId === "" ? null : form.userId}
-                        onChange={(value) =>
-                          setForm((p) => ({
-                            ...p,
-                            userId: String(value ?? ""),
-                          }))
-                        }
-                      >
-                        <Label>Recipient</Label>
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
-                            {members.map((member) => (
-                              <ListBox.Item
-                                key={member.userId}
-                                id={member.userId}
-                                textValue={member.name}
-                              >
-                                {member.name}
-                                {member.urn ? ` · ${member.urn}` : ""}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
+                  <div>
+                    <span className="text-sm font-medium mb-1 block">
+                      Audience{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </span>
+                    <div
+                      aria-label="Notification audience"
+                      className="flex flex-wrap gap-2"
+                      role="group"
+                    >
+                      {(
+                        [
+                          { value: "single", label: "One member" },
+                          { value: "all_members", label: "All members" },
+                          { value: "all_users", label: "Everyone" },
+                        ] as const
+                      ).map((option) => (
+                        <Button
+                          key={option.value}
+                          size="sm"
+                          variant={
+                            form.audience === option.value
+                              ? "primary"
+                              : "secondary"
+                          }
+                          onPress={() =>
+                            setForm((p) => ({ ...p, audience: option.value }))
+                          }
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
                     </div>
-                  ) : (
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">
-                        Recipient User ID
-                      </label>
-                      <Input
-                        placeholder="Member directory unavailable — enter the user's ID"
-                        value={form.userId}
-                        onChange={(e: any) =>
-                          setForm((p) => ({ ...p, userId: e.target.value }))
-                        }
-                      />
-                    </div>
-                  )}
+                    {form.audience !== "single" && (
+                      <p className="text-xs text-default-500 mt-1">
+                        {form.audience === "all_members"
+                          ? "One in-app notice per active member (max 500)."
+                          : "One in-app notice per profile holder (max 500)."}
+                      </p>
+                    )}
+                  </div>
+                  {form.audience === "single" &&
+                    (membersAvailable ? (
+                      <div>
+                        <Select
+                          fullWidth
+                          value={form.userId === "" ? null : form.userId}
+                          onChange={(value) =>
+                            setForm((p) => ({
+                              ...p,
+                              userId: String(value ?? ""),
+                            }))
+                          }
+                        >
+                          <Label>
+                            Recipient{" "}
+                            <span aria-hidden="true" className="text-danger">
+                              *
+                            </span>
+                          </Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              {members.map((member) => (
+                                <ListBox.Item
+                                  key={member.userId}
+                                  id={member.userId}
+                                  textValue={member.name}
+                                >
+                                  {member.name}
+                                  {member.urn ? ` · ${member.urn}` : ""}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox>
+                          </Select.Popover>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">
+                          Recipient User ID{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </label>
+                        <Input
+                          placeholder="Member directory unavailable — enter the user's ID"
+                          value={form.userId}
+                          onChange={(e: any) =>
+                            setForm((p) => ({ ...p, userId: e.target.value }))
+                          }
+                        />
+                      </div>
+                    ))}
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      Title
+                      Title{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
                     </label>
                     <Input
+                      maxLength={255}
                       placeholder="Notification title"
                       value={form.title}
                       onChange={(e: any) =>
                         setForm((p) => ({ ...p, title: e.target.value }))
                       }
                     />
+                    <p className="text-xs text-default-400 mt-1 tabular-nums">
+                      {form.title.length}/255
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      Body
+                      Body{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
                     </label>
                     <TextArea
+                      maxLength={5000}
                       placeholder="Notification message..."
                       rows={3}
                       value={form.body}
@@ -375,6 +482,9 @@ export default function AdminNotificationsPage() {
                         setForm((p) => ({ ...p, body: e.target.value }))
                       }
                     />
+                    <p className="text-xs text-default-400 mt-1 tabular-nums">
+                      {form.body.length}/5000
+                    </p>
                   </div>
                   <div>
                     <Select
@@ -419,6 +529,26 @@ export default function AdminNotificationsPage() {
                         </ListBox>
                       </Select.Popover>
                     </Select>
+                  </div>
+                  <div className="rounded-xl border border-border p-3">
+                    <Switch
+                      isSelected={form.sendEmail}
+                      onChange={(checked: boolean) =>
+                        setForm((p) => ({ ...p, sendEmail: checked }))
+                      }
+                    >
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb />
+                        </Switch.Control>
+                        Also send by email
+                      </Switch.Content>
+                    </Switch>
+                    <p className="text-xs text-default-500 mt-1.5">
+                      {emailConfigured
+                        ? "Mails every recipient's account address alongside the in-app notice."
+                        : "Email is not configured — set RESEND_API_KEY and EMAIL_FROM on the server to enable it."}
+                    </p>
                   </div>
                 </div>
               </ModalBody>

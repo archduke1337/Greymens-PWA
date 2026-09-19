@@ -5,7 +5,16 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
-import { getAccountNames } from "@/lib/server-users";
+import {
+  getAccountNames,
+  getUserContact,
+  listUserContacts,
+} from "@/lib/server-users";
+import {
+  isEmailConfigured,
+  sendBulkEmail,
+  type EmailRecipient,
+} from "@/lib/email";
 import { recordAudit } from "@/lib/server-audit";
 import { isRecord, readOptionalString, readString } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -98,6 +107,9 @@ export async function GET(request: NextRequest) {
         total: response.total,
         unreadCount: 0,
         accountNames,
+        // The console's "also send email" toggle renders from this — the
+        // client cannot read server env, so the server states the channel.
+        emailConfigured: isEmailConfigured(),
       });
     }
 
@@ -126,21 +138,122 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Broadcast fan-out cap: one announcement must never write an unbounded
+// number of rows. Above this the sender narrows the audience instead.
+const BROADCAST_CAP = 500;
+const FANOUT_CONCURRENCY = 25;
+
+/** Every profile holder, paged — the `all_users` audience. */
+async function allProfileIds(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+): Promise<string[]> {
+  const ids: string[] = [];
+  let offset = 0;
+
+  for (;;) {
+    const page = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.limit(100), Query.offset(offset)],
+    );
+
+    for (const row of page.documents) {
+      const userId = String(row.userId ?? "");
+
+      if (userId) ids.push(userId);
+      if (ids.length > BROADCAST_CAP) return ids;
+    }
+    if (page.documents.length < 100) break;
+    offset += 100;
+  }
+
+  return ids;
+}
+
+interface NotificationContent {
+  type: string;
+  title: string;
+  body: string;
+  letter?: string;
+  data?: string;
+  createdAt: string;
+}
+
+/** One row per recipient, written in bounded parallel chunks. */
+async function createNotificationRows(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+  recipientIds: string[],
+  content: NotificationContent,
+): Promise<string[]> {
+  const ids: string[] = [];
+
+  for (let i = 0; i < recipientIds.length; i += FANOUT_CONCURRENCY) {
+    const chunk = recipientIds.slice(i, i + FANOUT_CONCURRENCY);
+    const created = await Promise.all(
+      chunk.map((userId) =>
+        databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.NOTIFICATIONS,
+          ID.unique(),
+          {
+            userId,
+            type: content.type,
+            title: content.title,
+            body: content.body,
+            letter: content.letter,
+            data: content.data,
+            read: false,
+            // `createdAt` is a required column; the previous browser-side
+            // writer never set it, so every notification insert failed.
+            createdAt: content.createdAt,
+          },
+        ),
+      ),
+    );
+
+    for (const row of created) ids.push(row.$id);
+  }
+
+  return ids;
+}
+
+/**
+ * Email addresses for the mail copy. `onlyIds` restricts to a recipient set
+ * (member audience); `null` mails every account with an address. Scans the
+ * directory in pages and stops early once a restricted set is satisfied, so
+ * a 40-member broadcast does not page the whole directory.
+ */
+async function emailsForRecipients(
+  onlyIds: Set<string> | null,
+): Promise<EmailRecipient[]> {
+  const out: EmailRecipient[] = [];
+  const seen = new Set<string>();
+  let offset = 0;
+
+  for (;;) {
+    const page = await listUserContacts(100, offset);
+
+    if (page.length === 0) break;
+    for (const contact of page) {
+      if (onlyIds && !onlyIds.has(contact.userId)) continue;
+      if (seen.has(contact.email)) continue;
+      seen.add(contact.email);
+      out.push({ email: contact.email, name: contact.name });
+      if (out.length >= BROADCAST_CAP) return out;
+    }
+    if (onlyIds && out.length >= onlyIds.size) break;
+    if (page.length < 100) break;
+    offset += 100;
+  }
+
+  return out;
+}
+
 export async function POST(request: NextRequest) {
   // Sending a notification to another account is an administrative action.
   const authenticated = await requireCapability(request, "notifications.send");
 
   if (!authenticated.user) return authenticated.response;
-
-  const limited = consumeRateLimit(
-    `notifications:${authenticated.user.$id}`,
-    60,
-    60 * 60 * 1000,
-  );
-
-  if (!limited.allowed) {
-    return fail("RATE_LIMITED", "Too many requests", 429);
-  }
 
   let body: unknown;
 
@@ -155,16 +268,26 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = readString(body.userId, 36);
+  const audience =
+    typeof body.audience === "string" ? body.audience.trim() : "";
   const type = readString(body.type, 100);
   const title = readString(body.title, 255);
   const bodyText = readString(body.body, MAX_BODY_LENGTH);
+  const sendEmail = body.sendEmail === true;
 
-  if (!userId || !type || !title || !bodyText) {
+  // Exactly one recipient spec: a single account, or a named audience.
+  if ((userId && audience) || (!userId && !audience)) {
     return fail(
       "VALIDATION",
-      "userId, type, title, and body are required",
+      "Send to one member (userId) or an audience, not both",
       400,
     );
+  }
+  if (audience && audience !== "all_members" && audience !== "all_users") {
+    return fail("VALIDATION", "audience must be all_members or all_users", 400);
+  }
+  if (!type || !title || !bodyText) {
+    return fail("VALIDATION", "type, title, and body are required", 400);
   }
   // Closed vocabulary: a sender must not be able to forge system-looking
   // notices (e.g. membership_approved) outside the flows that own them.
@@ -195,36 +318,112 @@ export async function POST(request: NextRequest) {
     return fail("VALIDATION", "Notification payload is too large", 400);
   }
 
+  // A broadcast fans out to hundreds of rows — throttle it separately from
+  // single sends so one announcement cannot spend the sender's whole budget.
+  const limited = consumeRateLimit(
+    audience
+      ? `notifications:broadcast:${authenticated.user.$id}`
+      : `notifications:${authenticated.user.$id}`,
+    audience ? 5 : 60,
+    60 * 60 * 1000,
+  );
+
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
+
   try {
     const { databases } = createServerDatabases();
-    const notification = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.NOTIFICATIONS,
-      ID.unique(),
-      {
-        userId,
-        type,
-        title,
-        body: bodyText,
-        letter,
-        data,
-        read: false,
-        // `createdAt` is a required column; the previous browser-side writer never
-        // set it, so every notification insert failed.
-        createdAt: new Date().toISOString(),
-      },
-    );
+    const createdAt = new Date().toISOString();
+
+    // Resolve recipient account ids. Single sends verify the account exists
+    // (fail-closed: no rows for ghost ids); audiences are bounded so a
+    // runaway fan-out 400s instead of writing thousands of rows.
+    let recipientIds: string[];
+
+    if (userId) {
+      const contact = await getUserContact(userId);
+
+      if (!contact) return fail("NOT_FOUND", "Recipient not found", 404);
+      recipientIds = [contact.userId];
+    } else if (audience === "all_members") {
+      const memberships = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.MEMBERSHIPS,
+        [Query.equal("status", ["active"]), Query.limit(BROADCAST_CAP + 1)],
+      );
+
+      if (
+        memberships.total > BROADCAST_CAP ||
+        memberships.documents.length > BROADCAST_CAP
+      ) {
+        return fail(
+          "VALIDATION",
+          "Audience is larger than the broadcast limit — narrow it first",
+          400,
+        );
+      }
+      recipientIds = memberships.documents
+        .map((row) => String(row.userId ?? ""))
+        .filter(Boolean);
+    } else {
+      recipientIds = await allProfileIds(databases);
+
+      if (recipientIds.length === 0) {
+        return fail("VALIDATION", "Audience is empty", 400);
+      }
+    }
+
+    const rows = await createNotificationRows(databases, recipientIds, {
+      type,
+      title,
+      body: bodyText,
+      letter,
+      data,
+      createdAt,
+    });
+
+    // Email runs after the in-app rows are safely stored: mail is the
+    // best-effort copy, the notification row is the record.
+    let email: {
+      attempted: boolean;
+      sent: number;
+      failed: number;
+      reason?: string;
+    } = {
+      attempted: false,
+      sent: 0,
+      failed: 0,
+      reason: sendEmail ? undefined : "not_requested",
+    };
+
+    if (sendEmail) {
+      const contacts = await emailsForRecipients(
+        audience ? null : new Set(recipientIds),
+      );
+
+      email = await sendBulkEmail(contacts, title, bodyText);
+    }
 
     await recordAudit({
       request,
       actor: authenticated.user,
       action: "notification.send",
       entityType: "notification",
-      entityId: notification.$id,
-      details: { userId, type },
+      entityId: rows[0] ?? "broadcast",
+      details: {
+        audience: audience || "single",
+        userId: userId || null,
+        type,
+        sent: rows.length,
+        email,
+      },
     });
 
-    return ok({ notification }, 201);
+    return ok(
+      { sent: rows.length, audience: audience || "single", email },
+      201,
+    );
   } catch (error) {
     logError("Notification create error:", error);
 
