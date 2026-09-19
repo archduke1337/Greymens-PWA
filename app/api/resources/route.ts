@@ -118,6 +118,31 @@ export async function GET(request: NextRequest) {
     const user = await getAuthenticatedUser(request);
     const { databases } = createServerDatabases();
 
+    // Owner view. Pending and sent-back submissions are deliberately absent
+    // from the library, so without this the uploader never learns the verdict
+    // or reads the reviewer's note — the reason was stored and then never
+    // shown to anyone. Own rows only: no capability, nobody else's queue.
+    if (request.nextUrl.searchParams.get("scope") === "mine") {
+      const member = await requireMember(request);
+
+      if (!member.user) return member.response;
+      const owned = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.RESOURCES,
+        [
+          Query.equal("uploadedBy", [member.user.$id]),
+          Query.orderDesc("$createdAt"),
+          Query.limit(100),
+        ],
+      );
+
+      return ok({
+        resources: owned.documents.filter(
+          (resource) => resource.isActive !== false,
+        ),
+      });
+    }
+
     // Review queue: managers see every status; everyone else only sees
     // approved records. The capability check runs before any query so a
     // denied caller costs no read.

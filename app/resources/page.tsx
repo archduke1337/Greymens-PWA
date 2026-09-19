@@ -9,6 +9,7 @@ import {
   ExternalLink,
   FileText,
   FolderOpen,
+  Inbox,
   Link2,
   Loader2,
   Lock,
@@ -17,6 +18,8 @@ import {
   Search,
   Video,
 } from "lucide-react";
+
+import { useAuth } from "@/context/AuthContext";
 
 const LAYERS = [
   { value: "all", label: "All" },
@@ -85,6 +88,14 @@ export default function ResourcesPage() {
   const [departmentNames, setDepartmentNames] = useState<
     Record<string, string>
   >({});
+  const { user } = useAuth();
+  // Owner view: pending and sent-back uploads never appear in the library,
+  // so this tab is the only place their submitter can see the verdict.
+  const [view, setView] = useState<"library" | "mine">("library");
+  const [mine, setMine] = useState<LoadState>({
+    status: "loading",
+    resources: [],
+  });
 
   useEffect(() => {
     // Department names resolve the locked card's scope line ("Available to
@@ -151,6 +162,33 @@ export default function ResourcesPage() {
     };
   }, [reloadKey]);
 
+  useEffect(() => {
+    if (view !== "mine") return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/resources?scope=mine", {
+          credentials: "include",
+        });
+
+        if (!response.ok) throw new Error("Request failed");
+        const payload = (await response.json()) as { resources?: Resource[] };
+
+        if (!cancelled)
+          setMine({ status: "ready", resources: payload.resources ?? [] });
+      } catch {
+        if (!cancelled) setMine({ status: "error", resources: [] });
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [view, reloadKey]);
+
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
 
@@ -191,39 +229,182 @@ export default function ResourcesPage() {
         </p>
       </div>
 
-      <Card className="border-none shadow-md mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 md:items-center">
-            <div className="flex-1">
-              <Input
-                aria-label="Search resources"
-                placeholder="Search resources..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-            <div
-              aria-label="Filter by audience"
-              className="flex flex-wrap gap-2"
-              role="group"
-            >
-              {LAYERS.map((option) => (
-                <Button
-                  key={option.value}
-                  aria-pressed={layer === option.value}
-                  size="sm"
-                  variant={layer === option.value ? "primary" : "ghost"}
-                  onPress={() => setLayer(option.value)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {user && (
+        <div
+          aria-label="Choose a view"
+          className="mb-6 flex flex-wrap gap-2"
+          role="group"
+        >
+          <Button
+            aria-pressed={view === "library"}
+            size="sm"
+            variant={view === "library" ? "primary" : "ghost"}
+            onPress={() => setView("library")}
+          >
+            Library
+          </Button>
+          <Button
+            aria-pressed={view === "mine"}
+            size="sm"
+            variant={view === "mine" ? "primary" : "ghost"}
+            onPress={() => {
+              setMine({ status: "loading", resources: [] });
+              setView("mine");
+            }}
+          >
+            My uploads
+          </Button>
+        </div>
+      )}
 
-      {state.status === "loading" ? (
+      {view === "library" && (
+        <Card className="border-none shadow-md mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4 md:items-center">
+              <div className="flex-1">
+                <Input
+                  aria-label="Search resources"
+                  placeholder="Search resources..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+              <div
+                aria-label="Filter by audience"
+                className="flex flex-wrap gap-2"
+                role="group"
+              >
+                {LAYERS.map((option) => (
+                  <Button
+                    key={option.value}
+                    aria-pressed={layer === option.value}
+                    size="sm"
+                    variant={layer === option.value ? "primary" : "ghost"}
+                    onPress={() => setLayer(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {view === "mine" ? (
+        mine.status === "loading" ? (
+          <div
+            aria-label="Loading your uploads"
+            className="flex items-center justify-center py-20"
+            role="status"
+          >
+            <Loader2
+              aria-hidden="true"
+              className="w-8 h-8 animate-spin text-default-400"
+            />
+          </div>
+        ) : mine.status === "error" ? (
+          <Card className="border-none shadow-md">
+            <CardContent className="p-12 text-center">
+              <AlertCircle className="w-14 h-14 text-danger mx-auto mb-4" />
+              <h2 className="text-lg font-semibold mb-2">
+                Your uploads could not be loaded
+              </h2>
+              <p className="text-default-500 mb-6">
+                Something went wrong reaching the server. Nothing was changed.
+              </p>
+              <Button
+                variant="primary"
+                onPress={() => {
+                  setMine({ status: "loading", resources: [] });
+                  setReloadKey((key) => key + 1);
+                }}
+              >
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : mine.resources.length === 0 ? (
+          <Card className="border-none shadow-md">
+            <CardContent className="p-12 text-center">
+              <Inbox className="w-14 h-14 text-default-300 mx-auto mb-4" />
+              <h2 className="text-lg font-semibold mb-2">
+                Nothing submitted yet
+              </h2>
+              <p className="text-default-500">
+                Resources you upload appear here while they wait for review, and
+                show the reviewer&apos;s note if one is sent back.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {mine.resources.map((resource) => {
+              const TypeIcon = TYPE_ICONS[resource.type] ?? FileText;
+              const status = resource.status ?? "approved";
+
+              return (
+                <Card key={resource.$id} className="border-none shadow-md">
+                  <CardContent className="p-4 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-default-100 flex items-center justify-center flex-shrink-0">
+                      <TypeIcon className="w-5 h-5 text-default-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold break-words">
+                        {resource.title}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {status === "pending" ? (
+                          <Chip color="warning" size="sm" variant="soft">
+                            Pending review
+                          </Chip>
+                        ) : status === "rejected" ? (
+                          <Chip color="danger" size="sm" variant="soft">
+                            Sent back
+                          </Chip>
+                        ) : (
+                          <Chip color="success" size="sm" variant="soft">
+                            Published
+                          </Chip>
+                        )}
+                        <Chip size="sm" variant="soft">
+                          {resource.type}
+                        </Chip>
+                        <Chip color="accent" size="sm" variant="soft">
+                          {LAYER_LABELS[resource.layer] ?? resource.layer}
+                        </Chip>
+                      </div>
+                      {status === "rejected" && resource.rejectionReason && (
+                        <p className="text-sm text-danger mt-2">
+                          Reviewer note: {resource.rejectionReason}
+                        </p>
+                      )}
+                      {status === "pending" && (
+                        <p className="text-sm text-default-500 mt-2">
+                          Waiting on a resources manager — other members see
+                          this only once it is approved.
+                        </p>
+                      )}
+                    </div>
+                    {resource.url && (
+                      <Link
+                        className="flex-shrink-0 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80"
+                        href={resource.url}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open
+                        <span className="sr-only">(opens in a new tab)</span>
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )
+      ) : state.status === "loading" ? (
         <div
           aria-label="Loading resources"
           className="flex items-center justify-center py-20"
