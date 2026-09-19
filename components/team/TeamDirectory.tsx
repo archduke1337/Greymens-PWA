@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-  Card,
-  CardContent,
-  Chip,
-} from "@heroui/react";
+import { Avatar, Card, Chip } from "@heroui/react";
 import { ExternalLinkIcon, Globe } from "lucide-react";
 
 import { GithubIcon } from "@/components/icons";
@@ -70,7 +63,7 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
   if (groups.length === 0) {
     return (
       <Card className="max-w-2xl mx-auto">
-        <CardContent className="p-8 text-center space-y-3">
+        <Card.Content className="p-8 text-center space-y-3">
           <h2 className="text-lg font-semibold">
             Leadership is being published
           </h2>
@@ -85,7 +78,7 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
             </a>
             .
           </p>
-        </CardContent>
+        </Card.Content>
       </Card>
     );
   }
@@ -105,54 +98,74 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
             >
               {group.designation}
             </h2>
-            <span className="text-xs text-default-400">
+            <Chip size="sm" variant="soft">
               {group.members.length}{" "}
               {group.members.length === 1 ? "member" : "members"}
-            </span>
+            </Chip>
           </div>
 
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {group.members.map((member) => (
-              <li key={member.userId}>
-                <Card className="h-full">
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-14 h-14 flex-shrink-0">
+            {group.members.map((member) => {
+              const links = socialLinks(member);
+
+              return (
+                <li key={member.userId} className="h-full">
+                  <Card className="h-full gap-0 transition-shadow hover:shadow-lg">
+                    <Card.Header className="gap-4">
+                      <Avatar
+                        aria-label={`${member.name}'s profile picture`}
+                        className="size-14 shrink-0 rounded-2xl"
+                      >
                         {member.avatar ? (
-                          <AvatarImage alt="" src={member.avatar} />
+                          <Avatar.Image alt="" src={member.avatar} />
                         ) : null}
-                        <AvatarFallback>{initials(member.name)}</AvatarFallback>
+                        <Avatar.Fallback>{initials(member.name)}</Avatar.Fallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="font-semibold truncate">{member.name}</p>
-                        <p className="inline-flex items-center gap-1.5 text-xs text-default-500 truncate">
-                          {group.badgeIcon ? <DynamicIcon name={group.badgeIcon} className="w-3.5 h-3.5" /> : null}
-                          {group.designation}
-                        </p>
+                        <Card.Title className="truncate">
+                          {member.name}
+                        </Card.Title>
+                        <Card.Description className="inline-flex items-center gap-1.5">
+                          {group.badgeIcon ? (
+                            <DynamicIcon
+                              aria-hidden="true"
+                              name={group.badgeIcon}
+                              className="w-3.5 h-3.5 shrink-0"
+                            />
+                          ) : null}
+                          <span className="truncate">{group.designation}</span>
+                        </Card.Description>
                       </div>
-                    </div>
+                    </Card.Header>
 
-                    {member.bio ? (
-                      <p className="text-sm text-default-600 line-clamp-4">
-                        {member.bio}
-                      </p>
+                    {member.bio || member.skills.length > 0 ? (
+                      <Card.Content className="space-y-3">
+                        {member.bio ? (
+                          <p className="text-sm text-default-600 line-clamp-4">
+                            {member.bio}
+                          </p>
+                        ) : null}
+
+                        {member.skills.length > 0 ? (
+                          <ul
+                            aria-label={`${member.name}'s skills`}
+                            className="flex flex-wrap gap-1.5"
+                          >
+                            {member.skills.slice(0, 5).map((skill) => (
+                              <li key={skill}>
+                                <Chip size="sm" variant="soft">
+                                  {skill}
+                                </Chip>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </Card.Content>
                     ) : null}
 
-                    {member.skills.length > 0 ? (
-                      <ul className="flex flex-wrap gap-1.5">
-                        {member.skills.slice(0, 5).map((skill) => (
-                          <li key={skill}>
-                            <Chip className="text-xs" size="sm">
-                              {skill}
-                            </Chip>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-
-                    {socialLinks(member).length > 0 ? (
-                      <div className="flex gap-2 pt-1">
-                        {socialLinks(member).map(({ href, label, Icon }) => (
+                    {links.length > 0 ? (
+                      <Card.Footer className="mt-auto gap-2 pt-4">
+                        {links.map(({ href, label, Icon }) => (
                           <a
                             key={label}
                             aria-label={`${member.name} on ${label} (opens in new tab)`}
@@ -164,12 +177,12 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
                             <Icon aria-hidden="true" className="w-4 h-4" />
                           </a>
                         ))}
-                      </div>
+                      </Card.Footer>
                     ) : null}
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}
