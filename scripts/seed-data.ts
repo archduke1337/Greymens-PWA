@@ -84,8 +84,8 @@ const DEPARTMENTS = [
   { name: "Editorial Board", slug: "editorial", description: "Newsletter and blog editorial", icon: "PenTool", color: "#14b8a6", category: "content", displayOrder: 7 },
   { name: "Design", slug: "design", description: "UI/UX design and branding", icon: "Palette", color: "#f43f5e", category: "content", displayOrder: 8 },
   // Operations
-  { name: "Treasury", slug: "treasury", description: "Financial operations and budgeting", icon: "💰", color: "#eab308", category: "operations", displayOrder: 9 },
-  { name: "Events & Logistics", slug: "events-logistics", description: "Event planning and logistics", icon: "🎪", color: "#06b6d4", category: "operations", displayOrder: 10 },
+  { name: "Treasury", slug: "treasury", description: "Financial operations and budgeting", icon: "Wallet", color: "#eab308", category: "operations", displayOrder: 9 },
+  { name: "Events & Logistics", slug: "events-logistics", description: "Event planning and logistics", icon: "Calendar", color: "#06b6d4", category: "operations", displayOrder: 10 },
 ];
 
 // ============================================================
@@ -97,7 +97,7 @@ const EVENT_TYPES = [
     name: "workshop",
     displayName: "Workshop",
     description: "Hands-on learning sessions with tools, prerequisites, and practical exercises.",
-    icon: "🔧",
+    icon: "Wrench",
     displayOrder: 1,
     fields: JSON.stringify([
       { name: "prerequisites", type: "array", label: "Prerequisites", required: false, placeholder: "What attendees should know" },
@@ -117,7 +117,7 @@ const EVENT_TYPES = [
     name: "hackathon",
     displayName: "Hackathon",
     description: "Multi-hour coding competitions with teams, tracks, judging, and submissions.",
-    icon: "💻",
+    icon: "Laptop",
     displayOrder: 2,
     fields: JSON.stringify([
       { name: "teamSizeMin", type: "number", label: "Min Team Size", required: true },
