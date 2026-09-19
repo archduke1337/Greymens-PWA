@@ -5,6 +5,7 @@ import { ID } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
+import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { isHttpUrl } from "@/lib/validation";
@@ -346,6 +347,40 @@ export async function PATCH(request: NextRequest) {
       eventId,
       data,
     );
+
+    // Blog-style review loop, closed: the organizer learns the decision even
+    // if they never open the console — in-app row plus automatic mail via
+    // the central dispatch. A missing owner (legacy rows) skips silently.
+    const ownerId = String(event.ownerId ?? "");
+    const eventTitle = String(event.title ?? "your event");
+
+    if (ownerId) {
+      const decision =
+        action === "approve"
+          ? {
+              title: "Event approved",
+              body: `"${eventTitle}" was approved and is queued for publishing.`,
+            }
+          : action === "publish"
+            ? {
+                title: "Event published",
+                body: `"${eventTitle}" is now publicly visible and open for registration.`,
+              }
+            : {
+                title: "Event not approved",
+                body: `"${eventTitle}" was not approved. Reason: ${
+                  typeof body.reason === "string" && body.reason.trim()
+                    ? body.reason.trim()
+                    : "no reason given"
+                }`,
+              };
+
+      await dispatchNotification({
+        userId: ownerId,
+        type: "event_update",
+        ...decision,
+      }).catch(() => null);
+    }
 
     await recordAudit({
       request,

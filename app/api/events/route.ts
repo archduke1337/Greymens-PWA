@@ -7,6 +7,7 @@ import { isAdminUser, requireAuthenticatedUser } from "@/lib/server-auth";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail, isConflict } from "@/lib/api";
+import { isHttpUrl } from "@/lib/validation";
 import { logError } from "@/lib/logger";
 
 const AUDIENCES = new Set(["public", "member_only", "exclusive"]);
@@ -37,7 +38,9 @@ const EDITABLE_EVENT_FIELDS = [
   "location",
   "capacity",
   "price",
+  "discountPrice",
   "organizerName",
+  "organizerAvatar",
   "tags",
   "isFeatured",
   "isPremium",
@@ -70,6 +73,27 @@ export async function GET(request: NextRequest) {
       }
 
       return ok({ event });
+    }
+
+    // A proposer's own drafts live nowhere public: without this scope an
+    // author whose event is still in review cannot see it at all — the
+    // console list needs events.manage, which proposers don't hold. Mirrors
+    // the gallery's scope=mine and the blog author visibility.
+    if (request.nextUrl.searchParams.get("scope")?.trim() === "mine") {
+      const authenticated = await requireAuthenticatedUser(request);
+
+      if (!authenticated.user) return authenticated.response;
+      const mine = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.EVENTS,
+        [
+          Query.equal("ownerId", [authenticated.user.$id]),
+          Query.orderDesc("$createdAt"),
+          Query.limit(100),
+        ],
+      );
+
+      return ok({ events: mine.documents });
     }
 
     const response = await databases.listDocuments(
@@ -112,6 +136,32 @@ function validateEvent(body: Record<string, unknown>) {
     Number(body.price) < 0
   )
     return "Invalid capacity or price";
+  // Discount and avatar were silently dropped here while the admin path kept
+  // them — same form, divergent persistence. Validate to the same rules so
+  // both doors store the same event.
+  if (
+    body.discountPrice !== undefined &&
+    body.discountPrice !== null &&
+    (!Number.isInteger(body.discountPrice) ||
+      Number(body.discountPrice) < 0 ||
+      (Number(body.price) > 0 &&
+        Number(body.discountPrice) >= Number(body.price)))
+  )
+    return "Invalid discount price";
+  if (
+    body.organizerAvatar !== undefined &&
+    body.organizerAvatar !== null &&
+    body.organizerAvatar !== "" &&
+    !isHttpUrl(String(body.organizerAvatar))
+  )
+    return "Invalid organizer avatar URL";
+  if (
+    body.image !== undefined &&
+    body.image !== null &&
+    body.image !== "" &&
+    !isHttpUrl(String(body.image))
+  )
+    return "Invalid image URL";
   if (
     !Array.isArray(body.tags) ||
     !body.tags.every((tag) => typeof tag === "string" && tag.length <= 100)
@@ -229,11 +279,16 @@ export async function PATCH(request: NextRequest) {
     if (!admin && current.ownerId !== authenticated.user.$id) {
       return fail("FORBIDDEN", "You do not own this event", 403);
     }
+    // Blog parity: an owner revising reviewed content sends it back through
+    // review — otherwise "edit" silently rewrites approved or live events.
+    // An administrator polishing copy keeps the status untouched.
+    const resubmitted =
+      !admin && !["draft", "review"].includes(String(current.status ?? ""));
     const event = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.EVENTS,
       eventId,
-      data,
+      resubmitted ? { ...data, status: "review" } : data,
     );
 
     await recordAudit({
@@ -242,10 +297,10 @@ export async function PATCH(request: NextRequest) {
       action: "event.update",
       entityType: "event",
       entityId: eventId,
-      details: { fields: Object.keys(data) },
+      details: { fields: Object.keys(data), resubmitted },
     });
 
-    return ok({ event });
+    return ok({ event, resubmitted });
   } catch (error) {
     logError("Event update error:", error);
 

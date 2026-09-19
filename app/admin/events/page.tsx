@@ -493,7 +493,7 @@ export default function AdminEventsPage() {
           <Button
             className="w-full sm:w-auto bg-primary"
             size="sm"
-            onPress={open}
+            onPress={() => router.push("/admin/events/create")}
           >
             <PlusIcon className="w-4 h-4" />
             <span className="ml-2">Add Event</span>
