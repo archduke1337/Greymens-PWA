@@ -28,14 +28,22 @@ const MAX_BODY_LENGTH = 5000;
 const MAX_JSON_LENGTH = 5000;
 
 // Closed notification vocabulary (see audit: free-string types let a sender
-// forge system-looking notices). membership_approved / membership_rejected are
-// written only by the membership flow itself — accepting them here would let
-// any console sender emit approval letters unbacked by a membership row,
-// indistinguishable from the real ones.
-const SYSTEM_TYPES = new Set(["membership_approved", "membership_rejected"]);
+// forge system-looking notices). SYSTEM_TYPES are written only by the flow
+// that owns them — accepting them here would let any console sender emit an
+// approval letter (membership) or a review verdict (content queues) unbacked
+// by a real decision, indistinguishable from the genuine notice.
+const SYSTEM_TYPES = new Set([
+  "membership_approved",
+  "membership_rejected",
+  "submission_update",
+]);
 const NOTIFICATION_TYPES = new Set([
   "membership_approved",
   "membership_rejected",
+  // Review verdicts for content submissions (projects, gallery, resources,
+  // sponsors, blogs). In the vocabulary so the type is documented, absent from
+  // the compose menu because SYSTEM_TYPES blocks senders from forging it.
+  "submission_update",
   "promotion",
   "designation",
   "admin_announcement",

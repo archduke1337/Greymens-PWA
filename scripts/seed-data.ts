@@ -9,7 +9,10 @@
 import { Client, TablesDB } from "node-appwrite";
 import dotenv from "dotenv";
 import path from "path";
-import { OFFICE_CAPABILITIES } from "../lib/capabilities";
+import {
+  OFFICE_CAPABILITIES,
+  REVIEWER_ROLE_TEMPLATES,
+} from "../lib/capabilities";
 import { GOVERNANCE_OFFICES } from "../lib/governance";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
@@ -358,6 +361,26 @@ async function seedRoleTemplates() {
       isActive: true,
     };
     await upsertRow("role_templates", docId, payload, office.title);
+  }
+
+  // Plain reviewer roles (no officeId): the approval half of a queue without
+  // its management half, so a reviewer is one pick in Access & Powers instead
+  // of a hand-assembled single-capability template. Same idempotent upsert —
+  // deterministic ids, capabilities reconciled on rerun.
+  console.log("\n=== Seeding Role Templates (reviewers) ===");
+  for (const reviewer of REVIEWER_ROLE_TEMPLATES) {
+    await upsertRow(
+      "role_templates",
+      reviewer.id,
+      {
+        name: reviewer.name,
+        slug: reviewer.slug,
+        description: reviewer.description,
+        capabilities: reviewer.capabilities,
+        isActive: true,
+      },
+      reviewer.name,
+    );
   }
 }
 

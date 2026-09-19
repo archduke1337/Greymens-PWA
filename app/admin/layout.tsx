@@ -24,6 +24,7 @@ import { Button, Header, Label, ListBox, Spinner } from "@heroui/react";
 
 import { usePermissions } from "@/context/PermissionContext";
 import { useAuth } from "@/context/AuthContext";
+import { REVIEW_QUEUES } from "@/lib/capabilities";
 
 /**
  * Every admin area that exists as a route, gated by capability (presentation only).
@@ -219,6 +220,8 @@ export default function AdminLayout({
   const [admitted, setAdmitted] = useState<boolean | null>(null);
   const [bootstrapOnly, setBootstrapOnly] = useState(false);
   const [verifyFailed, setVerifyFailed] = useState(false);
+  // Badge per review queue for the sidebar. Keyed by REVIEW_QUEUES key.
+  const [queueCounts, setQueueCounts] = useState<Record<string, number>>({});
   // The bootstrap admin-check fires at most once per sign-in: without the
   // guard, every permission refresh would re-fire it and bounce the shell.
   const adminCheckDoneRef = useRef<string | null>(null);
@@ -305,6 +308,26 @@ export default function AdminLayout({
     admitted,
   ]);
 
+  // Queue sizes for the sidebar badges, refetched on every console route so
+  // the number reflects a decision just made. Failures stay silent: a missing
+  // badge is not worth an error banner over the whole console.
+  useEffect(() => {
+    if (admitted !== true || permLoading) return;
+    const controller = new AbortController();
+
+    fetch("/api/admin/queues", {
+      credentials: "include",
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { queues?: Record<string, number> } | null) => {
+        if (payload?.queues) setQueueCounts(payload.queues);
+      })
+      .catch(() => null);
+
+    return () => controller.abort();
+  }, [admitted, permLoading, pathname]);
+
   if (loading || permLoading || (admitted === null && !verifyFailed)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -355,6 +378,7 @@ export default function AdminLayout({
   const visibleSections = ADMIN_SECTIONS.filter((s) =>
     sectionMatches(hasCapability, s.cap),
   );
+  const queueByHref = new Map(REVIEW_QUEUES.map((q) => [q.href, q.key]));
   const byHref = new Map(visibleSections.map((s) => [s.href, s]));
   const visibleGroups = SECTION_GROUPS.map((group) => ({
     ...group,
@@ -391,6 +415,8 @@ export default function AdminLayout({
               </Header>
               {group.sections.map((section) => {
                 const active = isActiveSection(pathname, section.href);
+                const queueKey = queueByHref.get(section.href);
+                const waiting = queueKey ? (queueCounts[queueKey] ?? 0) : 0;
 
                 return (
                   <ListBox.Item
@@ -401,6 +427,14 @@ export default function AdminLayout({
                   >
                     <section.Icon aria-hidden className="size-4 shrink-0" />
                     <Label>{section.label}</Label>
+                    {waiting > 0 && (
+                      <span
+                        aria-label={`${waiting} awaiting review`}
+                        className="ml-auto rounded-full bg-accent/20 px-1.5 text-[11px] font-semibold tabular-nums text-accent"
+                      >
+                        {waiting > 99 ? "99+" : waiting}
+                      </span>
+                    )}
                   </ListBox.Item>
                 );
               })}

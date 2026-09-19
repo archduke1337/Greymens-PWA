@@ -255,7 +255,7 @@ export async function PATCH(request: NextRequest) {
       if (ownerId) {
         await dispatchNotification({
           userId: ownerId,
-          type: "general",
+          type: "submission_update",
           title:
             action === "approve"
               ? "Project proposal approved"

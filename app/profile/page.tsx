@@ -510,15 +510,29 @@ export default function ProfilePage() {
             {profile?.pronouns && profile.pronouns !== "prefer_to_say" && (
               <p className="text-sm text-muted">{profile.pronouns}</p>
             )}
+            {/* Designations outrank the generic membership tier: a member who
+                holds one is introduced by it, not by "Member". The status chip
+                is the fallback for everyone who holds none. */}
             <div className="flex flex-wrap gap-2 justify-center mt-2">
-              <Chip color={currentStatus.color} size="sm" variant="primary">
-                {currentStatus.label}
-              </Chip>
-              {userDesignationsResolved.map((d) => (
-                <Chip key={d.$id} size="sm" variant="secondary">
-                  {d.name}
+              {userDesignationsResolved.length > 0 ? (
+                userDesignationsResolved.map((d) => (
+                  <Chip key={d.$id} size="sm" variant="secondary">
+                    {d.badgeIcon && <span aria-hidden>{d.badgeIcon}</span>}
+                    {d.name}
+                    {d.badgeColor && (
+                      <span
+                        aria-hidden
+                        className="ml-1 inline-block size-2 rounded-full"
+                        style={{ backgroundColor: d.badgeColor }}
+                      />
+                    )}
+                  </Chip>
+                ))
+              ) : (
+                <Chip color={currentStatus.color} size="sm" variant="primary">
+                  {currentStatus.label}
                 </Chip>
-              ))}
+              )}
             </div>
           </div>
 

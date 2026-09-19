@@ -162,7 +162,11 @@ export async function PATCH(request: NextRequest) {
         type: "event_update",
         title: "Registration decision",
         body: `Your registration for ${eventTitle ? String(eventTitle.title ?? "the event") : "the event"} was not approved.`,
-      }).catch(() => null);
+      }).catch((error) => {
+        // The rejection stands; only the notice failed. Log it rather than
+        // letting a silent catch imply the applicant was told.
+        logError("Registration rejection notification failed:", error);
+      });
       await recordAudit({
         request,
         actor: authenticated.user,
@@ -214,6 +218,25 @@ export async function PATCH(request: NextRequest) {
       },
     );
     const ticket = await issueTicket(databases, updated);
+    // Approval used to be the only decision that reached nobody: a rejected
+    // registration got a notice, an approved one got a ticket row the member
+    // had no reason to know about. Tell them, with the ticket named, so
+    // "am I in?" stops depending on logging in to look.
+    const approvedEventTitle = event
+      ? String(event.title ?? "the event")
+      : "the event";
+    const registrantId = String(updated.userId ?? "");
+
+    if (registrantId) {
+      await dispatchNotification({
+        userId: registrantId,
+        type: "event_update",
+        title: "Registration approved",
+        body: `Your registration for ${approvedEventTitle} was approved. Your ticket is ready in your dashboard.`,
+      }).catch((error) => {
+        logError("Registration approval notification failed:", error);
+      });
+    }
 
     // Keep the stored counter in step with manual approvals so full/waitlist
     // displays stop understating.

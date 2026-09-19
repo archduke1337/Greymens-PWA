@@ -11,6 +11,7 @@ import {
   PUBLIC_FILE_PERMISSIONS,
 } from "@/lib/storage";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
+import { dispatchNotification } from "@/lib/notify";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -89,6 +90,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
+    const reason =
+      typeof body.reason === "string" ? body.reason.trim().slice(0, 2000) : "";
     // Approving clears a previous rejection and rejecting clears a previous
     // approval, so a re-reviewed image never carries both verdicts at once.
     const data =
@@ -101,7 +104,7 @@ export async function PATCH(request: NextRequest) {
           }
         : {
             status: "rejected",
-            rejectionReason: String(body.reason).slice(0, 2000),
+            rejectionReason: reason,
             approvedBy: null,
             approvedAt: null,
           };
@@ -134,6 +137,31 @@ export async function PATCH(request: NextRequest) {
         .catch((error) => {
           logError("Gallery file permission update failed:", error);
         });
+    }
+
+    // Close the loop for the uploader: until now the verdict reached the row
+    // and the file, never the person — no in-app row, no mail, so a photo
+    // silently appeared or not with no explanation. Same dispatch as every
+    // other review queue.
+    const uploaderId = String(image.uploadedBy ?? "");
+    const imageTitle = String(image.title ?? "your image");
+
+    if (uploaderId) {
+      await dispatchNotification({
+        userId: uploaderId,
+        type: "submission_update",
+        title: action === "approve" ? "Photo approved" : "Photo needs changes",
+        body:
+          action === "approve"
+            ? `"${imageTitle}" was approved and is now in the gallery.`
+            : `"${imageTitle}" was not approved yet. Reviewer note: ${
+                reason || "no reason given"
+              }`,
+      }).catch((error) => {
+        // The decision is saved; only the notice failed. Log it rather than
+        // letting a silent catch imply the uploader was told.
+        logError("Gallery decision notification failed:", error);
+      });
     }
 
     await recordAudit({

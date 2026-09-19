@@ -6,6 +6,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { recordAudit } from "@/lib/server-audit";
+import { dispatchNotification } from "@/lib/notify";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { isHttpUrl, isRecord } from "@/lib/validation";
 import { blogCategories, calculateReadTime } from "@/lib/blog-format";
@@ -467,6 +468,32 @@ export async function PATCH(request: NextRequest) {
       blogId,
       updates,
     );
+
+    // Close the loop for the author: the verdict reached the row, never the
+    // person. Approve is the moment a post becomes publicly readable
+    // (getPublishedBlogs reads approved + published), so the notice says live,
+    // not "approved, awaiting something". Publish is bookkeeping on top of an
+    // already-told outcome and would only mail the same news twice.
+    const authorId = String(blog.authorId ?? "");
+    const blogTitle = String(blog.title ?? "your post");
+
+    if (authorId && (action === "approve" || action === "reject")) {
+      await dispatchNotification({
+        userId: authorId,
+        type: "submission_update",
+        title: action === "approve" ? "Post approved" : "Post needs changes",
+        body:
+          action === "approve"
+            ? `"${blogTitle}" was approved and is now live on the blog.`
+            : `"${blogTitle}" was not approved yet. Reviewer note: ${
+                reason || "no reason given"
+              }`,
+      }).catch((error) => {
+        // The decision is saved; only the notice failed. Log it rather than
+        // letting a silent catch imply the author was told.
+        logError("Blog decision notification failed:", error);
+      });
+    }
 
     await recordAudit({
       request,

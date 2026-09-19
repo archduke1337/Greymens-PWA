@@ -132,7 +132,7 @@ export async function PATCH(request: NextRequest) {
     if (uploaderId) {
       await dispatchNotification({
         userId: uploaderId,
-        type: "general",
+        type: "submission_update",
         title:
           action === "approve"
             ? "Resource published"

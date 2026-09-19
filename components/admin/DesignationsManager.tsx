@@ -654,7 +654,11 @@ export default function DesignationsManager({
                     </p>
                   </ModalHeader>
 
-                  <ModalBody className="py-6 space-y-5">
+                  {/* Scrolls instead of growing past the viewport: the form
+                      gained fields (holders, department, capabilities) over
+                      time and began running off short screens with the submit
+                      button unreachable. */}
+                  <ModalBody className="max-h-[70vh] space-y-5 overflow-y-auto py-6">
                     <TextField
                       isRequired
                       isDisabled={submitting}
@@ -703,7 +707,7 @@ export default function DesignationsManager({
                       <FieldError />
                     </TextField>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <Select
                           fullWidth
@@ -796,7 +800,7 @@ export default function DesignationsManager({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <TextField
                         isDisabled={submitting}
                         name="badgeIcon"
@@ -1023,7 +1027,7 @@ export default function DesignationsManager({
                     </p>
                   </ModalHeader>
 
-                  <ModalBody className="py-6 space-y-4">
+                  <ModalBody className="max-h-[70vh] space-y-4 overflow-y-auto py-6">
                     {/* Search, or a pasted ID when the directory is refused */}
                     {directoryUnavailable ? (
                       <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">

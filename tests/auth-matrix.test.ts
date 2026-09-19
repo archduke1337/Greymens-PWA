@@ -3,7 +3,13 @@ import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { CAPABILITIES, OFFICE_CAPABILITIES, isCapability } from "@/lib/capabilities";
+import {
+  CAPABILITIES,
+  OFFICE_CAPABILITIES,
+  REVIEW_QUEUES,
+  REVIEWER_ROLE_TEMPLATES,
+  isCapability,
+} from "@/lib/capabilities";
 import { POWER_CAPABILITIES } from "@/lib/access-control";
 import { GOVERNED_PAGES, pagesForCapabilities } from "@/lib/governance";
 
@@ -253,6 +259,9 @@ describe("grants", () => {
     .map(([office, caps]) => [office, caps] as const);
   const powerGrants = Object.entries(POWER_CAPABILITIES)
     .map(([power, caps]) => [power, caps] as const);
+  const reviewerGrants = REVIEWER_ROLE_TEMPLATES.map(
+    (template) => [template.name, template.capabilities] as const,
+  );
 
   it("offices grant only real capabilities, without repeats", () => {
     for (const [office, caps] of officeGrants) {
@@ -272,10 +281,79 @@ describe("grants", () => {
     }
   });
 
+  it("reviewer roles grant only real capabilities, without repeats", () => {
+    for (const [role, caps] of reviewerGrants) {
+      expect(new Set(caps).size, `${role} lists a capability twice`).toBe(
+        caps.length,
+      );
+      for (const capability of caps) {
+        expect(isCapability(capability), `${role} -> ${capability}`).toBe(true);
+      }
+    }
+  });
+
+  it("reviewer roles decide without managing", () => {
+    for (const template of REVIEWER_ROLE_TEMPLATES) {
+      // The point of the seed: a reviewer is scoped to the verdict. A
+      // `*.manage` capability slipping in would hand out the portfolio the
+      // split exists to keep separate.
+      const decides = template.capabilities.some((capability) =>
+        capability.endsWith(".approve"),
+      );
+
+      expect(decides, `${template.name} decides nothing`).toBe(true);
+      for (const capability of template.capabilities) {
+        expect(
+          capability.endsWith(".manage"),
+          `${template.name} carries the management capability ${capability}`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("seeds reviewer roles with unique, stable identities", () => {
+    const ids = REVIEWER_ROLE_TEMPLATES.map((template) => template.id);
+    const slugs = REVIEWER_ROLE_TEMPLATES.map((template) => template.slug);
+
+    // The seeder upserts by id, so a duplicate would silently overwrite one
+    // role with another and the console would offer only one copy.
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    for (const template of REVIEWER_ROLE_TEMPLATES) {
+      expect(template.id).toMatch(/^reviewer-[a-z-]+$/);
+      expect(template.description.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("hangs every sidebar queue badge off a real, enforced capability", () => {
+    const keys = REVIEW_QUEUES.map((queue) => queue.key);
+    const hrefs = REVIEW_QUEUES.map((queue) => queue.href);
+
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    for (const queue of REVIEW_QUEUES) {
+      expect(queue.href.startsWith("/admin/")).toBe(true);
+      expect(queue.capabilities.length).toBeGreaterThan(0);
+      for (const capability of queue.capabilities) {
+        expect(isCapability(capability), `${queue.key} -> ${capability}`).toBe(
+          true,
+        );
+        expect(
+          capability in ENFORCEMENT || capability in INDIRECT,
+          `${queue.key} gates on ${capability}, which no route checks`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("never hands out a capability that nothing enforces", () => {
     const inert: string[] = [];
 
-    for (const [grant, caps] of [...officeGrants, ...powerGrants]) {
+    for (const [grant, caps] of [
+      ...officeGrants,
+      ...powerGrants,
+      ...reviewerGrants,
+    ]) {
       for (const capability of caps) {
         const enforced = capability in ENFORCEMENT || capability in INDIRECT;
         const readByAPayload = capability in VIEW_ONLY;

@@ -236,7 +236,7 @@ export async function PATCH(request: NextRequest) {
       if (submitter) {
         await dispatchNotification({
           userId: submitter,
-          type: "general",
+          type: "submission_update",
           title:
             action === "approve"
               ? "Sponsor proposal approved"
