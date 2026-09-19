@@ -74,15 +74,15 @@ async function upsertRow(
 
 const DEPARTMENTS = [
   // Technical
-  { name: "AI/ML", slug: "ai-ml", description: "Artificial Intelligence and Machine Learning", icon: "🤖", color: "#6366f1", category: "technical", displayOrder: 1 },
-  { name: "Cybersecurity", slug: "cybersecurity", description: "Cybersecurity and ethical hacking", icon: "🛡️", color: "#ef4444", category: "technical", displayOrder: 2 },
-  { name: "DevOps", slug: "devops", description: "DevOps and cloud infrastructure", icon: "⚙️", color: "#f97316", category: "technical", displayOrder: 3 },
-  { name: "Web Development", slug: "web-dev", description: "Full-stack web development", icon: "🌐", color: "#22c55e", category: "technical", displayOrder: 4 },
+  { name: "AI/ML", slug: "ai-ml", description: "Artificial Intelligence and Machine Learning", icon: "Bot", color: "#6366f1", category: "technical", displayOrder: 1 },
+  { name: "Cybersecurity", slug: "cybersecurity", description: "Cybersecurity and ethical hacking", icon: "Shield", color: "#ef4444", category: "technical", displayOrder: 2 },
+  { name: "DevOps", slug: "devops", description: "DevOps and cloud infrastructure", icon: "Settings", color: "#f97316", category: "technical", displayOrder: 3 },
+  { name: "Web Development", slug: "web-dev", description: "Full-stack web development", icon: "Globe", color: "#22c55e", category: "technical", displayOrder: 4 },
   // Content & Communication
-  { name: "Social Media", slug: "social-media", description: "Social media management and content", icon: "📱", color: "#ec4899", category: "content", displayOrder: 5 },
-  { name: "PR & Outreach", slug: "pr-outreach", description: "Public relations and outreach", icon: "📢", color: "#8b5cf6", category: "content", displayOrder: 6 },
-  { name: "Editorial Board", slug: "editorial", description: "Newsletter and blog editorial", icon: "✍️", color: "#14b8a6", category: "content", displayOrder: 7 },
-  { name: "Design", slug: "design", description: "UI/UX design and branding", icon: "🎨", color: "#f43f5e", category: "content", displayOrder: 8 },
+  { name: "Social Media", slug: "social-media", description: "Social media management and content", icon: "Smartphone", color: "#ec4899", category: "content", displayOrder: 5 },
+  { name: "PR & Outreach", slug: "pr-outreach", description: "Public relations and outreach", icon: "Megaphone", color: "#8b5cf6", category: "content", displayOrder: 6 },
+  { name: "Editorial Board", slug: "editorial", description: "Newsletter and blog editorial", icon: "PenTool", color: "#14b8a6", category: "content", displayOrder: 7 },
+  { name: "Design", slug: "design", description: "UI/UX design and branding", icon: "Palette", color: "#f43f5e", category: "content", displayOrder: 8 },
   // Operations
   { name: "Treasury", slug: "treasury", description: "Financial operations and budgeting", icon: "💰", color: "#eab308", category: "operations", displayOrder: 9 },
   { name: "Events & Logistics", slug: "events-logistics", description: "Event planning and logistics", icon: "🎪", color: "#06b6d4", category: "operations", displayOrder: 10 },
