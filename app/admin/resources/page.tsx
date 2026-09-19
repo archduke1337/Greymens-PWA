@@ -43,6 +43,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
+import { storage, ID } from "@/lib/appwrite";
 
 const RESOURCE_TYPES = [
   { value: "document", label: "Document", icon: FileText },
@@ -235,28 +236,50 @@ export default function AdminResourcesPage() {
         isActive: editTarget?.$id ? (editTarget.isActive ?? true) : true,
       };
 
+      // Direct browser → Appwrite Storage bypasses Vercel 4.5 MB proxy limit
+      // for 8.3 MB PDFs. Falls back to FormData proxy for small files if
+      // bucket perms haven't been reconciled yet.
+      let directFileId: string | null = null;
+      if (!editTarget?.$id && file) {
+        try {
+          const uploaded = await storage.createFile({
+            bucketId: "resources",
+            fileId: ID.unique(),
+            file,
+          });
+          directFileId = uploaded.$id;
+        } catch (directError) {
+          logError("Direct storage upload failed, falling back to proxy:", directError);
+          // Large files cannot fallback to the Vercel proxy (4.5 MB hard limit) —
+          // surface a actionable error instead of a cryptic 413.
+          if (file.size > 4.5 * 1024 * 1024) {
+            toast.error(
+              "Direct upload failed — bucket permissions need reconciling. Run `node scripts/setup-appwrite.js` on the server and redeploy, then retry.",
+            );
+            setSaving(false);
+            return;
+          }
+        }
+      }
+      const isJsonBody = Boolean(editTarget?.$id || directFileId);
       const response = await fetch("/api/resources", {
         method: editTarget?.$id ? "PATCH" : "POST",
-        // PATCH sends JSON; POST sends FormData, so the browser must set the
-        // multipart boundary itself — a manual Content-Type would corrupt it.
-        headers: editTarget?.$id
-          ? { "Content-Type": "application/json" }
-          : undefined,
+        headers: isJsonBody ? { "Content-Type": "application/json" } : undefined,
         credentials: "include",
         body: editTarget?.$id
           ? JSON.stringify({ resourceId: editTarget.$id, ...data })
-          : (() => {
-              const formData = new FormData();
-
-              Object.entries(data).forEach(([key, value]) => {
-                if (Array.isArray(value)) formData.set(key, value.join(","));
-                else if (value !== undefined && value !== null)
-                  formData.set(key, String(value));
-              });
-              if (file) formData.set("file", file);
-
-              return formData;
-            })(),
+          : directFileId
+            ? JSON.stringify({ ...data, fileId: directFileId })
+            : (() => {
+                const formData = new FormData();
+                Object.entries(data).forEach(([key, value]) => {
+                  if (Array.isArray(value)) formData.set(key, value.join(","));
+                  else if (value !== undefined && value !== null)
+                    formData.set(key, String(value));
+                });
+                if (file) formData.set("file", file);
+                return formData;
+              })(),
       });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
@@ -268,6 +291,7 @@ export default function AdminResourcesPage() {
 
       close();
       setEditTarget(null);
+      setFile(null);
       setForm({
         title: "",
         description: "",

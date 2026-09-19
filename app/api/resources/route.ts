@@ -516,21 +516,51 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const form = await request.formData();
-    const title = text(form.get("title"), 255);
-    const description = text(form.get("description"), 5000);
-    const category =
-      text(form.get("category") ?? form.get("layer"), 50) || "common";
-    const type = text(form.get("type"), 50) || "document";
-    const url = text(form.get("url"), 500);
-    const tags = text(form.get("tags"), 1000)
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .slice(0, 20);
-    const departmentId = text(form.get("departmentId"), 36);
-    const requiredRole = text(form.get("requiredRole"), 50);
-    const file = form.get("file");
+    // Accept both legacy FormData (file proxied via Vercel) and new JSON
+    // direct-upload path (file already in Storage, bypassing 4.5 MB proxy).
+    const contentType = request.headers.get("content-type") || "";
+    let title = "";
+    let description = "";
+    let category = "common";
+    let type = "document";
+    let url = "";
+    let tags: string[] = [];
+    let departmentId = "";
+    let requiredRole = "";
+    let file: unknown = null;
+    let directFileId: string | null = null;
+
+    if (contentType.includes("application/json")) {
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!body) return fail("VALIDATION", "Invalid request body", 400);
+      const getStr = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+      title = getStr(body.title, 255);
+      description = getStr(body.description, 5000);
+      category = getStr(body.category ?? body.layer, 50) || "common";
+      type = getStr(body.type, 50) || "document";
+      url = getStr(body.url, 500);
+      const rawTags = typeof body.tags === "string" ? body.tags : Array.isArray(body.tags) ? (body.tags as string[]).join(",") : "";
+      tags = rawTags.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20);
+      departmentId = getStr(body.departmentId, 36);
+      requiredRole = getStr(body.requiredRole, 50);
+      directFileId = typeof body.fileId === "string" ? body.fileId.trim().slice(0, 36) : null;
+      file = null;
+    } else {
+      const form = await request.formData();
+      title = text(form.get("title"), 255);
+      description = text(form.get("description"), 5000);
+      category = text(form.get("category") ?? form.get("layer"), 50) || "common";
+      type = text(form.get("type"), 50) || "document";
+      url = text(form.get("url"), 500);
+      tags = text(form.get("tags"), 1000)
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .slice(0, 20);
+      departmentId = text(form.get("departmentId"), 36);
+      requiredRole = text(form.get("requiredRole"), 50);
+      file = form.get("file");
+    }
 
     if (!title) return fail("VALIDATION", "Title is required", 400);
     if (
@@ -560,8 +590,8 @@ export async function POST(request: NextRequest) {
     if (requiredRole && !MEMBER_STATUSES.has(requiredRole)) {
       return fail("VALIDATION", "Invalid required role", 400);
     }
-    if (!url && !(file instanceof File))
-      return fail("VALIDATION", "A URL or file is required", 400);
+    const hasFile = Boolean(url) || file instanceof File || Boolean(directFileId);
+    if (!hasFile) return fail("VALIDATION", "A URL or file is required", 400);
     if (url) {
       try {
         const parsed = new URL(url);
@@ -612,6 +642,34 @@ export async function POST(request: NextRequest) {
 
       fileId = uploaded.$id;
       fileUrl = getStorageFileViewUrl(BUCKET_ID, uploaded.$id);
+    } else if (directFileId) {
+      // Direct browser → Storage path (bypasses Vercel 4.5 MB limit for 8.3 MB PDFs).
+      // The file already exists; validate it and reconcile its per-file permissions
+      // to the intended audience (owner-only for pending, members for approved).
+      let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string } | null = null;
+      try {
+        existingFile = await storage.getFile(BUCKET_ID, directFileId);
+      } catch {
+        return fail("VALIDATION", "Uploaded file not found — please re-attach", 400);
+      }
+      const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
+      const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
+      if (size > MAX_FILE_SIZE || (mime && !ALLOWED_TYPES.has(mime))) {
+        try {
+          await storage.deleteFile(BUCKET_ID, directFileId);
+        } catch {}
+        return fail("VALIDATION", "Unsupported file type or file exceeds 50MB", 400);
+      }
+      const targetPerms = canModerate
+        ? MEMBER_FILE_PERMISSIONS
+        : ownerFilePermissions(authenticated.user.$id);
+      try {
+        await storage.updateFile(BUCKET_ID, directFileId, undefined, targetPerms);
+      } catch (permError) {
+        logError("Failed to reconcile direct-upload file permissions:", permError);
+      }
+      fileId = directFileId;
+      fileUrl = getStorageFileViewUrl(BUCKET_ID, directFileId);
     }
     const now = new Date().toISOString();
     // OAuth profiles sometimes carry no display name — the table requires

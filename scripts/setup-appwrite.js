@@ -347,13 +347,22 @@ async function createTable(id, name, columns, indexes = []) {
 
 async function createBucket(id, name, maxSize, extensions, visibility = "public") {
   process.stdout.write(`  ${name}...`);
+  const bucketPermissions =
+    id === "resources"
+      ? // Resources need direct browser upload to bypass Vercel 4.5 MB proxy limit for 8+ MB PDFs.
+        // Keep fileSecurity:true so per-file perms still gate reads (owner vs members).
+        [
+          Permission.read(Role.users()),
+          Permission.create(Role.users()),
+          Permission.update(Role.users()),
+          Permission.delete(Role.users()),
+        ]
+      : [visibility === "members" ? Permission.read(Role.users()) : Permission.read(Role.any())];
   try {
     await storage.createBucket({
       bucketId: id,
       name,
-      // File mutations are intentionally API-owned; browser uploads must move
-      // through authenticated upload endpoints with validation.
-      permissions: [visibility === "members" ? Permission.read(Role.users()) : Permission.read(Role.any())],
+      permissions: bucketPermissions,
       fileSecurity: true,
       enabled: true,
       maximumFileSize: maxSize,
@@ -365,8 +374,27 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     console.log(" \x1b[32mOK\x1b[0m");
     ok++;
   } catch (e) {
-    if (e.code === 409) { console.log(" \x1b[33mEXISTS\x1b[0m"); ok++; }
-    else { console.log(` \x1b[31mFAIL: ${e.message}\x1b[0m`); fail++; }
+    if (e.code === 409) {
+      // Reconcile permissions for existing bucket (e.g. add create for resources direct upload)
+      try {
+        await storage.updateBucket({
+          bucketId: id,
+          name,
+          permissions: bucketPermissions,
+          fileSecurity: true,
+          enabled: true,
+          maximumFileSize: maxSize,
+          allowedFileExtensions: extensions,
+          compression: "gzip",
+          encryption: true,
+          antivirus: true,
+        });
+        console.log(" \x1b[36mUPDATED (permissions)\x1b[0m");
+      } catch {
+        console.log(" \x1b[33mEXISTS\x1b[0m");
+      }
+      ok++;
+    } else { console.log(` \x1b[31mFAIL: ${e.message}\x1b[0m`); fail++; }
   }
 }
 
