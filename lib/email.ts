@@ -1,17 +1,19 @@
 /**
- * Outbound email, server-only.
+ * Outbound email via the official Resend Node.js SDK, server-only.
  *
- * Transport is Resend over plain HTTPS (`fetch`, no SDK dependency):
- * `RESEND_API_KEY` sends, `EMAIL_FROM` is the sender identity (must be a
- * verified sender on the Resend account). Both unset means the channel is
- * off — callers check `isEmailConfigured()` and report "email skipped (not
- * configured)" instead of failing the in-app send. There is deliberately no
- * fallback transport: silently downgrading to an unconfigured SMTP relay
- * would blackhole mail, which is worse than an honest skip.
- *
- * This module imports nothing browser- or Appwrite-bound so it stays unit
- * testable; the only I/O is the Resend call in `sendBulkEmail`.
+ * Setup (human, once): create an API key and verify the sending domain at
+ * https://resend.com/domains, then set `RESEND_API_KEY` and `EMAIL_FROM`
+ * (a sender on the verified domain) in the deployment environment. Both
+ * unset means the channel is off — callers check `isEmailConfigured()` and
+ * report "email skipped (not configured)" instead of failing the in-app
+ * send. There is deliberately no fallback transport: silently downgrading
+ * to an unconfigured relay would blackhole mail, which is worse than an
+ * honest skip.
  */
+
+import { randomUUID } from "node:crypto";
+
+import { Resend } from "resend";
 
 export interface EmailRecipient {
   email: string;
@@ -23,6 +25,8 @@ export interface EmailReport {
   sent: number;
   failed: number;
   reason?: string;
+  /** First provider error message, when any batch failed. */
+  detail?: string;
 }
 
 export function isEmailConfigured(): boolean {
@@ -56,8 +60,12 @@ function renderHtml(title: string, body: string): string {
 const RESEND_BATCH_LIMIT = 50;
 
 /**
- * Send one subject/body to many recipients in 50-address Resend batches.
- * Never throws for transport failures — they are counted in `failed` so a
+ * Send one subject/body to many recipients in 50-address SDK batches.
+ *
+ * Follows the SDK contract: `{ data, error }` is inspected per batch, with
+ * `try/catch` reserved for network-level failures only. A unique
+ * idempotency key per batch makes retried requests safe. Provider
+ * failures are counted in `failed` (first message kept in `detail`) so a
  * dead mail provider degrades the report, not the in-app fan-out around it.
  */
 export async function sendBulkEmail(
@@ -79,29 +87,42 @@ export async function sendBulkEmail(
     return { attempted: false, sent: 0, failed: 0, reason: "no_recipients" };
   }
 
+  const resend = new Resend(apiKey);
   const html = renderHtml(subject, body);
   let sent = 0;
   let failed = 0;
+  let detail: string | undefined;
 
   for (let i = 0; i < to.length; i += RESEND_BATCH_LIMIT) {
     const batch = to.slice(i, i + RESEND_BATCH_LIMIT);
 
     try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+      const { data, error } = await resend.emails.send(
+        {
+          from,
+          to: batch,
+          subject,
+          text: body,
+          html,
         },
-        body: JSON.stringify({ from, to: batch, subject, text: body, html }),
-      });
+        { idempotencyKey: `notification/${randomUUID()}` },
+      );
 
-      if (response.ok) sent += batch.length;
-      else failed += batch.length;
-    } catch {
+      if (error) {
+        failed += batch.length;
+        detail ??= `${error.name}: ${error.message}`;
+      } else if (data) {
+        sent += batch.length;
+      } else {
+        failed += batch.length;
+        detail ??= "Resend returned neither data nor error";
+      }
+    } catch (error) {
       failed += batch.length;
+      detail ??=
+        error instanceof Error ? `network: ${error.message}` : "network error";
     }
   }
 
-  return { attempted: true, sent, failed };
+  return { attempted: true, sent, failed, detail };
 }

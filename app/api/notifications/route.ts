@@ -14,6 +14,7 @@ import {
   isEmailConfigured,
   sendBulkEmail,
   type EmailRecipient,
+  type EmailReport,
 } from "@/lib/email";
 import { recordAudit } from "@/lib/server-audit";
 import { isRecord, readOptionalString, readString } from "@/lib/validation";
@@ -386,12 +387,7 @@ export async function POST(request: NextRequest) {
 
     // Email runs after the in-app rows are safely stored: mail is the
     // best-effort copy, the notification row is the record.
-    let email: {
-      attempted: boolean;
-      sent: number;
-      failed: number;
-      reason?: string;
-    } = {
+    let email: EmailReport = {
       attempted: false,
       sent: 0,
       failed: 0,
@@ -404,6 +400,15 @@ export async function POST(request: NextRequest) {
       );
 
       email = await sendBulkEmail(contacts, title, bodyText);
+
+      // Resend's rejection reason belongs in the server logs — otherwise a
+      // failed batch is a bare counter with no cause attached.
+      if (email.failed > 0) {
+        logError(
+          "Notification email failed:",
+          email.detail ?? "unknown provider error",
+        );
+      }
     }
 
     await recordAudit({
