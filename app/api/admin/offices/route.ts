@@ -173,6 +173,7 @@ export async function PATCH(request: NextRequest) {
       assignmentId?: unknown;
       status?: unknown;
       notes?: unknown;
+      termEnd?: unknown;
     };
     const assignmentId =
       typeof body.assignmentId === "string" ? body.assignmentId.trim() : "";
@@ -181,16 +182,49 @@ export async function PATCH(request: NextRequest) {
     if (!assignmentId || !STATUSES.has(status))
       return fail("VALIDATION", "Invalid assignment update", 400);
     const { databases } = createServerDatabases();
+    const updates: Record<string, unknown> = {
+      status,
+      ...(typeof body.notes === "string"
+        ? { notes: body.notes.trim().slice(0, 2000) }
+        : {}),
+    };
+
+    // Term end is editable so a term can be extended without ending and
+    // recreating the assignment. It must stay a valid date on or after the
+    // recorded start — read the row first, never trust the client's memory
+    // of it.
+    if (
+      body.termEnd !== undefined &&
+      body.termEnd !== null &&
+      body.termEnd !== ""
+    ) {
+      const termEnd =
+        typeof body.termEnd === "string" ? body.termEnd.trim() : "";
+
+      if (!isIsoDate(termEnd))
+        return fail("VALIDATION", "Term end must be a valid date", 400);
+      const existing = await databases
+        .getDocument(DATABASE_ID, COLLECTIONS.OFFICE_ASSIGNMENTS, assignmentId)
+        .catch(() => null);
+      const termStart =
+        existing && typeof existing.termStart === "string"
+          ? existing.termStart
+          : "";
+
+      if (!termStart || termEnd < termStart) {
+        return fail(
+          "VALIDATION",
+          "Term end must be on or after the term start",
+          400,
+        );
+      }
+      updates.termEnd = termEnd;
+    }
     const assignment = await databases.updateDocument(
       DATABASE_ID,
       COLLECTIONS.OFFICE_ASSIGNMENTS,
       assignmentId,
-      {
-        status,
-        ...(typeof body.notes === "string"
-          ? { notes: body.notes.trim().slice(0, 2000) }
-          : {}),
-      },
+      updates,
     );
 
     await recordAudit({
@@ -199,7 +233,7 @@ export async function PATCH(request: NextRequest) {
       action: "office.end",
       entityType: "office_assignment",
       entityId: assignmentId,
-      details: { status },
+      details: { status, fields: Object.keys(updates) },
     });
 
     return ok({ assignment });

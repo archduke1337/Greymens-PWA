@@ -14,8 +14,9 @@ import {
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { ok, fail } from "@/lib/api";
+import { ok, fail, isConflict } from "@/lib/api";
 import { logError } from "@/lib/logger";
+import { GOVERNANCE_OFFICES } from "@/lib/governance";
 
 const MAX_TEXT = 2000;
 
@@ -31,6 +32,9 @@ function validFutureDate(value: string): boolean {
 
   return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
 }
+
+// Charter office ids an office capability template may attach to.
+const OFFICE_IDS = new Set(GOVERNANCE_OFFICES.map((office) => office.id));
 
 /**
  * Read model for the Access console. Each half is gated on the capability that
@@ -205,6 +209,30 @@ export async function POST(request: NextRequest) {
           403,
         );
       }
+      // An office template carries the charter office's capability bundle
+      // (assigned with a term from the Offices tab). officeId must name a
+      // real charter office, and each office gets exactly one template —
+      // duplicates would make officeCapabilities' lookup ambiguous.
+      const officeId = text(body.officeId, 100);
+
+      if (officeId) {
+        if (!OFFICE_IDS.has(officeId)) {
+          return fail("VALIDATION", "Unknown charter office", 400);
+        }
+        const dupe = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.ROLE_TEMPLATES,
+          [Query.equal("officeId", [officeId]), Query.limit(1)],
+        );
+
+        if (dupe.documents.length > 0) {
+          return fail(
+            "CONFLICT",
+            "That office already has a capability template — edit it instead",
+            409,
+          );
+        }
+      }
       const role = await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.ROLE_TEMPLATES,
@@ -217,6 +245,7 @@ export async function POST(request: NextRequest) {
           teamId: text(body.teamId, 100) || undefined,
           teamRole: text(body.teamRole, 100) || undefined,
           label: text(body.label, 100) || undefined,
+          officeId: officeId || undefined,
           isActive: true,
         },
       );
@@ -425,15 +454,70 @@ export async function PATCH(request: NextRequest) {
           403,
         );
       }
-      const role = await databases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.ROLE_TEMPLATES,
-        roleId,
-        {
-          capabilities,
-          isActive: body.isActive !== false,
-        },
-      );
+      // Full template edit: name/slug/description ride along when provided.
+      // Slug keeps its format rule; uniqueness is enforced by the table index
+      // and translated to a 409 below instead of leaking a driver error.
+      const updates: Record<string, unknown> = {
+        capabilities,
+        isActive: body.isActive !== false,
+      };
+
+      if (body.name !== undefined) {
+        const name = text(body.name, 100);
+
+        if (!name) return fail("VALIDATION", "Role name is required", 400);
+        updates.name = name;
+      }
+      if (body.slug !== undefined) {
+        const slug = text(body.slug, 100);
+
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))
+          return fail("VALIDATION", "Invalid role slug", 400);
+        updates.slug = slug;
+      }
+      if (body.description !== undefined) {
+        updates.description =
+          typeof body.description === "string"
+            ? body.description.slice(0, 2000)
+            : null;
+      }
+      // Deactivation retires the template: live assignments resolve through
+      // inactive templates to nothing, so refuse while any are still live
+      // rather than silently stranding holders.
+      if (updates.isActive === false) {
+        const live = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.ROLE_ASSIGNMENTS,
+          [
+            Query.equal("roleId", [roleId]),
+            Query.equal("isActive", [true]),
+            Query.limit(1),
+          ],
+        );
+
+        if (live.documents.length > 0) {
+          return fail(
+            "CONFLICT",
+            "Role still has active assignments — revoke them first",
+            409,
+          );
+        }
+      }
+      let role: Record<string, unknown>;
+
+      try {
+        role = (await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.ROLE_TEMPLATES,
+          roleId,
+          updates,
+        )) as unknown as Record<string, unknown>;
+      } catch (error) {
+        if (isConflict(error)) {
+          return fail("CONFLICT", "Another role already uses that slug", 409);
+        }
+        throw error;
+      }
 
       await recordAudit({
         request,

@@ -54,6 +54,7 @@ export default function OfficesManager({
 }: OfficesManagerProps) {
   const [saving, setSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [termEdits, setTermEdits] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     officeId: GOVERNANCE_OFFICES[0].id,
     userId: "",
@@ -109,14 +110,18 @@ export default function OfficesManager({
     }
   };
 
-  const updateStatus = async (assignmentId: string, status: string) => {
+  const updateAssignment = async (
+    assignmentId: string,
+    status: string,
+    termEnd?: string,
+  ) => {
     setUpdatingId(assignmentId);
     try {
       const response = await fetch("/api/admin/offices", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ assignmentId, status }),
+        body: JSON.stringify({ assignmentId, status, termEnd }),
       });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
@@ -127,6 +132,13 @@ export default function OfficesManager({
       toast.success(
         status === "ended" ? "Assignment ended" : "Assignment updated",
       );
+      setTermEdits((prev) => {
+        const next = { ...prev };
+
+        delete next[assignmentId];
+
+        return next;
+      });
       await onChanged();
     } catch (error) {
       toast.error(
@@ -136,6 +148,9 @@ export default function OfficesManager({
       setUpdatingId(null);
     }
   };
+
+  const updateStatus = async (assignmentId: string, status: string) =>
+    updateAssignment(assignmentId, status);
 
   const memberName = (userId: string) =>
     accountNames[userId] ||
@@ -338,14 +353,46 @@ export default function OfficesManager({
                     {assignment.termEnd ? ` → ${assignment.termEnd}` : ""}
                   </p>
                   {assignment.status === "active" && (
-                    <Button
-                      isPending={updatingId === assignment.$id}
-                      size="sm"
-                      variant="secondary"
-                      onPress={() => updateStatus(assignment.$id, "ended")}
-                    >
-                      End assignment
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        aria-label={`Term end for ${officeTitle(assignment.officeId)}`}
+                        className="max-w-44"
+                        type="date"
+                        value={
+                          termEdits[assignment.$id] ?? assignment.termEnd ?? ""
+                        }
+                        onChange={(event) =>
+                          setTermEdits((prev) => ({
+                            ...prev,
+                            [assignment.$id]: event.target.value,
+                          }))
+                        }
+                      />
+                      <Button
+                        isPending={updatingId === assignment.$id}
+                        size="sm"
+                        variant="secondary"
+                        onPress={() =>
+                          updateAssignment(
+                            assignment.$id,
+                            "active",
+                            termEdits[assignment.$id] ??
+                              assignment.termEnd ??
+                              "",
+                          )
+                        }
+                      >
+                        Save term
+                      </Button>
+                      <Button
+                        isPending={updatingId === assignment.$id}
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => updateStatus(assignment.$id, "ended")}
+                      >
+                        End assignment
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>

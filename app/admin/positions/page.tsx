@@ -63,15 +63,97 @@ export default function AdminDesignationsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/positions", {
-        credentials: "include",
-      });
-      const payload = (await response.json().catch(() => null)) as
-        (DesignationsData & { error?: string }) | null;
+      // Designations and the public department catalogue load together;
+      // holders are read per designation (bounded: titles are few) and a
+      // single failing title never takes the page down.
+      const [designationResponse, departmentResponse] = await Promise.all([
+        fetch("/api/admin/designations", { credentials: "include" }),
+        fetch("/api/departments", { credentials: "include" }),
+      ]);
+      const designationPayload = (await designationResponse
+        .json()
+        .catch(() => null)) as {
+        designations?: Array<Designation & { holderCount?: number }>;
+        error?: string;
+      } | null;
+      const departmentPayload = (await departmentResponse
+        .json()
+        .catch(() => null)) as { departments?: Department[] } | null;
 
-      if (!response.ok)
-        throw new Error(readApiError(payload, "Unable to load designations"));
-      setData(payload as DesignationsData);
+      if (!designationResponse.ok)
+        throw new Error(
+          readApiError(designationPayload, "Unable to load designations"),
+        );
+      const designations = designationPayload?.designations ?? [];
+      const departments = departmentPayload?.departments ?? [];
+
+      const holderResults = await Promise.allSettled(
+        designations.map(async (designation) => {
+          const response = await fetch(
+            `/api/admin/designations/assign?designationId=${encodeURIComponent(designation.$id!)}`,
+            { credentials: "include" },
+          );
+          const payload = (await response.json().catch(() => null)) as {
+            holders?: Array<{
+              userId?: string;
+              profile?: { urn?: string } | null;
+            }>;
+            accountNames?: Record<string, string>;
+          } | null;
+
+          if (!response.ok) throw new Error("holders unavailable");
+
+          return { designation, payload };
+        }),
+      );
+
+      const peopleByUser = new Map<string, Person>();
+      const ensurePerson = (
+        userId: string,
+        name: string,
+        urn?: string,
+      ): Person => {
+        const existing = peopleByUser.get(userId);
+
+        if (existing) return existing;
+        const person: Person = { userId, name, urn, designations: [] };
+
+        peopleByUser.set(userId, person);
+
+        return person;
+      };
+
+      for (const result of holderResults) {
+        if (result.status !== "fulfilled") continue;
+        const { designation, payload } = result.value;
+        const names = payload?.accountNames ?? {};
+
+        for (const holder of payload?.holders ?? []) {
+          const userId = String(holder.userId ?? "");
+
+          if (!userId) continue;
+          const urn = holder.profile?.urn;
+          const person = ensurePerson(
+            userId,
+            names[userId] || urn || userId,
+            urn,
+          );
+
+          person.designations.push({
+            designationId: designation.$id!,
+            name: designation.name,
+          });
+        }
+      }
+
+      setData({
+        designations,
+        departments,
+        people: [...peopleByUser.values()].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+        accountNames: {},
+      });
     } catch (error) {
       logError("Error loading designations:", error);
       toast.error(getErrorMessage(error) || "Failed to load designations");

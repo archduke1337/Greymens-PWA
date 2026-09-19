@@ -17,6 +17,7 @@ import {
   ZapIcon,
   ShieldIcon,
   UsersIcon,
+  PencilIcon,
 } from "lucide-react";
 import {
   Button,
@@ -39,6 +40,7 @@ import {
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import MemberAvatar from "@/components/MemberAvatar";
+import { POWER_CAPABILITIES } from "@/lib/capabilities";
 import { logError } from "@/lib/logger";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -122,6 +124,31 @@ export default function PowersManager() {
   );
   const [catalogueQuery, setCatalogueQuery] = useState("");
 
+  // Catalogue create/edit state. `name` is the grant vocabulary key: set
+  // once at create, never renamed (grants reference it). A name absent from
+  // POWER_CAPABILITIES confers nothing until mapped in code — the card says
+  // so instead of pretending the grant works.
+  const {
+    isOpen: isCatalogueOpen,
+    open: openCatalogue,
+    close: closeCatalogue,
+  } = useOverlayState();
+  const [editingPower, setEditingPower] = useState<Power | null>(null);
+  const [catalogueForm, setCatalogueForm] = useState({
+    name: "",
+    displayName: "",
+    description: "",
+    category: "membership",
+    scope: "global",
+  });
+  const [savingCatalogue, setSavingCatalogue] = useState(false);
+  const [deletingPowerId, setDeletingPowerId] = useState<string | null>(null);
+
+  const mappedCapabilities = (power: Power): string[] =>
+    POWER_CAPABILITIES[power.name] ??
+    POWER_CAPABILITIES[String(power.$id ?? "")] ??
+    [];
+
   // Grant modal
   const {
     isOpen: isGrantOpen,
@@ -194,6 +221,110 @@ export default function PowersManager() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const openCreatePower = () => {
+    setEditingPower(null);
+    setCatalogueForm({
+      name: "",
+      displayName: "",
+      description: "",
+      category: "membership",
+      scope: "global",
+    });
+    openCatalogue();
+  };
+
+  const openEditPower = (power: Power) => {
+    setEditingPower(power);
+    setCatalogueForm({
+      name: power.name,
+      displayName: power.displayName,
+      description: power.description ?? "",
+      category: power.category,
+      scope: power.scope,
+    });
+    openCatalogue();
+  };
+
+  const saveCataloguePower = async () => {
+    if (!catalogueForm.displayName.trim()) {
+      toast.error("Display name is required");
+
+      return;
+    }
+    if (
+      !editingPower &&
+      !/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(catalogueForm.name.trim())
+    ) {
+      toast.error("Name must be snake_case (e.g. event_manager)");
+
+      return;
+    }
+    setSavingCatalogue(true);
+    try {
+      const creating = !editingPower;
+      const response = await fetch("/api/admin/powers", {
+        method: creating ? "PUT" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(
+          creating
+            ? { ...catalogueForm, name: catalogueForm.name.trim() }
+            : {
+                powerId: editingPower.$id,
+                displayName: catalogueForm.displayName.trim(),
+                description: catalogueForm.description,
+                category: catalogueForm.category,
+                scope: catalogueForm.scope,
+              },
+        ),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to save power"));
+      toast.success(creating ? "Power created" : "Power updated");
+      closeCatalogue();
+      await loadData();
+    } catch (error) {
+      logError("Error saving power:", error);
+      toast.error(getErrorMessage(error) || "Failed to save power");
+    } finally {
+      setSavingCatalogue(false);
+    }
+  };
+
+  const deletePower = async (power: Power) => {
+    if (!power.$id) return;
+    if (
+      !confirm(
+        `Delete the "${power.displayName}" power? Grants are refused while any are active — revoke them first.`,
+      )
+    )
+      return;
+    setDeletingPowerId(power.$id);
+    try {
+      const response = await fetch(
+        `/api/admin/powers?powerId=${encodeURIComponent(power.$id!)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to delete power"));
+      toast.success("Power deleted");
+      await loadData();
+    } catch (error) {
+      logError("Error deleting power:", error);
+      toast.error(getErrorMessage(error) || "Failed to delete power");
+    } finally {
+      setDeletingPowerId(null);
+    }
+  };
 
   // --- Grant Flow ---
   const handleOpenGrant = (power: Power) => {
@@ -474,14 +605,24 @@ export default function PowersManager() {
       {/* Powers Grouped by Category */}
       <Card className="border-none shadow-md mb-2">
         <CardContent className="p-4">
-          <Input
-            aria-label="Filter powers by name or capability"
-            placeholder="Filter powers by name or capability..."
-            value={catalogueQuery}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setCatalogueQuery(e.target.value)
-            }
-          />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              aria-label="Filter powers by name or capability"
+              className="flex-1"
+              placeholder="Filter powers by name or capability..."
+              value={catalogueQuery}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setCatalogueQuery(e.target.value)
+              }
+            />
+            <Button
+              className="flex-shrink-0"
+              variant="primary"
+              onPress={openCreatePower}
+            >
+              Create power
+            </Button>
+          </div>
         </CardContent>
       </Card>
       <div className="space-y-8">
@@ -549,6 +690,30 @@ export default function PowersManager() {
                           </p>
                         )}
 
+                        {(() => {
+                          const caps = mappedCapabilities(power);
+
+                          return caps.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {caps.map((cap) => (
+                                <Chip
+                                  key={cap}
+                                  className="text-xs font-mono"
+                                  size="sm"
+                                  variant="soft"
+                                >
+                                  {cap}
+                                </Chip>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-warning">
+                              Confers no capabilities until mapped in code —
+                              grants are recorded but authorize nothing.
+                            </p>
+                          );
+                        })()}
+
                         <div className="flex gap-2">
                           <Button
                             className="flex-1"
@@ -567,6 +732,25 @@ export default function PowersManager() {
                           >
                             <UsersIcon className="w-4 h-4 mr-1" />
                             Holders
+                          </Button>
+                          <Button
+                            isIconOnly
+                            aria-label={`Edit ${power.displayName}`}
+                            size="sm"
+                            variant="secondary"
+                            onPress={() => openEditPower(power)}
+                          >
+                            <PencilIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            aria-label={`Delete ${power.displayName}`}
+                            isPending={deletingPowerId === power.$id}
+                            size="sm"
+                            variant="danger-soft"
+                            onPress={() => deletePower(power)}
+                          >
+                            <TrashIcon className="w-4 h-4" />
                           </Button>
                         </div>
                       </CardContent>
@@ -895,6 +1079,177 @@ export default function PowersManager() {
                   </ModalFooter>
                 </div>
               )}
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
+
+      {/* Create / Edit power */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isCatalogueOpen}
+          onOpenChange={(o) => {
+            if (!o) closeCatalogue();
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>
+                {editingPower ? "Edit power" : "Create power"}
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  {!editingPower && (
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        Name{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </label>
+                      <Input
+                        placeholder="event_manager"
+                        value={catalogueForm.name}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setCatalogueForm((p) => ({
+                            ...p,
+                            name: e.target.value,
+                          }))
+                        }
+                      />
+                      <p className="text-xs text-default-400 mt-1">
+                        snake_case, set once — grants reference it, so it is
+                        never renamed. A new name confers no capabilities until
+                        mapped in code.
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Display name{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="Event Manager"
+                      value={catalogueForm.displayName}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCatalogueForm((p) => ({
+                          ...p,
+                          displayName: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Description{" "}
+                      <span className="font-normal text-default-400">
+                        (optional)
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="What this power allows…"
+                      value={catalogueForm.description}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCatalogueForm((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Select
+                        fullWidth
+                        value={catalogueForm.category}
+                        onChange={(value) =>
+                          setCatalogueForm((p) => ({
+                            ...p,
+                            category: String(value ?? "membership"),
+                          }))
+                        }
+                      >
+                        <Label>
+                          Category{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {Object.keys(CATEGORY_LABELS).map((category) => (
+                              <ListBox.Item
+                                key={category}
+                                id={category}
+                                textValue={CATEGORY_LABELS[category]}
+                              >
+                                {CATEGORY_LABELS[category]}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                    <div>
+                      <Select
+                        fullWidth
+                        value={catalogueForm.scope}
+                        onChange={(value) =>
+                          setCatalogueForm((p) => ({
+                            ...p,
+                            scope: String(value ?? "global"),
+                          }))
+                        }
+                      >
+                        <Label>
+                          Scope{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {["global", "department", "own"].map((scope) => (
+                              <ListBox.Item
+                                key={scope}
+                                id={scope}
+                                textValue={scope}
+                              >
+                                {scope}
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="secondary" onPress={closeCatalogue}>
+                  Cancel
+                </Button>
+                <Button
+                  isPending={savingCatalogue}
+                  variant="primary"
+                  onPress={saveCataloguePower}
+                >
+                  {editingPower ? "Save changes" : "Create power"}
+                </Button>
+              </ModalFooter>
             </ModalDialog>
           </ModalContainer>
         </ModalBackdrop>

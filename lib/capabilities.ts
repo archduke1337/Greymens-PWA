@@ -127,3 +127,63 @@ export const OFFICE_CAPABILITIES: Record<string, Capability[]> = {
     "tickets.view",
   ],
 };
+
+/**
+ * Operational power -> the capabilities it confers.
+ *
+ * The console has always offered both a Roles tab (capabilities on a role
+ * template) and a Powers tab (legacy `user_powers` grants), but only two power
+ * names were ever translated into capabilities — so 14 of the 16 seeded powers
+ * looked authoritative in the UI and satisfied no `requireCapability` check.
+ *
+ * This table is the translation the Powers tab was missing: a power is now a
+ * named bundle of capabilities, exactly like a role, and a grant made there
+ * reaches the same server checks a role grant does.
+ *
+ * A power with an empty list is honest, not an oversight: the capability
+ * vocabulary has no equivalent for it (`gallery_uploader` — uploading is
+ * membership-open; `social_media_manager`, `pr_manager`, `design_manager` —
+ * still legacy-only). Such a grant confers nothing today; the four are listed
+ * here so the gap is visible instead of implied.
+ *
+ * Lives in this dependency-free module (not access-control) so the Powers
+ * console can render what each power actually confers. A catalogue row whose
+ * name is absent here confers nothing — the console warns about exactly that.
+ */
+export const POWER_CAPABILITIES: Record<string, Capability[]> = {
+  membership_approver: [
+    "membership.view_applications",
+    "membership.approve",
+    "membership.reject",
+  ],
+  event_manager: [
+    "events.create",
+    "events.update",
+    "events.manage",
+    "events.approve",
+    "events.publish",
+    "registrations.view",
+    "registrations.manage",
+  ],
+  ticket_verifier: ["tickets.view", "tickets.verify", "tickets.invalidate"],
+  blog_creator: ["blog.create"],
+  blog_reviewer: ["blog.review", "blog.approve"],
+  gallery_manager: ["gallery.manage"],
+  gallery_uploader: [],
+  resource_manager: ["resources.manage"],
+  // No department-scoped capability exists yet, so these two map to the
+  // global department views rather than inventing a wider grant.
+  department_head: ["departments.view"],
+  operations_head: [
+    "departments.manage",
+    "events.approve",
+    "designations.assign",
+    "registrations.view",
+  ],
+  profile_moderator: ["users.view", "users.update", "audit.view"],
+  notification_admin: ["notifications.send"],
+  newsletter_manager: ["notifications.send"],
+  social_media_manager: [],
+  pr_manager: [],
+  design_manager: [],
+};

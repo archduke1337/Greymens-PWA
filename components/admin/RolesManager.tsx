@@ -25,6 +25,13 @@ import {
   Input,
   Label,
   ListBox,
+  Modal,
+  ModalBackdrop,
+  ModalContainer,
+  ModalDialog,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Select,
   TextArea,
 } from "@heroui/react";
@@ -32,6 +39,7 @@ import {
 import MemberAvatar from "@/components/MemberAvatar";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { CAPABILITIES } from "@/lib/capabilities";
+import { GOVERNANCE_OFFICES } from "@/lib/governance";
 
 type Role = {
   $id: string;
@@ -116,15 +124,40 @@ export default function RolesManager() {
     "create_role" | "assign_role" | null
   >(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  // Template edit state. Capabilities are required on every template PATCH
+  // (the server rewrites the bundle wholesale), so the modal edits the full
+  // bundle — name, slug, description, capabilities — never a single field.
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    capabilities: [] as string[],
+  });
+  const [editCapabilityQuery, setEditCapabilityQuery] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
   const [role, setRole] = useState({
     name: "",
     slug: "",
     description: "",
     capabilities: [] as string[],
+    officeId: "",
   });
   const [slugTouched, setSlugTouched] = useState(false);
   const [capabilityQuery, setCapabilityQuery] = useState("");
+
+  // Charter offices without a capability template yet — the only ones a new
+  // office bundle may attach to (one template per office, enforced server-
+  // side too).
+  const officesWithoutTemplate = useMemo(
+    () =>
+      GOVERNANCE_OFFICES.filter(
+        (office) => !roles.some((item) => item.officeId === office.id),
+      ),
+    [roles],
+  );
 
   const [assignment, setAssignment] = useState({
     userId: "",
@@ -257,7 +290,11 @@ export default function RolesManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           action === "create_role"
-            ? { action, ...role }
+            ? {
+                action,
+                ...role,
+                officeId: role.officeId || undefined,
+              }
             : { action, ...assignment },
         ),
       });
@@ -269,7 +306,13 @@ export default function RolesManager() {
         action === "create_role" ? "Role template created" : "Role assigned",
       );
       if (action === "create_role") {
-        setRole({ name: "", slug: "", description: "", capabilities: [] });
+        setRole({
+          name: "",
+          slug: "",
+          description: "",
+          capabilities: [],
+          officeId: "",
+        });
         setSlugTouched(false);
       } else {
         setAssignment({
@@ -296,6 +339,105 @@ export default function RolesManager() {
         ? current.capabilities.filter((item) => item !== capability)
         : [...current.capabilities, capability],
     }));
+
+  const openEdit = (item: Role) => {
+    setEditingRole(item);
+    setEditForm({
+      name: item.name,
+      slug: item.slug,
+      description: item.description ?? "",
+      capabilities: [...item.capabilities],
+    });
+    setEditCapabilityQuery("");
+  };
+
+  const toggleEditCapability = (capability: string) =>
+    setEditForm((current) => ({
+      ...current,
+      capabilities: current.capabilities.includes(capability)
+        ? current.capabilities.filter((item) => item !== capability)
+        : [...current.capabilities, capability],
+    }));
+
+  const saveEdit = async () => {
+    if (!editingRole) return;
+    if (!editForm.name.trim() || !editForm.slug.trim()) {
+      toast.error("Name and slug are required");
+
+      return;
+    }
+    if (editForm.capabilities.length === 0) {
+      toast.error("Keep at least one capability on the template");
+
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const response = await fetch("/api/access", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roleId: editingRole.$id,
+          name: editForm.name.trim(),
+          slug: editForm.slug.trim(),
+          description: editForm.description,
+          capabilities: editForm.capabilities,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok)
+        throw new Error(readApiError(data, "Unable to update role"));
+      toast.success("Role template updated");
+      setEditingRole(null);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Unable to update role");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Retirement, not deletion: rows are history, and live assignments resolve
+  // through inactive templates to nothing. The server refuses while any
+  // assignment is still live — the 409 carries the reason.
+  const deactivate = async (item: Role) => {
+    const live = liveCountFor(item.$id);
+
+    if (
+      !confirm(
+        live > 0
+          ? `"${item.name}" still has ${live} active assignment(s). Revoke them first — deactivation is refused while any are live.`
+          : `Deactivate "${item.name}"? It stays in history but grants nothing.`,
+      )
+    )
+      return;
+    if (live > 0) return;
+    setDeactivatingId(item.$id);
+    try {
+      const response = await fetch("/api/access", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roleId: item.$id,
+          capabilities: item.capabilities,
+          isActive: false,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok)
+        throw new Error(readApiError(data, "Unable to deactivate role"));
+      toast.success("Role deactivated");
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Unable to deactivate role");
+    } finally {
+      setDeactivatingId(null);
+    }
+  };
 
   const revoke = async (assignmentId: string, assignee: string) => {
     if (
@@ -521,6 +663,41 @@ export default function RolesManager() {
                   setRole({ ...role, description: event.target.value })
                 }
               />
+            </div>
+
+            <div>
+              <Select
+                fullWidth
+                placeholder="Plain role (no office)"
+                value={role.officeId === "" ? null : role.officeId}
+                onChange={(value) =>
+                  setRole({ ...role, officeId: String(value ?? "") })
+                }
+              >
+                <Label>Charter office (optional)</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {officesWithoutTemplate.map((office) => (
+                      <ListBox.Item
+                        key={office.id}
+                        id={office.id}
+                        textValue={office.title}
+                      >
+                        {office.title}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              <p className="text-xs text-default-400 mt-1">
+                Attaching an office makes this template the office&apos;s
+                capability bundle — assigned with a term from the Offices tab.
+              </p>
             </div>
 
             <fieldset className="space-y-2">
@@ -895,6 +1072,30 @@ export default function RolesManager() {
                       </Chip>
                     ))}
                   </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => openEdit(item)}
+                    >
+                      Edit
+                    </Button>
+                    {item.isActive ? (
+                      <Button
+                        isPending={deactivatingId === item.$id}
+                        size="sm"
+                        variant="danger-soft"
+                        onPress={() => deactivate(item)}
+                      >
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-default-400 self-center">
+                        Retired — edit to change, assignments blocked while
+                        inactive
+                      </span>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))
@@ -980,6 +1181,142 @@ export default function RolesManager() {
           </p>
         </section>
       </div>
+
+      {/* Edit role template */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={editingRole !== null}
+          onOpenChange={(o) => {
+            if (!o) setEditingRole(null);
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>
+                Edit role{editingRole?.officeId ? " (charter office)" : ""}
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  {editingRole?.officeId && (
+                    <p className="text-xs text-default-500">
+                      This template is the capability bundle for a charter
+                      office — editing it changes what the office grants.
+                      Assignment (with term) stays on the Offices tab.
+                    </p>
+                  )}
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Display name{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="Editorial Lead"
+                      value={editForm.name}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setEditForm((p) => ({ ...p, name: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Slug{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      placeholder="editorial-lead"
+                      value={editForm.slug}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setEditForm((p) => ({ ...p, slug: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">
+                      Description{" "}
+                      <span className="font-normal text-default-400">
+                        (optional)
+                      </span>
+                    </label>
+                    <TextArea
+                      placeholder="What this role is for, in one line."
+                      rows={2}
+                      value={editForm.description}
+                      onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+                        setEditForm((p) => ({
+                          ...p,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-sm font-medium">
+                        Capabilities{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </span>
+                      <Input
+                        aria-label="Filter capabilities"
+                        className="max-w-52"
+                        placeholder="Filter…"
+                        value={editCapabilityQuery}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setEditCapabilityQuery(e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-lg border border-default-200 p-3 sm:grid-cols-2">
+                      {CAPABILITIES.filter((c) =>
+                        c
+                          .toLowerCase()
+                          .includes(editCapabilityQuery.trim().toLowerCase()),
+                      ).map((capability) => (
+                        <Checkbox
+                          key={capability}
+                          isSelected={editForm.capabilities.includes(
+                            capability,
+                          )}
+                          onChange={() => toggleEditCapability(capability)}
+                        >
+                          <Checkbox.Content>
+                            <Checkbox.Control>
+                              <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <span className="text-xs font-mono">
+                              {capability}
+                            </span>
+                          </Checkbox.Content>
+                        </Checkbox>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="secondary"
+                  onPress={() => setEditingRole(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  isPending={savingEdit}
+                  variant="primary"
+                  onPress={saveEdit}
+                >
+                  Save changes
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </>
   );
 }
