@@ -375,27 +375,39 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
-    const resource = await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTIONS.RESOURCES,
-      resourceId,
-      updates,
-    );
-
-    await recordAudit({
-      request,
-      actor: authenticated.user,
-      action: "resource.update",
-      entityType: "resource",
-      entityId: resourceId,
-      details: { fields: Object.keys(updates) },
-    });
+    let resource: unknown;
+    try {
+      resource = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.RESOURCES,
+        resourceId,
+        updates,
+      );
+    } catch (dbError: unknown) {
+      const code = (dbError as { code?: number })?.code;
+      const message = (dbError as { message?: string })?.message ?? String(dbError);
+      logError(`Resource update db error for ${resourceId}:`, dbError);
+      if (code === 404) return fail("NOT_FOUND", "Resource not found", 404);
+      return fail("INTERNAL", `Unable to update resource: ${message}`, 500);
+    }
+    try {
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: "resource.update",
+        entityType: "resource",
+        entityId: resourceId,
+        details: { fields: Object.keys(updates) },
+      });
+    } catch (auditError) {
+      logError("Resource update audit error:", auditError);
+    }
 
     return ok({ resource });
   } catch (error) {
     logError("Resource update error:", error);
-
-    return fail("INTERNAL", "Unable to update resource", 500);
+    const message = error instanceof Error ? error.message : String(error);
+    return fail("INTERNAL", `Unable to update resource: ${message}`, 500);
   }
 }
 
@@ -612,26 +624,33 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    await recordAudit({
-      request,
-      actor: authenticated.user,
-      action: "resource.create",
-      entityType: "resource",
-      entityId: resource.$id,
-      details: {
-        title,
-        category,
-        type,
-        departmentId: category === "department" ? departmentId : null,
-        requiredRole: category === "role" ? requiredRole : null,
-        status: canModerate ? "approved" : "pending",
-      },
-    });
+    try {
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: "resource.create",
+        entityType: "resource",
+        entityId: resource.$id,
+        details: {
+          title,
+          category,
+          type,
+          departmentId: category === "department" ? departmentId : null,
+          requiredRole: category === "role" ? requiredRole : null,
+          status: canModerate ? "approved" : "pending",
+        },
+      });
+    } catch (auditError) {
+      logError("Resource create audit error:", auditError);
+    }
 
     return ok({ resource }, 201);
   } catch (error) {
     logError("Resource upload error:", error);
-
-    return fail("INTERNAL", "Unable to upload resource", 500);
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as { code?: number })?.code;
+    // Surface Appwrite validation (e.g. file type, size, bucket) directly
+    if (code === 404) return fail("NOT_FOUND", `Unable to upload resource: ${message}`, 404);
+    return fail("INTERNAL", `Unable to upload resource: ${message}`, 500);
   }
 }
