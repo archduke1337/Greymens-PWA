@@ -7,7 +7,7 @@ import {
 } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { MEMBER_FILE_PERMISSIONS, ownerFilePermissions } from "@/lib/storage";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -19,13 +19,16 @@ const BUCKET_ID = "resources";
  * Resource review queue.
  *
  * Mirrors `/api/admin/gallery`: member submissions arrive as `pending`
- * (see POST /api/resources) and only a `resources.manage` holder can publish
- * or refuse them. Metadata edits and soft-deletes stay on /api/resources —
- * this route owns moderation only, so the approve/reject vocabulary lives in
- * exactly one place per content type.
+ * (see POST /api/resources) and a `resources.approve` (or `resources.manage`)
+ * holder can publish or refuse them. Metadata edits and soft-deletes stay on
+ * /api/resources — this route owns moderation only, so the approve/reject
+ * vocabulary lives in exactly one place per content type.
  */
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "resources.manage");
+  const authenticated = await requireAnyCapability(request, [
+    "resources.approve",
+    "resources.manage",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
 
@@ -46,7 +49,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "resources.manage");
+  const authenticated = await requireAnyCapability(request, [
+    "resources.approve",
+    "resources.manage",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
 

@@ -10,7 +10,7 @@ import {
   MEMBER_FILE_PERMISSIONS,
   PUBLIC_FILE_PERMISSIONS,
 } from "@/lib/storage";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -19,7 +19,12 @@ import { logError } from "@/lib/logger";
 const BUCKET_ID = "gallery-images";
 
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "gallery.manage");
+  // Reviewers need the queue; the moderation decisions they make do not grant
+  // the delete below, which stays on the full grant.
+  const authenticated = await requireAnyCapability(request, [
+    "gallery.manage",
+    "gallery.approve",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
 
@@ -57,7 +62,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "gallery.manage");
+  const authenticated = await requireAnyCapability(request, [
+    "gallery.approve",
+    "gallery.manage",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
 

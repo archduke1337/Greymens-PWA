@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -108,7 +108,11 @@ function validate(body: Record<string, unknown>, forUpdate = false) {
 }
 
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "sponsors.manage");
+  // Reviewers need the queue as much as managers.
+  const authenticated = await requireAnyCapability(request, [
+    "sponsors.manage",
+    "sponsors.approve",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
   try {
@@ -172,9 +176,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = await requireCapability(request, "sponsors.manage");
-
-  if (!authenticated.user) return authenticated.response;
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const sponsorId =
@@ -182,11 +183,23 @@ export async function PATCH(request: NextRequest) {
 
     if (!sponsorId) return fail("VALIDATION", "sponsorId is required", 400);
     const { sponsorId: _sponsorId, ...rest } = body;
+    const isDecision = rest.action === "approve" || rest.action === "reject";
+
+    // Two authorities chosen by the action: deciding a proposal is
+    // sponsors.approve, editing or creating the record is sponsors.manage.
+    const authenticated = isDecision
+      ? await requireAnyCapability(request, [
+          "sponsors.approve",
+          "sponsors.manage",
+        ])
+      : await requireCapability(request, "sponsors.manage");
+
+    if (!authenticated.user) return authenticated.response;
 
     // Review decisions ride the same endpoint as edits (projects/gallery
     // model): approve or reject a member proposal, then tell the submitter
     // in-app and by mail through the shared dispatch.
-    if (rest.action === "approve" || rest.action === "reject") {
+    if (isDecision) {
       const action = rest.action as string;
       const reason =
         typeof rest.reason === "string"

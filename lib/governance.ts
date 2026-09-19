@@ -259,7 +259,7 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/gallery",
     label: "Gallery moderation",
     office: "communications_lead",
-    capabilities: ["gallery.manage"],
+    capabilities: ["gallery.manage", "gallery.approve"],
     form: "approve / reject",
     auditAction: "gallery.moderate",
   },
@@ -267,7 +267,7 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/resources",
     label: "Resources",
     office: "documentation_lead",
-    capabilities: ["resources.manage"],
+    capabilities: ["resources.manage", "resources.approve"],
   },
   {
     href: "/admin/projects",
@@ -279,7 +279,7 @@ export const GOVERNED_PAGES: GovernedPage[] = [
     href: "/admin/sponsors",
     label: "Sponsorships",
     office: "treasurer",
-    capabilities: ["sponsors.manage"],
+    capabilities: ["sponsors.manage", "sponsors.approve"],
   },
   {
     href: "/admin/notifications",

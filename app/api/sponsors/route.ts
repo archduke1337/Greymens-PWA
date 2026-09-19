@@ -121,10 +121,11 @@ export async function POST(request: NextRequest) {
   try {
     const { databases } = createServerDatabases();
     const now = new Date().toISOString();
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "sponsors.manage",
-    );
+    // Either half of the moderation authority publishes on submission: a full
+    // manager, or a reviewer scoped to sponsors.approve.
+    const canModerate =
+      (await hasServerCapability(authenticated.user.$id, "sponsors.manage")) ||
+      (await hasServerCapability(authenticated.user.$id, "sponsors.approve"));
     const sponsor = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.SPONSORS,

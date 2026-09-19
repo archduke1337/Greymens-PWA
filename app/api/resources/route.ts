@@ -14,7 +14,11 @@ import {
   isMemberStatus,
   requireMember,
 } from "@/lib/server-auth";
-import { hasServerCapability, requireCapability } from "@/lib/access-control";
+import {
+  hasServerCapability,
+  requireAnyCapability,
+  requireCapability,
+} from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import {
@@ -151,7 +155,10 @@ export async function GET(request: NextRequest) {
     // approved records. The capability check runs before any query so a
     // denied caller costs no read.
     if (request.nextUrl.searchParams.get("all") === "true") {
-      const admin = await requireCapability(request, "resources.manage");
+      const admin = await requireAnyCapability(request, [
+        "resources.approve",
+        "resources.manage",
+      ]);
 
       if (!admin.user) return admin.response;
       const response = await listActiveResources(databases);
@@ -520,10 +527,11 @@ export async function POST(request: NextRequest) {
     const { databases } = createServerDatabases();
     // Moderation authority decides the row's status and the file's read
     // permission, so it is resolved before the upload rather than after.
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "resources.manage",
-    );
+    // Either half of the moderation authority publishes on upload: a full
+    // manager, or a reviewer scoped to resources.approve.
+    const canModerate =
+      (await hasServerCapability(authenticated.user.$id, "resources.manage")) ||
+      (await hasServerCapability(authenticated.user.$id, "resources.approve"));
     let fileUrl = url || undefined;
     let fileId: string | null = null;
 

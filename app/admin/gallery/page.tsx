@@ -25,6 +25,7 @@ import {
 import { ImagePlus, CheckCircle, XCircle, Clock, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
@@ -51,6 +52,11 @@ export default function AdminGalleryPage() {
   const [uploaderNames, setUploaderNames] = useState<Record<string, string>>(
     {},
   );
+  const { hasCapability } = usePermissions();
+  // Deciding the queue is gallery.approve; removing what is already there is
+  // gallery.manage. A full manager passes both.
+  const canManage = hasCapability("gallery.manage");
+  const canReview = canManage || hasCapability("gallery.approve");
 
   // Album sizes for the current list: multi-photo uploads review per image,
   // but the card names the shared title so siblings are recognizable.
@@ -417,7 +423,7 @@ export default function AdminGalleryPage() {
                 )}
               </CardContent>
               <div className="px-4 pb-4 flex gap-2">
-                {image.status !== "approved" && (
+                {canReview && image.status !== "approved" && (
                   <Button
                     isPending={approvingId === image.$id}
                     size="sm"
@@ -428,7 +434,7 @@ export default function AdminGalleryPage() {
                     {image.status === "rejected" ? "Re-approve" : "Approve"}
                   </Button>
                 )}
-                {image.status === "pending" && (
+                {canReview && image.status === "pending" && (
                   <Button
                     size="sm"
                     variant="danger"
@@ -441,16 +447,18 @@ export default function AdminGalleryPage() {
                     Reject
                   </Button>
                 )}
-                <Button
-                  isIconOnly
-                  aria-label={`Delete ${image.title}`}
-                  isPending={deletingId === image.$id}
-                  size="sm"
-                  variant="danger-soft"
-                  onPress={() => handleDelete(image)}
-                >
-                  <Trash2 aria-hidden="true" className="w-4 h-4" />
-                </Button>
+                {canManage && (
+                  <Button
+                    isIconOnly
+                    aria-label={`Delete ${image.title}`}
+                    isPending={deletingId === image.$id}
+                    size="sm"
+                    variant="danger-soft"
+                    onPress={() => handleDelete(image)}
+                  >
+                    <Trash2 aria-hidden="true" className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </Card>
           ))}

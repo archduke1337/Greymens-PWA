@@ -51,11 +51,16 @@ export const CAPABILITIES = [
   "powers.manage",
   "resources.manage",
   "gallery.manage",
+  // Reviewing member submissions is its own authority everywhere content has
+  // a review queue: a reviewer decides the queue without gaining the power to
+  // edit or delete what is already published. `*.manage` keeps the editorial
+  // work (create, rewrite, remove, publish-on-create).
+  "resources.approve",
+  "gallery.approve",
   "projects.manage",
-  // Reviewing a member proposal is its own authority: a reviewer can decide
-  // the queue without gaining the power to rewrite or delete the portfolio.
   "projects.approve",
   "sponsors.manage",
+  "sponsors.approve",
   "notifications.send",
   "audit.view",
   "security.authorize_activity",

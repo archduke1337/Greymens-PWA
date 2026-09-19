@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
@@ -86,6 +87,11 @@ const ROLE_OPTIONS = [
 export default function AdminResourcesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { hasCapability } = usePermissions();
+  // Deciding the queue is resources.approve; editing or removing what is
+  // already in the library is resources.manage. A full manager passes both.
+  const canManage = hasCapability("resources.manage");
+  const canReview = canManage || hasCapability("resources.approve");
   const [resources, setResources] = useState<Resource[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -443,10 +449,12 @@ export default function AdminResourcesPage() {
             Manage club resources across departments and roles
           </p>
         </div>{" "}
-        <Button variant="primary" onPress={openCreate}>
-          <Plus aria-hidden="true" className="w-4 h-4" />
-          Add Resource
-        </Button>
+        {canManage && (
+          <Button variant="primary" onPress={openCreate}>
+            <Plus aria-hidden="true" className="w-4 h-4" />
+            Add Resource
+          </Button>
+        )}
       </div>
 
       {/* Review queue tabs + filters */}
@@ -611,7 +619,7 @@ export default function AdminResourcesPage() {
                       )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    {resourceStatus(resource) !== "approved" && (
+                    {canReview && resourceStatus(resource) !== "approved" && (
                       <Button
                         isIconOnly
                         aria-label={`Approve ${resource.title}`}
@@ -623,7 +631,7 @@ export default function AdminResourcesPage() {
                         <CheckCircle aria-hidden="true" className="w-4 h-4" />
                       </Button>
                     )}
-                    {resourceStatus(resource) === "pending" && (
+                    {canReview && resourceStatus(resource) === "pending" && (
                       <Button
                         isIconOnly
                         aria-label={`Reject ${resource.title}`}
@@ -638,25 +646,29 @@ export default function AdminResourcesPage() {
                         <XCircle aria-hidden="true" className="w-4 h-4" />
                       </Button>
                     )}
-                    <Button
-                      isIconOnly
-                      aria-label={`Edit ${resource.title}`}
-                      size="sm"
-                      variant="secondary"
-                      onPress={() => openEdit(resource)}
-                    >
-                      <Edit aria-hidden="true" className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      isIconOnly
-                      aria-label={`Delete ${resource.title}`}
-                      isPending={deletingId === resource.$id}
-                      size="sm"
-                      variant="danger-soft"
-                      onPress={() => handleDelete(resource)}
-                    >
-                      <Trash2 aria-hidden="true" className="w-4 h-4" />
-                    </Button>
+                    {canManage && (
+                      <Button
+                        isIconOnly
+                        aria-label={`Edit ${resource.title}`}
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => openEdit(resource)}
+                      >
+                        <Edit aria-hidden="true" className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {canManage && (
+                      <Button
+                        isIconOnly
+                        aria-label={`Delete ${resource.title}`}
+                        isPending={deletingId === resource.$id}
+                        size="sm"
+                        variant="danger-soft"
+                        onPress={() => handleDelete(resource)}
+                      >
+                        <Trash2 aria-hidden="true" className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -668,7 +680,7 @@ export default function AdminResourcesPage() {
       {/* Create/Edit Modal */}
       <Modal>
         <ModalBackdrop
-          isOpen={isOpen}
+          isOpen={isOpen && canManage}
           onOpenChange={(o) => {
             if (!o) close();
           }}

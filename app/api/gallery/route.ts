@@ -209,10 +209,11 @@ export async function POST(request: NextRequest) {
     // requires. It used to be read here as the legacy `gallery_manager` power,
     // so a manager who held gallery.manage still had their own uploads queued
     // as pending — two answers to one question.
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "gallery.manage",
-    );
+    // Either half of the moderation authority publishes on upload: a full
+    // manager, or a reviewer scoped to gallery.approve.
+    const canModerate =
+      (await hasServerCapability(authenticated.user.$id, "gallery.manage")) ||
+      (await hasServerCapability(authenticated.user.$id, "gallery.approve"));
     const uploaded: Array<{ url: string; fileId: string | null }> = [];
 
     for (const file of files) {

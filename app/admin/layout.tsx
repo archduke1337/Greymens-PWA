@@ -104,13 +104,13 @@ export const ADMIN_SECTIONS = [
     label: "Resources",
     href: "/admin/resources",
     Icon: FolderOpen,
-    cap: "resources.manage",
+    cap: ["resources.manage", "resources.approve"],
   },
   {
     label: "Gallery",
     href: "/admin/gallery",
     Icon: Image,
-    cap: "gallery.manage",
+    cap: ["gallery.manage", "gallery.approve"],
   },
   {
     label: "Projects",
@@ -122,7 +122,7 @@ export const ADMIN_SECTIONS = [
     label: "Sponsors",
     href: "/admin/sponsors",
     Icon: Handshake,
-    cap: "sponsors.manage",
+    cap: ["sponsors.manage", "sponsors.approve"],
   },
   {
     label: "Notifications",

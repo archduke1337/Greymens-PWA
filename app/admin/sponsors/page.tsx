@@ -22,6 +22,7 @@ import {
 } from "@heroui/react";
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { usePermissions } from "@/context/PermissionContext";
 import { logError } from "@/lib/logger";
 
 const sponsorTiers = {
@@ -58,6 +59,11 @@ const sponsorTiers = {
 };
 
 export default function AdminSponsorsPage() {
+  const { hasCapability } = usePermissions();
+  // Deciding the queue is sponsors.approve; creating, editing, and removing a
+  // record is sponsors.manage. A full manager passes both.
+  const canManage = hasCapability("sponsors.manage");
+  const canReview = canManage || hasCapability("sponsors.approve");
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -365,16 +371,18 @@ export default function AdminSponsorsPage() {
             Manage your club sponsors and partners
           </p>
         </div>
-        <Button
-          size="lg"
-          onPress={() => (showForm ? resetForm() : setShowForm(true))}
-        >
-          {showForm ? "Cancel" : "Add Sponsor"}
-        </Button>
+        {canManage && (
+          <Button
+            size="lg"
+            onPress={() => (showForm ? resetForm() : setShowForm(true))}
+          >
+            {showForm ? "Cancel" : "Add Sponsor"}
+          </Button>
+        )}
       </div>
 
       {/* Form */}
-      {showForm && (
+      {showForm && canManage && (
         <Card className="mb-8 border-2 border-primary">
           <CardHeader className="bg-primary/10">
             <h2 className="text-xl font-bold">
@@ -654,11 +662,13 @@ export default function AdminSponsorsPage() {
                       ? "No published sponsors yet"
                       : "No sponsors yet"}
               </p>
-              {activeTab !== "pending" && activeTab !== "rejected" && (
-                <Button onPress={() => setShowForm(true)}>
-                  Add Your First Sponsor
-                </Button>
-              )}
+              {canManage &&
+                activeTab !== "pending" &&
+                activeTab !== "rejected" && (
+                  <Button onPress={() => setShowForm(true)}>
+                    Add Your First Sponsor
+                  </Button>
+                )}
             </CardContent>
           </Card>
         ) : (
@@ -746,7 +756,7 @@ export default function AdminSponsorsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      {statusOf(sponsor) !== "approved" && (
+                      {canReview && statusOf(sponsor) !== "approved" && (
                         <Button
                           isIconOnly
                           aria-label={`Approve ${sponsor.name}`}
@@ -758,7 +768,7 @@ export default function AdminSponsorsPage() {
                           <CheckIcon aria-hidden="true" className="w-4 h-4" />
                         </Button>
                       )}
-                      {statusOf(sponsor) === "pending" && (
+                      {canReview && statusOf(sponsor) === "pending" && (
                         <Button
                           isIconOnly
                           aria-label={`Send back ${sponsor.name}`}
@@ -780,25 +790,29 @@ export default function AdminSponsorsPage() {
                           Visit
                         </Button>
                       </a>
-                      <Button
-                        isIconOnly
-                        aria-label={`Edit ${sponsor.name}`}
-                        size="sm"
-                        variant="secondary"
-                        onPress={() => handleEdit(sponsor)}
-                      >
-                        <EditIcon className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        aria-label={`Delete ${sponsor.name}`}
-                        isPending={deletingId === sponsor.$id}
-                        size="sm"
-                        variant="danger-soft"
-                        onPress={() => handleDelete(sponsor.$id!)}
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </Button>
+                      {canManage && (
+                        <Button
+                          isIconOnly
+                          aria-label={`Edit ${sponsor.name}`}
+                          size="sm"
+                          variant="secondary"
+                          onPress={() => handleEdit(sponsor)}
+                        >
+                          <EditIcon className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canManage && (
+                        <Button
+                          isIconOnly
+                          aria-label={`Delete ${sponsor.name}`}
+                          isPending={deletingId === sponsor.$id}
+                          size="sm"
+                          variant="danger-soft"
+                          onPress={() => handleDelete(sponsor.$id!)}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Order */}
