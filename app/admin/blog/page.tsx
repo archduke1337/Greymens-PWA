@@ -29,12 +29,23 @@ import {
   Tabs,
   TextArea,
 } from "@heroui/react";
-import { CheckIcon, XIcon, ClockIcon, StarIcon } from "lucide-react";
+import {
+  CheckIcon,
+  XIcon,
+  ClockIcon,
+  StarIcon,
+  RocketIcon,
+} from "lucide-react";
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { usePermissions } from "@/context/PermissionContext";
 import { logError } from "@/lib/logger";
 
 export default function AdminBlogsPage() {
+  const { hasCapability } = usePermissions();
+  // Publishing is its own step on top of approving: blog.publish is what the
+  // server checks for the `publish` action.
+  const canPublish = hasCapability("blog.publish");
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,8 +117,13 @@ export default function AdminBlogsPage() {
       case "pending":
         filtered = blogs.filter((b) => b.status === "pending");
         break;
+      // "Passed review", whether or not the editorial publish step has been
+      // taken — publishing must not make a post vanish from the tab it was
+      // approved in.
       case "approved":
-        filtered = blogs.filter((b) => b.status === "approved");
+        filtered = blogs.filter(
+          (b) => b.status === "approved" || b.status === "published",
+        );
         break;
       case "rejected":
         filtered = blogs.filter((b) => b.status === "rejected");
@@ -132,6 +148,21 @@ export default function AdminBlogsPage() {
     } catch (error) {
       logError("Error approving blog:", error);
       toast.error(getErrorMessage(error) || "Failed to approve blog");
+    } finally {
+      setProcessingBlog(null);
+    }
+  };
+
+  const handlePublish = async (blogId: string) => {
+    if (!confirm("Publish this post? It stays publicly readable.")) return;
+    setProcessingBlog(blogId);
+    try {
+      await applyBlogAction(blogId, "publish");
+      toast.success("Post marked as published");
+      await loadBlogs();
+    } catch (error) {
+      logError("Error publishing blog:", error);
+      toast.error(getErrorMessage(error) || "Failed to publish blog");
     } finally {
       setProcessingBlog(null);
     }
@@ -265,8 +296,16 @@ export default function AdminBlogsPage() {
               <div className="flex items-center gap-2">
                 <CheckIcon className="w-4 h-4" />
                 <span className="tabular-nums">
+                  {/* Not "approved" alone: a published post used to leave
+                      this tab the moment it went live. */}
                   Approved (
-                  {blogs.filter((b) => b.status === "approved").length})
+                  {
+                    blogs.filter(
+                      (b) =>
+                        b.status === "approved" || b.status === "published",
+                    ).length
+                  }
+                  )
                 </span>
               </div>
               <TabIndicator />
@@ -330,7 +369,8 @@ export default function AdminBlogsPage() {
                       <h3 className="font-bold text-xl flex-1">{blog.title}</h3>
                       <Chip
                         color={
-                          blog.status === "approved"
+                          blog.status === "approved" ||
+                          blog.status === "published"
                             ? "success"
                             : blog.status === "rejected"
                               ? "danger"
@@ -455,15 +495,31 @@ export default function AdminBlogsPage() {
                       </>
                     )}
 
-                    {blog.status === "approved" && (
+                    {(blog.status === "approved" ||
+                      blog.status === "published") && (
+                      <Button
+                        className="flex-1 md:flex-none"
+                        isPending={processingBlog === blog.$id}
+                        size="sm"
+                        variant="secondary"
+                        onPress={() => toggleFeatured(blog)}
+                      >
+                        {blog.featured ? "Unfeature" : "Feature"}
+                      </Button>
+                    )}
+
+                    {/* The explicit editorial step: an approved post is
+                        readable, and publishing records who put it out. */}
+                    {blog.status === "approved" && canPublish && (
                       <Button
                         className="flex-1 md:flex-none"
                         isPending={processingBlog === blog.$id}
                         size="sm"
                         variant="primary"
-                        onPress={() => toggleFeatured(blog)}
+                        onPress={() => handlePublish(blog.$id!)}
                       >
-                        {blog.featured ? "Unfeature" : "Feature"}
+                        <RocketIcon aria-hidden="true" className="w-4 h-4" />
+                        Publish
                       </Button>
                     )}
 
