@@ -3,6 +3,7 @@
 import type { Project } from "@/lib/types";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import {
@@ -48,9 +49,15 @@ import {
 } from "@heroui/react";
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { logError } from "@/lib/logger";
 
 export default function AdminProjectsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { hasCapability } = usePermissions();
+  const router = useRouter();
+  const canManage = hasCapability("projects.manage");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -78,12 +85,12 @@ export default function AdminProjectsPage() {
   });
 
   const categories = [
-    { key: "ai-ml", label: "🤖 AI & ML" },
-    { key: "blockchain", label: "⛓️ Blockchain" },
-    { key: "mobile", label: "📱 Mobile" },
-    { key: "web", label: "🌐 Web" },
-    { key: "iot", label: "🔌 IoT" },
-    { key: "quantum", label: "⚛️ Quantum" },
+    { key: "ai-ml", label: "AI & ML" },
+    { key: "blockchain", label: "Blockchain" },
+    { key: "mobile", label: "Mobile" },
+    { key: "web", label: "Web" },
+    { key: "iot", label: "IoT" },
+    { key: "quantum", label: "Quantum" },
   ];
 
   const statuses = [
@@ -126,8 +133,13 @@ export default function AdminProjectsPage() {
   };
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (!authLoading && !user) {
+      router.push("/login");
+
+      return;
+    }
+    if (!authLoading && user) void fetchProjects();
+  }, [user, authLoading, router]);
 
   // Reset form
   const resetForm = () => {
@@ -205,6 +217,41 @@ export default function AdminProjectsPage() {
     }
     if (!/^https?:\/\/.+/i.test(formData.image.trim())) {
       toast.error("Image must be a valid http(s) URL");
+
+      return false;
+    }
+    // The server accepts empty demo/repo URLs but 400s on non-http(s) ones —
+    // catch the missing-protocol paste here instead of at submit.
+    for (const [field, label] of [
+      ["demoUrl", "Demo URL"],
+      ["repoUrl", "Repository URL"],
+    ] as const) {
+      const value = formData[field].trim();
+
+      if (value && !/^https?:\/\/.+/i.test(value)) {
+        toast.error(`${label} must be a valid http(s) URL or left empty`);
+
+        return false;
+      }
+    }
+    // Over-long entries 500 server-side (technologies ≤100, members ≤255).
+    const overlongTech = formData.technologies
+      .split(",")
+      .map((t) => t.trim())
+      .find((t) => t.length > 100);
+
+    if (overlongTech) {
+      toast.error("Each technology must be 100 characters or fewer");
+
+      return false;
+    }
+    const overlongMember = formData.teamMembers
+      .split(",")
+      .map((t) => t.trim())
+      .find((t) => t.length > 255);
+
+    if (overlongMember) {
+      toast.error("Each team member must be 255 characters or fewer");
 
       return false;
     }
@@ -366,6 +413,37 @@ export default function AdminProjectsPage() {
         return "default";
     }
   };
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div
+          aria-label="Loading projects"
+          className="text-center space-y-4"
+          role="status"
+        >
+          <Spinner className="mb-4" size="lg" />
+          <p className="text-muted">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!user) return null;
+  if (!canManage) {
+    return (
+      <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <Card>
+            <CardContent className="p-8 text-center text-muted">
+              Project management requires the projects.manage capability — cto,
+              research, software/web, or AI/ML leads hold it. What you can see
+              publicly lives on the projects page.
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
