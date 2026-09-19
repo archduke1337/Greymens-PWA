@@ -386,11 +386,16 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // One review path, one action map. The publish step used to live on a
+  // second endpoint (/api/admin/blogs) that nothing called, which meant
+  // blog.publish was granted to editorial leads and enforced nowhere: the
+  // capability listed in the console and no door opened for it.
   const capabilityByAction: Record<string, string> = {
     approve: "blog.approve",
     reject: "blog.review",
     feature: "blog.feature",
     unfeature: "blog.feature",
+    publish: "blog.publish",
   };
   const capability = capabilityByAction[action];
 
@@ -418,10 +423,13 @@ export async function PATCH(request: NextRequest) {
     // their own post — authors holding review powers need a second reviewer.
     const isAuthor = String(blog.authorId ?? "") === authenticated.user.$id;
 
-    if (isAuthor && (action === "approve" || action === "feature")) {
+    if (
+      isAuthor &&
+      (action === "approve" || action === "feature" || action === "publish")
+    ) {
       return fail(
         "FORBIDDEN",
-        "Authors cannot approve or feature their own posts",
+        "Authors cannot approve, publish, or feature their own posts",
         403,
       );
     }
@@ -432,7 +440,13 @@ export async function PATCH(request: NextRequest) {
         ? { status: "approved", publishedAt: blog.publishedAt || now }
         : action === "reject"
           ? { status: "rejected", rejectionReason: reason, featured: false }
-          : { featured: action === "feature" };
+          : action === "publish"
+            ? {
+                status: "published",
+                publishedAt: now,
+                publishedBy: authenticated.user.$id,
+              }
+            : { featured: action === "feature" };
 
     // Approving publishes the author's *current* public picture: posts
     // submitted before the avatar upload would otherwise go live faceless.
