@@ -361,11 +361,6 @@ export default function OnboardingPage() {
 
           return false;
         }
-        if (!formData.urn.trim()) {
-          toast.error("University roll number is required");
-
-          return false;
-        }
         if (!formData.dateOfBirth) {
           toast.error("Date of birth is required");
 
@@ -456,7 +451,6 @@ export default function OnboardingPage() {
     }
     if (
       !formData.phone.trim() ||
-      !formData.urn.trim() ||
       !formData.dateOfBirth ||
       !formData.gender ||
       !formData.program ||
@@ -681,7 +675,10 @@ export default function OnboardingPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="onboarding-urn">University Roll Number *</Label>
+                <Label htmlFor="onboarding-urn">
+                  University Roll Number{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </Label>
                 <Input
                   fullWidth
                   id="onboarding-urn"
@@ -781,8 +778,17 @@ export default function OnboardingPage() {
                         "MCA",
                         "B.Sc",
                         "M.Sc",
+                        "BBA",
                         "MBA",
+                        "B.Com",
+                        "BA",
+                        "B.Des",
+                        "M.Des",
+                        "B.Arch",
+                        "B.Pharm",
+                        "Diploma",
                         "PhD",
+                        "Other",
                       ].map((program) => (
                         <ListBox.Item
                           key={program}
@@ -815,11 +821,24 @@ export default function OnboardingPage() {
                     <ListBox>
                       {[
                         "Computer Science",
+                        "AI & Machine Learning",
+                        "AI & Data Science",
+                        "Cybersecurity",
+                        "Data Science",
+                        "Software Engineering",
                         "Information Technology",
+                        "Electronics & Communication",
                         "Electronics",
                         "Electrical",
                         "Mechanical",
                         "Civil",
+                        "Chemical",
+                        "Biotechnology",
+                        "Architecture",
+                        "Design",
+                        "Management",
+                        "Commerce",
+                        "Arts & Humanities",
                         "Other",
                       ].map((branch) => (
                         <ListBox.Item

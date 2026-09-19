@@ -175,7 +175,6 @@ export async function POST(request: NextRequest) {
 
     const requiredProfileFields = [
       "phone",
-      "urn",
       "dateOfBirth",
       "gender",
       "program",

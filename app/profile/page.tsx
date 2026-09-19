@@ -54,6 +54,13 @@ const PROGRAM_OPTIONS = [
   { value: "M.Sc", label: "M.Sc" },
   { value: "BBA", label: "BBA" },
   { value: "MBA", label: "MBA" },
+  { value: "B.Com", label: "B.Com" },
+  { value: "BA", label: "BA" },
+  { value: "B.Des", label: "B.Des" },
+  { value: "M.Des", label: "M.Des" },
+  { value: "B.Arch", label: "B.Arch" },
+  { value: "B.Pharm", label: "B.Pharm" },
+  { value: "Diploma", label: "Diploma" },
   { value: "PhD", label: "PhD" },
   { value: "other", label: "Other" },
 ];
