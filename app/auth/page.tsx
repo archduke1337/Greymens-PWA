@@ -1,5 +1,5 @@
 // app/auth/page.tsx
-// Signed-out auth screen: the first-party entry point for GitHub OAuth.
+// Signed-out auth screen: the first-party entry point for OAuth.
 // Guard: verified session state redirects to /dashboard before rendering UI.
 "use client";
 import { Suspense, useEffect, useState } from "react";
@@ -8,12 +8,14 @@ import { Alert, Button, Card, Link, Spinner } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
 import GitHubIcon from "@/components/auth/GitHubIcon";
+import GoogleIcon from "@/components/auth/GoogleIcon";
 import { logError } from "@/lib/logger";
 
 function AuthScreen() {
-  const { user, loading, loginWithGithub } = useAuth();
+  const { user, loading, loginWithGithub, loginWithGoogle } = useAuth();
   const router = useRouter();
   const [githubLoading, setGithubLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Guard: already signed in → dashboard. Runs on verified context state
@@ -22,28 +24,53 @@ function AuthScreen() {
     if (!loading && user) router.push("/dashboard");
   }, [user, loading, router]);
 
+  const stashNext = () => {
+    try {
+      sessionStorage.setItem("post_auth_next", "/dashboard");
+    } catch {
+      // Storage unavailable: success callback falls back to "/dashboard".
+    }
+  };
+
+  const clearNext = () => {
+    try {
+      sessionStorage.removeItem("post_auth_next");
+    } catch {
+      // Ignore storage errors on the failure path too.
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      stashNext();
+      // Token flow: navigates to Google; do not redirect manually.
+      await loginWithGoogle();
+    } catch (err: unknown) {
+      clearNext();
+      logError("Google sign-in failed:", err);
+      setError("Google sign-in didn't start. Please try again.");
+      setGoogleLoading(false);
+    }
+  };
+
   const handleGithubSignIn = async () => {
     setError("");
     setGithubLoading(true);
     try {
-      try {
-        sessionStorage.setItem("post_auth_next", "/dashboard");
-      } catch {
-        // Storage unavailable: success callback falls back to "/dashboard".
-      }
+      stashNext();
       // Token flow: navigates to GitHub; do not redirect manually.
       await loginWithGithub();
     } catch (err: unknown) {
-      try {
-        sessionStorage.removeItem("post_auth_next");
-      } catch {
-        // Ignore storage errors on the failure path too.
-      }
+      clearNext();
       logError("GitHub sign-in failed:", err);
       setError("GitHub sign-in didn't start. Please try again.");
       setGithubLoading(false);
     }
   };
+
+  const busy = githubLoading || googleLoading;
 
   if (loading || user) {
     return (
@@ -66,7 +93,7 @@ function AuthScreen() {
         <Card.Header>
           <Card.Title>Sign in to Greymens</Card.Title>
           <Card.Description>
-            Use your GitHub account — or continue with email instead.
+            Use your Google or GitHub account — or continue with email instead.
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-4">
@@ -84,8 +111,27 @@ function AuthScreen() {
           <Button
             fullWidth
             className="rounded-full"
-            isDisabled={githubLoading}
+            isDisabled={busy}
+            isPending={googleLoading}
+            onPress={handleGoogleSignIn}
+          >
+            {({ isPending }) => (
+              <>
+                {isPending ? (
+                  <Spinner color="current" size="sm" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                {isPending ? "Connecting to Google…" : "Sign in with Google"}
+              </>
+            )}
+          </Button>
+          <Button
+            fullWidth
+            className="rounded-full"
+            isDisabled={busy}
             isPending={githubLoading}
+            variant="secondary"
             onPress={handleGithubSignIn}
           >
             {({ isPending }) => (

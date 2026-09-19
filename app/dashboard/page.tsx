@@ -39,8 +39,10 @@ export default function DashboardPage() {
     hasCapability("users.view");
 
   useEffect(() => {
+    // Signed-out guard: verified context state (account.get()) decides, so a
+    // dead or forged session lands back on the auth screen, never the UI.
     if (!authLoading && !user) {
-      router.push("/login");
+      router.push("/auth");
     }
   }, [user, authLoading, router]);
 

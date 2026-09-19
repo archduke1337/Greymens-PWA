@@ -171,20 +171,29 @@ export const authService = {
     }
   },
 
-  // Google OAuth Login
+  // Google OAuth login (token flow only).
+  //
+  // Same contract as loginWithGithub: Account.createOAuth2Token navigates the
+  // browser to Google — do not redirect manually. Appwrite appends `userId` +
+  // `secret` to the success URL, and /auth/success exchanges them via
+  // account.createSession(...). Never use createOAuth2Session here: the
+  // session variant skips the first-party callback, so the app could not
+  // create the session itself after redirect. No OAuth secrets live in
+  // frontend code; they stay in the Appwrite Console under Auth > Social
+  // providers for this project (provider ID "google").
   loginWithGoogle() {
     try {
       const successUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback`
-          : "/auth/callback";
+          ? `${window.location.origin}/auth/success`
+          : "/auth/success";
 
       const failureUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/login`
-          : "/login";
+          ? `${window.location.origin}/auth/failure`
+          : "/auth/failure";
 
-      account.createOAuth2Session({
+      return account.createOAuth2Token({
         provider: OAuthProvider.Google,
         success: successUrl,
         failure: failureUrl,

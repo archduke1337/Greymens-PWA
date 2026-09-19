@@ -14,7 +14,7 @@ function FailureContent() {
     <div className="mx-auto w-full max-w-md px-4 py-14 sm:px-6">
       <Card className="w-full">
         <Card.Header>
-          <Card.Title>GitHub sign-in failed</Card.Title>
+          <Card.Title>Sign-in failed</Card.Title>
           <Card.Description>
             The provider didn&apos;t complete sign-in. Nothing was changed.
           </Card.Description>
@@ -23,7 +23,7 @@ function FailureContent() {
           <Alert role="alert" status="danger">
             <Alert.Indicator />
             <Alert.Content>
-              <Alert.Title>Couldn&apos;t sign you in with GitHub</Alert.Title>
+              <Alert.Title>Couldn&apos;t sign you in</Alert.Title>
               <Alert.Description>
                 {detail
                   ? `Provider said: ${detail}`

@@ -1,5 +1,5 @@
 // app/auth/success/page.tsx
-// OAuth success callback (GitHub token flow).
+// OAuth success callback (Google + GitHub token flow).
 // Reads `userId` + `secret` from the query string, awaits
 // account.createSession(...), then redirects to the stored destination.
 "use client";
@@ -106,7 +106,7 @@ function SuccessHandler() {
         role="status"
       >
         <Spinner size="lg" />
-        <p className="text-muted">Completing GitHub sign-in…</p>
+        <p className="text-muted">Completing sign-in…</p>
       </div>
     </div>
   );
