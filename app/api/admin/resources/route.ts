@@ -1,12 +1,18 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 
-import { createServerDatabases } from "@/lib/appwrite-server";
+import {
+  createServerDatabases,
+  createServerStorage,
+} from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
+import { MEMBER_FILE_PERMISSIONS, ownerFilePermissions } from "@/lib/storage";
 import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
+
+const BUCKET_ID = "resources";
 
 /**
  * Resource review queue.
@@ -84,6 +90,30 @@ export async function PATCH(request: NextRequest) {
       resourceId,
       data,
     );
+
+    // The verdict also decides who may read the stored file: approved material
+    // is club property (members), and anything sent back belongs to its
+    // uploader alone. Link-only rows have no file of ours to flip. A failure
+    // is logged rather than fatal — the moderation decision is already saved.
+    const fileId = String(resource.fileId ?? "");
+    const uploaderId = String(resource.uploadedBy ?? "");
+
+    if (fileId) {
+      const { storage } = createServerStorage();
+
+      await storage
+        .updateFile({
+          bucketId: BUCKET_ID,
+          fileId,
+          permissions:
+            action === "approve" || !uploaderId
+              ? MEMBER_FILE_PERMISSIONS
+              : ownerFilePermissions(uploaderId),
+        })
+        .catch((error) => {
+          logError("Resource file permission update failed:", error);
+        });
+    }
 
     await recordAudit({
       request,

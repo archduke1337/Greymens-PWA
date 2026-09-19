@@ -9,7 +9,11 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireMember } from "@/lib/server-auth";
 import { hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
-import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
+import {
+  MEMBER_FILE_PERMISSIONS,
+  PUBLIC_FILE_PERMISSIONS,
+  getStorageFileViewUrl,
+} from "@/lib/storage";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isHttpUrl } from "@/lib/validation";
 import { ok, fail } from "@/lib/api";
@@ -201,20 +205,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const imageUrls: string[] = [];
+    // Moderation authority is the capability, the same one /api/admin/gallery
+    // requires. It used to be read here as the legacy `gallery_manager` power,
+    // so a manager who held gallery.manage still had their own uploads queued
+    // as pending — two answers to one question.
+    const canModerate = await hasServerCapability(
+      authenticated.user.$id,
+      "gallery.manage",
+    );
+    const uploaded: Array<{ url: string; fileId: string | null }> = [];
 
     for (const file of files) {
       const stored = await storage.createFile(
         BUCKET_ID,
         ID.unique(),
         file,
-        PUBLIC_FILE_PERMISSIONS,
+        // A pending upload is members-only. Publishing it to the world at
+        // upload time made unreviewed images reachable by anyone who had the
+        // view URL, which is exactly what "review before publishing" is
+        // supposed to prevent. Approval flips this file to public.
+        canModerate ? PUBLIC_FILE_PERMISSIONS : MEMBER_FILE_PERMISSIONS,
       );
 
-      imageUrls.push(getStorageFileViewUrl(BUCKET_ID, stored.$id));
+      uploaded.push({
+        url: getStorageFileViewUrl(BUCKET_ID, stored.$id),
+        fileId: stored.$id,
+      });
     }
 
-    if (imageUrls.length === 0) {
+    if (uploaded.length === 0) {
       const providedUrl = text(form.get("imageUrl"), 500);
 
       if (!providedUrl) {
@@ -227,22 +246,16 @@ export async function POST(request: NextRequest) {
           400,
         );
       }
-      imageUrls.push(providedUrl);
+      // An external URL has no permissions of ours to set — it is already as
+      // public or private as the host decided.
+      uploaded.push({ url: providedUrl, fileId: null });
     }
 
-    // Moderation authority is the capability, the same one /api/admin/gallery
-    // requires. It used to be read here as the legacy `gallery_manager` power,
-    // so a manager who held gallery.manage still had their own uploads queued
-    // as pending — two answers to one question.
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "gallery.manage",
-    );
     const now = new Date().toISOString();
     const albumId = ID.unique();
     const images = [];
 
-    for (const imageUrl of imageUrls) {
+    for (const entry of uploaded) {
       const image = await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.GALLERY,
@@ -250,11 +263,12 @@ export async function POST(request: NextRequest) {
         {
           title,
           description,
-          imageUrl,
+          imageUrl: entry.url,
           category,
           tags,
           uploadedBy: authenticated.user.$id,
           albumId,
+          ...(entry.fileId ? { storageFileId: entry.fileId } : {}),
           status: canModerate ? "approved" : "pending",
           isActive: true,
           ...(canModerate

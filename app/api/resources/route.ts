@@ -17,7 +17,11 @@ import {
 import { hasServerCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { MEMBER_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
+import {
+  MEMBER_FILE_PERMISSIONS,
+  getStorageFileViewUrl,
+  ownerFilePermissions,
+} from "@/lib/storage";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -514,6 +518,12 @@ export async function POST(request: NextRequest) {
 
     const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
+    // Moderation authority decides the row's status and the file's read
+    // permission, so it is resolved before the upload rather than after.
+    const canModerate = await hasServerCapability(
+      authenticated.user.$id,
+      "resources.manage",
+    );
     let fileUrl = url || undefined;
     let fileId: string | null = null;
 
@@ -522,17 +532,18 @@ export async function POST(request: NextRequest) {
         BUCKET_ID,
         ID.unique(),
         file,
-        MEMBER_FILE_PERMISSIONS,
+        // A submission awaiting review is its uploader's alone: every member
+        // being able to open an unapproved document is the leak "pending"
+        // is supposed to prevent. Approval widens it to the membership.
+        canModerate
+          ? MEMBER_FILE_PERMISSIONS
+          : ownerFilePermissions(authenticated.user.$id),
       );
 
       fileId = uploaded.$id;
       fileUrl = getStorageFileViewUrl(BUCKET_ID, uploaded.$id);
     }
     const now = new Date().toISOString();
-    const canModerate = await hasServerCapability(
-      authenticated.user.$id,
-      "resources.manage",
-    );
     // OAuth profiles sometimes carry no display name — the table requires
     // uploadedByName, so fall back to email before the id rather than 400ing
     // an otherwise valid submission.

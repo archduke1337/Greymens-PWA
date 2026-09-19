@@ -852,6 +852,10 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     // gallery renders one card per album. Rows predating the column group
     // solo by their own id.
     { key: "albumId", type: "string", size: 36 },
+    // The stored file behind imageUrl. Approving a pending image has to flip
+    // that file's read permission, which needs the id — the URL alone is a
+    // view link, not a handle.
+    { key: "storageFileId", type: "string", size: 36 },
   ], [
     { key: "idx_status", type: "key", columns: ["status"] },
     { key: "idx_category", type: "key", columns: ["category"] },
@@ -1022,11 +1026,23 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "featured", type: "boolean", required: true },
     { key: "startDate", type: "string", size: 30, required: true },
     { key: "endDate", type: "string", size: 30 },
+    // Moderation (member intake): `status` gates public visibility — a
+    // proposed sponsor stays invisible until a sponsors manager approves it.
+    // Rows predating these columns carry no status and read as approved
+    // legacy partners, so the existing wall does not vanish after upgrade.
+    { key: "status", type: "string", size: 50 },
+    { key: "submittedBy", type: "string", size: 36 },
+    { key: "submittedByName", type: "string", size: 255 },
+    { key: "reviewedBy", type: "string", size: 36 },
+    { key: "reviewedAt", type: "string", size: 30 },
+    { key: "rejectionReason", type: "string", size: 2000 },
   ], [
     { key: "idx_active", type: "key", columns: ["isActive"] },
     { key: "idx_order", type: "key", columns: ["displayOrder"] },
     { key: "idx_featured", type: "key", columns: ["featured"] },
     { key: "idx_tier", type: "key", columns: ["tier"] },
+    { key: "idx_status", type: "key", columns: ["status"] },
+    { key: "idx_submitter", type: "key", columns: ["submittedBy"] },
   ]);
 
   // ===== BUCKETS =====

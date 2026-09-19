@@ -4,6 +4,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireCapability } from "@/lib/access-control";
+import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -141,7 +142,16 @@ export async function POST(request: NextRequest) {
       DATABASE_ID,
       COLLECTIONS.SPONSORS,
       ID.unique(),
-      fields,
+      {
+        ...fields,
+        // A console-created sponsor is the manager's own decision: it goes
+        // live immediately instead of entering the review queue it would then
+        // have to approve itself out of. Attribution is recorded the same way
+        // a reviewed proposal's is, so the wall reads one history.
+        status: "approved",
+        reviewedBy: authenticated.user.$id,
+        reviewedAt: new Date().toISOString(),
+      },
     );
 
     await recordAudit({
@@ -172,6 +182,75 @@ export async function PATCH(request: NextRequest) {
 
     if (!sponsorId) return fail("VALIDATION", "sponsorId is required", 400);
     const { sponsorId: _sponsorId, ...rest } = body;
+
+    // Review decisions ride the same endpoint as edits (projects/gallery
+    // model): approve or reject a member proposal, then tell the submitter
+    // in-app and by mail through the shared dispatch.
+    if (rest.action === "approve" || rest.action === "reject") {
+      const action = rest.action as string;
+      const reason =
+        typeof rest.reason === "string"
+          ? rest.reason.trim().slice(0, 2000)
+          : "";
+
+      if (action === "reject" && !reason) {
+        return fail("VALIDATION", "A rejection reason is required", 400);
+      }
+      const { databases } = createServerDatabases();
+      const now = new Date().toISOString();
+      const sponsor = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.SPONSORS,
+        sponsorId,
+        action === "approve"
+          ? {
+              status: "approved",
+              reviewedBy: authenticated.user.$id,
+              reviewedAt: now,
+              rejectionReason: null,
+            }
+          : {
+              status: "rejected",
+              rejectionReason: reason,
+              reviewedBy: authenticated.user.$id,
+              reviewedAt: now,
+            },
+      );
+
+      const submitter = String(sponsor.submittedBy ?? "");
+      const name = String(sponsor.name ?? "your sponsor proposal");
+
+      if (submitter) {
+        await dispatchNotification({
+          userId: submitter,
+          type: "general",
+          title:
+            action === "approve"
+              ? "Sponsor proposal approved"
+              : "Sponsor proposal needs changes",
+          body:
+            action === "approve"
+              ? `"${name}" was approved and is now on the sponsors wall.`
+              : `"${name}" was not approved yet. Reviewer note: ${reason}`,
+        }).catch((error) => {
+          // The decision is saved; only the notice failed. Log it rather than
+          // letting a silent catch imply the submitter was told.
+          logError("Sponsor decision notification failed:", error);
+        });
+      }
+
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: `sponsor.${action}`,
+        entityType: "sponsor",
+        entityId: sponsorId,
+        details: { action },
+      });
+
+      return ok({ sponsor });
+    }
+
     const data = pickSponsorFields(rest);
     const validationError = validate(data, true);
 

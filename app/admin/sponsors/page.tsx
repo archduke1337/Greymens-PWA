@@ -65,6 +65,22 @@ export default function AdminSponsorsPage() {
   const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Review queue: member submissions arrive as `pending`; rows predating the
+  // intake flow carry no status and read as approved legacy partners.
+  type ReviewTab = "all" | "pending" | "approved" | "rejected";
+  const [activeTab, setActiveTab] = useState<ReviewTab>("all");
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const statusOf = (sponsor: Sponsor) => sponsor.status ?? "approved";
+  const visibleSponsors = sponsors.filter(
+    (sponsor) => activeTab === "all" || statusOf(sponsor) === activeTab,
+  );
+  const reviewCounts = {
+    pending: sponsors.filter((s) => statusOf(s) === "pending").length,
+    approved: sponsors.filter((s) => statusOf(s) === "approved").length,
+    rejected: sponsors.filter((s) => statusOf(s) === "rejected").length,
+  };
+
   // Form state
   const [formData, setFormData] = useState<Sponsor>({
     name: "",
@@ -244,6 +260,65 @@ export default function AdminSponsorsPage() {
       toast.error(getErrorMessage(error) || "Failed to delete sponsor");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleReview = async (
+    sponsor: Sponsor,
+    action: "approve" | "reject",
+  ) => {
+    if (!sponsor.$id) return;
+    let reason = "";
+
+    if (action === "reject") {
+      const input = window.prompt(
+        `Why is "${sponsor.name}" not approved? The submitter sees this.`,
+        sponsor.rejectionReason ?? "",
+      );
+
+      if (input === null) return;
+      reason = input.trim();
+
+      if (!reason) {
+        toast.error("A rejection reason is required");
+
+        return;
+      }
+    } else if (
+      !confirm(`Approve "${sponsor.name}"? It goes live on the sponsors wall.`)
+    ) {
+      return;
+    }
+
+    setReviewingId(sponsor.$id);
+    try {
+      const response = await fetch("/api/admin/sponsors", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          sponsorId: sponsor.$id,
+          action,
+          reason: reason || undefined,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to review sponsor"));
+      toast.success(
+        action === "approve" ? "Sponsor approved" : "Sponsor sent back",
+      );
+      await loadSponsors();
+    } catch (error) {
+      const message = getErrorMessage(error);
+
+      logError("Error reviewing sponsor:", message);
+      toast.error(`Failed to review sponsor: ${message}`);
+    } finally {
+      setReviewingId(null);
     }
   };
 
@@ -521,22 +596,74 @@ export default function AdminSponsorsPage() {
 
       {/* Sponsors List */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tabular-nums">
-          All Sponsors ({sponsors.length})
-        </h2>
+        <div
+          aria-label="Filter sponsors by review status"
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+        >
+          {(
+            [
+              { value: "all", label: "All" },
+              { value: "pending", label: "Needs review" },
+              { value: "approved", label: "Published" },
+              { value: "rejected", label: "Sent back" },
+            ] as const
+          ).map((tab) => {
+            const count =
+              tab.value === "all" ? sponsors.length : reviewCounts[tab.value];
 
-        {sponsors.length === 0 ? (
+            return (
+              <Button
+                key={tab.value}
+                aria-pressed={activeTab === tab.value}
+                size="sm"
+                variant={activeTab === tab.value ? "primary" : "secondary"}
+                onPress={() => setActiveTab(tab.value)}
+              >
+                {tab.label}
+                <Chip
+                  className="ml-1 tabular-nums"
+                  color={
+                    tab.value === "approved"
+                      ? "success"
+                      : tab.value === "rejected"
+                        ? "danger"
+                        : tab.value === "pending"
+                          ? "warning"
+                          : "default"
+                  }
+                  size="sm"
+                  variant="soft"
+                >
+                  {count}
+                </Chip>
+              </Button>
+            );
+          })}
+        </div>
+
+        {visibleSponsors.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <p className="text-lg text-default-600 mb-4">No sponsors yet</p>
-              <Button onPress={() => setShowForm(true)}>
-                Add Your First Sponsor
-              </Button>
+              <p className="text-lg text-default-600 mb-4">
+                {activeTab === "pending"
+                  ? "No proposals waiting"
+                  : activeTab === "rejected"
+                    ? "Nothing sent back"
+                    : activeTab === "approved"
+                      ? "No published sponsors yet"
+                      : "No sponsors yet"}
+              </p>
+              {activeTab !== "pending" && activeTab !== "rejected" && (
+                <Button onPress={() => setShowForm(true)}>
+                  Add Your First Sponsor
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sponsors.map((sponsor) => {
+            {visibleSponsors.map((sponsor) => {
               // Unknown tier values (legacy rows, API drift) must degrade to a
               // plain badge — indexing blind would crash the whole grid.
               const tierInfo =
@@ -555,6 +682,16 @@ export default function AdminSponsorsPage() {
                         {tierInfo.label}
                       </Chip>
                       {sponsor.featured && <Chip size="sm">Featured</Chip>}
+                      {statusOf(sponsor) === "pending" && (
+                        <Chip color="warning" size="sm" variant="soft">
+                          Needs review
+                        </Chip>
+                      )}
+                      {statusOf(sponsor) === "rejected" && (
+                        <Chip color="danger" size="sm" variant="soft">
+                          Sent back
+                        </Chip>
+                      )}
                       {sponsor.isActive ? (
                         <Chip size="sm">
                           <CheckIcon className="w-3 h-3" />
@@ -594,10 +731,45 @@ export default function AdminSponsorsPage() {
                           {sponsor.description}
                         </p>
                       )}
+                      {sponsor.submittedByName && (
+                        <p className="text-xs text-default-400 mt-1">
+                          Submitted by {sponsor.submittedByName}
+                        </p>
+                      )}
+                      {statusOf(sponsor) === "rejected" &&
+                        sponsor.rejectionReason && (
+                          <p className="text-sm text-danger mt-2 line-clamp-2">
+                            {sponsor.rejectionReason}
+                          </p>
+                        )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex gap-2">
+                      {statusOf(sponsor) !== "approved" && (
+                        <Button
+                          isIconOnly
+                          aria-label={`Approve ${sponsor.name}`}
+                          isPending={reviewingId === sponsor.$id}
+                          size="sm"
+                          variant="primary"
+                          onPress={() => handleReview(sponsor, "approve")}
+                        >
+                          <CheckIcon aria-hidden="true" className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {statusOf(sponsor) === "pending" && (
+                        <Button
+                          isIconOnly
+                          aria-label={`Send back ${sponsor.name}`}
+                          isPending={reviewingId === sponsor.$id}
+                          size="sm"
+                          variant="danger-soft"
+                          onPress={() => handleReview(sponsor, "reject")}
+                        >
+                          <XIcon aria-hidden="true" className="w-4 h-4" />
+                        </Button>
+                      )}
                       <a
                         className="flex-1"
                         href={sponsor.website}

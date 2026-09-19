@@ -18,6 +18,18 @@ export const PUBLIC_FILE_PERMISSIONS = [Permission.read(Role.any())];
 export const MEMBER_FILE_PERMISSIONS = [Permission.read(Role.users())];
 
 /**
+ * Owner-only read, for a file whose submission has not been approved yet.
+ *
+ * "Private until approved" cannot mean public-with-a-secret-URL: a file uploaded
+ * with the world-readable permission is reachable by anyone who has (or guesses)
+ * the view URL, long before a reviewer looks at it. Until a moderator decides,
+ * the bytes belong to the uploader alone.
+ */
+export function ownerFilePermissions(userId: string) {
+  return [Permission.read(Role.user(userId))];
+}
+
+/**
  * Public view URL for a stored file.
  *
  * node-appwrite's `storage.getFileView()` downloads the file content

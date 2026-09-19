@@ -14,6 +14,16 @@ export interface Sponsor {
   featured: boolean;
   startDate: string;
   endDate?: string;
+  /**
+   * Moderation state for member-submitted sponsors. Missing on rows that
+   * predate the intake flow — those read as approved legacy partners.
+   */
+  status?: "pending" | "approved" | "rejected";
+  submittedBy?: string;
+  submittedByName?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
   $createdAt?: string;
   $updatedAt?: string;
 }

@@ -632,6 +632,12 @@ export interface GalleryImage {
    * card per album. Missing on legacy rows, which group solo.
    */
   albumId?: string;
+  /**
+   * The stored file behind imageUrl, when the image was uploaded rather than
+   * linked. Approval flips that file's read permission from members-only to
+   * public; legacy rows have no id and are already public.
+   */
+  storageFileId?: string;
 }
 
 // ============================================================

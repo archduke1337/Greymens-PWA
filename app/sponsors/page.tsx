@@ -5,16 +5,57 @@ import type { Sponsor } from "@/lib/sponsors";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Button, Card, CardContent, Chip, Separator } from "@heroui/react";
+import {
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Input,
+  Label,
+  ListBox,
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContainer,
+  ModalDialog,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  Separator,
+  TextArea,
+  useOverlayState,
+} from "@heroui/react";
+import { PlusIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { sponsorTiers } from "@/lib/sponsors";
+import { useAuth } from "@/context/AuthContext";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
+const TIER_OPTIONS = [
+  { value: "platinum", label: "Platinum Partner" },
+  { value: "gold", label: "Gold Sponsor" },
+  { value: "silver", label: "Silver Sponsor" },
+  { value: "bronze", label: "Bronze Sponsor" },
+  { value: "partner", label: "Community Partner" },
+] as const;
+
 export default function SponsorsPage() {
+  const { user } = useAuth();
+  const { isOpen, open, close } = useOverlayState();
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    logo: "",
+    website: "",
+    tier: "partner" as Sponsor["tier"],
+    category: "",
+    description: "",
+  });
 
   useEffect(() => {
     loadSponsors();
@@ -38,6 +79,72 @@ export default function SponsorsPage() {
       setSponsors([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Member intake. The submission queues as `pending` and stays off this page
+   * until a sponsor lead approves it — so the copy must not imply it went
+   * live, except for the manager whose own submission publishes on the spot.
+   */
+  const handlePropose = async () => {
+    if (!form.name.trim()) {
+      toast.error("Sponsor name is required");
+
+      return;
+    }
+    for (const [value, label] of [
+      [form.logo, "Logo URL"],
+      [form.website, "Website URL"],
+    ] as const) {
+      if (!/^https?:\/\/.+/i.test(value.trim())) {
+        toast.error(`${label} must be a valid http(s) URL`);
+
+        return;
+      }
+    }
+    setSending(true);
+    try {
+      const response = await fetch("/api/sponsors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: form.name.trim(),
+          logo: form.logo.trim(),
+          website: form.website.trim(),
+          tier: form.tier,
+          category: form.category.trim(),
+          description: form.description.trim(),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+        sponsor?: { status?: string };
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to submit sponsor"));
+      toast.success(
+        payload?.sponsor?.status === "approved"
+          ? "Sponsor added — it's live on this page."
+          : "Sponsor submitted — a sponsor lead reviews it before it appears.",
+      );
+      close();
+      setForm({
+        name: "",
+        logo: "",
+        website: "",
+        tier: "partner",
+        category: "",
+        description: "",
+      });
+      await loadSponsors();
+    } catch (error) {
+      logError("Error proposing sponsor:", error);
+      toast.error(getErrorMessage(error) || "Unable to submit sponsor");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -188,7 +295,194 @@ export default function SponsorsPage() {
         >
           sponsors@greymens.club
         </a>
+        {user && (
+          <div className="space-y-2">
+            <Button className="rounded-full" variant="primary" onPress={open}>
+              <PlusIcon aria-hidden="true" className="w-4 h-4" />
+              Propose a sponsor
+            </Button>
+            <p className="text-xs text-muted">
+              Know a partner we should approach? Put them forward — a sponsor
+              lead reviews every proposal before it appears above.
+            </p>
+          </div>
+        )}
       </section>
+
+      {/* Propose a sponsor */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isOpen}
+          onOpenChange={(next) => {
+            if (!next) close();
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>Propose a sponsor</ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted">
+                    Your proposal is reviewed by a sponsor lead before it joins
+                    the wall — nothing is public until then.
+                  </p>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="sponsor-name"
+                    >
+                      Name{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
+                    </label>
+                    <Input
+                      id="sponsor-name"
+                      placeholder="Organization name"
+                      value={form.name}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label
+                        className="mb-1 block text-sm font-medium"
+                        htmlFor="sponsor-logo"
+                      >
+                        Logo URL{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </label>
+                      <Input
+                        id="sponsor-logo"
+                        placeholder="https://…"
+                        value={form.logo}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((prev) => ({ ...prev, logo: e.target.value }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="mb-1 block text-sm font-medium"
+                        htmlFor="sponsor-website"
+                      >
+                        Website{" "}
+                        <span aria-hidden="true" className="text-danger">
+                          *
+                        </span>
+                      </label>
+                      <Input
+                        id="sponsor-website"
+                        placeholder="https://…"
+                        value={form.website}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            website: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      fullWidth
+                      value={form.tier}
+                      onChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          tier: String(value ?? "partner") as Sponsor["tier"],
+                        }))
+                      }
+                    >
+                      <Label>Proposed tier</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {TIER_OPTIONS.map((tier) => (
+                            <ListBox.Item
+                              key={tier.value}
+                              id={tier.value}
+                              textValue={tier.label}
+                            >
+                              {tier.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <div>
+                      <label
+                        className="mb-1 block text-sm font-medium"
+                        htmlFor="sponsor-category"
+                      >
+                        Industry{" "}
+                        <span className="font-normal text-muted">
+                          (optional)
+                        </span>
+                      </label>
+                      <Input
+                        id="sponsor-category"
+                        placeholder="Technology, education, finance…"
+                        value={form.category}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            category: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      className="mb-1 block text-sm font-medium"
+                      htmlFor="sponsor-description"
+                    >
+                      Why them?{" "}
+                      <span className="font-normal text-muted">
+                        (optional — the reviewer sees this)
+                      </span>
+                    </label>
+                    <TextArea
+                      id="sponsor-description"
+                      placeholder="Who they are, who you spoke to, what they offered…"
+                      rows={3}
+                      value={form.description}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="secondary" onPress={close}>
+                  Cancel
+                </Button>
+                <Button
+                  isPending={sending}
+                  variant="primary"
+                  onPress={handlePropose}
+                >
+                  Submit proposal
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
     </div>
   );
 }

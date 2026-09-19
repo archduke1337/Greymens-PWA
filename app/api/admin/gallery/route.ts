@@ -1,13 +1,22 @@
 import { NextRequest } from "next/server";
 import { Query } from "appwrite";
 
-import { createServerDatabases } from "@/lib/appwrite-server";
+import {
+  createServerDatabases,
+  createServerStorage,
+} from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
+import {
+  MEMBER_FILE_PERMISSIONS,
+  PUBLIC_FILE_PERMISSIONS,
+} from "@/lib/storage";
 import { requireCapability } from "@/lib/access-control";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
+
+const BUCKET_ID = "gallery-images";
 
 export async function GET(request: NextRequest) {
   const authenticated = await requireCapability(request, "gallery.manage");
@@ -94,6 +103,30 @@ export async function PATCH(request: NextRequest) {
       imageId,
       data,
     );
+
+    // The verdict decides whether the stored file is world-readable. Uploads
+    // now land members-only, so approving has to publish the file, and
+    // re-rejecting a previously approved image has to un-publish it again.
+    // A failure here is logged, not fatal: the moderation decision is already
+    // saved, and a link-only row has no file to flip.
+    const storageFileId = String(image.storageFileId ?? "");
+
+    if (storageFileId) {
+      const { storage } = createServerStorage();
+
+      await storage
+        .updateFile({
+          bucketId: BUCKET_ID,
+          fileId: storageFileId,
+          permissions:
+            action === "approve"
+              ? PUBLIC_FILE_PERMISSIONS
+              : MEMBER_FILE_PERMISSIONS,
+        })
+        .catch((error) => {
+          logError("Gallery file permission update failed:", error);
+        });
+    }
 
     await recordAudit({
       request,
