@@ -104,25 +104,28 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
             </Chip>
           </div>
 
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Horizontal cards need room to breathe: two columns max, so the
+              avatar block and the content column never squeeze each other. */}
+          <ul className="grid gap-5 lg:grid-cols-2">
             {group.members.map((member) => {
               const links = socialLinks(member);
 
               return (
                 <li key={member.userId} className="h-full">
-                  <Card className="h-full gap-0 transition-shadow hover:shadow-lg">
-                    <Card.Header className="gap-4">
-                      <Avatar
-                        aria-label={`${member.name}'s profile picture`}
-                        className="size-14 shrink-0 rounded-2xl"
-                      >
-                        {member.avatar ? (
-                          <Avatar.Image alt="" src={member.avatar} />
-                        ) : null}
-                        <Avatar.Fallback>{initials(member.name)}</Avatar.Fallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <Card.Title className="truncate">
+                  <Card className="h-full flex-row items-stretch gap-4 p-5 transition-shadow hover:shadow-lg">
+                    <Avatar
+                      aria-label={`${member.name}'s profile picture`}
+                      className="size-16 shrink-0 rounded-2xl sm:size-20"
+                    >
+                      {member.avatar ? (
+                        <Avatar.Image alt="" src={member.avatar} />
+                      ) : null}
+                      <Avatar.Fallback>{initials(member.name)}</Avatar.Fallback>
+                    </Avatar>
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                      <Card.Header className="gap-0.5">
+                        <Card.Title className="truncate leading-tight">
                           {member.name}
                         </Card.Title>
                         <Card.Description className="inline-flex items-center gap-1.5">
@@ -133,52 +136,54 @@ export function TeamDirectory({ groups }: { groups: TeamGroup[] }) {
                               className="w-3.5 h-3.5 shrink-0"
                             />
                           ) : null}
-                          <span className="truncate">{group.designation}</span>
+                          <span className="truncate">
+                            {group.designation}
+                          </span>
                         </Card.Description>
-                      </div>
-                    </Card.Header>
+                      </Card.Header>
 
-                    {member.bio || member.skills.length > 0 ? (
-                      <Card.Content className="space-y-3">
-                        {member.bio ? (
-                          <p className="text-sm text-default-600 line-clamp-4">
-                            {member.bio}
-                          </p>
-                        ) : null}
+                      {member.bio || member.skills.length > 0 ? (
+                        <Card.Content className="space-y-2.5">
+                          {member.bio ? (
+                            <p className="text-sm leading-relaxed text-default-600 line-clamp-3">
+                              {member.bio}
+                            </p>
+                          ) : null}
 
-                        {member.skills.length > 0 ? (
-                          <ul
-                            aria-label={`${member.name}'s skills`}
-                            className="flex flex-wrap gap-1.5"
-                          >
-                            {member.skills.slice(0, 5).map((skill) => (
-                              <li key={skill}>
-                                <Chip size="sm" variant="soft">
-                                  {skill}
-                                </Chip>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </Card.Content>
-                    ) : null}
+                          {member.skills.length > 0 ? (
+                            <ul
+                              aria-label={`${member.name}'s skills`}
+                              className="flex flex-wrap gap-1.5"
+                            >
+                              {member.skills.slice(0, 5).map((skill) => (
+                                <li key={skill}>
+                                  <Chip size="sm" variant="soft">
+                                    {skill}
+                                  </Chip>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </Card.Content>
+                      ) : null}
 
-                    {links.length > 0 ? (
-                      <Card.Footer className="mt-auto gap-2 pt-4">
-                        {links.map(({ href, label, Icon }) => (
-                          <a
-                            key={label}
-                            aria-label={`${member.name} on ${label} (opens in new tab)`}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-default-100 text-default-600 hover:bg-default-200 hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-primary"
-                            href={href}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            <Icon aria-hidden="true" className="w-4 h-4" />
-                          </a>
-                        ))}
-                      </Card.Footer>
-                    ) : null}
+                      {links.length > 0 ? (
+                        <Card.Footer className="mt-auto gap-2 pt-1">
+                          {links.map(({ href, label, Icon }) => (
+                            <a
+                              key={label}
+                              aria-label={`${member.name} on ${label} (opens in new tab)`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-default-100 text-default-600 hover:bg-default-200 hover:text-foreground transition-colors focus-visible:outline-2 focus-visible:outline-primary"
+                              href={href}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <Icon aria-hidden="true" className="w-4 h-4" />
+                            </a>
+                          ))}
+                        </Card.Footer>
+                      ) : null}
+                    </div>
                   </Card>
                 </li>
               );
