@@ -101,7 +101,16 @@ export async function GET(request: NextRequest) {
       // Nothing in the repo reads `access` from this payload (capability
       // routing happens via /api/permissions), so a summary failure costs
       // nothing: null, not a 500.
-      safe("access", () => getAccessSummary(userId, membershipStatus), null),
+      safe(
+        "access",
+        () =>
+          getAccessSummary(
+            userId,
+            membershipStatus,
+            authenticated.user.email,
+          ),
+        null,
+      ),
     ]);
 
     const eventIds = [
@@ -154,17 +163,25 @@ export async function GET(request: NextRequest) {
     };
 
     // Option B: capability-gated view-models, not lead/head tiers.
-    // Admin passes every check via "*" wildcard.
+    // Admin passes every check via "*" wildcard. The caller's verified email
+    // is threaded through so an ADMIN_EMAILS bootstrap admin (no user_roles
+    // row yet) still resolves to "*" here instead of an empty set.
+    const callerEmail = authenticated.user.email;
     const [canLead, canGovern] = await Promise.all([
       Promise.all([
-        hasServerCapability(userId, "events.create"),
-        hasServerCapability(userId, "membership.view_applications"),
-        hasServerCapability(userId, "departments.view"),
+        hasServerCapability(userId, "events.create", undefined, callerEmail),
+        hasServerCapability(
+          userId,
+          "membership.view_applications",
+          undefined,
+          callerEmail,
+        ),
+        hasServerCapability(userId, "departments.view", undefined, callerEmail),
       ]).then((r) => r.some(Boolean)),
       Promise.all([
-        hasServerCapability(userId, "governance.manage"),
-        hasServerCapability(userId, "audit.view"),
-        hasServerCapability(userId, "users.view"),
+        hasServerCapability(userId, "governance.manage", undefined, callerEmail),
+        hasServerCapability(userId, "audit.view", undefined, callerEmail),
+        hasServerCapability(userId, "users.view", undefined, callerEmail),
       ]).then((r) => r.some(Boolean)),
     ]);
 

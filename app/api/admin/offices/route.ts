@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
     const unheld = await unheldCapabilities(
       authenticated.user.$id,
       await getOfficeCapabilities(officeId),
+      authenticated.user.email,
     );
 
     if (unheld.length > 0) {

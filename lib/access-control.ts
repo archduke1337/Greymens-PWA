@@ -432,8 +432,9 @@ export async function getOfficeCapabilities(
 export async function unheldCapabilities(
   actorId: string,
   caps: readonly string[],
+  email?: string | null,
 ): Promise<string[]> {
-  const held = await getEffectiveCapabilities(actorId);
+  const held = await getEffectiveCapabilities(actorId, undefined, undefined, email);
 
   if (held.has("*")) return [];
 
@@ -485,7 +486,12 @@ export async function requireAnyCapability(
   // after the restriction check, so a ban still wins.
   if (isBootstrapAdmin(authenticated.user.email)) return authenticated;
 
-  const held = await getEffectiveCapabilities(authenticated.user.$id, scope);
+  const held = await getEffectiveCapabilities(
+    authenticated.user.$id,
+    scope,
+    undefined,
+    authenticated.user.email,
+  );
 
   if (
     held.has("*") ||
@@ -500,12 +506,17 @@ export async function requireAnyCapability(
   };
 }
 
-export async function getAccessSummary(userId: string, knownStatus?: string) {
+export async function getAccessSummary(
+  userId: string,
+  knownStatus?: string,
+  knownEmail?: string | null,
+) {
   const status = knownStatus ?? (await resolveMembershipStatus(userId));
   const capabilities = await getEffectiveCapabilities(
     userId,
     undefined,
     status,
+    knownEmail,
   );
 
   return { status, capabilities: Array.from(capabilities).sort() };

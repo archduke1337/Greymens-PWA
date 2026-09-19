@@ -405,6 +405,28 @@ export default function AdminUsersPage() {
     );
   };
 
+  const handleSetGovernanceRole = async (
+    eu: EnrichedUser,
+    role: "admin" | "dev" | null,
+  ) => {
+    const label = userLabel(eu, accountNames);
+    if (
+      !confirm(
+        role
+          ? `Grant "${role}" governance tier to ${label}? They gain full console access.`
+          : `Revoke governance tier from ${label}? They lose admin access.`,
+      )
+    )
+      return;
+    await applyUserAction(
+      eu,
+      "set_governance_role",
+      role ? { role } : { role: null },
+      role ? `Granted ${role} tier` : "Governance tier revoked",
+    );
+    await refreshSelectedUser(eu.profile.userId);
+  };
+
   /**
    * Refresh the open detail panel after a grant/revoke: loadAllData updates
    * the table, but selectedUser is a snapshot that would otherwise show stale
@@ -1487,8 +1509,7 @@ export default function AdminUsersPage() {
                         <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
                           <ShieldCheckIcon className="w-4 h-4 text-primary" />
                           Membership Details
-                        </h3>
-                        <div className="space-y-2 text-sm">
+                        </h3>                        <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span className="text-default-500">
                               Membership Number
@@ -1526,6 +1547,46 @@ export default function AdminUsersPage() {
                         </div>
                       </div>
                     )}
+
+                    <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
+                      <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <ShieldCheckIcon className="w-4 h-4 text-primary" />
+                        Governance access
+                      </h3>
+                      <p className="text-xs text-default-500 mb-3">
+                        Admin / dev tier grants every capability. Granting is
+                        audited. You cannot revoke your own tier.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onPress={() =>
+                            handleSetGovernanceRole(selectedUser, "admin")
+                          }
+                        >
+                          Grant admin
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onPress={() =>
+                            handleSetGovernanceRole(selectedUser, "dev")
+                          }
+                        >
+                          Grant dev
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger-soft"
+                          onPress={() =>
+                            handleSetGovernanceRole(selectedUser, null)
+                          }
+                        >
+                          Revoke tier
+                        </Button>
+                      </div>
+                    </div>
 
                     <div className="p-4 bg-default-50 dark:bg-default-100/5 rounded-xl">
                       <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">

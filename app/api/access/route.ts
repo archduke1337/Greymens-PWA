@@ -48,15 +48,31 @@ export async function GET(request: NextRequest) {
 
   if (!authenticated.user) return authenticated.response;
   try {
-    const summary = await getAccessSummary(authenticated.user.$id);
+    const summary = await getAccessSummary(
+      authenticated.user.$id,
+      undefined,
+      authenticated.user.email,
+    );
     const [canAssignRoles, canManageOffices, canAssignDesignations] =
       await Promise.all([
-        hasServerCapability(authenticated.user.$id, "access.assign_roles"),
+        hasServerCapability(
+          authenticated.user.$id,
+          "access.assign_roles",
+          undefined,
+          authenticated.user.email,
+        ),
         hasServerCapability(
           authenticated.user.$id,
           "governance.manage_offices",
+          undefined,
+          authenticated.user.email,
         ),
-        hasServerCapability(authenticated.user.$id, "designations.assign"),
+        hasServerCapability(
+          authenticated.user.$id,
+          "designations.assign",
+          undefined,
+          authenticated.user.email,
+        ),
       ]);
 
     if (!canAssignRoles && !canManageOffices && !canAssignDesignations) {
@@ -215,6 +231,7 @@ export async function POST(request: NextRequest) {
       const unheld = await unheldCapabilities(
         authenticated.user.$id,
         capabilities,
+        authenticated.user.email,
       );
 
       if (unheld.length > 0) {
@@ -390,6 +407,7 @@ export async function POST(request: NextRequest) {
       const unheldAssign = await unheldCapabilities(
         authenticated.user.$id,
         templateCaps,
+        authenticated.user.email,
       );
 
       if (unheldAssign.length > 0) {
@@ -539,6 +557,7 @@ export async function PATCH(request: NextRequest) {
       const unheldRewrite = await unheldCapabilities(
         authenticated.user.$id,
         capabilities,
+        authenticated.user.email,
       );
 
       if (unheldRewrite.length > 0) {

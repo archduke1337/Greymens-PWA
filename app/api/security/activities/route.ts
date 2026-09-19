@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
     const isAdmin = await hasServerCapability(
       authenticated.user.$id,
       "security.manage_incidents",
+      undefined,
+      authenticated.user.email,
     );
     const queries = isAdmin
       ? [Query.orderDesc("createdAt"), Query.limit(100)]

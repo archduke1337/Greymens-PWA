@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
     const unheld = await unheldCapabilities(
       authenticated.user.$id,
       Array.isArray(fields.capabilities) ? fields.capabilities : [],
+      authenticated.user.email,
     );
 
     if (unheld.length > 0) {
@@ -256,6 +257,7 @@ export async function PATCH(request: NextRequest) {
     const unheld = await unheldCapabilities(
       authenticated.user.$id,
       Array.isArray(fields.capabilities) ? fields.capabilities : [],
+      authenticated.user.email,
     );
 
     if (unheld.length > 0) {

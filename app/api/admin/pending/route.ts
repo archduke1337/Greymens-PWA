@@ -26,7 +26,12 @@ export async function GET(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
 
   try {
-    const capabilities = await getEffectiveCapabilities(authenticated.user.$id);
+    const capabilities = await getEffectiveCapabilities(
+      authenticated.user.$id,
+      undefined,
+      undefined,
+      authenticated.user.email,
+    );
     const isAdmin = capabilities.has("*");
     const { databases } = createServerDatabases();
     const authorized = REVIEW_QUEUES.filter(

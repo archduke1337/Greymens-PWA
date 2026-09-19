@@ -212,8 +212,18 @@ export async function POST(request: NextRequest) {
     // Either half of the moderation authority publishes on upload: a full
     // manager, or a reviewer scoped to gallery.approve.
     const canModerate =
-      (await hasServerCapability(authenticated.user.$id, "gallery.manage")) ||
-      (await hasServerCapability(authenticated.user.$id, "gallery.approve"));
+      (await hasServerCapability(
+        authenticated.user.$id,
+        "gallery.manage",
+        undefined,
+        authenticated.user.email,
+      )) ||
+      (await hasServerCapability(
+        authenticated.user.$id,
+        "gallery.approve",
+        undefined,
+        authenticated.user.email,
+      ));
     const uploaded: Array<{ url: string; fileId: string | null }> = [];
 
     for (const file of files) {

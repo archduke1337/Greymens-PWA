@@ -46,7 +46,14 @@ async function canVerify(request: NextRequest) {
   if (!authenticated.user) return authenticated;
 
   if (await isAdminUser(authenticated.user)) return authenticated;
-  if (await hasServerCapability(authenticated.user.$id, "tickets.verify"))
+  if (
+    await hasServerCapability(
+      authenticated.user.$id,
+      "tickets.verify",
+      undefined,
+      authenticated.user.email,
+    )
+  )
     return authenticated;
 
   return {
@@ -121,7 +128,12 @@ export async function GET(request: NextRequest) {
     if (eventId) {
       const permitted =
         (await isAdminUser(authenticated.user)) ||
-        (await hasServerCapability(authenticated.user.$id, "tickets.verify")) ||
+        (await hasServerCapability(
+          authenticated.user.$id,
+          "tickets.verify",
+          undefined,
+          authenticated.user.email,
+        )) ||
         (await ownsEvent(eventId, authenticated.user.$id));
 
       if (!permitted) {
@@ -222,7 +234,12 @@ export async function GET(request: NextRequest) {
     );
     const isDoorAuthority =
       (await isAdminUser(authenticated.user)) ||
-      (await hasServerCapability(authenticated.user.$id, "tickets.verify")) ||
+      (await hasServerCapability(
+        authenticated.user.$id,
+        "tickets.verify",
+        undefined,
+        authenticated.user.email,
+      )) ||
       isOwner;
 
     if (!isDoorAuthority) {
@@ -302,6 +319,8 @@ export async function PATCH(request: NextRequest) {
     const callerIsVerifier = await hasServerCapability(
       authenticated.user.$id,
       "tickets.verify",
+      undefined,
+      authenticated.user.email,
     );
 
     if (!callerIsAdmin && !callerOwnsEvent && !callerIsVerifier) {

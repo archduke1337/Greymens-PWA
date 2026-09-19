@@ -25,7 +25,14 @@ export async function GET(request: NextRequest) {
   try {
     // Capabilities resolved once: hasServerCapability per queue would re-read
     // the same role/office/power rows up to fourteen times per page nav.
-    const capabilities = await getEffectiveCapabilities(authenticated.user.$id);
+    // Thread the verified email so an ADMIN_EMAILS bootstrap admin resolves
+    // to "*" without needing a user_roles row or a Users API round-trip.
+    const capabilities = await getEffectiveCapabilities(
+      authenticated.user.$id,
+      undefined,
+      undefined,
+      authenticated.user.email,
+    );
     const isAdmin = capabilities.has("*");
     const { databases } = createServerDatabases();
     const queues: Record<string, number> = {};

@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
   const required =
     action === "approve" ? "membership.approve" : "membership.reject";
 
-  if (!(await hasServerCapability(authenticated.user.$id, required))) {
+  if (!(await hasServerCapability(authenticated.user.$id, required, undefined, authenticated.user.email))) {
     return fail("FORBIDDEN", "Forbidden", 403);
   }
   // Approval fans out to membership + departments + notification writes:
