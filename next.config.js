@@ -54,6 +54,18 @@ const nextConfig = {
       },
     ];
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
+  },
+  // Allow large resource uploads (Vercel's default 4.5 MB would 413 any
+  // file >4.5 MB before it even reaches the route handler).
+  api: {
+    bodyParser: {
+      sizeLimit: "50mb",
+    },
+  },
   // NOTE: no case-variant redirects (e.g. /Blog -> /blog). Next.js matches
   // redirect sources case-insensitively, so "/Blog/:path*" also matches the
   // correct lowercase "/blog" with an empty :path* — producing destination
