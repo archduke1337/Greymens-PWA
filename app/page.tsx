@@ -118,7 +118,7 @@ export default function Home() {
             </LinkButton>
           </div>
           <p className="text-sm text-muted">
-            One open event is all it takes to know.
+            One open event is all it takes to fall in love with the club.
           </p>
         </div>
       </section>

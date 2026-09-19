@@ -37,14 +37,27 @@ import {
 } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
 export default function EventDetailPage() {
   const { user } = useAuth();
+  const { hasCapability } = usePermissions();
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
+
+  // Preview authority mirrors the console list gate (GET /api/admin/events
+  // admits events.manage/approve/publish/update): anyone who can review the
+  // pipeline may preview an unpublished event. Derived outside the effect so
+  // the lookup re-runs when permissions resolve after the session — the same
+  // stale-closure trap fixed on the blog detail page.
+  const canPreviewEvent =
+    hasCapability("events.manage") ||
+    hasCapability("events.approve") ||
+    hasCapability("events.publish") ||
+    hasCapability("events.update");
 
   const [event, setEvent] = useState<EventType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +75,7 @@ export default function EventDetailPage() {
   useEffect(() => {
     loadEvent();
     checkSavedStatus();
-  }, [eventId]);
+  }, [eventId, user, canPreviewEvent]);
 
   // Registration state is re-checked whenever the signed-in account changes,
   // because it is owned by the server rather than by this browser.
@@ -84,6 +97,18 @@ export default function EventDetailPage() {
       };
 
       if (response.status === 404) {
+        // The public lookup serves published/active only. An owner opening
+        // their own draft — or a reviewer opening a shared pipeline link —
+        // falls back to the privileged reads and matches by id, so
+        // unpublished events are previewable instead of "missing".
+        const preview = user ? await loadPreview() : null;
+
+        if (preview) {
+          setEvent(preview);
+          setNotFound(false);
+
+          return;
+        }
         setNotFound(true);
         setEvent(null);
 
@@ -113,6 +138,49 @@ export default function EventDetailPage() {
     } catch {
       localStorage.removeItem("savedEvents");
       setIsSaved(false);
+    }
+  };
+
+  /**
+   * Privileged preview for events the public lookup 404s (draft, review,
+   * approved, rejected, cancelled). Owner first via scope=mine, then the
+   * console list for anyone holding review authority — the blog detail
+   * fallback, one pipeline over.
+   */
+  const loadPreview = async (): Promise<EventType | null> => {
+    try {
+      const mineResponse = await fetch("/api/events?scope=mine", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (mineResponse.ok) {
+        const mine = (await mineResponse.json()) as {
+          events?: EventType[];
+        };
+        const own = (mine.events ?? []).find(
+          (entry) => entry.$id === eventId,
+        );
+
+        if (own) return own;
+      }
+      if (!canPreviewEvent) return null;
+      const consoleResponse = await fetch("/api/admin/events", {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (!consoleResponse.ok) return null;
+      const consolePayload = (await consoleResponse.json()) as {
+        events?: EventType[];
+      };
+
+      return (
+        (consolePayload.events ?? []).find((entry) => entry.$id === eventId) ??
+        null
+      );
+    } catch {
+      return null;
     }
   };
 
@@ -387,7 +455,7 @@ export default function EventDetailPage() {
           </h2>
           <p className="text-default-500">
             {missing
-              ? "This event doesn't exist, or its link is outdated."
+              ? "This event doesn't exist, its link is outdated, or it isn't shared with you."
               : loadError}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
@@ -418,6 +486,10 @@ export default function EventDetailPage() {
       </div>
     );
   }
+
+  // Anything outside published/active arrived via the owner/reviewer preview
+  // above: readable, not joinable.
+  const isPreview = !["published", "active"].includes(String(event.status));
 
   return (
     <div className="pb-20">
@@ -450,6 +522,16 @@ export default function EventDetailPage() {
 
       {/* Header — no cover art: titles carry the page, images stay optional */}
       <div className="max-w-7xl mx-auto px-6 pb-2">
+        {isPreview && (
+          <p
+            className="mb-4 rounded-2xl border border-default-200/70 bg-surface-secondary px-4 py-3 text-sm text-muted"
+            role="status"
+          >
+            {event.status === "draft" || event.status === "review"
+              ? "Preview — this event isn't published yet, so only the organizer and reviewers can see it. Registration opens on publish."
+              : `Status: ${event.status} — visible to the organizer and reviewers, not open for registration.`}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2 mb-4">
           {event.isFeatured && (
             <Chip
@@ -718,6 +800,15 @@ export default function EventDetailPage() {
                       variant="secondary"
                     >
                       Event ended
+                    </Button>
+                  ) : isPreview ? (
+                    <Button
+                      isDisabled
+                      aria-label={`${event.title} is not open for registration`}
+                      className="w-full font-bold text-lg"
+                      variant="secondary"
+                    >
+                      Not open for registration
                     </Button>
                   ) : (
                     <Button

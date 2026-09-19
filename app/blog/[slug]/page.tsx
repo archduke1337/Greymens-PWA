@@ -44,6 +44,17 @@ export default function BlogDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { hasCapability } = usePermissions();
+  // Preview authority mirrors the server list gate (GET /api/blogs scope=all
+  // admits blog.review/approve/publish/feature): anyone the console lets into
+  // the review queue may preview a pending slug. Derived outside the effect
+  // so the effect re-runs when permissions resolve — a stale closure here
+  // showed admins "This post is missing" because capabilities load after the
+  // session and the lookup never retried.
+  const canPreviewPost =
+    hasCapability("blog.review") ||
+    hasCapability("blog.approve") ||
+    hasCapability("blog.publish") ||
+    hasCapability("blog.feature");
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +100,7 @@ export default function BlogDetailPage() {
           };
           let found = (await fetchScope("mine")).find((b) => b.slug === slug);
 
-          if (!found && hasCapability("blog.review")) {
+          if (!found && canPreviewPost) {
             found = (await fetchScope("all")).find((b) => b.slug === slug);
           }
           if (cancelled) return;
@@ -113,7 +124,7 @@ export default function BlogDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, user]);
+  }, [slug, user, canPreviewPost]);
 
   if (loading) {
     return (
