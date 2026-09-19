@@ -425,26 +425,39 @@ export async function DELETE(request: NextRequest) {
     if (!resourceId) return fail("VALIDATION", "resourceId is required", 400);
     const { databases } = createServerDatabases();
 
-    await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTIONS.RESOURCES,
-      resourceId,
-      { isActive: false },
-    );
-    await recordAudit({
-      request,
-      actor: authenticated.user,
-      action: "resource.delete",
-      entityType: "resource",
-      entityId: resourceId,
-      details: { softDeleted: true },
-    });
+    try {
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.RESOURCES,
+        resourceId,
+        { isActive: false },
+      );
+    } catch (dbError: unknown) {
+      const code = (dbError as { code?: number })?.code;
+      const message = (dbError as { message?: string })?.message ?? String(dbError);
+      logError(`Resource delete db error for ${resourceId}:`, dbError);
+      if (code === 404) return fail("NOT_FOUND", "Resource not found", 404);
+      return fail("INTERNAL", `Unable to delete resource: ${message}`, 500);
+    }
+    // Audit is best-effort — a failed audit must not roll back a successful soft-delete.
+    try {
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: "resource.delete",
+        entityType: "resource",
+        entityId: resourceId,
+        details: { softDeleted: true },
+      });
+    } catch (auditError) {
+      logError("Resource delete audit error:", auditError);
+    }
 
     return ok({ success: true });
   } catch (error) {
     logError("Resource delete error:", error);
-
-    return fail("INTERNAL", "Unable to delete resource", 500);
+    const message = error instanceof Error ? error.message : String(error);
+    return fail("INTERNAL", `Unable to delete resource: ${message}`, 500);
   }
 }
 
