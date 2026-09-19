@@ -11,9 +11,13 @@ import dotenv from "dotenv";
 import path from "path";
 import {
   OFFICE_CAPABILITIES,
+  POWER_CATALOGUE,
   REVIEWER_ROLE_TEMPLATES,
 } from "../lib/capabilities";
-import { GOVERNANCE_OFFICES } from "../lib/governance";
+import {
+  DESIGNATION_CATALOGUE,
+  GOVERNANCE_OFFICES,
+} from "../lib/governance";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -82,29 +86,6 @@ const DEPARTMENTS = [
   // Operations
   { name: "Treasury", slug: "treasury", description: "Financial operations and budgeting", icon: "💰", color: "#eab308", category: "operations", displayOrder: 9 },
   { name: "Events & Logistics", slug: "events-logistics", description: "Event planning and logistics", icon: "🎪", color: "#06b6d4", category: "operations", displayOrder: 10 },
-];
-
-// ============================================================
-// Powers
-// ============================================================
-
-const POWERS = [
-  { name: "membership_approver", displayName: "Membership Approver", description: "Can approve/reject membership applications", category: "membership", scope: "global" },
-  { name: "event_manager", displayName: "Event Manager", description: "Can create/edit/publish events", category: "events", scope: "global" },
-  { name: "ticket_verifier", displayName: "Ticket Verifier", description: "Can verify tickets at events", category: "tickets", scope: "department" },
-  { name: "blog_creator", displayName: "Blog Creator", description: "Can create blog posts", category: "content", scope: "global" },
-  { name: "blog_reviewer", displayName: "Blog Reviewer", description: "Can approve/reject blog submissions", category: "content", scope: "global" },
-  { name: "gallery_manager", displayName: "Gallery Manager", description: "Can manage gallery (approve/delete)", category: "gallery", scope: "global" },
-  { name: "gallery_uploader", displayName: "Gallery Uploader", description: "Can upload gallery images", category: "gallery", scope: "global" },
-  { name: "resource_manager", displayName: "Resource Manager", description: "Can manage resources in scope", category: "resources", scope: "department" },
-  { name: "department_head", displayName: "Department Head", description: "Can manage own department", category: "admin", scope: "department" },
-  { name: "operations_head", displayName: "Operations Head", description: "Can manage multiple departments", category: "admin", scope: "global" },
-  { name: "profile_moderator", displayName: "Profile Moderator", description: "Can view/revert profile changes", category: "admin", scope: "global" },
-  { name: "notification_admin", displayName: "Notification Admin", description: "Can send system notifications", category: "admin", scope: "global" },
-  { name: "newsletter_manager", displayName: "Newsletter Manager", description: "Can manage newsletter/editorial content", category: "content", scope: "global" },
-  { name: "social_media_manager", displayName: "Social Media Manager", description: "Can manage social media content", category: "social", scope: "global" },
-  { name: "pr_manager", displayName: "PR Manager", description: "Can manage PR & outreach content", category: "content", scope: "global" },
-  { name: "design_manager", displayName: "Design Manager", description: "Can manage design assets", category: "gallery", scope: "global" },
 ];
 
 // ============================================================
@@ -271,24 +252,6 @@ const EVENT_TYPES = [
 ];
 
 // ============================================================
-// Designations (seeded)
-// ============================================================
-
-const DESIGNATIONS = [
-  { name: "Secretary", slug: "secretary", description: "Club secretary", level: 6, category: "executive", displayOrder: 1 },
-  { name: "Treasurer", slug: "treasurer", description: "Club treasurer", level: 6, category: "executive", displayOrder: 2 },
-  { name: "Social Media Lead", slug: "social-media-lead", description: "Lead for social media operations", level: 5, category: "department" },
-  { name: "Editorial Lead", slug: "editorial-lead", description: "Lead for editorial board", level: 5, category: "department" },
-  { name: "Design Lead", slug: "design-lead", description: "Lead for design team", level: 5, category: "department" },
-  { name: "PR Lead", slug: "pr-lead", description: "Lead for PR & outreach", level: 5, category: "department" },
-  { name: "AI/ML Lead", slug: "ai-ml-lead", description: "Lead for AI/ML department", level: 5, category: "department" },
-  { name: "CyberSec Lead", slug: "cybersec-lead", description: "Lead for Cybersecurity department", level: 5, category: "department" },
-  { name: "DevOps Lead", slug: "devops-lead", description: "Lead for DevOps department", level: 5, category: "department" },
-  { name: "Web Dev Lead", slug: "web-dev-lead", description: "Lead for Web Development department", level: 5, category: "department" },
-  { name: "Events Lead", slug: "events-lead", description: "Lead for events & logistics", level: 5, category: "department" },
-];
-
-// ============================================================
 // Seed Functions
 // ============================================================
 
@@ -301,7 +264,12 @@ async function seedDepartments() {
 
 async function seedPowers() {
   console.log("\n=== Seeding Powers ===");
-  for (const power of POWERS) {
+  // Seeded straight from POWER_CATALOGUE: the row a grant points at and the
+  // capability map the authorizer reads are the same record, so a power can no
+  // longer be seeded without meaning nor mapped without a row to grant.
+  // `capabilities` is stripped — the table has no such column; the mapping
+  // lives in code, deliberately, so authority stays reviewable in one file.
+  for (const { capabilities: _capabilities, ...power } of POWER_CATALOGUE) {
     // The row id is the power name: user_powers.powerId stores either form
     // and the grant map is keyed by name.
     await upsertRow("powers", power.name, { ...power }, power.displayName);
@@ -322,11 +290,15 @@ async function seedEventTypes() {
 
 async function seedDesignations() {
   console.log("\n=== Seeding Designations ===");
-  for (const desig of DESIGNATIONS) {
+  // Titles come from DESIGNATION_CATALOGUE (lib/governance). The ones that
+  // carry authority mirror the charter office of the same name rather than
+  // holding a second copy of the grant, so "AI/ML Lead" means one thing on a
+  // profile and one thing to the server. Honour-only titles carry none.
+  for (const [index, desig] of DESIGNATION_CATALOGUE.entries()) {
     await upsertRow(
       "designations",
       `desig-${desig.slug}`,
-      { ...desig, isActive: true },
+      { ...desig, displayOrder: index + 1, isActive: true },
       desig.name,
     );
   }

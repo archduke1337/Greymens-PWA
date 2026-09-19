@@ -3,6 +3,8 @@
  * Offices, charter metadata, membership categories, principles, plus RBAC page mapping.
  */
 
+import { OFFICE_CAPABILITIES } from "./capabilities";
+
 export interface GovernanceOffice {
   id: string;
   title: string;
@@ -108,6 +110,304 @@ export const GOVERNANCE_OFFICES: GovernanceOffice[] = [
     title: "CTF & Competitive Security Lead",
     layer: "security",
     elected: false,
+  },
+];
+
+/**
+ * The club's titled roles, seeded as `designations`.
+ *
+ * A designation is a title, not a term: the office templates above are the
+ * Charter's seats, while these are the names a member actually wears on their
+ * profile — and (since the designation row can carry capabilities) the same
+ * title can hand out the authority that belongs with the job. Department
+ * leads therefore mirror the office of the same charter role rather than
+ * inventing a second, drifting grant: one list decides what "AI/ML Lead"
+ * means everywhere.
+ *
+ * Levels are seniority for display and ordering (1–9, never a permission:
+ * the old level→permission table was removed for that reason). Honour-only
+ * titles (Faculty Coordinator, Alumni Mentor, Honorary Member) list no
+ * capabilities on purpose — they are recognition, not authority.
+ */
+export interface DesignationDefinition {
+  slug: string;
+  name: string;
+  description: string;
+  level: number;
+  category: "department" | "operations" | "executive" | "special";
+  badgeIcon: string;
+  badgeColor: string;
+  capabilities?: string[];
+  maxHolders?: number;
+}
+
+export const DESIGNATION_CATALOGUE: DesignationDefinition[] = [
+  {
+    slug: "president",
+    name: "President",
+    description: "Elected head of the club; chairs the Executive Board.",
+    level: 9,
+    category: "executive",
+    badgeIcon: "👑",
+    badgeColor: "#eab308",
+    capabilities: OFFICE_CAPABILITIES.president,
+    maxHolders: 1,
+  },
+  {
+    slug: "vice-president",
+    name: "Vice President",
+    description:
+      "Deputy to the President; stands in whenever the chair is vacant.",
+    level: 8,
+    category: "executive",
+    badgeIcon: "🎖️",
+    badgeColor: "#6366f1",
+    capabilities: OFFICE_CAPABILITIES.vice_president,
+    maxHolders: 1,
+  },
+  {
+    slug: "general-secretary",
+    name: "General Secretary",
+    description:
+      "Keeps the club's records, minutes, and official correspondence.",
+    level: 8,
+    category: "executive",
+    badgeIcon: "📜",
+    badgeColor: "#14b8a6",
+    capabilities: OFFICE_CAPABILITIES.general_secretary,
+    maxHolders: 1,
+  },
+  {
+    slug: "secretary",
+    name: "Secretary",
+    description: "Supports the General Secretary with day-to-day paperwork.",
+    level: 6,
+    category: "executive",
+    badgeIcon: "🗂️",
+    badgeColor: "#0ea5e9",
+  },
+  {
+    slug: "treasurer",
+    name: "Treasurer",
+    description: "Owns the club's finances, budgets, and sponsor accounts.",
+    level: 8,
+    category: "executive",
+    badgeIcon: "💰",
+    badgeColor: "#eab308",
+    capabilities: OFFICE_CAPABILITIES.treasurer,
+    maxHolders: 1,
+  },
+  {
+    slug: "cto",
+    name: "CTO / Technical Director",
+    description: "Leads the technical programme across departments.",
+    level: 8,
+    category: "executive",
+    badgeIcon: "🛠️",
+    badgeColor: "#f97316",
+    capabilities: OFFICE_CAPABILITIES.cto,
+    maxHolders: 1,
+  },
+  {
+    slug: "cybersecurity-lead",
+    name: "Cybersecurity Lead",
+    description:
+      "Leads security work: authorizations, incidents, and response.",
+    level: 7,
+    category: "department",
+    badgeIcon: "🛡️",
+    badgeColor: "#ef4444",
+    capabilities: OFFICE_CAPABILITIES.cybersecurity_lead,
+  },
+  {
+    slug: "research-projects-director",
+    name: "Research & Projects Director",
+    description: "Directs the project portfolio and technical research.",
+    level: 7,
+    category: "department",
+    badgeIcon: "🔬",
+    badgeColor: "#8b5cf6",
+    capabilities: OFFICE_CAPABILITIES.research_projects_director,
+    maxHolders: 1,
+  },
+  {
+    slug: "communications-lead",
+    name: "Communications Lead",
+    description: "Runs club-wide announcements and external messaging.",
+    level: 6,
+    category: "department",
+    badgeIcon: "📣",
+    badgeColor: "#ec4899",
+    capabilities: OFFICE_CAPABILITIES.communications_lead,
+  },
+  {
+    slug: "editorial-lead",
+    name: "Editorial Lead",
+    description:
+      "Edits and approves everything that gets published to the blog.",
+    level: 6,
+    category: "department",
+    badgeIcon: "✍️",
+    badgeColor: "#14b8a6",
+    capabilities: OFFICE_CAPABILITIES.editorial_lead,
+  },
+  {
+    slug: "marketing-lead",
+    name: "Marketing Lead",
+    description: "Grows the club's presence and manages sponsor relationships.",
+    level: 6,
+    category: "department",
+    badgeIcon: "📈",
+    badgeColor: "#f43f5e",
+    capabilities: OFFICE_CAPABILITIES.marketing_lead,
+  },
+  {
+    slug: "social-media-lead",
+    name: "Social Media Lead",
+    description: "Runs the club's social channels and visual presence.",
+    level: 6,
+    category: "department",
+    badgeIcon: "📱",
+    badgeColor: "#ec4899",
+    capabilities: OFFICE_CAPABILITIES.social_media_lead,
+  },
+  {
+    slug: "documentation-lead",
+    name: "Documentation Lead",
+    description: "Curates the club's shared knowledge and resource library.",
+    level: 6,
+    category: "department",
+    badgeIcon: "📚",
+    badgeColor: "#22c55e",
+    capabilities: OFFICE_CAPABILITIES.documentation_lead,
+  },
+  {
+    slug: "membership-lead",
+    name: "Membership Lead",
+    description: "Guides applicants in and handles membership questions.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🪪",
+    badgeColor: "#6366f1",
+    capabilities: OFFICE_CAPABILITIES.membership_lead,
+  },
+  {
+    slug: "community-lead",
+    name: "Community Lead",
+    description: "Keeps the community active and proposes events for it.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🤝",
+    badgeColor: "#06b6d4",
+    capabilities: OFFICE_CAPABILITIES.community_lead,
+  },
+  {
+    slug: "events-lead",
+    name: "Events Lead",
+    description: "Plans and coordinates the club's events end to end.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🎪",
+    badgeColor: "#06b6d4",
+    capabilities: OFFICE_CAPABILITIES.event_coordinator,
+  },
+  {
+    slug: "software-web-lead",
+    name: "Software & Web Development Lead",
+    description: "Leads web and software builds for the club.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🌐",
+    badgeColor: "#22c55e",
+    capabilities: OFFICE_CAPABILITIES.software_web_lead,
+  },
+  {
+    slug: "ai-ml-data-lead",
+    name: "AI/ML & Data Lead",
+    description: "Leads machine learning and data work.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🤖",
+    badgeColor: "#6366f1",
+    capabilities: OFFICE_CAPABILITIES.ai_ml_data_lead,
+  },
+  {
+    slug: "infrastructure-systems-lead",
+    name: "Infrastructure / Systems Lead",
+    description: "Runs the club's systems, tooling, and platform security.",
+    level: 6,
+    category: "department",
+    badgeIcon: "⚙️",
+    badgeColor: "#f97316",
+    capabilities: OFFICE_CAPABILITIES.infrastructure_systems_lead,
+  },
+  {
+    slug: "ctf-lead",
+    name: "CTF & Competitive Security Lead",
+    description: "Trains and fields the club's CTF team.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🚩",
+    badgeColor: "#ef4444",
+    capabilities: OFFICE_CAPABILITIES.ctf_lead,
+  },
+  {
+    slug: "design-lead",
+    name: "Design Lead",
+    description: "Owns the club's visual identity and gallery curation.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🎨",
+    badgeColor: "#f43f5e",
+    capabilities: ["gallery.manage"],
+  },
+  {
+    slug: "pr-lead",
+    name: "PR Lead",
+    description: "Handles outreach, press, and partner conversations.",
+    level: 6,
+    category: "department",
+    badgeIcon: "📢",
+    badgeColor: "#8b5cf6",
+    capabilities: ["blog.create", "notifications.send", "sponsors.manage"],
+  },
+  {
+    slug: "devops-lead",
+    name: "DevOps Lead",
+    description: "Keeps builds, deployments, and infrastructure healthy.",
+    level: 6,
+    category: "department",
+    badgeIcon: "🔧",
+    badgeColor: "#0891b2",
+    capabilities: ["security.contain", "audit.view"],
+  },
+  {
+    slug: "faculty-coordinator",
+    name: "Faculty Coordinator",
+    description:
+      "School faculty liaison for the club; an honour, not an authority.",
+    level: 7,
+    category: "special",
+    badgeIcon: "🎓",
+    badgeColor: "#0ea5e9",
+  },
+  {
+    slug: "alumni-mentor",
+    name: "Alumni Mentor",
+    description: "Former member who mentors current projects.",
+    level: 4,
+    category: "special",
+    badgeIcon: "🌱",
+    badgeColor: "#22c55e",
+  },
+  {
+    slug: "honorary-member",
+    name: "Honorary Member",
+    description: "Recognised contributor who is not on the active roster.",
+    level: 3,
+    category: "special",
+    badgeIcon: "⭐",
+    badgeColor: "#eab308",
   },
 ];
 

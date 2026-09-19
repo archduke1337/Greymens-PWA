@@ -136,6 +136,7 @@ export default function RolesManager() {
   });
   const [editCapabilityQuery, setEditCapabilityQuery] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingRole, setDeletingRole] = useState(false);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
   const [role, setRole] = useState({
@@ -339,6 +340,42 @@ export default function RolesManager() {
         ? current.capabilities.filter((item) => item !== capability)
         : [...current.capabilities, capability],
     }));
+
+  // Deleting a template is refused server-side while live assignments exist
+  // (and for charter office roles outright), so the confirm text says what to
+  // do first instead of letting the request fail opaquely.
+  const deleteRole = async () => {
+    if (!editingRole?.$id || deletingRole) return;
+    if (
+      !confirm(
+        `Delete the "${editingRole.name}" role template? It must have no live assignments; this cannot be undone.`,
+      )
+    )
+      return;
+    setDeletingRole(true);
+    try {
+      const response = await fetch("/api/access", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_role",
+          roleId: editingRole.$id,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok)
+        throw new Error(readApiError(data, "Unable to delete role"));
+      toast.success("Role template deleted");
+      setEditingRole(null);
+      await load();
+    } catch (error) {
+      toast.error(getErrorMessage(error) || "Unable to delete role");
+    } finally {
+      setDeletingRole(false);
+    }
+  };
 
   const openEdit = (item: Role) => {
     setEditingRole(item);
@@ -1299,6 +1336,16 @@ export default function RolesManager() {
                 </div>
               </ModalBody>
               <ModalFooter>
+                {editingRole && !editingRole.officeId && (
+                  <Button
+                    className="mr-auto"
+                    isPending={deletingRole}
+                    variant="danger-soft"
+                    onPress={deleteRole}
+                  >
+                    Delete template
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   onPress={() => setEditingRole(null)}

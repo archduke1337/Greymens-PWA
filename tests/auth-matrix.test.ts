@@ -6,12 +6,17 @@ import { describe, expect, it } from "vitest";
 import {
   CAPABILITIES,
   OFFICE_CAPABILITIES,
+  POWER_CATALOGUE,
   REVIEW_QUEUES,
   REVIEWER_ROLE_TEMPLATES,
   isCapability,
 } from "@/lib/capabilities";
 import { POWER_CAPABILITIES } from "@/lib/access-control";
-import { GOVERNED_PAGES, pagesForCapabilities } from "@/lib/governance";
+import {
+  DESIGNATION_CATALOGUE,
+  GOVERNED_PAGES,
+  pagesForCapabilities,
+} from "@/lib/governance";
 
 /**
  * Authorization matrix.
@@ -279,6 +284,68 @@ describe("grants", () => {
         expect(isCapability(capability), `${power} -> ${capability}`).toBe(true);
       }
     }
+  });
+
+  it("leaves no power that confers nothing", () => {
+    const names = POWER_CATALOGUE.map((power) => power.name);
+
+    expect(new Set(names).size, "a power is listed twice").toBe(names.length);
+    for (const power of POWER_CATALOGUE) {
+      // A power the console offers but the authorizer cannot translate is the
+      // exact trap this catalogue exists to remove.
+      expect(
+        power.capabilities.length,
+        `${power.name} confers nothing`,
+      ).toBeGreaterThan(0);
+      for (const capability of power.capabilities) {
+        expect(isCapability(capability), `${power.name} -> ${capability}`).toBe(
+          true,
+        );
+        expect(
+          capability in ENFORCEMENT ||
+            capability in INDIRECT ||
+            capability in VIEW_ONLY,
+          `${power.name} confers ${capability}, which no route checks`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("keeps designation titles real, unique, and capability-valid", () => {
+    const slugs = DESIGNATION_CATALOGUE.map((designation) => designation.slug);
+
+    expect(new Set(slugs).size, "a designation slug is used twice").toBe(
+      slugs.length,
+    );
+    for (const designation of DESIGNATION_CATALOGUE) {
+      expect(designation.name.trim().length).toBeGreaterThan(0);
+      expect(designation.level).toBeGreaterThanOrEqual(1);
+      expect(designation.level).toBeLessThanOrEqual(9);
+      expect(designation.badgeColor).toMatch(/^#[0-9a-f]{6}$/i);
+      for (const capability of designation.capabilities ?? []) {
+        expect(
+          isCapability(capability),
+          `${designation.slug} -> ${capability}`,
+        ).toBe(true);
+        expect(
+          capability in ENFORCEMENT ||
+            capability in INDIRECT ||
+            capability in VIEW_ONLY,
+          `${designation.slug} confers ${capability}, which no route checks`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("seeds powers and designations from the shared catalogues", () => {
+    // The drift this catches: a hand-written list in the seeder slowly stops
+    // matching the catalogue the authorizer reads.
+    const seed = readFileSync(join(ROOT, "scripts", "seed-data.ts"), "utf8");
+
+    expect(seed).toContain("POWER_CATALOGUE");
+    expect(seed).toContain("DESIGNATION_CATALOGUE");
+    expect(seed).not.toMatch(/const POWERS = \[/);
+    expect(seed).not.toMatch(/const DESIGNATIONS = \[/);
   });
 
   it("reviewer roles grant only real capabilities, without repeats", () => {

@@ -262,6 +262,74 @@ export async function POST(request: NextRequest) {
       return ok({ role }, 201);
     }
 
+    if (action === "delete_role") {
+      const canManageTemplates = await requireAnyCapability(request, [
+        "access.manage_role_templates",
+      ]);
+
+      if (!canManageTemplates.user) return canManageTemplates.response;
+      const roleId = text(body.roleId, 100);
+
+      if (!roleId) return fail("VALIDATION", "roleId is required", 400);
+      const template = await databases
+        .getDocument(DATABASE_ID, COLLECTIONS.ROLE_TEMPLATES, roleId)
+        .catch(() => null);
+
+      if (!template) return fail("NOT_FOUND", "Role template not found", 404);
+      // Charter office templates are seeded rows: deleting one removes the
+      // office's capability bundle until the seeder runs again, which reads as
+      // a random regression days later. Editing it is the console's job.
+      if (String(template.officeId ?? "")) {
+        return fail(
+          "CONFLICT",
+          "Charter office roles cannot be deleted — edit the office's capabilities instead",
+          409,
+        );
+      }
+      // Assignments reference the template; deleting under live grants strands
+      // them, exactly like deleting a power with active grants.
+      const grants = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.ROLE_ASSIGNMENTS,
+        [Query.equal("roleId", [roleId]), Query.limit(200)],
+      );
+      const now = new Date().toISOString();
+      const live = grants.documents.filter((row) => {
+        const record = row as Record<string, unknown>;
+
+        if (record.isActive === false) return false;
+        const expiresAt = String(record.expiresAt ?? "");
+
+        return !expiresAt || expiresAt > now;
+      });
+
+      if (live.length > 0) {
+        return fail(
+          "CONFLICT",
+          `Role still has ${live.length} live assignment(s) — revoke them first`,
+          409,
+        );
+      }
+      await databases.deleteDocument(
+        DATABASE_ID,
+        COLLECTIONS.ROLE_TEMPLATES,
+        roleId,
+      );
+      await recordAudit({
+        request,
+        actor: authenticated.user,
+        action: "access.role_deleted",
+        entityType: "role_template",
+        entityId: roleId,
+        details: {
+          name: String(template.name ?? ""),
+          slug: String(template.slug ?? ""),
+        },
+      });
+
+      return ok({ deleted: true });
+    }
+
     if (action === "assign_role") {
       // Writing a template and handing one out are different jobs, so the
       // capability that names the first one is checked here rather than assumed
