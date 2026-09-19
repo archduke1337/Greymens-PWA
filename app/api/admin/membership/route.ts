@@ -6,6 +6,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { hasServerCapability, requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { getAccountNames } from "@/lib/server-users";
+import { dispatchNotification } from "@/lib/notify";
 import { welcomeLetter } from "@/lib/letters";
 import { isRecord } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -360,19 +361,12 @@ export async function POST(request: NextRequest) {
         ]);
       }
 
-      await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.NOTIFICATIONS,
-        ID.unique(),
-        {
-          userId: applicantId,
-          type: "membership_rejected",
-          title: "Application not approved",
-          body: `Your membership application was not approved at this time. Reason: ${reason}`,
-          read: false,
-          createdAt: now,
-        },
-      );
+      await dispatchNotification({
+        userId: applicantId,
+        type: "membership_rejected",
+        title: "Application not approved",
+        body: `Your membership application was not approved at this time. Reason: ${reason}`,
+      });
 
       await recordAudit({
         request,
@@ -545,20 +539,16 @@ export async function POST(request: NextRequest) {
       department: departmentNames[0],
     });
 
-    await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.NOTIFICATIONS,
-      ID.unique(),
-      {
-        userId: applicantId,
-        type: "membership_approved",
-        title: "Application approved",
-        body: "Your membership application has been approved. Welcome to the club!",
-        letter: JSON.stringify(letter),
-        read: false,
-        createdAt: now,
-      },
-    );
+    await dispatchNotification({
+      userId: applicantId,
+      type: "membership_approved",
+      title: "Application approved",
+      body: "Your membership application has been approved. Welcome to the club!",
+      letter: JSON.stringify(letter),
+      // The mail copy carries the letter as text — the in-app row keeps the
+      // structured JSON for rendering.
+      emailBody: `${letter.subject}\n\n${letter.body}`,
+    });
 
     await recordAudit({
       request,

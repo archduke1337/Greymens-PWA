@@ -184,8 +184,8 @@ async function createNotificationRows(
   databases: ReturnType<typeof createServerDatabases>["databases"],
   recipientIds: string[],
   content: NotificationContent,
-): Promise<string[]> {
-  const ids: string[] = [];
+): Promise<Array<Record<string, unknown>>> {
+  const rows: Array<Record<string, unknown>> = [];
 
   for (let i = 0; i < recipientIds.length; i += FANOUT_CONCURRENCY) {
     const chunk = recipientIds.slice(i, i + FANOUT_CONCURRENCY);
@@ -211,10 +211,11 @@ async function createNotificationRows(
       ),
     );
 
-    for (const row of created) ids.push(row.$id);
+    for (const row of created)
+      rows.push(row as unknown as Record<string, unknown>);
   }
 
-  return ids;
+  return rows;
 }
 
 /**
@@ -410,7 +411,7 @@ export async function POST(request: NextRequest) {
       actor: authenticated.user,
       action: "notification.send",
       entityType: "notification",
-      entityId: rows[0] ?? "broadcast",
+      entityId: String(rows[0]?.$id ?? "broadcast"),
       details: {
         audience: audience || "single",
         userId: userId || null,
@@ -420,8 +421,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // `notification` is kept for single sends: older readers expect the
+    // created row there (see notificationService.create).
     return ok(
-      { sent: rows.length, audience: audience || "single", email },
+      {
+        sent: rows.length,
+        audience: audience || "single",
+        email,
+        ...(audience ? {} : { notification: rows[0] ?? null }),
+      },
       201,
     );
   } catch (error) {

@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
-import { ID, Query } from "appwrite";
+import { Query } from "appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { createSignedTicket } from "@/lib/server/tickets";
+import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -156,16 +157,12 @@ export async function PATCH(request: NextRequest) {
         )
         .catch(() => null);
 
-      await databases
-        .createDocument(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, ID.unique(), {
-          userId: String(registration.userId ?? ""),
-          type: "event_update",
-          title: "Registration decision",
-          body: `Your registration for ${eventTitle ? String(eventTitle.title ?? "the event") : "the event"} was not approved.`,
-          read: false,
-          createdAt: new Date().toISOString(),
-        })
-        .catch(() => null);
+      await dispatchNotification({
+        userId: String(registration.userId ?? ""),
+        type: "event_update",
+        title: "Registration decision",
+        body: `Your registration for ${eventTitle ? String(eventTitle.title ?? "the event") : "the event"} was not approved.`,
+      }).catch(() => null);
       await recordAudit({
         request,
         actor: authenticated.user,
