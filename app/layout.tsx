@@ -2,6 +2,7 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import { Analytics } from "@vercel/analytics/next";
 
 import { AuthProvider } from "@/context/AuthContext";
 import { PermissionProvider } from "@/context/PermissionContext";
@@ -69,6 +70,7 @@ export default function RootLayout({
             </PermissionProvider>
           </AuthProvider>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
