@@ -76,6 +76,11 @@ export default function AdminSponsorsPage() {
   type ReviewTab = "all" | "pending" | "approved" | "rejected";
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  // Bulk approve (gallery/resources parity): session-scoped selection over
+  // pending rows. A real reload clears it — a decided row can never stay
+  // checked — but tab switches keep it.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   const statusOf = (sponsor: Sponsor) => sponsor.status ?? "approved";
   const visibleSponsors = sponsors.filter(
@@ -119,6 +124,8 @@ export default function AdminSponsorsPage() {
       if (!response.ok)
         throw new Error(readApiError(payload, "Unable to load sponsors"));
       setSponsors(payload?.sponsors ?? []);
+      // Only a real reload clears the selection: it may have decided rows.
+      setSelectedIds(new Set());
     } catch (error) {
       logError("Error loading sponsors:", error);
       toast.error(getErrorMessage(error) || "Failed to load sponsors");
@@ -266,6 +273,59 @@ export default function AdminSponsorsPage() {
       toast.error(getErrorMessage(error) || "Failed to delete sponsor");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Approve every selected pending sponsor in one call, then drop the
+  // selection. Rows decide independently server-side; partial failures are
+  // reported rather than swallowed.
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0 || bulkApproving) return;
+    if (
+      !confirm(
+        `Approve ${selectedIds.size} sponsor${selectedIds.size > 1 ? "s" : ""}? Each submitter is notified and each goes live on the wall.`,
+      )
+    )
+      return;
+    setBulkApproving(true);
+    try {
+      const response = await fetch("/api/admin/sponsors", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          sponsorId: [...selectedIds][0],
+          action: "approve",
+          sponsorIds: [...selectedIds],
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        approvedCount?: number;
+        failedIds?: string[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to approve sponsors"));
+      const decided = payload?.approvedCount ?? 0;
+      const failures = payload?.failedIds?.length ?? 0;
+
+      if (failures > 0) {
+        toast.warning(
+          `${decided} approved, ${failures} failed — retry the failed ones from the queue`,
+        );
+      } else {
+        toast.success(`${decided} sponsor${decided === 1 ? "" : "s"} approved`);
+      }
+      setSelectedIds(new Set());
+      await loadSponsors();
+    } catch (error) {
+      logError("Bulk sponsor approval failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve sponsors",
+      );
+    } finally {
+      setBulkApproving(false);
     }
   };
 
@@ -619,6 +679,10 @@ export default function AdminSponsorsPage() {
           ).map((tab) => {
             const count =
               tab.value === "all" ? sponsors.length : reviewCounts[tab.value];
+            // Selected-count badge sits on the Pending tab itself so the
+            // working set stays visible across tab switches.
+            const selectedCount =
+              tab.value === "pending" ? selectedIds.size : 0;
 
             return (
               <Button
@@ -629,6 +693,11 @@ export default function AdminSponsorsPage() {
                 onPress={() => setActiveTab(tab.value)}
               >
                 {tab.label}
+                {selectedCount > 0 && (
+                  <Chip className="ml-1 tabular-nums" color="accent" size="sm">
+                    {selectedCount} selected
+                  </Chip>
+                )}
                 <Chip
                   className="ml-1 tabular-nums"
                   color={
@@ -648,6 +717,49 @@ export default function AdminSponsorsPage() {
               </Button>
             );
           })}
+          {activeTab === "pending" &&
+            canReview &&
+            visibleSponsors.length > 0 && (
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => {
+                    const pendingIds = visibleSponsors
+                      .filter((s) => statusOf(s) === "pending" && s.$id)
+                      .map((s) => s.$id!);
+                    const allSelected =
+                      pendingIds.length > 0 &&
+                      pendingIds.every((id) => selectedIds.has(id));
+
+                    setSelectedIds(
+                      allSelected
+                        ? new Set()
+                        : new Set([...selectedIds, ...pendingIds]),
+                    );
+                  }}
+                >
+                  {visibleSponsors.every(
+                    (s) =>
+                      statusOf(s) !== "pending" ||
+                      (s.$id && selectedIds.has(s.$id)),
+                  ) && visibleSponsors.length > 0
+                    ? "Clear selection"
+                    : `Select all (${visibleSponsors.length})`}
+                </Button>
+                {selectedIds.size > 0 && (
+                  <Button
+                    isPending={bulkApproving}
+                    size="sm"
+                    variant="primary"
+                    onPress={handleBulkApprove}
+                  >
+                    <CheckIcon aria-hidden="true" className="w-4 h-4" />
+                    Approve {selectedIds.size}
+                  </Button>
+                )}
+              </div>
+            )}
         </div>
 
         {visibleSponsors.length === 0 ? (
@@ -683,6 +795,31 @@ export default function AdminSponsorsPage() {
               return (
                 <Card key={sponsor.$id} className="relative">
                   <CardContent className="space-y-4">
+                    {canReview &&
+                      statusOf(sponsor) === "pending" &&
+                      sponsor.$id && (
+                        <label
+                          aria-label={`Select ${sponsor.name} for bulk approval`}
+                          className="absolute top-2 right-2 z-10 flex cursor-pointer items-center rounded-full bg-black/30 p-1.5"
+                        >
+                          <input
+                            checked={selectedIds.has(sponsor.$id)}
+                            className="size-4 cursor-pointer"
+                            type="checkbox"
+                            onChange={() =>
+                              setSelectedIds((current) => {
+                                const next = new Set(current);
+
+                                if (next.has(sponsor.$id!))
+                                  next.delete(sponsor.$id!);
+                                else next.add(sponsor.$id!);
+
+                                return next;
+                              })
+                            }
+                          />
+                        </label>
+                      )}
                     {/* Status Badges */}
                     <div className="flex gap-2 flex-wrap">
                       <Chip

@@ -128,6 +128,8 @@ export default function AdminProjectsPage() {
       if (!response.ok)
         throw new Error(readApiError(payload, "Unable to load projects"));
       setProjects(payload?.projects ?? []);
+      // Only a real reload clears the selection: it may have decided rows.
+      setSelectedIds(new Set());
     } catch (error) {
       logError("Error fetching projects:", error);
       toast.error(getErrorMessage(error) || "Failed to fetch projects");
@@ -424,6 +426,11 @@ export default function AdminProjectsPage() {
 
   const [activeTab, setActiveTab] = useState<ReviewTab>("all");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  // Bulk approve (gallery/resources parity): session-scoped selection over
+  // pending rows. A real reload clears it — a decided row can never stay
+  // checked — but tab switches keep it.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   const reviewOf = (project: Project): "review" | "approved" | "rejected" => {
     if (
@@ -444,6 +451,59 @@ export default function AdminProjectsPage() {
   const visibleProjects = projects.filter(
     (p) => activeTab === "all" || reviewOf(p) === activeTab,
   );
+
+  // Approve every selected pending proposal in one call, then drop the
+  // selection. Rows decide independently server-side; partial failures are
+  // reported rather than swallowed.
+  const handleBulkApprove = async () => {
+    if (selectedIds.size === 0 || bulkApproving) return;
+    if (
+      !confirm(
+        `Approve ${selectedIds.size} project${selectedIds.size > 1 ? "s" : ""}? Each proposer is notified and each becomes publicly visible.`,
+      )
+    )
+      return;
+    setBulkApproving(true);
+    try {
+      const response = await fetch("/api/admin/projects", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          projectId: [...selectedIds][0],
+          action: "approve",
+          projectIds: [...selectedIds],
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        approvedCount?: number;
+        failedIds?: string[];
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to approve projects"));
+      const decided = payload?.approvedCount ?? 0;
+      const failures = payload?.failedIds?.length ?? 0;
+
+      if (failures > 0) {
+        toast.warning(
+          `${decided} approved, ${failures} failed — retry the failed ones from the queue`,
+        );
+      } else {
+        toast.success(`${decided} project${decided === 1 ? "" : "s"} approved`);
+      }
+      setSelectedIds(new Set());
+      await fetchProjects();
+    } catch (error) {
+      logError("Bulk project approval failed:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve projects",
+      );
+    } finally {
+      setBulkApproving(false);
+    }
+  };
 
   const handleReview = async (
     project: Project,
@@ -622,6 +682,11 @@ export default function AdminProjectsPage() {
                       tab.value === "all"
                         ? projects.length
                         : reviewCounts[tab.value];
+                    // Selected-count badge sits on the Needs review tab
+                    // itself so the working set stays visible across tab
+                    // switches.
+                    const selectedCount =
+                      tab.value === "review" ? selectedIds.size : 0;
 
                     return (
                       <Button
@@ -633,6 +698,15 @@ export default function AdminProjectsPage() {
                         onPress={() => setActiveTab(tab.value)}
                       >
                         {tab.label}
+                        {selectedCount > 0 && (
+                          <Chip
+                            className="ml-1 tabular-nums"
+                            color="accent"
+                            size="sm"
+                          >
+                            {selectedCount} selected
+                          </Chip>
+                        )}
                         {count > 0 && (
                           <Chip
                             className="ml-1 tabular-nums"
@@ -654,6 +728,49 @@ export default function AdminProjectsPage() {
                       </Button>
                     );
                   })}
+                  {activeTab === "review" &&
+                    canReview &&
+                    visibleProjects.length > 0 && (
+                      <div className="ml-auto flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onPress={() => {
+                            const pendingIds = visibleProjects
+                              .filter((p) => reviewOf(p) === "review" && p.$id)
+                              .map((p) => p.$id!);
+                            const allSelected =
+                              pendingIds.length > 0 &&
+                              pendingIds.every((id) => selectedIds.has(id));
+
+                            setSelectedIds(
+                              allSelected
+                                ? new Set()
+                                : new Set([...selectedIds, ...pendingIds]),
+                            );
+                          }}
+                        >
+                          {visibleProjects.every(
+                            (p) =>
+                              reviewOf(p) !== "review" ||
+                              (p.$id && selectedIds.has(p.$id)),
+                          ) && visibleProjects.length > 0
+                            ? "Clear selection"
+                            : `Select all (${visibleProjects.length})`}
+                        </Button>
+                        {selectedIds.size > 0 && (
+                          <Button
+                            isPending={bulkApproving}
+                            size="sm"
+                            variant="primary"
+                            onPress={handleBulkApprove}
+                          >
+                            <CheckIcon aria-hidden="true" className="w-4 h-4" />
+                            Approve {selectedIds.size}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                 </div>
                 {loading ? (
                   <div
@@ -726,6 +843,27 @@ export default function AdminProjectsPage() {
                               <TableRow key={project.$id}>
                                 <TableCell>
                                   <div className="flex items-center gap-4">
+                                    {canReview &&
+                                      reviewOf(project) === "review" &&
+                                      project.$id && (
+                                        <input
+                                          aria-label={`Select ${project.title} for bulk approval`}
+                                          checked={selectedIds.has(project.$id)}
+                                          className="size-4 cursor-pointer flex-shrink-0"
+                                          type="checkbox"
+                                          onChange={() =>
+                                            setSelectedIds((current) => {
+                                              const next = new Set(current);
+
+                                              if (next.has(project.$id!))
+                                                next.delete(project.$id!);
+                                              else next.add(project.$id!);
+
+                                              return next;
+                                            })
+                                          }
+                                        />
+                                      )}
                                     <div className="relative flex-shrink-0">
                                       <Image
                                         unoptimized
