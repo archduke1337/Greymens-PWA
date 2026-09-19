@@ -12,6 +12,7 @@ import {
   Link2,
   Loader2,
   Megaphone,
+  Newspaper,
   Search,
   Video,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const TYPE_ICONS: Record<Resource["type"], typeof FileText> = {
   link: Link2,
   video: Video,
   file: FolderOpen,
+  newsletter: Newspaper,
   announcement: Megaphone,
 };
 
@@ -134,7 +136,7 @@ export default function ResourcesPage() {
           Resources
         </h1>
         <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
-          Documents, links and recordings shared with the club.
+          Documents, links, recordings, and newsletters shared with the club.
         </p>
       </div>
 

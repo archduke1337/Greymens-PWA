@@ -28,7 +28,13 @@ const ALLOWED_TYPES = new Set([
   "application/zip",
 ]);
 const ALLOWED_CATEGORIES = new Set(["common", "department", "role"]);
-const ALLOWED_RESOURCE_TYPES = new Set(["document", "link", "video", "file"]);
+const ALLOWED_RESOURCE_TYPES = new Set([
+  "document",
+  "link",
+  "video",
+  "file",
+  "newsletter",
+]);
 // Membership statuses a role-gated resource may require (compared against the
 // viewer's resolved status in GET).
 const MEMBER_STATUSES = new Set([
@@ -69,20 +75,25 @@ export async function GET(request: NextRequest) {
       return ok({ resources: response.documents });
     }
 
+    // Rows written before the moderation columns existed carry no status —
+    // treat a missing status as approved so legacy content stays visible
+    // instead of vanishing from the library after the upgrade.
     const response = await databases.listDocuments(
       DATABASE_ID,
       COLLECTIONS.RESOURCES,
       [
         Query.equal("isActive", [true]),
-        Query.equal("status", ["approved"]),
         Query.orderDesc("$createdAt"),
         Query.limit(100),
       ],
     );
+    const approved = response.documents.filter(
+      (resource) => resource.status === "approved" || !resource.status,
+    );
 
     if (!user) {
       return ok({
-        resources: response.documents.filter(
+        resources: approved.filter(
           (resource) => resource.category === "common",
         ),
       });
@@ -107,7 +118,7 @@ export async function GET(request: NextRequest) {
         assignments.documents.map((row) => String(row.departmentId ?? "")),
       );
     }
-    const resources = response.documents.filter((resource) => {
+    const resources = approved.filter((resource) => {
       if (resource.category === "common") return true;
       if (!isMemberStatus(membershipStatus)) return false;
       if (resource.category === "role") {
@@ -434,6 +445,13 @@ export async function POST(request: NextRequest) {
       authenticated.user.$id,
       "resources.manage",
     );
+    // OAuth profiles sometimes carry no display name — the table requires
+    // uploadedByName, so fall back to email before the id rather than 400ing
+    // an otherwise valid submission.
+    const uploaderName =
+      authenticated.user.name?.trim() ||
+      authenticated.user.email ||
+      authenticated.user.$id;
     const resource = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.RESOURCES,
@@ -444,12 +462,12 @@ export async function POST(request: NextRequest) {
         category,
         layer: category,
         type,
-        url: fileUrl,
-        fileId,
-        departmentId: category === "department" ? departmentId : undefined,
-        requiredRole: category === "role" ? requiredRole : undefined,
+        url: fileUrl ?? null,
+        fileId: fileId ?? null,
+        departmentId: category === "department" ? departmentId : null,
+        requiredRole: category === "role" ? requiredRole : null,
         uploadedBy: authenticated.user.$id,
-        uploadedByName: authenticated.user.name,
+        uploadedByName: uploaderName,
         tags,
         downloads: 0,
         status: canModerate ? "approved" : "pending",

@@ -30,9 +30,12 @@ import {
   Link as LinkIcon,
   Video,
   FolderOpen,
+  Newspaper,
   Plus,
   Trash2,
   Edit,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -44,9 +47,22 @@ const RESOURCE_TYPES = [
   { value: "link", label: "Link", icon: LinkIcon },
   { value: "video", label: "Video", icon: Video },
   { value: "file", label: "File", icon: FolderOpen },
-  // NOTE: no "announcement" option — the server allowlist is
-  // document/link/video/file and rejects anything else.
+  { value: "newsletter", label: "Newsletter", icon: Newspaper },
+  // NOTE: no "announcement" option — the legacy type survives in stored rows
+  // and the public list, but new uploads are document/link/video/file/
+  // newsletter and the server allowlist rejects anything else.
 ] as const;
+
+type StatusTab = "pending" | "approved" | "rejected";
+
+// Rows written before moderation existed carry no status — read them as
+// approved everywhere the console groups by status.
+function resourceStatus(resource: Resource): StatusTab {
+  if (resource.status === "pending" || resource.status === "rejected")
+    return resource.status;
+
+  return "approved";
+}
 
 const LAYERS = [
   { value: "common", label: "Common Library" },
@@ -74,9 +90,19 @@ export default function AdminResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [layerFilter, setLayerFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<StatusTab>("pending");
   const { isOpen, open, close } = useOverlayState();
+  const {
+    isOpen: isRejectOpen,
+    open: openReject,
+    close: closeReject,
+  } = useOverlayState();
   const [editTarget, setEditTarget] = useState<Resource | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Resource | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Create-only attachment: PATCH edits metadata, the upload lane is POST.
   const [file, setFile] = useState<File | null>(null);
@@ -93,8 +119,11 @@ export default function AdminResourcesPage() {
 
   const loadData = useCallback(async () => {
     try {
+      // The review queue lives behind resources.manage — the same gate the
+      // approve/reject actions require — so a manager who can see this page
+      // can act on everything it lists.
       const [resourceResponse, departmentResponse] = await Promise.all([
-        fetch("/api/resources?all=true", { credentials: "include" }),
+        fetch("/api/admin/resources", { credentials: "include" }),
         fetch("/api/departments", { credentials: "include" }),
       ]);
 
@@ -244,6 +273,71 @@ export default function AdminResourcesPage() {
     }
   };
 
+  const handleApprove = async (resource: Resource) => {
+    if (!user || !resource.$id) return;
+    setApprovingId(resource.$id);
+    try {
+      const response = await fetch("/api/admin/resources", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ resourceId: resource.$id, action: "approve" }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to approve resource"));
+      toast.success(
+        resourceStatus(resource) === "rejected"
+          ? "Resource re-approved"
+          : "Resource approved",
+      );
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve resource",
+      );
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!user || !rejectTarget?.$id || !rejectReason.trim()) return;
+    setRejecting(true);
+    try {
+      const response = await fetch("/api/admin/resources", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          resourceId: rejectTarget.$id,
+          action: "reject",
+          reason: rejectReason.trim(),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(readApiError(payload, "Unable to reject resource"));
+      toast.success("Resource rejected");
+      closeReject();
+      setRejectTarget(null);
+      setRejectReason("");
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reject resource",
+      );
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const handleDelete = async (resource: Resource) => {
     if (!resource.$id) return;
     if (!window.confirm(`Delete "${resource.title}"?`)) return;
@@ -304,14 +398,21 @@ export default function AdminResourcesPage() {
     open();
   };
 
+  const counts = {
+    pending: resources.filter((r) => resourceStatus(r) === "pending").length,
+    approved: resources.filter((r) => resourceStatus(r) === "approved").length,
+    rejected: resources.filter((r) => resourceStatus(r) === "rejected").length,
+  };
+
   const filtered = resources.filter((r) => {
+    const matchesTab = resourceStatus(r) === activeTab;
     const matchesLayer = layerFilter === "all" || r.layer === layerFilter;
     const matchesSearch =
       !searchQuery ||
       r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesLayer && matchesSearch;
+    return matchesTab && matchesLayer && matchesSearch;
   });
 
   const getTypeIcon = (type: string) => {
@@ -347,9 +448,41 @@ export default function AdminResourcesPage() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Review queue tabs + filters */}
       <Card className="mb-6">
         <CardContent className="p-4">
+          <div
+            aria-label="Filter by review status"
+            className="flex flex-wrap gap-2 mb-4"
+            role="group"
+          >
+            {(["pending", "approved", "rejected"] as StatusTab[]).map((tab) => (
+              <Button
+                key={tab}
+                size="sm"
+                variant={activeTab === tab ? "primary" : "secondary"}
+                onPress={() => setActiveTab(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {counts[tab] > 0 && (
+                  <Chip
+                    className="ml-1 tabular-nums"
+                    color={
+                      tab === "approved"
+                        ? "success"
+                        : tab === "rejected"
+                          ? "danger"
+                          : "warning"
+                    }
+                    size="sm"
+                    variant="soft"
+                  >
+                    {counts[tab]}
+                  </Chip>
+                )}
+              </Button>
+            ))}
+          </div>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <Input
@@ -390,11 +523,15 @@ export default function AdminResourcesPage() {
               aria-hidden="true"
               className="w-16 h-16 text-default-300 mx-auto mb-4"
             />
-            <h3 className="text-lg font-semibold mb-2">No resources found</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              No {activeTab} resources
+            </h3>
             <p className="text-default-500">
-              {searchQuery
-                ? "Try a different search"
-                : "Create your first resource"}
+              {searchQuery || layerFilter !== "all"
+                ? "Try a different search or filter"
+                : activeTab === "pending"
+                  ? "All caught up — nothing awaiting review"
+                  : `No ${activeTab} resources yet`}
             </p>
           </CardContent>
         </Card>
@@ -425,6 +562,19 @@ export default function AdminResourcesPage() {
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1">
+                      <Chip
+                        color={
+                          resourceStatus(resource) === "approved"
+                            ? "success"
+                            : resourceStatus(resource) === "rejected"
+                              ? "danger"
+                              : "warning"
+                        }
+                        size="sm"
+                        variant="soft"
+                      >
+                        {resourceStatus(resource)}
+                      </Chip>
                       <Chip size="sm" variant="soft">
                         {resource.type}
                       </Chip>
@@ -452,8 +602,41 @@ export default function AdminResourcesPage() {
                         </Chip>
                       ))}
                     </div>
+                    {resourceStatus(resource) === "rejected" &&
+                      resource.rejectionReason && (
+                        <p className="text-xs text-danger mt-1">
+                          Rejected: {resource.rejectionReason}
+                        </p>
+                      )}
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    {resourceStatus(resource) !== "approved" && (
+                      <Button
+                        isIconOnly
+                        aria-label={`Approve ${resource.title}`}
+                        isPending={approvingId === resource.$id}
+                        size="sm"
+                        variant="primary"
+                        onPress={() => handleApprove(resource)}
+                      >
+                        <CheckCircle aria-hidden="true" className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {resourceStatus(resource) === "pending" && (
+                      <Button
+                        isIconOnly
+                        aria-label={`Reject ${resource.title}`}
+                        size="sm"
+                        variant="danger-soft"
+                        onPress={() => {
+                          setRejectTarget(resource);
+                          setRejectReason("");
+                          openReject();
+                        }}
+                      >
+                        <XCircle aria-hidden="true" className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       isIconOnly
                       aria-label={`Edit ${resource.title}`}
@@ -498,9 +681,13 @@ export default function AdminResourcesPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      Title
+                      Title{" "}
+                      <span aria-hidden="true" className="text-danger">
+                        *
+                      </span>
                     </label>
                     <Input
+                      required
                       placeholder="Resource title"
                       value={form.title}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -510,7 +697,10 @@ export default function AdminResourcesPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      Description
+                      Description{" "}
+                      <span className="font-normal text-default-400">
+                        (optional)
+                      </span>
                     </label>
                     <TextArea
                       placeholder="Brief description"
@@ -535,7 +725,12 @@ export default function AdminResourcesPage() {
                           }))
                         }
                       >
-                        <Label>Type</Label>
+                        <Label>
+                          Type{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
@@ -569,7 +764,12 @@ export default function AdminResourcesPage() {
                           }))
                         }
                       >
-                        <Label>Layer</Label>
+                        <Label>
+                          Layer{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
@@ -606,7 +806,12 @@ export default function AdminResourcesPage() {
                           }))
                         }
                       >
-                        <Label>Department</Label>
+                        <Label>
+                          Department{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
@@ -643,7 +848,12 @@ export default function AdminResourcesPage() {
                           }))
                         }
                       >
-                        <Label>Visible only to</Label>
+                        <Label>
+                          Visible only to{" "}
+                          <span aria-hidden="true" className="text-danger">
+                            *
+                          </span>
+                        </Label>
                         <Select.Trigger>
                           <Select.Value />
                           <Select.Indicator />
@@ -670,7 +880,12 @@ export default function AdminResourcesPage() {
                   )}
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      URL
+                      URL{" "}
+                      {!editTarget?.$id && (
+                        <span className="font-normal text-default-400">
+                          (required unless a file is attached)
+                        </span>
+                      )}
                     </label>
                     <Input
                       placeholder="https://..."
@@ -688,7 +903,8 @@ export default function AdminResourcesPage() {
                       >
                         Or attach a file{" "}
                         <span className="font-normal text-default-400">
-                          (create only, max 50MB)
+                          (create only, max 50MB — required unless a URL is
+                          given)
                         </span>
                       </label>
                       <input
@@ -706,7 +922,10 @@ export default function AdminResourcesPage() {
                   )}
                   <div>
                     <label className="text-sm font-medium mb-1 block">
-                      Tags (comma separated)
+                      Tags{" "}
+                      <span className="font-normal text-default-400">
+                        (optional, comma separated)
+                      </span>
                     </label>
                     <Input
                       placeholder="tag1, tag2, tag3"
@@ -728,6 +947,60 @@ export default function AdminResourcesPage() {
                   onPress={handleSave}
                 >
                   {editTarget ? "Update" : "Create"}
+                </Button>
+              </ModalFooter>
+            </ModalDialog>
+          </ModalContainer>
+        </ModalBackdrop>
+      </Modal>
+
+      {/* Reject Modal */}
+      <Modal>
+        <ModalBackdrop
+          isOpen={isRejectOpen}
+          onOpenChange={(o) => {
+            if (!o) {
+              closeReject();
+              setRejectTarget(null);
+              setRejectReason("");
+            }
+          }}
+        >
+          <ModalContainer>
+            <ModalDialog>
+              <ModalHeader>Reject Resource</ModalHeader>
+              <ModalBody>
+                <p className="text-sm text-default-500">
+                  Provide a reason for rejecting &quot;{rejectTarget?.title}
+                  &quot; — the submitter sees this.
+                </p>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">
+                    Rejection reason{" "}
+                    <span aria-hidden="true" className="text-danger">
+                      *
+                    </span>
+                  </label>
+                  <Input
+                    placeholder="Why is this being rejected?"
+                    value={rejectReason}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setRejectReason(e.target.value)
+                    }
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="secondary" onPress={closeReject}>
+                  Cancel
+                </Button>
+                <Button
+                  isDisabled={!rejectReason.trim()}
+                  isPending={rejecting}
+                  variant="danger"
+                  onPress={handleReject}
+                >
+                  Reject
                 </Button>
               </ModalFooter>
             </ModalDialog>

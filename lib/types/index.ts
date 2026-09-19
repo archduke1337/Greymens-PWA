@@ -525,7 +525,7 @@ export interface Resource {
   $updatedAt?: string;
   title: string;
   description?: string;
-  type: "document" | "link" | "video" | "file" | "announcement";
+  type: "document" | "link" | "video" | "file" | "newsletter" | "announcement";
   url?: string;
   fileId?: string;
   layer: "common" | "department" | "role";

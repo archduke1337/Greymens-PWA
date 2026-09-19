@@ -67,22 +67,28 @@ export async function GET(request: NextRequest) {
     }
     const { databases } = createServerDatabases();
     const category = request.nextUrl.searchParams.get("category")?.trim();
+    // No status predicate: rows written before moderation existed carry no
+    // status, and a predicate would hide that legacy content. Filter in code
+    // so missing status reads as approved.
     const queries = [
-      Query.equal("status", ["approved"]),
       Query.equal("isActive", [true]),
       Query.orderDesc("$createdAt"),
       Query.limit(100),
     ];
 
     if (category && category !== "all")
-      queries.splice(2, 0, Query.equal("category", [category]));
+      queries.splice(1, 0, Query.equal("category", [category]));
     const response = await databases.listDocuments(
       DATABASE_ID,
       COLLECTIONS.GALLERY,
       queries,
     );
 
-    return ok({ images: response.documents });
+    return ok({
+      images: response.documents.filter(
+        (image) => image.status === "approved" || !image.status,
+      ),
+    });
   } catch (error) {
     logError("Public gallery lookup error:", error);
 

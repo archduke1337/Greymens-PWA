@@ -19,6 +19,7 @@ import {
   MapPin,
   ArrowUpRight,
   FolderOpen,
+  Newspaper,
 } from "lucide-react";
 
 import { readApiError } from "@/lib/errorHandler";
@@ -491,6 +492,7 @@ export default function MemberDashboard() {
                     link: LinkIcon,
                     video: Video,
                     file: FolderOpen,
+                    newsletter: Newspaper,
                     announcement: Bell,
                   };
                   const Icon = iconMap[res.type] || FileText;

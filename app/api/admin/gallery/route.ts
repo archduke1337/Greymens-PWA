@@ -72,16 +72,21 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { databases } = createServerDatabases();
+    // Approving clears a previous rejection and rejecting clears a previous
+    // approval, so a re-reviewed image never carries both verdicts at once.
     const data =
       action === "approve"
         ? {
             status: "approved",
             approvedBy: authenticated.user.$id,
             approvedAt: new Date().toISOString(),
+            rejectionReason: null,
           }
         : {
             status: "rejected",
             rejectionReason: String(body.reason).slice(0, 2000),
+            approvedBy: null,
+            approvedAt: null,
           };
     const image = await databases.updateDocument(
       DATABASE_ID,
