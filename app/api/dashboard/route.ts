@@ -13,6 +13,28 @@ import { logError } from "@/lib/logger";
 
 const RESTRICTED = new Set(["banned", "suspended", "deactivated"]);
 
+/**
+ * One failed sub-query must not 500 the whole dashboard: the route fans out
+ * into ~20 Appwrite reads, and a transient driver error (or a table that has
+ * not been migrated yet) in any one of them used to blank every section.
+ * Degrade that section to its fallback instead — a member seeing events but
+ * not notifications beats a member seeing an error page — and log loudly so
+ * the gap is discoverable.
+ */
+async function safe<T>(
+  label: string,
+  run: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    logError(`Dashboard "${label}" query failed:`, error);
+
+    return fallback;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
 
@@ -37,37 +59,70 @@ export async function GET(request: NextRequest) {
       notifications,
       access,
     ] = await Promise.all([
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
-        Query.equal("status", ["published", "active"]),
-        Query.orderAsc("date"),
-        Query.limit(5),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
-        Query.equal("userId", [userId]),
-        Query.equal("status", ["issued", "active"]),
-        Query.limit(100),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
-        Query.equal("userId", [userId]),
-        Query.orderDesc("registeredAt"),
-        Query.limit(100),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-        Query.equal("userId", [userId]),
-        Query.equal("isActive", [true]),
-        Query.limit(100),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
-        Query.equal("userId", [userId]),
-        Query.equal("isActive", [true]),
-        Query.limit(100),
-      ]),
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
-        Query.equal("userId", [userId]),
-        Query.orderDesc("createdAt"),
-        Query.limit(5),
-      ]),
-      getAccessSummary(userId, membershipStatus),
+      safe(
+        "upcomingEvents",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
+            Query.equal("status", ["published", "active"]),
+            Query.orderAsc("date"),
+            Query.limit(5),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "tickets",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
+            Query.equal("userId", [userId]),
+            Query.equal("status", ["issued", "active"]),
+            Query.limit(100),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "registrations",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.REGISTRATIONS, [
+            Query.equal("userId", [userId]),
+            Query.orderDesc("registeredAt"),
+            Query.limit(100),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "departments",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(100),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "designations",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DESIGNATIONS, [
+            Query.equal("userId", [userId]),
+            Query.equal("isActive", [true]),
+            Query.limit(100),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      safe(
+        "notifications",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
+            Query.equal("userId", [userId]),
+            Query.orderDesc("createdAt"),
+            Query.limit(5),
+          ]),
+        { documents: [], total: 0 },
+      ),
+      // Nothing in the repo reads `access` from this payload (capability
+      // routing happens via /api/permissions), so a summary failure costs
+      // nothing: null, not a 500.
+      safe("access", () => getAccessSummary(userId, membershipStatus), null),
     ]);
 
     const eventIds = [
@@ -135,14 +190,15 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (canLead) {
-      const ownEvents = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.EVENTS,
-        [
-          Query.equal("ownerId", [userId]),
-          Query.orderDesc("$createdAt"),
-          Query.limit(100),
-        ],
+      const ownEvents = await safe(
+        "lead.ownEvents",
+        () =>
+          databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
+            Query.equal("ownerId", [userId]),
+            Query.orderDesc("$createdAt"),
+            Query.limit(100),
+          ]),
+        { documents: [], total: 0 },
       );
       const departmentIds = departments.documents.map((department) =>
         String((department as Record<string, unknown>).departmentId),
@@ -152,35 +208,48 @@ export async function GET(request: NextRequest) {
           // Resolve the lead's departments from the small catalogue in
           // memory rather than querying by `$id`, keeping enrichment
           // independent of system-attribute indexing.
-          databases
-            .listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-              Query.limit(100),
-            ])
-            .then((catalogue) => ({
-              documents: catalogue.documents.filter((department) =>
-                departmentIds.includes(department.$id),
-              ),
-            })),
+          safe(
+            "lead.departments",
+            () =>
+              databases
+                .listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+                  Query.limit(100),
+                ])
+                .then((catalogue) => ({
+                  documents: catalogue.documents.filter((department) =>
+                    departmentIds.includes(department.$id),
+                  ),
+                })),
+            { documents: [] },
+          ),
           departmentIds.length
-            ? databases.listDocuments(
-                DATABASE_ID,
-                COLLECTIONS.USER_DEPARTMENTS,
-                [
-                  Query.equal("departmentId", departmentIds),
-                  Query.equal("isActive", [true]),
-                  Query.limit(500),
-                ],
+            ? safe(
+                "lead.memberAssignments",
+                () =>
+                  databases.listDocuments(
+                    DATABASE_ID,
+                    COLLECTIONS.USER_DEPARTMENTS,
+                    [
+                      Query.equal("departmentId", departmentIds),
+                      Query.equal("isActive", [true]),
+                      Query.limit(500),
+                    ],
+                  ),
+                { documents: [], total: 0 },
               )
-            : Promise.resolve({
-                documents: [] as Array<Record<string, unknown>>,
-              }),
+            : Promise.resolve({ documents: [], total: 0 }),
           // Scope pending queue to caller's departments: applications carry
           // preferredDepartments, so filter server-side instead of leaking the
           // global queue to every lead.
-          databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
-            Query.equal("status", ["pending"]),
-            Query.limit(100),
-          ]),
+          safe(
+            "lead.pendingApplications",
+            () =>
+              databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+                Query.equal("status", ["pending"]),
+                Query.limit(100),
+              ]),
+            { documents: [], total: 0 },
+          ),
         ]);
       const scopedApplications = (
         scopedPending as { documents: Array<Record<string, unknown>> }
@@ -240,27 +309,57 @@ export async function GET(request: NextRequest) {
         pendingApplications,
         allApplications,
       ] = await Promise.all([
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
-          Query.equal("isActive", [true]),
-          Query.limit(100),
-        ]),
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
-          Query.equal("isActive", [true]),
-          Query.limit(500),
-        ]),
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
-          Query.limit(500),
-        ]),
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
-          Query.limit(100),
-        ]),
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
-          Query.equal("status", ["pending"]),
-          Query.limit(100),
-        ]),
-        databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
-          Query.limit(500),
-        ]),
+        safe(
+          "admin.departments",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.DEPARTMENTS, [
+              Query.equal("isActive", [true]),
+              Query.limit(100),
+            ]),
+          { documents: [], total: 0 },
+        ),
+        safe(
+          "admin.members",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.USER_DEPARTMENTS, [
+              Query.equal("isActive", [true]),
+              Query.limit(500),
+            ]),
+          { documents: [], total: 0 },
+        ),
+        safe(
+          "admin.memberships",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.MEMBERSHIPS, [
+              Query.limit(500),
+            ]),
+          { documents: [], total: 0 },
+        ),
+        safe(
+          "admin.events",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.EVENTS, [
+              Query.limit(100),
+            ]),
+          { documents: [], total: 0 },
+        ),
+        safe(
+          "admin.pendingApplications",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+              Query.equal("status", ["pending"]),
+              Query.limit(100),
+            ]),
+          { documents: [], total: 0 },
+        ),
+        safe(
+          "admin.allApplications",
+          () =>
+            databases.listDocuments(DATABASE_ID, COLLECTIONS.APPLICATIONS, [
+              Query.limit(500),
+            ]),
+          { documents: [], total: 0 },
+        ),
       ]);
       const countByStatus = (
         documents: Array<Record<string, unknown>>,
