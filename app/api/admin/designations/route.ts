@@ -5,8 +5,10 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import {
   isCapability,
+  normalizeCapability,
   requireCapability,
   unheldCapabilities,
+  LEGACY_CAPABILITY_ALIASES,
 } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { ok, fail } from "@/lib/api";
@@ -111,10 +113,14 @@ function pickDesignationFields(body: Record<string, unknown>) {
     out.displayOrder = Number(body.displayOrder);
   }
   // Always written, so an empty list is a deliberate revocation rather than an
-  // omitted field that silently leaves the previous grant in place.
-  out.capabilities = (
-    Array.isArray(body.capabilities) ? body.capabilities : []
-  ).filter(isCapability);
+  // omitted field that silently leaves the previous grant in place. Legacy
+  // names map to their current equivalents so pre-rename rows stay editable.
+  out.capabilities = (Array.isArray(body.capabilities) ? body.capabilities : [])
+    .map(normalizeCapability)
+    .filter(
+      (cap): cap is NonNullable<ReturnType<typeof normalizeCapability>> =>
+        cap !== null,
+    );
 
   return out;
 }
@@ -124,7 +130,11 @@ function unknownCapabilities(value: unknown): string[] {
   const raw = Array.isArray(value) ? value : [];
 
   return raw
-    .filter((entry) => !isCapability(entry))
+    .filter(
+      (entry) =>
+        !isCapability(entry) &&
+        !(typeof entry === "string" && entry in LEGACY_CAPABILITY_ALIASES),
+    )
     .map((entry) => String(entry).slice(0, 60));
 }
 

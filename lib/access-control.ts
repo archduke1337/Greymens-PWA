@@ -13,11 +13,16 @@ import {
   RESTRICTED_STATUSES,
   type AuthResult,
 } from "@/lib/server-auth";
-import { OFFICE_CAPABILITIES, isCapability } from "@/lib/capabilities";
+import { OFFICE_CAPABILITIES, normalizeCapability } from "@/lib/capabilities";
 
 // The capability vocabulary lives in a dependency-free module so client
 // components can render it without importing this server-only file.
-export { CAPABILITIES, isCapability } from "@/lib/capabilities";
+export {
+  CAPABILITIES,
+  isCapability,
+  normalizeCapability,
+  LEGACY_CAPABILITY_ALIASES,
+} from "@/lib/capabilities";
 export type { Capability } from "@/lib/capabilities";
 
 export interface RoleTemplate {
@@ -176,7 +181,11 @@ export async function getEffectiveCapabilities(
         const values = Array.isArray(row.capabilities) ? row.capabilities : [];
 
         for (const value of values) {
-          if (isCapability(value)) capabilities.add(value);
+          // normalizeCapability maps pre-rename names so an old row still
+          // grants what it granted when it was written.
+          const capability = normalizeCapability(value);
+
+          if (capability) capabilities.add(capability);
         }
       }
     } catch {
@@ -290,7 +299,13 @@ export async function getEffectiveCapabilities(
 
     // Only known vocabulary becomes a capability. A role-template writer must
     // not be able to mint arbitrary strings (including "*") into privileges.
-    values.filter(isCapability).forEach((value) => capabilities.add(value));
+    // Legacy names map to their current equivalents so pre-rename templates
+    // keep working until their next save rewrites them.
+    values.forEach((value) => {
+      const capability = normalizeCapability(value);
+
+      if (capability) capabilities.add(capability);
+    });
   }
 
   return capabilities;
@@ -331,7 +346,12 @@ export function officeCapabilities(
       ? template.capabilities
       : [];
 
-    return values.filter(isCapability);
+    return values
+      .map(normalizeCapability)
+      .filter(
+        (cap): cap is NonNullable<ReturnType<typeof normalizeCapability>> =>
+          cap !== null,
+      );
   }
 
   return OFFICE_CAPABILITIES[officeId] ?? [];

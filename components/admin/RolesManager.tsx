@@ -38,7 +38,11 @@ import {
 
 import MemberAvatar from "@/components/MemberAvatar";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
-import { CAPABILITIES } from "@/lib/capabilities";
+import {
+  CAPABILITIES,
+  normalizeCapability,
+  type Capability,
+} from "@/lib/capabilities";
 import { GOVERNANCE_OFFICES } from "@/lib/governance";
 
 type Role = {
@@ -383,7 +387,16 @@ export default function RolesManager() {
       name: item.name,
       slug: item.slug,
       description: item.description ?? "",
-      capabilities: [...item.capabilities],
+      // Pre-rename names map to their current equivalents here, so opening
+      // and saving an old template rewrites it clean instead of erroring on
+      // names the current vocabulary no longer carries.
+      capabilities: [
+        ...new Set(
+          item.capabilities
+            .map(normalizeCapability)
+            .filter((cap): cap is Capability => cap !== null),
+        ),
+      ],
     });
     setEditCapabilityQuery("");
   };

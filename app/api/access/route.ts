@@ -7,6 +7,7 @@ import { requireAuthenticatedUser } from "@/lib/server-auth";
 import {
   getAccessSummary,
   isCapability,
+  normalizeCapability,
   requireAnyCapability,
   hasServerCapability,
   unheldCapabilities,
@@ -17,6 +18,7 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail, isConflict } from "@/lib/api";
 import { logError } from "@/lib/logger";
 import { GOVERNANCE_OFFICES } from "@/lib/governance";
+import { LEGACY_CAPABILITY_ALIASES } from "@/lib/capabilities";
 
 const MAX_TEXT = 2000;
 
@@ -175,7 +177,21 @@ export async function POST(request: NextRequest) {
       const slug = text(body.slug, 100);
       const description = text(body.description);
       const rawCaps = Array.isArray(body.capabilities) ? body.capabilities : [];
-      const unknownCaps = rawCaps.filter((c) => !isCapability(c));
+      // Legacy names (blog.submit, access.manage_powers, …) are mapped to
+      // their current equivalents rather than rejected — a template written
+      // before a rename must stay editable, not lock its editors out.
+      const capabilities = rawCaps
+        .map(normalizeCapability)
+        .filter(
+          (cap): cap is NonNullable<ReturnType<typeof normalizeCapability>> =>
+            cap !== null,
+        );
+      const unknownCaps = rawCaps.filter(
+        (c) =>
+          typeof c === "string" &&
+          !isCapability(c) &&
+          !(c in LEGACY_CAPABILITY_ALIASES),
+      );
 
       if (unknownCaps.length > 0) {
         return fail(
@@ -184,7 +200,6 @@ export async function POST(request: NextRequest) {
           400,
         );
       }
-      const capabilities = rawCaps.filter(isCapability);
 
       if (
         !name ||
@@ -497,7 +512,19 @@ export async function PATCH(request: NextRequest) {
     }
     if (roleId) {
       const rawCaps = Array.isArray(body.capabilities) ? body.capabilities : [];
-      const unknownCaps = rawCaps.filter((c) => !isCapability(c));
+      // Same legacy-name policy as create_role: map renames, reject typos.
+      const capabilities = rawCaps
+        .map(normalizeCapability)
+        .filter(
+          (cap): cap is NonNullable<ReturnType<typeof normalizeCapability>> =>
+            cap !== null,
+        );
+      const unknownCaps = rawCaps.filter(
+        (c) =>
+          typeof c === "string" &&
+          !isCapability(c) &&
+          !(c in LEGACY_CAPABILITY_ALIASES),
+      );
 
       if (unknownCaps.length > 0) {
         return fail(
@@ -506,7 +533,6 @@ export async function PATCH(request: NextRequest) {
           400,
         );
       }
-      const capabilities = rawCaps.filter(isCapability);
 
       if (!capabilities.length)
         return fail("VALIDATION", "At least one capability is required", 400);

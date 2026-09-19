@@ -230,6 +230,69 @@ export async function PATCH(request: NextRequest) {
       }
       const { databases } = createServerDatabases();
       const now = new Date().toISOString();
+
+      // Bulk path: approve many pending proposals in one call (gallery and
+      // resources parity). Rows decide independently — one stale id fails
+      // alone and is reported back, never 500ing the whole batch.
+      if (action === "approve" && Array.isArray(rest.projectIds)) {
+        const ids = rest.projectIds
+          .filter(
+            (id): id is string => typeof id === "string" && id.trim() !== "",
+          )
+          .map((id) => id.trim())
+          .slice(0, 100);
+
+        if (ids.length === 0) {
+          return fail("VALIDATION", "projectIds must not be empty", 400);
+        }
+
+        let approvedCount = 0;
+        const failedIds: string[] = [];
+
+        for (const id of ids) {
+          try {
+            const project = await databases.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.PROJECTS,
+              id,
+              {
+                reviewStatus: "approved",
+                approvedBy: authenticated.user.$id,
+                approvedAt: now,
+                rejectionReason: null,
+              },
+            );
+            const ownerId = String(project.ownerId ?? "");
+            const title = String(project.title ?? "your project");
+
+            if (ownerId) {
+              await dispatchNotification({
+                userId: ownerId,
+                type: "submission_update",
+                title: "Project proposal approved",
+                body: `"${title}" was approved and is now visible on the projects page.`,
+              }).catch((error) => {
+                logError("Bulk project approval notification failed:", error);
+              });
+            }
+            await recordAudit({
+              request,
+              actor: authenticated.user,
+              action: "project.approve",
+              entityType: "project",
+              entityId: id,
+              details: { action: "approve", bulk: true },
+            });
+            approvedCount += 1;
+          } catch (error) {
+            logError(`Bulk project approval failed for ${id}:`, error);
+            failedIds.push(id);
+          }
+        }
+
+        return ok({ approvedCount, failedIds, bulk: true });
+      }
+
       const project = await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.PROJECTS,

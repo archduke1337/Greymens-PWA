@@ -211,6 +211,69 @@ export async function PATCH(request: NextRequest) {
       }
       const { databases } = createServerDatabases();
       const now = new Date().toISOString();
+
+      // Bulk path: approve many pending proposals in one call (gallery and
+      // resources parity). Rows decide independently — one stale id fails
+      // alone and is reported back, never 500ing the whole batch.
+      if (action === "approve" && Array.isArray(rest.sponsorIds)) {
+        const ids = rest.sponsorIds
+          .filter(
+            (id): id is string => typeof id === "string" && id.trim() !== "",
+          )
+          .map((id) => id.trim())
+          .slice(0, 100);
+
+        if (ids.length === 0) {
+          return fail("VALIDATION", "sponsorIds must not be empty", 400);
+        }
+
+        let approvedCount = 0;
+        const failedIds: string[] = [];
+
+        for (const id of ids) {
+          try {
+            const sponsor = await databases.updateDocument(
+              DATABASE_ID,
+              COLLECTIONS.SPONSORS,
+              id,
+              {
+                status: "approved",
+                reviewedBy: authenticated.user.$id,
+                reviewedAt: now,
+                rejectionReason: null,
+              },
+            );
+            const submitter = String(sponsor.submittedBy ?? "");
+            const name = String(sponsor.name ?? "your sponsor proposal");
+
+            if (submitter) {
+              await dispatchNotification({
+                userId: submitter,
+                type: "submission_update",
+                title: "Sponsor proposal approved",
+                body: `"${name}" was approved and is now on the sponsors wall.`,
+              }).catch((error) => {
+                logError("Bulk sponsor approval notification failed:", error);
+              });
+            }
+            await recordAudit({
+              request,
+              actor: authenticated.user,
+              action: "sponsor.approve",
+              entityType: "sponsor",
+              entityId: id,
+              details: { action: "approve", bulk: true },
+            });
+            approvedCount += 1;
+          } catch (error) {
+            logError(`Bulk sponsor approval failed for ${id}:`, error);
+            failedIds.push(id);
+          }
+        }
+
+        return ok({ approvedCount, failedIds, bulk: true });
+      }
+
       const sponsor = await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.SPONSORS,

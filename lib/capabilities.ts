@@ -78,6 +78,37 @@ export function isCapability(value: unknown): value is Capability {
 }
 
 /**
+ * Capability names that existed before a rename/retirement and the current
+ * name each maps to. Rows written by older code (role templates, designations,
+ * powers) can still store these; validation would hard-reject them and lock
+ * the row's editors out. Each entry needs a comment naming the rename.
+ */
+export const LEGACY_CAPABILITY_ALIASES: Record<string, Capability> = {
+  // Folded into blog.create when member submission became ungated create.
+  "blog.submit": "blog.create",
+  // Folded into blog.review — requesting revisions is the reviewer's act.
+  "blog.request_revision": "blog.review",
+  // Renamed for consistency with the *.manage / *.approve split.
+  "access.manage_powers": "powers.manage",
+  // Retired deliberately: viewing records rides /admin/governance access.
+  "governance.view_records": "governance.manage",
+  // Retired: member event registration has no capability gate.
+  "registrations.create": "registrations.manage",
+} as Record<string, Capability>;
+
+/**
+ * Map legacy capability names to their current equivalents; pass current
+ * names and anything else through untouched. Used when reading stored rows so
+ * pre-rename data normalizes on the next save instead of being unfixable.
+ */
+export function normalizeCapability(value: unknown): Capability | null {
+  if (typeof value !== "string") return null;
+  const alias = LEGACY_CAPABILITY_ALIASES[value];
+
+  return alias ?? (isCapability(value) ? value : null);
+}
+
+/**
  * Charter office -> capabilities. Single source for sidebar gating (presentation
  * only) and for seeding role_templates. Server still enforces via requireCapability.
  */
@@ -218,8 +249,7 @@ export const POWER_CATALOGUE: PowerDefinition[] = [
   {
     name: "registration_manager",
     displayName: "Registration Manager",
-    description:
-      "Reads an event's registrations and approves or rejects them.",
+    description: "Reads an event's registrations and approves or rejects them.",
     category: "events",
     scope: "department",
     capabilities: ["registrations.view", "registrations.manage"],
@@ -365,7 +395,8 @@ export const POWER_CATALOGUE: PowerDefinition[] = [
   {
     name: "profile_moderator",
     displayName: "Profile Moderator",
-    description: "Reads member profiles, corrects them, and keeps the audit trail.",
+    description:
+      "Reads member profiles, corrects them, and keeps the audit trail.",
     category: "admin",
     scope: "global",
     capabilities: ["users.view", "users.update", "audit.view"],
