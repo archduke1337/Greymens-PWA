@@ -175,11 +175,19 @@ export default function ProjectsPage() {
       });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
+        project?: { reviewStatus?: string };
       } | null;
 
       if (!response.ok)
         throw new Error(readApiError(payload, "Unable to submit project"));
-      toast.success("Proposal submitted — visible after review");
+      // A member proposal lands in review; a projects manager's own
+      // submission publishes on the spot, and saying "after review" to a
+      // manager reads as a bug.
+      toast.success(
+        payload?.project?.reviewStatus === "approved"
+          ? "Project published — it's live on this page."
+          : "Proposal submitted — visible after review",
+      );
       close();
       setForm({
         title: "",
@@ -355,6 +363,11 @@ export default function ProjectsPage() {
                             In review
                           </Chip>
                         )}
+                        {project.reviewStatus === "rejected" && (
+                          <Chip color="danger" size="sm" variant="soft">
+                            Sent back
+                          </Chip>
+                        )}
                       </div>
                     </div>
 
@@ -367,6 +380,14 @@ export default function ProjectsPage() {
                         <p className="text-default-500 text-sm line-clamp-2">
                           {project.description}
                         </p>
+                        {/* Your own sent-back proposal: this row is not public,
+                            so show why instead of letting it read as live. */}
+                        {project.reviewStatus === "rejected" &&
+                          project.rejectionReason && (
+                            <p className="text-sm text-danger">
+                              Reviewer note: {project.rejectionReason}
+                            </p>
+                          )}
                       </div>
 
                       {/* Progress */}

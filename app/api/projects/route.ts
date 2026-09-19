@@ -66,8 +66,11 @@ export async function GET(request: NextRequest) {
       const review = String(project.reviewStatus ?? "");
 
       if (!review || review === "approved") return true;
-      if (review === "rejected") return false;
 
+      // Pending AND sent-back rows are private to their proposer. Rejected
+      // used to be dropped outright, so the owner learned about a rejection
+      // only from the notification email — and never saw the reviewer note
+      // again if that mail was missed. scope=mine is the owner's view.
       return viewerId !== null && String(project.ownerId ?? "") === viewerId;
     });
 

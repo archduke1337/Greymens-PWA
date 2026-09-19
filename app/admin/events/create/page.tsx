@@ -914,6 +914,39 @@ export default function AdminCreateEventPage() {
                     </p>
                   </div>
 
+                  <div>
+                    <Select
+                      fullWidth
+                      value={formData.status}
+                      onChange={(value) =>
+                        updateForm(
+                          "status",
+                          (String(value ?? "draft") === "review"
+                            ? "review"
+                            : "draft") as "draft" | "review",
+                        )
+                      }
+                    >
+                      <Label>Submit as</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="draft" textValue="Draft">
+                            Draft — visible only to you until reviewed
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="review" textValue="For review">
+                            For review — enters the approval queue
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
                   <div className="space-y-4">
                     {formData.image && (
                       <Image

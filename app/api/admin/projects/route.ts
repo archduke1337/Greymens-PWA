@@ -52,38 +52,71 @@ function pickProjectFields(body: Record<string, unknown>) {
   return out;
 }
 
-function validateProject(body: Record<string, unknown>) {
+// Same allowlist the public reader and member proposal path enforce, so the
+// console cannot persist a category the projects page can never filter to.
+const VALID_PROJECT_CATEGORIES = new Set([
+  "ai-ml",
+  "blockchain",
+  "mobile",
+  "web",
+  "iot",
+  "quantum",
+  "cybersecurity",
+]);
+
+/**
+ * Create validates every required column; edit validates only what the
+ * request actually carries. Requiring the full object on PATCH meant a
+ * one-field edit (feature flag, progress bump) 400ed unless the client
+ * resent the whole project.
+ */
+function validateProject(
+  body: Record<string, unknown>,
+  { partial = false }: { partial?: boolean } = {},
+) {
+  const present = (key: string) => body[key] !== undefined;
+  const mustCheck = (key: string) => !partial || present(key);
+
   if (
-    typeof body.title !== "string" ||
-    !body.title.trim() ||
-    body.title.length > 255
+    mustCheck("title") &&
+    (typeof body.title !== "string" ||
+      !body.title.trim() ||
+      body.title.length > 255)
   )
     return "Invalid title";
   if (
-    typeof body.description !== "string" ||
-    !body.description.trim() ||
-    body.description.length > 65535
+    mustCheck("description") &&
+    (typeof body.description !== "string" ||
+      !body.description.trim() ||
+      body.description.length > 65535)
   )
     return "Invalid description";
-  if (
-    !validUrl(body.image, true) ||
-    !validUrl(body.demoUrl) ||
-    !validUrl(body.repoUrl)
-  )
+  if (mustCheck("image") && !validUrl(body.image, true))
+    return "Invalid image or project URL";
+  if (present("demoUrl") && !validUrl(body.demoUrl))
+    return "Invalid image or project URL";
+  if (present("repoUrl") && !validUrl(body.repoUrl))
     return "Invalid image or project URL";
   if (
-    !Number.isInteger(body.progress) ||
-    Number(body.progress) < 0 ||
-    Number(body.progress) > 100
+    mustCheck("progress") &&
+    (!Number.isInteger(body.progress) ||
+      Number(body.progress) < 0 ||
+      Number(body.progress) > 100)
   )
     return "Progress must be between 0 and 100";
   if (
-    !Number.isInteger(body.stars) ||
-    Number(body.stars) < 0 ||
-    !Number.isInteger(body.forks) ||
-    Number(body.forks) < 0
+    (mustCheck("stars") &&
+      (!Number.isInteger(body.stars) || Number(body.stars) < 0)) ||
+    (mustCheck("forks") &&
+      (!Number.isInteger(body.forks) || Number(body.forks) < 0))
   )
     return "Invalid project metrics";
+  if (
+    (!partial || present("category")) &&
+    (typeof body.category !== "string" ||
+      !VALID_PROJECT_CATEGORIES.has(body.category))
+  )
+    return "Invalid project category";
 
   return null;
 }
@@ -119,13 +152,21 @@ export async function POST(request: NextRequest) {
 
     if (validationError) return fail("VALIDATION", validationError, 400);
     const { databases } = createServerDatabases();
+    const now = new Date().toISOString();
+    // Console-created rows are the manager's own decision, so they publish
+    // immediately — and carry attribution. Without ownerId they were
+    // ownerless ghosts: no notification path and uneditable by any member.
     const project = await databases.createDocument(
       DATABASE_ID,
       COLLECTIONS.PROJECTS,
       ID.unique(),
       {
         ...fields,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
+        ownerId: authenticated.user.$id,
+        reviewStatus: "approved",
+        approvedBy: authenticated.user.$id,
+        approvedAt: now,
       },
     );
 
@@ -206,7 +247,11 @@ export async function PATCH(request: NextRequest) {
             action === "approve"
               ? `"${title}" was approved and is now visible on the projects page.`
               : `"${title}" was not approved yet. Reviewer note: ${reason}`,
-        }).catch(() => null);
+        }).catch((error) => {
+          // The review decision is already saved; only the notification
+          // failed. Log it — a silent catch reads as "proposer was told".
+          logError("Project decision notification failed:", error);
+        });
       }
 
       await recordAudit({
@@ -222,7 +267,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const data = pickProjectFields(rest);
-    const validationError = validateProject(data);
+    const validationError = validateProject(data, { partial: true });
 
     if (validationError) return fail("VALIDATION", validationError, 400);
     const { databases } = createServerDatabases();

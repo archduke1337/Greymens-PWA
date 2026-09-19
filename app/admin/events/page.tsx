@@ -393,8 +393,13 @@ export default function AdminEventsPage() {
       await loadEvents();
       toast.success("Event deleted successfully!");
     } catch (error) {
-      logError("Error deleting event:", error);
-      toast.error("Failed to delete event");
+      // 409 carries the registration/ticket counts that blocked the delete;
+      // a generic toast throws away the only explanation the admin gets.
+      const message =
+        error instanceof Error ? error.message : "Failed to delete event";
+
+      logError("Error deleting event:", message);
+      toast.error(`Failed to delete event: ${message}`);
     } finally {
       setDeletingId(null);
     }

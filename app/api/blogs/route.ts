@@ -3,7 +3,7 @@ import { ID, Query } from "appwrite";
 
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireCapability } from "@/lib/access-control";
+import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
 import { recordAudit } from "@/lib/server-audit";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -103,7 +103,17 @@ export async function GET(request: NextRequest) {
         Query.limit(MAX_BLOGS),
       ];
     } else if (scope === "review" || scope === "all") {
-      const permitted = await requireCapability(request, "blog.review");
+      // Any editorial capability opens the queue: a reviewer who may approve
+      // or publish but not "review" was admitted to the console by the
+      // sidebar and then 403ed by the list it immediately calls. Reading the
+      // queue is not the write authority — edit/delete of others' posts still
+      // demands blog.review.
+      const permitted = await requireAnyCapability(request, [
+        "blog.review",
+        "blog.approve",
+        "blog.publish",
+        "blog.feature",
+      ]);
 
       if (!permitted.user) return permitted.response;
       queries =

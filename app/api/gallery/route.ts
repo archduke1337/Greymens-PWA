@@ -6,7 +6,7 @@ import {
   createServerStorage,
 } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
-import { requireAuthenticatedUser, requireMember } from "@/lib/server-auth";
+import { requireMember } from "@/lib/server-auth";
 import { hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
@@ -46,7 +46,10 @@ export async function GET(request: NextRequest) {
     const scope = request.nextUrl.searchParams.get("scope")?.trim();
 
     if (scope === "mine") {
-      const authenticated = await requireAuthenticatedUser(request);
+      // Membership, not mere authentication: the upload gate is requireMember,
+      // so anyone who can see their own uploads here is someone who could have
+      // made them. Anything wider leaks "my uploads" framing to non-members.
+      const authenticated = await requireMember(request);
 
       if (!authenticated.user) return authenticated.response;
       const { databases } = createServerDatabases();

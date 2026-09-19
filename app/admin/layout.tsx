@@ -64,10 +64,13 @@ export const ADMIN_SECTIONS = [
     cap: "membership.view_applications",
   },
   {
+    // Narrow approvers (president/VP approve, cto publishes, coordinators
+    // update) hold API rights without the blanket grant — the section must
+    // admit them too, or the capability their charter names opens no door.
     label: "Events",
     href: "/admin/events",
     Icon: CalendarDays,
-    cap: "events.manage",
+    cap: ["events.manage", "events.approve", "events.publish", "events.update"],
   },
   {
     label: "Event Types",
@@ -91,7 +94,12 @@ export const ADMIN_SECTIONS = [
     Icon: Landmark,
     cap: "designations.assign",
   },
-  { label: "Blogs", href: "/admin/blog", Icon: FileText, cap: "blog.review" },
+  {
+    label: "Blogs",
+    href: "/admin/blog",
+    Icon: FileText,
+    cap: ["blog.review", "blog.approve", "blog.publish", "blog.feature"],
+  },
   {
     label: "Resources",
     href: "/admin/resources",

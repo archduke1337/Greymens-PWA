@@ -23,8 +23,11 @@ export async function GET() {
         Query.orderAsc("date"),
         Query.limit(100),
       ]),
+      // Pending/rejected proposals must not inflate the public count.
+      // Filtered in code (not by predicate) so a live table missing the
+      // reviewStatus column degrades to counting everything, not 500ing.
       databases.listDocuments(DATABASE_ID, COLLECTIONS.PROJECTS, [
-        Query.limit(1),
+        Query.limit(500),
       ]),
       databases.listDocuments(DATABASE_ID, COLLECTIONS.BLOGS, [
         Query.equal("status", ["approved", "published"]),
@@ -37,10 +40,17 @@ export async function GET() {
     ).filter(
       (event) => !event.date || new Date(event.date).getTime() >= now,
     ).length;
+    const visibleProjects = (
+      projects.documents as Array<{ reviewStatus?: string }>
+    ).filter((project) => {
+      const review = String(project.reviewStatus ?? "");
+
+      return !review || review === "approved";
+    }).length;
 
     return ok({
       upcomingEvents,
-      projects: projects.total,
+      projects: visibleProjects,
       posts: posts.total,
     });
   } catch (error) {

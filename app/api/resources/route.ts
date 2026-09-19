@@ -300,6 +300,13 @@ export async function PATCH(request: NextRequest) {
     ) {
       return fail("VALIDATION", "Invalid resource type", 400);
     }
+    // The legacy model carries both names for one classification. Resolve
+    // the `category` alias to `layer` BEFORE validating: checking only the
+    // canonical field let `category: "nonsense"` pass untouched through to
+    // the table. Keep the pair synchronized so public filtering (`category`)
+    // and admin display (`layer`) cannot disagree after an edit.
+    if (updates.layer === undefined && typeof body.category === "string")
+      updates.layer = body.category;
     if (
       updates.layer !== undefined &&
       (typeof updates.layer !== "string" ||
@@ -307,12 +314,6 @@ export async function PATCH(request: NextRequest) {
     ) {
       return fail("VALIDATION", "Invalid resource category", 400);
     }
-    // The legacy model contains both names for the same classification. Keep
-    // them synchronized so public filtering (`category`) and admin display
-    // (`layer`) cannot disagree after an edit — accepting `category` as an
-    // alias keeps older clients editable instead of 400ing them.
-    if (typeof updates.layer !== "string" && typeof body.category === "string")
-      updates.layer = body.category;
     if (typeof updates.layer === "string") updates.category = updates.layer;
     if (
       updates.tags !== undefined &&

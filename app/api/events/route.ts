@@ -29,6 +29,7 @@ const EDITABLE_EVENT_FIELDS = [
   "description",
   "image",
   "eventTypeId",
+  "category",
   "status",
   "audience",
   "date",

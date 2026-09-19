@@ -69,6 +69,11 @@ export default function AdminGalleryPage() {
   const albumSizeFor = (image: GalleryImage) =>
     albumSizes.get(image.albumId || image.$id || image.imageUrl) ?? 1;
 
+  // Rows written before moderation existed carry no status, and the public
+  // gallery serves them as approved. File them under Approved here too — an
+  // exact-match tab left legacy photos in no tab at all, and uncounted.
+  const statusOf = (image: GalleryImage) => image.status ?? "approved";
+
   const loadData = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/gallery", {
@@ -87,10 +92,11 @@ export default function AdminGalleryPage() {
       setImages(allImages);
       setUploaderNames(payload.accountNames ?? {});
       setCounts({
-        pending: allImages.filter((image) => image.status === "pending").length,
-        approved: allImages.filter((image) => image.status === "approved")
+        pending: allImages.filter((image) => statusOf(image) === "pending")
           .length,
-        rejected: allImages.filter((image) => image.status === "rejected")
+        approved: allImages.filter((image) => statusOf(image) === "approved")
+          .length,
+        rejected: allImages.filter((image) => statusOf(image) === "rejected")
           .length,
       });
     } catch (error) {
@@ -204,7 +210,7 @@ export default function AdminGalleryPage() {
   };
 
   const filtered = images.filter((img) => {
-    const matchesTab = img.status === activeTab;
+    const matchesTab = statusOf(img) === activeTab;
     const matchesSearch =
       !searchQuery ||
       img.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

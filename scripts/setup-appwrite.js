@@ -405,6 +405,10 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "description", type: "string", size: 65535, required: true },
     { key: "image", type: "string", size: 500 },
     { key: "eventTypeId", type: "string", size: 36, required: true },
+    // Free-form track label (conference/workshop/ctf…). The console and the
+    // public cards both render it; until this column existed the field was
+    // silently dropped by the APIs on every write.
+    { key: "category", type: "string", size: 50 },
     { key: "status", type: "string", size: 50, required: true },
     { key: "audience", type: "string", size: 50, required: true },
     { key: "date", type: "string", size: 30, required: true },

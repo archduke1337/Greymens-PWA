@@ -32,7 +32,15 @@ function toCount(value: unknown, fallback: number, max: number): number | null {
 }
 
 export async function GET(request: NextRequest) {
-  const authenticated = await requireCapability(request, "events.manage");
+  // Reviewers (approve/publish/update) need the queue as much as managers —
+  // the sidebar admits them, so the list must too. Drafts are review
+  // material, not secrets; nothing here reaches non-reviewers.
+  const authenticated = await requireAnyCapability(request, [
+    "events.manage",
+    "events.approve",
+    "events.publish",
+    "events.update",
+  ]);
 
   if (!authenticated.user) return authenticated.response;
   try {
@@ -119,7 +127,11 @@ export async function POST(request: NextRequest) {
         description,
         image: image || undefined,
         eventTypeId: text("eventTypeId", 36) || "general",
-        status: "draft",
+        category: text("category", 50) || undefined,
+        // Console-created events land as drafts unless the creator explicitly
+        // filed them for review — the same draft/review choice the self-
+        // service path offers, so the selector means the same thing on both.
+        status: body.status === "review" ? "review" : "draft",
         audience,
         date,
         time,
@@ -227,6 +239,7 @@ export async function PATCH(request: NextRequest) {
         ["title", 255],
         ["description", 65535],
         ["image", 500],
+        ["category", 50],
         ["date", 30],
         ["time", 30],
         ["endDate", 30],
@@ -295,7 +308,10 @@ export async function PATCH(request: NextRequest) {
           return fail("VALIDATION", `Invalid ${field}`, 400);
         updates[field] = raw[field];
       }
-      if (typeof updates.title !== "string" || !updates.title.trim())
+      // A partial edit of an existing event (feature flag, capacity tweak)
+      // must not have to resend the title — only a title that is actually
+      // present and blank is invalid.
+      if (updates.title !== undefined && !String(updates.title).trim())
         return fail("VALIDATION", "A valid title is required", 400);
       const event = await databases.updateDocument(
         DATABASE_ID,
@@ -379,7 +395,11 @@ export async function PATCH(request: NextRequest) {
         userId: ownerId,
         type: "event_update",
         ...decision,
-      }).catch(() => null);
+      }).catch((error) => {
+        // The decision stands either way, but a swallowed failure here is
+        // indistinguishable from "the organizer was notified". Log it.
+        logError("Event decision notification failed:", error);
+      });
     }
 
     await recordAudit({

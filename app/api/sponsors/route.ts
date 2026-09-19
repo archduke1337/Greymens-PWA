@@ -20,7 +20,21 @@ export async function GET(_request: NextRequest) {
       ],
     );
 
-    return ok({ sponsors: response.documents });
+    // `endDate` is the other half of "is this sponsor current": a deal that
+    // lapsed months ago stayed on the wall until someone manually flipped
+    // isActive. Filtered in code so a row with an unparseable date keeps
+    // showing rather than vanishing on a typo.
+    const now = Date.now();
+    const sponsors = (response.documents as Array<{ endDate?: string }>).filter(
+      (sponsor) => {
+        if (!sponsor.endDate) return true;
+        const endsAt = new Date(sponsor.endDate).getTime();
+
+        return Number.isNaN(endsAt) || endsAt >= now;
+      },
+    );
+
+    return ok({ sponsors });
   } catch (error) {
     logError("Public sponsor lookup error:", error);
 
