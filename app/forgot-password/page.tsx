@@ -117,14 +117,14 @@ function ForgotPasswordForm() {
               onChange={setEmail}
             >
               <Label>Email</Label>
-              <Input autoComplete="email" placeholder="you@example.com" />
+              <Input autoComplete="email" autoFocus placeholder="you@example.com" />
               <FieldError />
             </TextField>
           </Card.Content>
           <Card.Footer className="flex-col gap-3">
             <Button
               fullWidth
-              className="rounded-full"
+              className="h-12 rounded-full text-[15px]"
               isDisabled={loading}
               isPending={loading}
               type="submit"

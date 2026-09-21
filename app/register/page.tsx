@@ -231,7 +231,7 @@ function RegisterForm() {
             onChange={setName}
           >
             <Label>Full name</Label>
-            <Input autoComplete="name" placeholder="Your name" />
+            <Input autoComplete="name" autoFocus placeholder="Your name" />
             <FieldError />
           </TextField>
           <TextField
@@ -286,7 +286,7 @@ function RegisterForm() {
         <Card.Footer className="flex-col gap-3">
           <Button
             fullWidth
-            className="rounded-full"
+            className="h-12 rounded-full text-[15px]"
             isDisabled={busy}
             isPending={loading}
             type="submit"

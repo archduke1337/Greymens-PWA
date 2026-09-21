@@ -222,7 +222,7 @@ function LoginForm() {
             onChange={setEmail}
           >
             <Label>Email</Label>
-            <Input autoComplete="email" placeholder="you@example.com" />
+            <Input autoComplete="email" autoFocus placeholder="you@example.com" />
             <FieldError />
           </TextField>
           <PasswordField
@@ -246,7 +246,7 @@ function LoginForm() {
         <Card.Footer className="flex-col gap-3">
           <Button
             fullWidth
-            className="rounded-full"
+            className="h-12 rounded-full text-[15px]"
             isDisabled={busy}
             isPending={loading}
             type="submit"

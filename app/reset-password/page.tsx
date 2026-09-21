@@ -164,7 +164,7 @@ function ResetPasswordForm() {
           <Card.Footer className="flex-col gap-3">
             <Button
               fullWidth
-              className="rounded-full"
+              className="h-12 rounded-full text-[15px]"
               isDisabled={loading}
               isPending={loading}
               type="submit"
