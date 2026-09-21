@@ -49,8 +49,17 @@ export default function AdminNotificationsPage() {
   const { isOpen, open, close } = useOverlayState();
   const [sending, setSending] = useState(false);
   const [emailConfigured, setEmailConfigured] = useState(false);
+  const [audienceCount, setAudienceCount] = useState<{
+    count: number;
+    capped: boolean;
+  } | null>(null);
+  const [countLoading, setCountLoading] = useState(false);
   const [form, setForm] = useState({
-    audience: "single" as "single" | "all_members" | "all_users",
+    audience: "single" as
+      | "single"
+      | "all_members"
+      | "all_users"
+      | "not_onboarded",
     userId: "",
     title: "",
     body: "",
@@ -135,6 +144,47 @@ export default function AdminNotificationsPage() {
     if (!authLoading && user) void loadMembers();
   }, [user, authLoading, router, loadData, loadMembers]);
 
+  // Recipient count preview for broadcast audiences: the sender sees the
+  // blast radius before committing, straight from the server's resolver.
+  useEffect(() => {
+    if (!isOpen || form.audience === "single") {
+      setAudienceCount(null);
+
+      return;
+    }
+    let cancelled = false;
+
+    setCountLoading(true);
+    fetch(`/api/notifications?countFor=${form.audience}`, {
+      credentials: "include",
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as {
+          count?: number;
+          capped?: boolean;
+        } | null;
+
+        if (!cancelled && response.ok && payload) {
+          setAudienceCount({
+            count: payload.count ?? 0,
+            capped: payload.capped === true,
+          });
+        } else if (!cancelled) {
+          setAudienceCount(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAudienceCount(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCountLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, form.audience]);
+
   const handleSend = async () => {
     if (!user) return;
     if (
@@ -188,7 +238,9 @@ export default function AdminNotificationsPage() {
           ? recipientNames[form.userId.trim()] || "member"
           : form.audience === "all_members"
             ? `${sent} members`
-            : `${sent} users`;
+            : form.audience === "not_onboarded"
+              ? `${sent} not-onboarded accounts`
+              : `${sent} registered profiles`;
       let message = `Notification sent to ${audienceLabel}`;
 
       if (form.sendEmail) {
@@ -365,7 +417,11 @@ export default function AdminNotificationsPage() {
                         [
                           { value: "single", label: "One member" },
                           { value: "all_members", label: "All members" },
-                          { value: "all_users", label: "Everyone" },
+                          {
+                            value: "not_onboarded",
+                            label: "Not onboarded",
+                          },
+                          { value: "all_users", label: "All registered" },
                         ] as const
                       ).map((option) => (
                         <Button
@@ -385,11 +441,27 @@ export default function AdminNotificationsPage() {
                       ))}
                     </div>
                     {form.audience !== "single" && (
-                      <p className="text-xs text-default-500 mt-1">
-                        {form.audience === "all_members"
-                          ? "One in-app notice per active member (max 500)."
-                          : "One in-app notice per profile holder (max 500)."}
-                      </p>
+                      <div className="text-xs text-default-500 mt-1 space-y-1">
+                        <p>
+                          {form.audience === "all_members"
+                            ? "One in-app notice per active member (max 500)."
+                            : form.audience === "not_onboarded"
+                              ? "Accounts that registered but never started the onboarding form — ideal for onboarding reminders (max 500)."
+                              : "One in-app notice per profile holder (max 500). Accounts without a profile are under “Not onboarded”."}
+                        </p>
+                        <p aria-live="polite" className="tabular-nums">
+                          {countLoading
+                            ? "Counting recipients…"
+                            : audienceCount
+                              ? `Reaches ${audienceCount.count} account${audienceCount.count === 1 ? "" : "s"}${audienceCount.capped ? " — over the 500 limit, narrow it first" : ""}`
+                              : "Recipient count unavailable."}
+                        </p>
+                        {form.sendEmail && !emailConfigured && (
+                          <p className="text-warning-700">
+                            Email is not configured — mail will be skipped.
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                   {form.audience === "single" &&
@@ -584,6 +656,7 @@ export default function AdminNotificationsPage() {
                   Cancel
                 </Button>
                 <Button
+                  isDisabled={sending || audienceCount?.capped === true}
                   isPending={sending}
                   variant="primary"
                   onPress={handleSend}
