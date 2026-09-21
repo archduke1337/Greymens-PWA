@@ -58,7 +58,14 @@ import { useAuth } from "@/context/AuthContext";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
 import { logError } from "@/lib/logger";
 
-type TabKey = "pending" | "approved" | "rejected";
+type TabKey = "pending" | "approved" | "rejected" | "unonboarded";
+
+interface UnonboardedContact {
+  userId: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
 
 export default function AdminMembershipPage() {
   const { user, loading: authLoading } = useAuth();
@@ -73,6 +80,9 @@ export default function AdminMembershipPage() {
     approved: 0,
     rejected: 0,
   });
+  const [unonboarded, setUnonboarded] = useState<UnonboardedContact[]>([]);
+  const [unonboardedTotal, setUnonboardedTotal] = useState<number | null>(null);
+  const [unonboardedCapped, setUnonboardedCapped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("pending");
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,6 +153,59 @@ export default function AdminMembershipPage() {
     }
     loadData();
   }, [user, authLoading, router, loadData]);
+
+  /**
+   * Accounts that registered but never started the onboarding form. Loaded
+   * separately from the application queue: it diffs the account directory
+   * against the profiles table, which is heavier than the queue read and
+   * only needed for the stat card and the "Not onboarded" tab.
+   */
+  const loadUnonboarded = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/membership/unonboarded", {
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        contacts?: UnonboardedContact[];
+        total?: number;
+        capped?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok)
+        throw new Error(
+          readApiError(payload, "Failed to load non-onboarded accounts"),
+        );
+
+      setUnonboarded(payload?.contacts ?? []);
+      setUnonboardedTotal(payload?.total ?? 0);
+      setUnonboardedCapped(payload?.capped === true);
+    } catch (error) {
+      logError("Error loading non-onboarded accounts:", error);
+      toast.error(
+        getErrorMessage(error) || "Failed to load non-onboarded accounts",
+      );
+      setUnonboardedTotal(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user || authLoading) return;
+    void loadUnonboarded();
+  }, [user, authLoading, loadUnonboarded]);
+
+  const getFilteredUnonboarded = () => {
+    const q = searchQuery.trim().toLowerCase();
+
+    if (!q) return unonboarded;
+
+    return unonboarded.filter(
+      (contact) =>
+        contact.name.toLowerCase().includes(q) ||
+        contact.email.toLowerCase().includes(q) ||
+        contact.userId.toLowerCase().includes(q),
+    );
+  };
 
   const getFilteredApps = () => {
     const q = searchQuery.trim().toLowerCase();
@@ -299,7 +362,7 @@ export default function AdminMembershipPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 md:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 md:mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -347,6 +410,22 @@ export default function AdminMembershipPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-default-500">Not onboarded</p>
+                <p className="text-2xl font-bold tabular-nums text-accent">
+                  {unonboardedTotal ?? "…"}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <MailIcon className="w-6 h-6 text-accent" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Tabs */}
@@ -354,11 +433,12 @@ export default function AdminMembershipPage() {
         <CardContent className="p-0">
           <div className="px-4 pt-4">
             <label className="sr-only" htmlFor="membership-search">
-              Search applications by name, URN, branch, or user ID
+              Search applications by name, URN, branch, or user ID — or
+              non-onboarded accounts by name or email
             </label>
             <Input
               id="membership-search"
-              placeholder="Search by name, URN, branch, or user ID..."
+              placeholder="Search by name, URN, branch, email, or user ID..."
               value={searchQuery}
               onChange={(e: any) => setSearchQuery(e.target.value)}
             />
@@ -393,6 +473,18 @@ export default function AdminMembershipPage() {
                   <div className="flex items-center gap-2">
                     <XCircleIcon className="w-4 h-4" />
                     <span>Rejected</span>
+                  </div>
+                  <TabIndicator />
+                </Tab>
+                <Tab id="unonboarded">
+                  <div className="flex items-center gap-2">
+                    <MailIcon className="w-4 h-4" />
+                    <span>Not onboarded</span>
+                    {(unonboardedTotal ?? 0) > 0 && (
+                      <Chip color="accent" size="sm" variant="soft">
+                        {unonboardedTotal}
+                      </Chip>
+                    )}
                   </div>
                   <TabIndicator />
                 </Tab>
@@ -661,6 +753,98 @@ export default function AdminMembershipPage() {
                     View all rejected applications
                   </a>
                 </p>
+              </div>
+            </TabPanel>
+
+            <TabPanel id="unonboarded">
+              <div className="p-4">
+                <p className="text-sm text-default-500 mb-4">
+                  Registered accounts that never started the onboarding form.
+                  Nudge them from{" "}
+                  <a
+                    className="text-primary hover:underline"
+                    href="/admin/notifications"
+                  >
+                    notifications
+                  </a>{" "}
+                  with the “Not onboarded” audience.
+                  {unonboardedCapped &&
+                    " Showing the first 300 — the rest follow the same pattern."}
+                </p>
+                {getFilteredUnonboarded().length === 0 ? (
+                  <div className="text-center py-12">
+                    <MailIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
+                    <p className="text-default-500 text-lg font-medium">
+                      {searchQuery.trim()
+                        ? "No matching accounts"
+                        : unonboardedTotal === null
+                          ? "Loading accounts…"
+                          : "Everyone has started onboarding"}
+                    </p>
+                    <p className="text-default-400 text-sm mt-1">
+                      {searchQuery.trim()
+                        ? "Try a different search term"
+                        : "No registered account is missing a profile"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableScrollContainer>
+                        <TableContent aria-label="Not onboarded accounts table">
+                          <TableHeader>
+                            <TableColumn>ACCOUNT</TableColumn>
+                            <TableColumn className="hidden md:table-cell">
+                              EMAIL
+                            </TableColumn>
+                            <TableColumn className="hidden sm:table-cell">
+                              REGISTERED
+                            </TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {getFilteredUnonboarded().map((contact) => (
+                              <TableRow key={contact.userId}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10 shrink-0">
+                                      <AvatarImage
+                                        alt={contact.name}
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(contact.name)}&background=2f6fed&color=fff`}
+                                      />
+                                      <AvatarFallback>
+                                        {contact.name.charAt(0) || "?"}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-sm truncate">
+                                        {contact.name}
+                                      </p>
+                                      <p className="text-xs text-default-400 truncate md:hidden">
+                                        {contact.email}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">
+                                  <span className="text-sm truncate">
+                                    {contact.email}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell">
+                                  <span className="text-sm text-default-500 whitespace-nowrap">
+                                    {new Date(
+                                      contact.createdAt,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </TableContent>
+                      </TableScrollContainer>
+                    </Table>
+                  </div>
+                )}
               </div>
             </TabPanel>
           </Tabs>
