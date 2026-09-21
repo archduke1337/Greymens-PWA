@@ -31,7 +31,7 @@ import {
 import { readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
-import { account } from "@/lib/appwrite";
+import { account, storage, ID } from "@/lib/appwrite";
 import { getAvatarUrl, timeAgo } from "@/lib/format";
 import { logError } from "@/lib/logger";
 import { DynamicIcon } from "@/components/ui/DynamicIcon";
@@ -256,14 +256,40 @@ export default function ProfilePage() {
 
     setUploadingPhoto(true);
     try {
-      const formData = new FormData();
+      // Direct browser → Storage bypasses Vercel 4.5 MB proxy limit.
+      let directFileId: string | null = null;
+      try {
+        const uploaded = await storage.createFile({
+          bucketId: "profile-pictures",
+          fileId: ID.unique(),
+          file,
+        });
+        directFileId = uploaded.$id;
+      } catch (directError) {
+        logError("Direct profile upload failed, falling back to proxy:", directError);
+        if (file.size > 4.5 * 1024 * 1024) {
+          toast.error("Direct upload failed — bucket permissions need reconciling. Run `node scripts/setup-appwrite.js` and redeploy.");
+          setUploadingPhoto(false);
+          return;
+        }
+      }
 
-      formData.append("file", file);
-      const response = await fetch("/api/profile", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
+      const response = directFileId
+        ? await fetch("/api/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ fileId: directFileId }),
+          })
+        : await fetch("/api/profile", {
+            method: "POST",
+            credentials: "include",
+            body: (() => {
+              const formData = new FormData();
+              formData.append("file", file);
+              return formData;
+            })(),
+          });
       const payload = (await response.json().catch(() => null)) as {
         avatar?: string;
         error?: string;
