@@ -18,6 +18,8 @@ import {
   type EmailRecipient,
   type EmailReport,
 } from "@/lib/email";
+import { sendPushToUsers, type PushReport } from "@/lib/server-push";
+import { markdownToPlainText } from "@/lib/markdown";
 import { recordAudit } from "@/lib/server-audit";
 import { isRecord, readOptionalString, readString } from "@/lib/validation";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -831,6 +833,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Push to subscribed devices, same best-effort contract as mail: the
+    // rows above are the record, this is the tap on the shoulder.
+    const push: PushReport = await sendPushToUsers(recipientIds, {
+      title,
+      body: markdownToPlainText(bodyText) || bodyText,
+    });
+
     await recordAudit({
       request,
       actor: authenticated.user,
@@ -846,6 +855,7 @@ export async function POST(request: NextRequest) {
         type,
         sent: rows.length,
         email,
+        push,
       },
     });
 
@@ -856,6 +866,7 @@ export async function POST(request: NextRequest) {
         sent: rows.length,
         audience: audience || (userId ? "single" : "selection"),
         email,
+        push,
         ...(audience || !userId ? {} : { notification: rows[0] ?? null }),
       },
       201,

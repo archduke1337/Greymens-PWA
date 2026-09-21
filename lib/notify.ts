@@ -19,12 +19,20 @@ import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { getUserContact } from "@/lib/server-users";
 import { sendBulkEmail, type EmailReport } from "@/lib/email";
+import {
+  sendPushToUsers,
+  type PushReport,
+} from "@/lib/server-push";
+import { officeTitle } from "@/lib/governance";
+import { markdownToPlainText } from "@/lib/markdown";
 
 export interface DispatchInput {
   userId: string;
   type: string;
   title: string;
   body: string;
+  /** Office id the notice is signed from, if any. */
+  fromOffice?: string;
   /** Pre-serialized letter JSON for the in-app row (as stored today). */
   letter?: string;
   /** Pre-serialized data JSON for the in-app row. */
@@ -45,6 +53,7 @@ export interface DispatchInput {
 export interface DispatchResult {
   id: string;
   email: EmailReport;
+  push: PushReport;
 }
 
 const NO_MAIL: EmailReport = {
@@ -91,6 +100,7 @@ export async function dispatchNotification(
       type: input.type,
       title: input.title,
       body: input.body,
+      ...(input.fromOffice ? { fromOffice: input.fromOffice } : {}),
       letter: input.letter,
       data: input.data,
       read: false,
@@ -108,9 +118,21 @@ export async function dispatchNotification(
           [{ email: contact.email, name: contact.name }],
           input.title,
           input.emailBody ? `${input.body}\n\n${input.emailBody}` : input.body,
+          {
+            signoff: input.fromOffice
+              ? (officeTitle(input.fromOffice) ?? undefined)
+              : undefined,
+          },
         )
       : { attempted: false, sent: 0, failed: 0, reason: "no_recipients" };
   }
 
-  return { id: row.$id, email };
+  // Push follows the same best-effort contract as mail: a device that never
+  // subscribed simply has no subscription, and failures never throw.
+  const push = await sendPushToUsers([input.userId], {
+    title: input.title,
+    body: markdownToPlainText(input.body) || input.body,
+  });
+
+  return { id: row.$id, email, push };
 }
