@@ -33,6 +33,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
+import { storage, ID } from "@/lib/appwrite";
 
 export default function WriteBlogPage() {
   const router = useRouter();
@@ -160,16 +161,42 @@ export default function WriteBlogPage() {
 
     setUploadingImage(true);
     try {
-      // The browser cannot write to the blog-images bucket, so the file is
-      // validated and stored by the server, which also enforces the
-      // `blog.create` capability.
-      const body = new FormData();
+      // Direct browser → Storage bypasses Vercel 4.5 MB proxy limit for images.
+      // Falls back to FormData proxy if bucket perms haven't been reconciled.
+      let directFileId: string | null = null;
+      try {
+        const uploaded = await storage.createFile({
+          bucketId: "blog-images",
+          fileId: ID.unique(),
+          file,
+        });
+        directFileId = uploaded.$id;
+      } catch (directError) {
+        logError("Direct blog image upload failed, falling back to proxy:", directError);
+        if (file.size > 4.5 * 1024 * 1024) {
+          toast.error("Direct upload failed — bucket permissions need reconciling. Run `node scripts/setup-appwrite.js` and redeploy.");
+          setUploadingImage(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+      }
 
-      body.set("file", file);
-      const response = await fetch("/api/blogs/image", {
-        method: "POST",
-        body,
-      });
+      const response = directFileId
+        ? await fetch("/api/blogs/image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ fileId: directFileId }),
+          })
+        : await fetch("/api/blogs/image", {
+            method: "POST",
+            credentials: "include",
+            body: (() => {
+              const body = new FormData();
+              body.set("file", file);
+              return body;
+            })(),
+          });
       const payload = (await response.json().catch(() => null)) as {
         url?: string;
         error?: string;
