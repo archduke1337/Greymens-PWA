@@ -12,6 +12,7 @@ import { notificationService } from "@/lib/notifications";
 import { officeTitle } from "@/lib/governance";
 import { timeAgo } from "@/lib/format";
 import Markdown from "@/components/Markdown";
+import PushToggle from "@/components/PushToggle";
 
 function parseLetterContent(raw: unknown): LetterData | null {
   if (!raw) return null;
@@ -404,6 +405,8 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       )}
+
+      <PushToggle />
 
       {/* Type chips, derived from what was actually received. */}
       {filterOptions.length > 1 && (
