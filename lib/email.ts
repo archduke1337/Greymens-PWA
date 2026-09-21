@@ -42,16 +42,19 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
 }
 
-const RESEND_BATCH_LIMIT = 50;
+const RESEND_BATCH_LIMIT = 100;
 
 /**
- * Send one subject/body to many recipients in 50-address SDK batches.
+ * Send one subject/body to many recipients via Resend's batch endpoint.
  *
- * Follows the SDK contract: `{ data, error }` is inspected per batch, with
- * `try/catch` reserved for network-level failures only. A unique
- * idempotency key per batch makes retried requests safe. Provider
- * failures are counted in `failed` (first message kept in `detail`) so a
- * dead mail provider degrades the report, not the in-app fan-out around it.
+ * Each recipient gets their own message (`to` holds exactly one address),
+ * so member addresses are never exposed to each other the way a shared
+ * `to: [...]` batch would. Requests go out in chunks of 100 (the batch
+ * limit) with a unique idempotency key per chunk, and `{ data, error }`
+ * is inspected per chunk — `try/catch` is reserved for network-level
+ * failures only. Provider failures are counted in `failed` (first message
+ * kept in `detail`) so a dead mail provider degrades the report, not the
+ * in-app fan-out around it.
  */
 export async function sendBulkEmail(
   recipients: EmailRecipient[],
@@ -82,31 +85,25 @@ export async function sendBulkEmail(
   let detail: string | undefined;
 
   for (let i = 0; i < to.length; i += RESEND_BATCH_LIMIT) {
-    const batch = to.slice(i, i + RESEND_BATCH_LIMIT);
+    const chunk = to.slice(i, i + RESEND_BATCH_LIMIT);
 
     try {
-      const { data, error } = await resend.emails.send(
-        {
-          from,
-          to: batch,
-          subject,
-          text,
-          html,
-        },
+      const { data, error } = await resend.batch.send(
+        chunk.map((email) => ({ from, to: email, subject, text, html })),
         { idempotencyKey: `notification/${randomUUID()}` },
       );
 
       if (error) {
-        failed += batch.length;
+        failed += chunk.length;
         detail ??= `${error.name}: ${error.message}`;
       } else if (data) {
-        sent += batch.length;
+        sent += chunk.length;
       } else {
-        failed += batch.length;
+        failed += chunk.length;
         detail ??= "Resend returned neither data nor error";
       }
     } catch (error) {
-      failed += batch.length;
+      failed += chunk.length;
       detail ??=
         error instanceof Error ? `network: ${error.message}` : "network error";
     }
