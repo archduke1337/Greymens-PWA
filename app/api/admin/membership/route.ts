@@ -542,8 +542,8 @@ export async function POST(request: NextRequest) {
     await dispatchNotification({
       userId: applicantId,
       type: "membership_approved",
-      title: "Application approved",
-      body: "Your membership application has been approved. Welcome to the club!",
+      title: "You're in — welcome to Greymens",
+      body: `Your application is approved${issuedNumber ? ` — your membership number is ${issuedNumber}` : ""}${departmentNames.length > 0 ? `, starting in ${departmentNames.join(", ")}` : ""}. Come to the next session: check Events for what's on.`,
       letter: JSON.stringify(letter),
       // The mail copy carries the letter as text — the in-app row keeps the
       // structured JSON for rendering.
