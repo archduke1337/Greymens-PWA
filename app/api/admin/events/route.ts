@@ -474,13 +474,21 @@ export async function DELETE(request: NextRequest) {
 
   if (!authenticated.user) return authenticated.response;
   try {
-    const body = (await request.json().catch(() => null)) as {
-      eventId?: unknown;
-      past?: unknown;
-    } | null;
+    // Query string is primary — some proxies/CDNs drop DELETE bodies. Keep
+    // JSON-body fallback for older clients.
+    const queryEventId = request.nextUrl.searchParams.get("eventId")?.trim() ?? "";
+    const queryPast = request.nextUrl.searchParams.get("past")?.trim() === "true";
+    let body: { eventId?: unknown; past?: unknown } | null = null;
+    if (!queryEventId && !queryPast) {
+      body = (await request.json().catch(() => null)) as {
+        eventId?: unknown;
+        past?: unknown;
+      } | null;
+    }
+    const past = queryPast || body?.past === true;
     const { databases } = createServerDatabases();
 
-    if (body?.past === true) {
+    if (past) {
       const today = new Date().toISOString().split("T")[0];
       const past = await databases.listDocuments(
         DATABASE_ID,
@@ -524,8 +532,7 @@ export async function DELETE(request: NextRequest) {
 
       return ok({ deleted, skipped });
     }
-    const eventId =
-      typeof body?.eventId === "string" ? body.eventId.trim() : "";
+    const eventId = queryEventId || (typeof body?.eventId === "string" ? body.eventId.trim() : "");
 
     if (!eventId) return fail("VALIDATION", "eventId is required", 400);
     const [registrations, tickets] = await Promise.all([
