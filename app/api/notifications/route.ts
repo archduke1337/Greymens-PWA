@@ -10,6 +10,7 @@ import {
   getUserContact,
   listUserContacts,
 } from "@/lib/server-users";
+import { listNonOnboardedContacts } from "@/lib/server-onboarding";
 import {
   isEmailConfigured,
   sendBulkEmail,
@@ -122,8 +123,31 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const [response, unread] = await Promise.all([
-      databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
+    // Composer preview: how many accounts an audience reaches, before send.
+    const countFor = (params.get("countFor") ?? "").trim();
+
+    if (countFor) {
+      const counterCheck = await requireCapability(
+        request,
+        "notifications.send",
+      );
+
+      if (!counterCheck.user) return counterCheck.response;
+      if (!AUDIENCES.has(countFor)) {
+        return fail(
+          "VALIDATION",
+          "audience must be all_members, all_users, or not_onboarded",
+          400,
+        );
+      }
+
+      const { databases } = createServerDatabases();
+      const { count, capped } = await countAudience(countFor, databases);
+
+      return ok({ audience: countFor, count, capped, limit: BROADCAST_CAP });
+    }
+
+    const [response, unread] = await Promise.all([      databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
         Query.equal("userId", [authenticated.user.$id]),
         Query.orderDesc("createdAt"),
         Query.limit(limit),
@@ -177,6 +201,49 @@ async function allProfileIds(
   }
 
   return ids;
+}
+
+const AUDIENCES = new Set(["all_members", "all_users", "not_onboarded"]);
+
+/**
+ * Recipient count preview for the console composer, so a sender sees the
+ * blast radius before committing. Totals come from cheap `limit(1)` reads
+ * except `not_onboarded`, which must diff the directory (bounded at cap+1).
+ */
+async function countAudience(
+  audience: string,
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+): Promise<{ count: number; capped: boolean }> {
+  if (audience === "all_members") {
+    const memberships = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.MEMBERSHIPS,
+      [Query.equal("status", ["active"]), Query.limit(1)],
+    );
+
+    return {
+      count: Math.min(memberships.total, BROADCAST_CAP),
+      capped: memberships.total > BROADCAST_CAP,
+    };
+  }
+  if (audience === "all_users") {
+    const profiles = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PROFILES,
+      [Query.limit(1)],
+    );
+
+    return {
+      count: Math.min(profiles.total, BROADCAST_CAP),
+      capped: profiles.total > BROADCAST_CAP,
+    };
+  }
+  const contacts = await listNonOnboardedContacts(BROADCAST_CAP + 1);
+
+  return {
+    count: Math.min(contacts.length, BROADCAST_CAP),
+    capped: contacts.length > BROADCAST_CAP,
+  };
 }
 
 interface NotificationContent {
@@ -293,8 +360,12 @@ export async function POST(request: NextRequest) {
       400,
     );
   }
-  if (audience && audience !== "all_members" && audience !== "all_users") {
-    return fail("VALIDATION", "audience must be all_members or all_users", 400);
+  if (audience && !AUDIENCES.has(audience)) {
+    return fail(
+      "VALIDATION",
+      "audience must be all_members, all_users, or not_onboarded",
+      400,
+    );
   }
   if (!type || !title || !bodyText) {
     return fail("VALIDATION", "type, title, and body are required", 400);
@@ -376,6 +447,23 @@ export async function POST(request: NextRequest) {
       recipientIds = memberships.documents
         .map((row) => String(row.userId ?? ""))
         .filter(Boolean);
+    } else if (audience === "not_onboarded") {
+      // Accounts with no profile row: registered, never started onboarding.
+      // In-app rows reach them the same as mail — previously they were
+      // unreachable from the console entirely.
+      const contacts = await listNonOnboardedContacts(BROADCAST_CAP + 1);
+
+      if (contacts.length > BROADCAST_CAP) {
+        return fail(
+          "VALIDATION",
+          "Audience is larger than the broadcast limit — narrow it first",
+          400,
+        );
+      }
+      if (contacts.length === 0) {
+        return fail("VALIDATION", "Audience is empty", 400);
+      }
+      recipientIds = contacts.map((contact) => contact.userId);
     } else {
       recipientIds = await allProfileIds(databases);
 
@@ -403,9 +491,10 @@ export async function POST(request: NextRequest) {
     };
 
     if (sendEmail) {
-      const contacts = await emailsForRecipients(
-        audience ? null : new Set(recipientIds),
-      );
+      // Mail exactly the notified accounts: previously every broadcast
+      // mailed the whole directory while in-app rows went only to the
+      // audience, so bystanders got mail for notices never sent to them.
+      const contacts = await emailsForRecipients(new Set(recipientIds));
 
       email = await sendBulkEmail(contacts, title, bodyText);
 

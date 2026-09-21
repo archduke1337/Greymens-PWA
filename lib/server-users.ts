@@ -129,6 +129,8 @@ export interface UserContact {
   userId: string;
   name: string;
   email: string;
+  /** Auth record creation time, ISO string. */
+  createdAt: string;
 }
 
 /** Single account's contact, or `null` when the account is gone. */
@@ -144,6 +146,7 @@ export async function getUserContact(
       userId: user.$id,
       name: user.name || user.email.split("@")[0],
       email: user.email,
+      createdAt: user.$createdAt,
     };
   } catch {
     return null;
@@ -169,6 +172,7 @@ export async function listUserContacts(
         userId: user.$id,
         name: user.name || user.email.split("@")[0],
         email: user.email,
+        createdAt: user.$createdAt,
       }));
   } catch {
     return [];
