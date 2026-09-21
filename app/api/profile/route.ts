@@ -181,19 +181,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const form = await request.formData();
-    const file = form.get("file");
+    const contentType = request.headers.get("content-type") || "";
+    let file: unknown = null;
+    let directFileId: string | null = null;
 
-    if (
-      !(file instanceof File) ||
-      !ALLOWED_PROFILE_IMAGE_TYPES.has(file.type) ||
-      file.size > MAX_PROFILE_IMAGE_SIZE
-    ) {
-      return fail(
-        "VALIDATION",
-        "Invalid image. Use JPG, PNG, or WebP under 5MB.",
-        400,
-      );
+    if (contentType.includes("application/json")) {
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!body || typeof body.fileId !== "string" || !body.fileId.trim()) return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+      directFileId = body.fileId.trim().slice(0, 36);
+    } else {
+      const form = await request.formData();
+      file = form.get("file");
+      if (!(file instanceof File) || !ALLOWED_PROFILE_IMAGE_TYPES.has((file as File).type) || (file as File).size > MAX_PROFILE_IMAGE_SIZE) {
+        return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+      }
     }
 
     const { storage } = createServerStorage();
@@ -212,13 +213,30 @@ export async function POST(request: NextRequest) {
       visibility === "public"
         ? PUBLIC_FILE_PERMISSIONS
         : MEMBER_FILE_PERMISSIONS;
-    const uploaded = await storage.createFile(
-      PROFILE_IMAGE_BUCKET_ID,
-      ID.unique(),
-      file,
-      perms,
-    );
-    const avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, uploaded.$id);
+    let avatar: string;
+    let newFileId: string;
+    if (directFileId) {
+      let existingFile: { sizeOriginal?: number; mimeType?: string } | null = null;
+      try { existingFile = await storage.getFile(PROFILE_IMAGE_BUCKET_ID, directFileId); } catch { return fail("VALIDATION", "Uploaded file not found — please re-attach", 400); }
+      const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
+      const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
+      if (size > MAX_PROFILE_IMAGE_SIZE || (mime && !ALLOWED_PROFILE_IMAGE_TYPES.has(mime))) {
+        try { await storage.deleteFile(PROFILE_IMAGE_BUCKET_ID, directFileId); } catch {}
+        return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+      }
+      try { await storage.updateFile(PROFILE_IMAGE_BUCKET_ID, directFileId, undefined, perms); } catch (e) { logError("Profile direct file perm update failed:", e); }
+      avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, directFileId);
+      newFileId = directFileId;
+    } else {
+      const uploaded = await storage.createFile(
+        PROFILE_IMAGE_BUCKET_ID,
+        ID.unique(),
+        file as File,
+        perms,
+      );
+      avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, uploaded.$id);
+      newFileId = uploaded.$id;
+    }
     const profile = existing
       ? await databases.updateDocument(
           DATABASE_ID,
@@ -237,7 +255,7 @@ export async function POST(request: NextRequest) {
         );
 
     // Best-effort cleanup: a leftover file is harmless, a failed upload is not.
-    if (previousFileId && previousFileId !== uploaded.$id) {
+    if (previousFileId && previousFileId !== newFileId) {
       await storage
         .deleteFile(PROFILE_IMAGE_BUCKET_ID, previousFileId)
         .catch(() => undefined);
