@@ -866,6 +866,20 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "idx_created", type: "key", columns: ["createdAt"] },
   ]);
 
+  // One row per browser/device push subscription. Written only through
+  // /api/push/subscriptions; read by the notification fan-out (both the
+  // console broadcast and system dispatch) to deliver Web Push.
+  await createTable("push_subscriptions", "Push Subscriptions", [
+    { key: "userId", type: "string", size: 36, required: true },
+    { key: "endpoint", type: "string", size: 2000, required: true },
+    { key: "p256dh", type: "string", size: 255, required: true },
+    { key: "auth", type: "string", size: 255, required: true },
+    { key: "userAgent", type: "string", size: 255 },
+    { key: "createdAt", type: "string", size: 30, required: true },
+  ], [
+    { key: "idx_user", type: "key", columns: ["userId"] },
+  ]);
+
   await createTable("audit_logs", "Audit Logs", [
     { key: "actorId", type: "string", size: 36, required: true },
     { key: "actorName", type: "string", size: 255, required: true },

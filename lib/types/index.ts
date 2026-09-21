@@ -595,6 +595,16 @@ export interface Notification {
   readAt?: string;
 }
 
+export interface PushSubscription {
+  $id?: string;
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string;
+  createdAt?: string;
+}
+
 export interface LetterData {
   template: "welcome" | "promotion" | "designation" | "custom";
   subject: string;

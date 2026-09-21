@@ -39,6 +39,7 @@ export const COLLECTIONS = {
   TICKET_VERIFICATIONS: "ticket_verifications",
   RESOURCES: "resources",
   NOTIFICATIONS: "notifications",
+  PUSH_SUBSCRIPTIONS: "push_subscriptions",
   AUDIT_LOGS: "audit_logs",
   APPROVAL_WORKFLOWS: "approval_workflows",
   AUTHORIZED_ACTIVITIES: "authorized_activities",
