@@ -115,6 +115,8 @@ export async function PATCH(request: NextRequest) {
             status: "approved",
             approvedBy: authenticated.user.$id,
             approvedAt: new Date().toISOString(),
+            // Clear previous rejection — use null so Appwrite clears the optional string column.
+            // Gallery uses same pattern and succeeds; keep null not "" so a prior reason is removed not blanked.
             rejectionReason: null,
           }
         : {
@@ -187,14 +189,18 @@ export async function PATCH(request: NextRequest) {
           });
         }
 
-        await recordAudit({
-          request,
-          actor: authenticated.user,
-          action: `resource.${String(action)}`,
-          entityType: "resource",
-          entityId: id,
-          details: { action: String(action), bulk: resourceIds.length > 1 },
-        });
+        try {
+          await recordAudit({
+            request,
+            actor: authenticated.user,
+            action: `resource.${String(action)}`,
+            entityType: "resource",
+            entityId: id,
+            details: { action: String(action), bulk: resourceIds.length > 1 },
+          });
+        } catch (auditError) {
+          logError("Resource audit failed (non-fatal):", auditError);
+        }
         decided.push(resource);
       } catch (rowError) {
         failed.push({
@@ -206,7 +212,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (decided.length === 0) {
-      return fail("INTERNAL", "Unable to update resource", 500);
+      // Surface the row error (e.g. unknown attribute on a pre-moderation DB,
+      // missing file, capability misconfig) instead of a generic message —
+      // otherwise the console can only report "not working" with no cause.
+      const cause = failed[0]?.error ?? "unknown error";
+      return fail("INTERNAL", `Unable to update resource: ${cause}`, 500);
     }
 
     return ok({
