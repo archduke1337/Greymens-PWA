@@ -145,85 +145,64 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const form = await request.formData();
-    const title = text(form.get("title"), 255);
+    const contentType = request.headers.get("content-type") || "";
+    let title = "";
+    let description = "";
+    let category = "other";
+    let tags: string[] = [];
+    let files: File[] = [];
+    let directFileIds: string[] = [];
+    let imageUrlFromBody: string | null = null;
 
-    if (!title) return fail("VALIDATION", "Title is required", 400);
-
-    const description = text(form.get("description"), 2000);
-    const category = text(form.get("category"), 50) || "other";
-
-    if (!ALLOWED_CATEGORIES.has(category)) {
-      return fail("VALIDATION", "Invalid gallery category", 400);
+    if (contentType.includes("application/json")) {
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!body) return fail("VALIDATION", "Invalid request body", 400);
+      const getStr = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+      title = getStr(body.title, 255);
+      if (!title) return fail("VALIDATION", "Title is required", 400);
+      description = getStr(body.description, 2000);
+      category = getStr(body.category, 50) || "other";
+      if (!ALLOWED_CATEGORIES.has(category)) return fail("VALIDATION", "Invalid gallery category", 400);
+      const rawTags = typeof body.tags === "string" ? body.tags : Array.isArray(body.tags) ? (body.tags as string[]).join(",") : "";
+      tags = rawTags.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20);
+      if (Array.isArray(body.fileIds)) {
+        directFileIds = (body.fileIds as unknown[]).filter((v): v is string => typeof v === "string" && Boolean(v.trim())).map((s) => s.trim().slice(0, 36)).slice(0, MAX_FILES);
+      } else if (typeof body.fileId === "string" && body.fileId.trim()) {
+        directFileIds = [body.fileId.trim().slice(0, 36)];
+      }
+      imageUrlFromBody = typeof body.imageUrl === "string" ? body.imageUrl.trim().slice(0, 500) : null;
+      files = [];
+    } else {
+      const form = await request.formData();
+      title = text(form.get("title"), 255);
+      if (!title) return fail("VALIDATION", "Title is required", 400);
+      description = text(form.get("description"), 2000);
+      category = text(form.get("category"), 50) || "other";
+      if (!ALLOWED_CATEGORIES.has(category)) return fail("VALIDATION", "Invalid gallery category", 400);
+      tags = text(form.get("tags"), 1000).split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 20);
+      files = form.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0).slice(0, MAX_FILES);
+      if (form.getAll("file").some((entry) => entry instanceof File)) {
+        const nonEmpty = form.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+        if (nonEmpty.length > MAX_FILES) return fail("VALIDATION", `Upload at most ${MAX_FILES} images at once`, 400);
+        const rejected = form.getAll("file").filter((entry): entry is File => entry instanceof File && entry.size > 0 && (!ALLOWED_TYPES.has(entry.type) || entry.size > MAX_FILE_SIZE));
+        if (rejected.length > 0) return fail("VALIDATION", `${rejected.length} file(s) rejected. Use JPG, PNG, GIF, or WebP under 10MB each (max ${MAX_FILES} per upload).`, 400);
+      }
+      imageUrlFromBody = text(form.get("imageUrl"), 500) || null;
     }
-    const tags = text(form.get("tags"), 1000)
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .slice(0, 20);
 
     const { storage } = createServerStorage();
     const { databases } = createServerDatabases();
-
-    // One upload, one album: every file selected together shares the title,
-    // description, category, tags — and an albumId the gallery groups by.
-    // A lone image URL (no files) is a single-image album.
-    const files = form
-      .getAll("file")
-      .filter((entry): entry is File => entry instanceof File && entry.size > 0)
-      .slice(0, MAX_FILES);
-
-    if (form.getAll("file").some((entry) => entry instanceof File)) {
-      const nonEmpty = form
-        .getAll("file")
-        .filter(
-          (entry): entry is File => entry instanceof File && entry.size > 0,
-        );
-
-      if (nonEmpty.length > MAX_FILES) {
-        return fail(
-          "VALIDATION",
-          `Upload at most ${MAX_FILES} images at once`,
-          400,
-        );
-      }
-      const rejected = form
-        .getAll("file")
-        .filter(
-          (entry): entry is File =>
-            entry instanceof File &&
-            entry.size > 0 &&
-            (!ALLOWED_TYPES.has(entry.type) || entry.size > MAX_FILE_SIZE),
-        );
-
-      if (rejected.length > 0) {
-        return fail(
-          "VALIDATION",
-          `${rejected.length} file(s) rejected. Use JPG, PNG, GIF, or WebP under 10MB each (max ${MAX_FILES} per upload).`,
-          400,
-        );
-      }
-    }
 
     // Moderation authority is the capability, the same one /api/admin/gallery
     // requires. It used to be read here as the legacy `gallery_manager` power,
     // so a manager who held gallery.manage still had their own uploads queued
     // as pending — two answers to one question.
     // Either half of the moderation authority publishes on upload: a full
-    // manager, or a reviewer scoped to gallery.approve.
+    // manager, or a reviewer scoped to gallery.approve. Pass email so bootstrap
+    // admin via ADMIN_EMAILS is treated as admin even without a user_roles row.
     const canModerate =
-      (await hasServerCapability(
-        authenticated.user.$id,
-        "gallery.manage",
-        undefined,
-        authenticated.user.email,
-      )) ||
-      (await hasServerCapability(
-        authenticated.user.$id,
-        "gallery.approve",
-        undefined,
-        authenticated.user.email,
-      ));
+      (await hasServerCapability(authenticated.user.$id, "gallery.manage", undefined, authenticated.user.email)) ||
+      (await hasServerCapability(authenticated.user.$id, "gallery.approve", undefined, authenticated.user.email));
     const uploaded: Array<{ url: string; fileId: string | null }> = [];
 
     for (const file of files) {
@@ -244,8 +223,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Direct browser → Storage path (bypasses Vercel 4.5 MB limit).
+    if (directFileIds.length > 0) {
+      if (directFileIds.length > MAX_FILES) return fail("VALIDATION", `Upload at most ${MAX_FILES} images at once`, 400);
+      for (const fileId of directFileIds) {
+        let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string } | null = null;
+        try {
+          existingFile = await storage.getFile(BUCKET_ID, fileId);
+        } catch {
+          return fail("VALIDATION", "Uploaded file not found — please re-attach", 400);
+        }
+        const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
+        const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
+        if (size > MAX_FILE_SIZE || (mime && !ALLOWED_TYPES.has(mime))) {
+          try { await storage.deleteFile(BUCKET_ID, fileId); } catch {}
+          return fail("VALIDATION", "Unsupported file type or file exceeds 10MB", 400);
+        }
+        const targetPerms = canModerate ? PUBLIC_FILE_PERMISSIONS : MEMBER_FILE_PERMISSIONS;
+        try { await storage.updateFile(BUCKET_ID, fileId, undefined, targetPerms); } catch (e) { logError("Gallery direct file perm update failed:", e); }
+        uploaded.push({ url: getStorageFileViewUrl(BUCKET_ID, fileId), fileId });
+      }
+    }
+
     if (uploaded.length === 0) {
-      const providedUrl = text(form.get("imageUrl"), 500);
+      const providedUrl = imageUrlFromBody;
 
       if (!providedUrl) {
         return fail("VALIDATION", "Provide image files or an image URL", 400);
