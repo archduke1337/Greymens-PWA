@@ -1,10 +1,12 @@
 // components/OnboardingNudge.tsx
-// One-shot-per-session reminder for signed-in accounts that never submitted
-// the onboarding form. Mounted in the root layout so it follows the member
-// anywhere members go — dashboard, console included — except the form
-// itself and auth pages, where it would nag instead of help. Dismissal
-// lasts the session; submitting the form silences it forever (the server
-// then reports exists: true).
+// Repeat reminder for signed-in accounts that never submitted the onboarding
+// form. Mounted in the root layout so it follows the member anywhere
+// members go — dashboard, console included — except the form itself and
+// auth pages, where it would nag instead of help.
+//
+// Deliberately persistent: dismissing ("Later") hides it only until the
+// next navigation, then it returns. It stops for good exactly one way —
+// submitting the form, after which the server reports exists: true.
 "use client";
 
 import { useEffect, useState } from "react";
@@ -21,8 +23,6 @@ import {
 } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
-
-const DISMISSED_KEY = "onboarding-nudge-dismissed";
 
 const HIDDEN_PREFIXES = [
   "/onboarding",
@@ -41,17 +41,15 @@ export default function OnboardingNudge() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    // Fresh evaluation per page: a dismissal on the previous screen must
+    // not leak a stale open modal (or a stale suppression) into this one.
+    setShow(false);
     if (loading || !user) return;
     if (
       HIDDEN_PREFIXES.some(
         (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
       )
     ) {
-      return;
-    }
-    try {
-      if (sessionStorage.getItem(DISMISSED_KEY)) return;
-    } catch {
       return;
     }
 
@@ -81,11 +79,8 @@ export default function OnboardingNudge() {
   }, [loading, user, pathname]);
 
   const dismiss = () => {
-    try {
-      sessionStorage.setItem(DISMISSED_KEY, "1");
-    } catch {
-      // Storage unavailable: the popup simply returns next navigation.
-    }
+    // Later means later this visit, not never: the next navigation
+    // re-evaluates and shows it again for anyone still not onboarded.
     setShow(false);
   };
 
