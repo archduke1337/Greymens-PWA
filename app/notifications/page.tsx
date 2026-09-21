@@ -417,7 +417,7 @@ export default function NotificationsPage() {
         >
           <button
             aria-pressed={typeFilter === "all"}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            className={`inline-flex min-h-10 items-center rounded-full border px-3.5 py-1 text-xs font-medium transition-colors ${
               typeFilter === "all"
                 ? "border-foreground bg-foreground text-background"
                 : "border-default-300 text-default-600 hover:border-default-400"
@@ -431,7 +431,7 @@ export default function NotificationsPage() {
             <button
               key={value}
               aria-pressed={typeFilter === value}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`inline-flex min-h-10 items-center rounded-full border px-3.5 py-1 text-xs font-medium transition-colors ${
                 typeFilter === value
                   ? "border-foreground bg-foreground text-background"
                   : "border-default-300 text-default-600 hover:border-default-400"

@@ -676,6 +676,7 @@ export default function AdminMembershipPage() {
                                   <TableCell>
                                     <div className="flex gap-2">
                                       <Button
+                                        className="max-sm:min-h-10 max-sm:px-3"
                                         size="sm"
                                         variant="ghost"
                                         onPress={() => {
@@ -686,6 +687,7 @@ export default function AdminMembershipPage() {
                                         Details
                                       </Button>
                                       <Button
+                                        className="max-sm:min-h-10 max-sm:min-w-10"
                                         size="sm"
                                         variant="secondary"
                                         onPress={() =>
@@ -698,6 +700,7 @@ export default function AdminMembershipPage() {
                                         </span>
                                       </Button>
                                       <Button
+                                        className="max-sm:min-h-10 max-sm:min-w-10"
                                         size="sm"
                                         variant="danger-soft"
                                         onPress={() =>

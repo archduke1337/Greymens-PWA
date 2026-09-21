@@ -82,6 +82,65 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /*
+   * Touch devices: kill the grey tap flash, drop the 300ms tap delay, and
+   * stop iOS auto-zooming into sub-16px fields (which strands the page
+   * zoomed after the keyboard closes). Desktop unaffected.
+   */
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select {
+    touch-action: manipulation;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Bottom toasts clear the iPhone home indicator instead of sitting on it. */
+@layer components {
+  @media (max-width: 639px) {
+    [data-sonner-toaster][data-y-position="bottom"] {
+      bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+/*
+ * Viewport-height utilities track the *visible* viewport: 100vh includes
+ * the iOS/Android browser chrome, so loading screens jump when the toolbar
+ * collapses on scroll. dvh follows the chrome; vh stays as the fallback.
+ */
+@utility min-h-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@utility h-screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Notch / home-indicator padding for anything pinned to a screen edge. */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
 
 /*
