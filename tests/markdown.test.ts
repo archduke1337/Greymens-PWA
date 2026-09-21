@@ -23,7 +23,10 @@ describe("renderMarkdownHtml", () => {
   it("drops non-http(s) link targets", () => {
     const html = renderMarkdownHtml("[click](javascript:alert(1))");
 
-    expect(html).not.toContain("javascript:");
+    // No anchor is emitted for non-http(s) targets — the raw text stays
+    // inert rather than becoming a clickable javascript: link.
+    expect(html).not.toContain("<a");
+    expect(html).not.toContain('href="javascript:');
     expect(html).toContain("click");
   });
 
