@@ -11,6 +11,7 @@ import {
   listUserContacts,
 } from "@/lib/server-users";
 import { listNonOnboardedContacts } from "@/lib/server-onboarding";
+import { GOVERNANCE_OFFICES } from "@/lib/governance";
 import {
   isEmailConfigured,
   sendBulkEmail,
@@ -147,6 +148,65 @@ export async function GET(request: NextRequest) {
       return ok({ audience: countFor, count, capped, limit: BROADCAST_CAP });
     }
 
+    // Composer preview for multi-select sends: resolve the exact recipient
+    // set (members + offices + broadcast audience, unioned) without writing
+    // anything. `userIds`/`officeIds` are comma-separated query params.
+    const wantResolve = params.get("resolve") === "true";
+
+    if (wantResolve) {
+      const resolveCheck = await requireCapability(
+        request,
+        "notifications.send",
+      );
+
+      if (!resolveCheck.user) return resolveCheck.response;
+
+      const userIds = (params.get("userIds") ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const officeIds = (params.get("officeIds") ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => OFFICE_IDS.has(value));
+      const resolveAudience = (params.get("audience") ?? "").trim();
+
+      if (resolveAudience && !AUDIENCES.has(resolveAudience)) {
+        return fail(
+          "VALIDATION",
+          "audience must be all_members, all_users, or not_onboarded",
+          400,
+        );
+      }
+
+      const { databases } = createServerDatabases();
+      const resolved = await resolveRecipientIds(databases, {
+        userIds,
+        officeIds,
+        audience: resolveAudience || null,
+      });
+      const names = await getAccountNames([...resolved.ids].slice(0, 50)).then(
+        (map) => map,
+        () => new Map<string, string>(),
+      );
+
+      return ok({
+        count: Math.min(resolved.ids.size, BROADCAST_CAP),
+        capped: resolved.ids.size > BROADCAST_CAP,
+        limit: BROADCAST_CAP,
+        sample: [...resolved.ids]
+          .slice(0, 10)
+          .map((id) => names.get(id) || id.slice(0, 8)),
+        offices: officeIds.map((officeId) => ({
+          officeId,
+          title: OFFICE_TITLES[officeId] ?? officeId,
+          holders: (resolved.officeHolders.get(officeId) ?? []).map(
+            (id) => names.get(id) || id.slice(0, 8),
+          ),
+        })),
+      });
+    }
+
     const [response, unread] = await Promise.all([      databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
         Query.equal("userId", [authenticated.user.$id]),
         Query.orderDesc("createdAt"),
@@ -204,6 +264,76 @@ async function allProfileIds(
 }
 
 const AUDIENCES = new Set(["all_members", "all_users", "not_onboarded"]);
+
+// Office targeting uses the constitution's snake_case ids (president,
+// general_secretary, …), never display titles or designation slugs.
+const OFFICE_IDS = new Set(GOVERNANCE_OFFICES.map((office) => office.id));
+const OFFICE_TITLES: Record<string, string> = Object.fromEntries(
+  GOVERNANCE_OFFICES.map((office) => [office.id, office.title]),
+);
+
+/**
+ * Active holders per office. Mirrors the capability checker's term logic:
+ * a row whose termEnd is past holds no seat even if status still says
+ * active. Bounded per office (one active holder is the rule; limit 10 is
+ * headroom, not a model change).
+ */
+async function resolveOfficeHolders(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+  officeIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  const today = new Date().toISOString().slice(0, 10);
+
+  await Promise.all(
+    officeIds.map(async (officeId) => {
+      try {
+        const rows = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.OFFICE_ASSIGNMENTS,
+          [
+            Query.equal("officeId", [officeId]),
+            Query.equal("status", ["active"]),
+            Query.limit(10),
+          ],
+        );
+        out.set(
+          officeId,
+          rows.documents
+            .filter((row) => {
+              const termEnd = String(row.termEnd ?? "");
+
+              return !termEnd || termEnd >= today;
+            })
+            .map((row) => String(row.userId ?? ""))
+            .filter(Boolean),
+        );
+      } catch {
+        out.set(officeId, []);
+      }
+    }),
+  );
+
+  return out;
+}
+
+/** Parse an optional string array (bounded length + item length). */
+function readStringArray(value: unknown, maxItems: number): string[] | null {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value)) return null;
+  if (value.length > maxItems) return null;
+  const out: string[] = [];
+
+  for (const item of value) {
+    if (typeof item !== "string") return null;
+    const trimmed = item.trim();
+
+    if (!trimmed || trimmed.length > 36) return null;
+    out.push(trimmed);
+  }
+
+  return [...new Set(out)];
+}
 
 /**
  * Recipient count preview for the console composer, so a sender sees the
@@ -326,6 +456,83 @@ async function emailsForRecipients(
   return out;
 }
 
+interface RecipientSpec {
+  userIds: string[];
+  officeIds: string[];
+  audience: string | null;
+}
+
+interface ResolvedRecipients {
+  ids: Set<string>;
+  officeHolders: Map<string, string[]>;
+  unknownUserIds: string[];
+}
+
+/**
+ * Union of every recipient source: hand-picked members (verified, ghosts
+ * reported), office holders (active seat, term respected), and one
+ * broadcast audience. Shared by the composer preview and the send path so
+ * the preview cannot disagree with the send.
+ */
+async function resolveRecipientIds(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+  spec: RecipientSpec,
+): Promise<ResolvedRecipients> {
+  const ids = new Set<string>();
+  const unknownUserIds: string[] = [];
+
+  for (let i = 0; i < spec.userIds.length; i += 20) {
+    const chunk = spec.userIds.slice(i, i + 20);
+    const contacts = await Promise.all(
+      chunk.map((id) => getUserContact(id)),
+    );
+
+    contacts.forEach((contact, index) => {
+      if (contact) ids.add(contact.userId);
+      else unknownUserIds.push(chunk[index]);
+    });
+  }
+
+  let officeHolders = new Map<string, string[]>();
+
+  if (spec.officeIds.length > 0) {
+    officeHolders = await resolveOfficeHolders(databases, spec.officeIds);
+
+    for (const holders of officeHolders.values()) {
+      for (const id of holders) ids.add(id);
+    }
+  }
+
+  if (spec.audience === "all_members") {
+    const memberships = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.MEMBERSHIPS,
+      [Query.equal("status", ["active"]), Query.limit(BROADCAST_CAP + 1)],
+    );
+
+    if (
+      memberships.total > BROADCAST_CAP ||
+      memberships.documents.length > BROADCAST_CAP
+    ) {
+      throw new Error("AUDIENCE_OVER_CAP");
+    }
+    for (const row of memberships.documents) {
+      const id = String(row.userId ?? "");
+
+      if (id) ids.add(id);
+    }
+  } else if (spec.audience === "all_users") {
+    for (const id of await allProfileIds(databases)) ids.add(id);
+  } else if (spec.audience === "not_onboarded") {
+    const contacts = await listNonOnboardedContacts(BROADCAST_CAP + 1);
+
+    if (contacts.length > BROADCAST_CAP) throw new Error("AUDIENCE_OVER_CAP");
+    for (const contact of contacts) ids.add(contact.userId);
+  }
+
+  return { ids, officeHolders, unknownUserIds };
+}
+
 export async function POST(request: NextRequest) {
   // Sending a notification to another account is an administrative action.
   const authenticated = await requireCapability(request, "notifications.send");
@@ -347,18 +554,52 @@ export async function POST(request: NextRequest) {
   const userId = readString(body.userId, 36);
   const audience =
     typeof body.audience === "string" ? body.audience.trim() : "";
+  // Multi-select sends: hand-picked member ids and/or office ids, unioned
+  // with an optional broadcast audience on the server.
+  const userIds = readStringArray(body.userIds, BROADCAST_CAP);
+  const officeIds = readStringArray(body.officeIds, OFFICE_IDS.size);
   const type = readString(body.type, 100);
   const title = readString(body.title, 255);
   const bodyText = readString(body.body, MAX_BODY_LENGTH);
   const sendEmail = body.sendEmail === true;
 
-  // Exactly one recipient spec: a single account, or a named audience.
-  if ((userId && audience) || (!userId && !audience)) {
+  // Exactly one recipient spec: a single account, or any combination of
+  // member multi-select, offices, and a named audience.
+  const hasMulti =
+    (userIds !== null && userIds.length > 0) ||
+    (officeIds !== null && officeIds.length > 0) ||
+    Boolean(audience);
+
+  if (userId && hasMulti) {
     return fail(
       "VALIDATION",
-      "Send to one member (userId) or an audience, not both",
+      "Send to one member (userId) or a selection, not both",
       400,
     );
+  }
+  if (!userId && !hasMulti) {
+    return fail(
+      "VALIDATION",
+      "Send to one member (userId), members (userIds), offices (officeIds), or an audience",
+      400,
+    );
+  }
+  if (body.userIds !== undefined && userIds === null) {
+    return fail("VALIDATION", "userIds must be an array of account ids", 400);
+  }
+  if (body.officeIds !== undefined && officeIds === null) {
+    return fail("VALIDATION", "officeIds must be an array of office ids", 400);
+  }
+  if (officeIds) {
+    const unknown = officeIds.filter((id) => !OFFICE_IDS.has(id));
+
+    if (unknown.length > 0) {
+      return fail(
+        "VALIDATION",
+        `Unknown office: ${unknown.slice(0, 3).join(", ")}`,
+        400,
+      );
+    }
   }
   if (audience && !AUDIENCES.has(audience)) {
     return fail(
@@ -399,13 +640,17 @@ export async function POST(request: NextRequest) {
     return fail("VALIDATION", "Notification payload is too large", 400);
   }
 
-  // A broadcast fans out to hundreds of rows — throttle it separately from
-  // single sends so one announcement cannot spend the sender's whole budget.
+  // A multi-select or office send fans out like a broadcast — throttle it
+  // as one, so a 200-person selection cannot spend a single-send budget.
+  const isBroadcast =
+    Boolean(audience) ||
+    (officeIds !== null && officeIds.length > 0) ||
+    (userIds !== null && userIds.length > 1);
   const limited = consumeRateLimit(
-    audience
+    isBroadcast
       ? `notifications:broadcast:${authenticated.user.$id}`
       : `notifications:${authenticated.user.$id}`,
-    audience ? 5 : 60,
+    isBroadcast ? 5 : 60,
     60 * 60 * 1000,
   );
 
@@ -418,58 +663,60 @@ export async function POST(request: NextRequest) {
     const createdAt = new Date().toISOString();
 
     // Resolve recipient account ids. Single sends verify the account exists
-    // (fail-closed: no rows for ghost ids); audiences are bounded so a
-    // runaway fan-out 400s instead of writing thousands of rows.
+    // (fail-closed: no rows for ghost ids); selections union every source
+    // and stay bounded so a runaway fan-out 400s instead of writing
+    // thousands of rows.
     let recipientIds: string[];
+    let resolvedOffices: string[] = [];
 
     if (userId) {
       const contact = await getUserContact(userId);
 
       if (!contact) return fail("NOT_FOUND", "Recipient not found", 404);
       recipientIds = [contact.userId];
-    } else if (audience === "all_members") {
-      const memberships = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.MEMBERSHIPS,
-        [Query.equal("status", ["active"]), Query.limit(BROADCAST_CAP + 1)],
-      );
-
-      if (
-        memberships.total > BROADCAST_CAP ||
-        memberships.documents.length > BROADCAST_CAP
-      ) {
-        return fail(
-          "VALIDATION",
-          "Audience is larger than the broadcast limit — narrow it first",
-          400,
-        );
-      }
-      recipientIds = memberships.documents
-        .map((row) => String(row.userId ?? ""))
-        .filter(Boolean);
-    } else if (audience === "not_onboarded") {
-      // Accounts with no profile row: registered, never started onboarding.
-      // In-app rows reach them the same as mail — previously they were
-      // unreachable from the console entirely.
-      const contacts = await listNonOnboardedContacts(BROADCAST_CAP + 1);
-
-      if (contacts.length > BROADCAST_CAP) {
-        return fail(
-          "VALIDATION",
-          "Audience is larger than the broadcast limit — narrow it first",
-          400,
-        );
-      }
-      if (contacts.length === 0) {
-        return fail("VALIDATION", "Audience is empty", 400);
-      }
-      recipientIds = contacts.map((contact) => contact.userId);
     } else {
-      recipientIds = await allProfileIds(databases);
+      let resolved: ResolvedRecipients;
 
-      if (recipientIds.length === 0) {
-        return fail("VALIDATION", "Audience is empty", 400);
+      try {
+        resolved = await resolveRecipientIds(databases, {
+          userIds: userIds ?? [],
+          officeIds: officeIds ?? [],
+          audience: audience || null,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "AUDIENCE_OVER_CAP") {
+          return fail(
+            "VALIDATION",
+            "Audience is larger than the broadcast limit — narrow it first",
+            400,
+          );
+        }
+        throw error;
       }
+
+      if (resolved.unknownUserIds.length > 0) {
+        return fail(
+          "VALIDATION",
+          `${resolved.unknownUserIds.length} selected recipient${resolved.unknownUserIds.length === 1 ? " was" : "s were"} not found — refresh the picker and try again`,
+          400,
+        );
+      }
+      if (resolved.ids.size === 0) {
+        return fail(
+          "VALIDATION",
+          "Audience is empty — the selected offices have no active holders",
+          400,
+        );
+      }
+      if (resolved.ids.size > BROADCAST_CAP) {
+        return fail(
+          "VALIDATION",
+          "Audience is larger than the broadcast limit — narrow it first",
+          400,
+        );
+      }
+      recipientIds = [...resolved.ids];
+      resolvedOffices = officeIds ?? [];
     }
 
     const rows = await createNotificationRows(databases, recipientIds, {
@@ -515,8 +762,10 @@ export async function POST(request: NextRequest) {
       entityType: "notification",
       entityId: String(rows[0]?.$id ?? "broadcast"),
       details: {
-        audience: audience || "single",
+        audience: audience || (userId ? "single" : "selection"),
         userId: userId || null,
+        userIds: userIds && userIds.length > 0 ? userIds.length : null,
+        officeIds: resolvedOffices.length > 0 ? resolvedOffices : null,
         type,
         sent: rows.length,
         email,
@@ -528,9 +777,9 @@ export async function POST(request: NextRequest) {
     return ok(
       {
         sent: rows.length,
-        audience: audience || "single",
+        audience: audience || (userId ? "single" : "selection"),
         email,
-        ...(audience ? {} : { notification: rows[0] ?? null }),
+        ...(audience || !userId ? {} : { notification: rows[0] ?? null }),
       },
       201,
     );
