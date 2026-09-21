@@ -2,7 +2,6 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import {
   Alert,
   Button,
@@ -18,6 +17,7 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import ProviderButtons from "@/components/auth/ProviderButtons";
+import AuthShell from "@/components/auth/AuthShell";
 import PasswordField from "@/components/auth/PasswordField";
 import { logError } from "@/lib/logger";
 
@@ -152,126 +152,104 @@ function LoginForm() {
   const handleGithubLogin = startProvider("github", loginWithGithub);
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl items-center gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:py-14">
-      {/* Compact art strip on small screens */}
-      <figure className="overflow-hidden rounded-3xl border border-default-200/70 lg:hidden">
-        <Image
-          alt=""
-          aria-hidden="true"
-          className="h-36 w-full object-cover object-top sm:h-44"
-          height={1024}
-          loading="lazy"
-          src="/Assets/Objects/login.png"
-          width={1536}
-        />
-      </figure>
-
-      {/* Art panel on large screens */}
-      <figure className="hidden space-y-3 lg:block">
-        <div className="overflow-hidden rounded-3xl border border-default-200/70">
-          <Image
-            alt="A hand-drawn member puzzling over a Greymens login screen that reads trust but verify"
-            className="w-full object-cover"
-            height={1024}
-            src="/Assets/Objects/login.png"
-            width={1536}
+    <AuthShell
+      artAlt="A hand-drawn member puzzling over a Greymens login screen that reads trust but verify"
+      artSrc="/Assets/Objects/login.png"
+      caption="Trust but verify — including your own password."
+      description="Continue with Google or GitHub — or use your club email."
+      title="Welcome back"
+    >
+      <Form validationBehavior="aria" onSubmit={handleSubmit}>
+        <Card.Content className="space-y-4">
+          {error && (
+            <Alert role="alert" status="danger">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Couldn&apos;t log you in</Alert.Title>
+                <Alert.Description>{error}</Alert.Description>
+              </Alert.Content>
+            </Alert>
+          )}
+          <ProviderButtons
+            disabled={busy}
+            githubPending={githubLoading}
+            googlePending={googleLoading}
+            mode="login"
+            onGitHub={handleGithubLogin}
+            onGoogle={handleGoogleLogin}
           />
-        </div>
-        <figcaption className="text-center text-sm text-muted">
-          Trust but verify — including your own password.
-        </figcaption>
-      </figure>
-
-      {/* Form */}
-      <Card className="w-full">
-        <Card.Header>
-          <Card.Title>Welcome back</Card.Title>
-          <Card.Description>
-            Continue with Google or GitHub — or use your club email.
-          </Card.Description>
-        </Card.Header>
-        <Form validationBehavior="aria" onSubmit={handleSubmit}>
-          <Card.Content className="space-y-4">
-            {error && (
-              <Alert role="alert" status="danger">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>Couldn&apos;t log you in</Alert.Title>
-                  <Alert.Description>{error}</Alert.Description>
-                </Alert.Content>
-              </Alert>
+          <div aria-hidden="true" className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-default-200" />
+            <span className="text-xs text-muted">or with email</span>
+            <span className="h-px flex-1 bg-default-200" />
+          </div>
+          <TextField
+            isRequired
+            isDisabled={busy}
+            name="email"
+            type="email"
+            validate={(value) =>
+              EMAIL_PATTERN.test(value.trim())
+                ? null
+                : "Enter a valid email address"
+            }
+            value={email}
+            onChange={setEmail}
+          >
+            <Label>Email</Label>
+            <Input autoComplete="email" placeholder="you@example.com" />
+            <FieldError />
+          </TextField>
+          <PasswordField
+            autoComplete="current-password"
+            disabled={busy}
+            label="Password"
+            name="password"
+            placeholder="Your password"
+            value={password}
+            onChange={setPassword}
+          />
+          <div className="text-right">
+            <Link
+              className="text-sm font-medium text-foreground underline underline-offset-4"
+              href="/forgot-password"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        </Card.Content>
+        <Card.Footer className="flex-col gap-3">
+          <Button
+            fullWidth
+            className="rounded-full"
+            isDisabled={busy}
+            isPending={loading}
+            type="submit"
+          >
+            {({ isPending }) => (
+              <>
+                {isPending ? <Spinner color="current" size="sm" /> : null}
+                {isPending ? "Logging in…" : "Log in"}
+              </>
             )}
-            <ProviderButtons
-              disabled={busy}
-              githubPending={githubLoading}
-              googlePending={googleLoading}
-              mode="login"
-              onGitHub={handleGithubLogin}
-              onGoogle={handleGoogleLogin}
-            />
-            <div aria-hidden="true" className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-default-200" />
-              <span className="text-xs text-muted">or with email</span>
-              <span className="h-px flex-1 bg-default-200" />
-            </div>
-            <TextField
-              isRequired
-              isDisabled={busy}
-              name="email"
-              type="email"
-              validate={(value) =>
-                EMAIL_PATTERN.test(value) ? null : "Enter a valid email address"
-              }
-              value={email}
-              onChange={setEmail}
-            >
-              <Label>Email</Label>
-              <Input autoComplete="email" placeholder="you@example.com" />
-              <FieldError />
-            </TextField>
-            <PasswordField
-              autoComplete="current-password"
-              disabled={busy}
-              label="Password"
-              name="password"
-              placeholder="Your password"
-              value={password}
-              onChange={setPassword}
-            />
-          </Card.Content>
-          <Card.Footer className="flex-col gap-3">
-            <Button
-              fullWidth
-              className="rounded-full"
-              isDisabled={busy}
-              isPending={loading}
-              type="submit"
-            >
-              {({ isPending }) => (
-                <>
-                  {isPending ? <Spinner color="current" size="sm" /> : null}
-                  {isPending ? "Logging in…" : "Log in"}
-                </>
-              )}
-            </Button>
+          </Button>
 
-            <p className="text-center text-sm text-muted">
-              New here?{" "}
-              <Link
-                className="font-medium text-foreground underline underline-offset-4"
-                href={
-                  next !== "/"
-                    ? `/register?next=${encodeURIComponent(next)}`
-                    : "/register"
-                }
-              >
-                Create an account
-              </Link>
-            </p>
-          </Card.Footer>
-        </Form>
-      </Card>
-    </div>
+          <p className="text-center text-sm text-muted">
+            New here?{" "}
+            <Link
+              className="font-medium text-foreground underline underline-offset-4"
+              href={
+                next !== "/"
+                  ? `/register?next=${encodeURIComponent(next)}`
+                  : "/register"
+              }
+            >
+              Create an account
+            </Link>
+          </p>
+        </Card.Footer>
+      </Form>
+    </AuthShell>
   );
 }
 
