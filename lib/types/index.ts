@@ -587,6 +587,8 @@ export interface Notification {
   type: string;
   title: string;
   body: string;
+  /** Office id the notice was sent as (e.g. "president"), if any. */
+  fromOffice?: string;
   letter?: LetterData;
   data?: Record<string, any>;
   read: boolean;

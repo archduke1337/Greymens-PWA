@@ -9,6 +9,7 @@ import { Button, Card, CardContent, Chip } from "@heroui/react";
 
 import { useAuth } from "@/context/AuthContext";
 import { notificationService } from "@/lib/notifications";
+import { officeTitle } from "@/lib/governance";
 import { timeAgo } from "@/lib/format";
 import Markdown from "@/components/Markdown";
 
@@ -521,6 +522,13 @@ export default function NotificationsPage() {
                               />
                             )}
                           </div>
+                          {notification.fromOffice && (
+                            <p className="text-xs font-medium text-accent">
+                              From the Office of{" "}
+                              {officeTitle(notification.fromOffice) ??
+                                notification.fromOffice}
+                            </p>
+                          )}
                           <Markdown>{notification.body}</Markdown>
                           <p className="text-xs text-default-400">
                             {notification.$createdAt

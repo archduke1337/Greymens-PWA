@@ -60,6 +60,7 @@ export async function sendBulkEmail(
   recipients: EmailRecipient[],
   subject: string,
   body: string,
+  options?: { signoff?: string },
 ): Promise<EmailReport> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -76,7 +77,7 @@ export async function sendBulkEmail(
   }
 
   const resend = new Resend(apiKey);
-  const html = renderEmailHtml(subject, body);
+  const html = renderEmailHtml(subject, body, options?.signoff);
   // The text part carries the words without the markers: a `**bold**` that
   // survives into plain text reads like a formatting bug in the inbox.
   const text = markdownToPlainText(body) || body;

@@ -36,7 +36,11 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export function renderEmailHtml(title: string, body: string): string {
+export function renderEmailHtml(
+  title: string,
+  body: string,
+  signoff?: string,
+): string {
   const content = renderMarkdownHtml(body);
   // Inbox preview line: the first words of the body, markup stripped.
   const preheader = escapeHtml(
@@ -79,7 +83,7 @@ export function renderEmailHtml(title: string, body: string): string {
             </tr>
             <tr>
               <td style="padding:4px 28px 24px;">
-                <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BODY_INK};">&mdash; Team Greymens</p>
+                <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BODY_INK};">${signoff ? `Office of the ${escapeHtml(signoff)}<br>` : ""}&mdash; Team Greymens</p>
               </td>
             </tr>
             <tr>

@@ -30,6 +30,7 @@ import { Bell, Send, CheckCircle, XCircle, Clock } from "lucide-react";
 
 import { renderEmailHtml } from "@/lib/email-template";
 import { markdownToPlainText } from "@/lib/markdown";
+import { officeTitle } from "@/lib/governance";
 import { useAuth } from "@/context/AuthContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
@@ -388,6 +389,12 @@ export default function AdminNotificationsPage() {
                     <span>
                       To: {recipientNames[notif.userId] || notif.userId}
                     </span>
+                    {notif.fromOffice && (
+                      <span>
+                        From: Office of{" "}
+                        {officeTitle(notif.fromOffice) ?? notif.fromOffice}
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>

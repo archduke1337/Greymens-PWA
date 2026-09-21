@@ -4,7 +4,7 @@ import { ID, Query } from "appwrite";
 import { createServerDatabases } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAuthenticatedUser } from "@/lib/server-auth";
-import { requireCapability } from "@/lib/access-control";
+import { getEffectiveCapabilities, requireCapability } from "@/lib/access-control";
 import {
   getAccountNames,
   getUserContact,
@@ -317,6 +317,50 @@ async function resolveOfficeHolders(
   return out;
 }
 
+/**
+ * May this sender sign as this office? Either they hold the seat right now
+ * (term respected, same rule as targeting), or they are a wildcard admin.
+ * Without this, anyone with the send capability could forge a notice "from
+ * the President" indistinguishable from the real thing.
+ */
+async function canSendAsOffice(
+  databases: ReturnType<typeof createServerDatabases>["databases"],
+  userId: string,
+  email: string,
+  officeId: string,
+): Promise<boolean> {
+  const capabilities = await getEffectiveCapabilities(
+    userId,
+    undefined,
+    undefined,
+    email || null,
+  ).catch(() => new Set<string>());
+
+  if (capabilities.has("*")) return true;
+
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.OFFICE_ASSIGNMENTS,
+      [
+        Query.equal("userId", [userId]),
+        Query.equal("officeId", [officeId]),
+        Query.equal("status", ["active"]),
+        Query.limit(5),
+      ],
+    );
+
+    return rows.documents.some((row) => {
+      const termEnd = String(row.termEnd ?? "");
+
+      return !termEnd || termEnd >= today;
+    });
+  } catch {
+    return false;
+  }
+}
+
 /** Parse an optional string array (bounded length + item length). */
 function readStringArray(value: unknown, maxItems: number): string[] | null {
   if (value === undefined || value === null) return null;
@@ -380,6 +424,8 @@ interface NotificationContent {
   type: string;
   title: string;
   body: string;
+  /** Office id the notice is sent as, if any — stored per row, shown as the sender. */
+  fromOffice?: string;
   letter?: string;
   data?: string;
   createdAt: string;
@@ -406,6 +452,7 @@ async function createNotificationRows(
             type: content.type,
             title: content.title,
             body: content.body,
+            ...(content.fromOffice ? { fromOffice: content.fromOffice } : {}),
             letter: content.letter,
             data: content.data,
             read: false,
@@ -562,6 +609,10 @@ export async function POST(request: NextRequest) {
   const title = readString(body.title, 255);
   const bodyText = readString(body.body, MAX_BODY_LENGTH);
   const sendEmail = body.sendEmail === true;
+  // Send-as: the office the notice is signed from ("Office of the
+  // President"), as opposed to offices targeted as recipients.
+  const fromOffice =
+    typeof body.fromOffice === "string" ? body.fromOffice.trim() : "";
 
   // Exactly one recipient spec: a single account, or any combination of
   // member multi-select, offices, and a named audience.
@@ -607,6 +658,9 @@ export async function POST(request: NextRequest) {
       "audience must be all_members, all_users, or not_onboarded",
       400,
     );
+  }
+  if (fromOffice && !OFFICE_IDS.has(fromOffice)) {
+    return fail("VALIDATION", `Unknown office: ${fromOffice}`, 400);
   }
   if (!type || !title || !bodyText) {
     return fail("VALIDATION", "type, title, and body are required", 400);
@@ -661,6 +715,25 @@ export async function POST(request: NextRequest) {
   try {
     const { databases } = createServerDatabases();
     const createdAt = new Date().toISOString();
+
+    // Send-as authorization runs before any write: signing another
+    // office's name must fail closed, not after rows fan out.
+    if (fromOffice) {
+      const allowed = await canSendAsOffice(
+        databases,
+        authenticated.user.$id,
+        String(authenticated.user.email ?? ""),
+        fromOffice,
+      );
+
+      if (!allowed) {
+        return fail(
+          "FORBIDDEN",
+          "Only that office's current holder can send as it",
+          403,
+        );
+      }
+    }
 
     // Resolve recipient account ids. Single sends verify the account exists
     // (fail-closed: no rows for ghost ids); selections union every source
@@ -723,6 +796,7 @@ export async function POST(request: NextRequest) {
       type,
       title,
       body: bodyText,
+      ...(fromOffice ? { fromOffice } : {}),
       letter,
       data,
       createdAt,
@@ -743,7 +817,9 @@ export async function POST(request: NextRequest) {
       // audience, so bystanders got mail for notices never sent to them.
       const contacts = await emailsForRecipients(new Set(recipientIds));
 
-      email = await sendBulkEmail(contacts, title, bodyText);
+      email = await sendBulkEmail(contacts, title, bodyText, {
+        signoff: fromOffice ? OFFICE_TITLES[fromOffice] : undefined,
+      });
 
       // Resend's rejection reason belongs in the server logs — otherwise a
       // failed batch is a bare counter with no cause attached.
@@ -766,6 +842,7 @@ export async function POST(request: NextRequest) {
         userId: userId || null,
         userIds: userIds && userIds.length > 0 ? userIds.length : null,
         officeIds: resolvedOffices.length > 0 ? resolvedOffices : null,
+        fromOffice: fromOffice || null,
         type,
         sent: rows.length,
         email,

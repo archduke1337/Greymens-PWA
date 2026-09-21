@@ -27,6 +27,7 @@ import { ArrowLeft, Search, Send, X } from "lucide-react";
 import { GOVERNANCE_OFFICES } from "@/lib/governance";
 import { renderEmailHtml } from "@/lib/email-template";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
 
@@ -73,7 +74,12 @@ interface ResolvePreview {
 
 export default function ComposeNotificationPage() {
   const { user, loading: authLoading } = useAuth();
+  const { hasCapability, loading: permsLoading } = usePermissions();
   const router = useRouter();
+
+  // Presentation gate on top of the server's enforcement: without the send
+  // capability this page is unreachable, not just unusable.
+  const canSend = hasCapability("notifications.send");
 
   const [selectedOffices, setSelectedOffices] = useState<string[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<MemberPick[]>([]);
@@ -87,6 +93,9 @@ export default function ComposeNotificationPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [type, setType] = useState<string>("admin_announcement");
+  // Send-as: which office signs the notice ("Office of the President").
+  // Empty means a plain Team Greymens send.
+  const [fromOffice, setFromOffice] = useState("");
   const [sendEmail, setSendEmail] = useState(false);
   const [emailConfigured, setEmailConfigured] = useState(false);
 
@@ -301,6 +310,7 @@ export default function ComposeNotificationPage() {
             ? { officeIds: selectedOffices }
             : {}),
           ...(broadcast ? { audience: broadcast } : {}),
+          ...(fromOffice ? { fromOffice } : {}),
           type,
           title: title.trim(),
           body: body.trim(),
@@ -337,7 +347,7 @@ export default function ComposeNotificationPage() {
     }
   };
 
-  if (authLoading || !user) {
+  if (authLoading || permsLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div
@@ -348,6 +358,29 @@ export default function ComposeNotificationPage() {
           <Spinner size="lg" />
           <p className="text-default-500">Loading composer…</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!canSend) {
+    return (
+      <div className="mx-auto flex w-full max-w-md px-4 py-16">
+        <Card className="w-full">
+          <CardContent className="space-y-3 px-6 py-12 text-center">
+            <h1 className="text-xl font-bold">Not allowed here</h1>
+            <p className="text-sm text-muted">
+              Composing notifications needs the send permission. If you hold
+              an office, ask an admin to check your role.
+            </p>
+            <Button
+              className="rounded-full"
+              variant="secondary"
+              onPress={() => router.push("/admin/notifications")}
+            >
+              Back to notifications
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -679,6 +712,40 @@ export default function ComposeNotificationPage() {
                   </ListBox>
                 </Select.Popover>
               </Select>
+              <Select
+                fullWidth
+                value={fromOffice}
+                onChange={(value) => setFromOffice(String(value ?? ""))}
+              >
+                <Label>Send as</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item id="" textValue="Team Greymens">
+                      Team Greymens (default)
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    {GOVERNANCE_OFFICES.map((office) => (
+                      <ListBox.Item
+                        key={office.id}
+                        id={office.id}
+                        textValue={`Office of the ${office.title}`}
+                      >
+                        Office of the {office.title}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+              <p className="-mt-2 text-xs text-default-400">
+                Signs the notice from that office. Only its current holder
+                (or an admin) can send as it — anyone else gets a clear
+                refusal, not a silent team send.
+              </p>
               <div className="rounded-xl border border-border p-3">
                 <Switch
                   isSelected={sendEmail}
@@ -710,6 +777,11 @@ export default function ComposeNotificationPage() {
                   __html: renderEmailHtml(
                     title.trim() || "Notification",
                     body.trim() || "Your message will appear here.",
+                    fromOffice
+                      ? (GOVERNANCE_OFFICES.find(
+                          (office) => office.id === fromOffice,
+                        )?.title ?? undefined)
+                      : undefined,
                   ),
                 }}
               />

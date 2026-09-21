@@ -113,6 +113,15 @@ export const GOVERNANCE_OFFICES: GovernanceOffice[] = [
   },
 ];
 
+/** Display title for a constitution office id, or `null` when unknown. */
+export function officeTitle(officeId?: string | null): string | null {
+  if (!officeId) return null;
+
+  return (
+    GOVERNANCE_OFFICES.find((office) => office.id === officeId)?.title ?? null
+  );
+}
+
 /**
  * The club's titled roles, seeded as `designations`.
  *

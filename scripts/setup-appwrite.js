@@ -852,6 +852,9 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     { key: "type", type: "string", size: 100, required: true },
     { key: "title", type: "string", size: 255, required: true },
     { key: "body", type: "string", size: 65535, required: true },
+    // Office id the notice was sent as (constitution office id, e.g.
+    // "president"). Optional: plain team sends leave it empty.
+    { key: "fromOffice", type: "string", size: 64 },
     { key: "letter", type: "string", size: 65535 },
     { key: "data", type: "string", size: 65535 },
     { key: "read", type: "boolean", required: true },

@@ -14,6 +14,7 @@ import {
   Rocket,
   Handshake,
   Bell,
+  PenLine,
   ShieldCheck,
   ScrollText,
   Shapes,
@@ -142,6 +143,12 @@ export const ADMIN_SECTIONS = [
     cap: "notifications.send",
   },
   {
+    label: "Compose",
+    href: "/admin/notifications/compose",
+    Icon: PenLine,
+    cap: "notifications.send",
+  },
+  {
     // Everything that grants authority: roles, charter offices (an office is a
     // role plus a term) and operational powers. Visible when the caller holds
     // any of the three capabilities; each tab is filtered again inside.
@@ -188,7 +195,10 @@ const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
       "/admin/sponsors",
     ],
   },
-  { label: "Engage", hrefs: ["/admin/notifications", "/admin/notifications/compose"] },
+  {
+    label: "Engage",
+    hrefs: ["/admin/notifications", "/admin/notifications/compose"],
+  },
   {
     label: "Govern",
     hrefs: [
