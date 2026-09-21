@@ -382,11 +382,9 @@ export default function AdminEventsPage() {
       return;
     setDeletingId(eventId);
     try {
-      const response = await fetch("/api/admin/events", {
+      const response = await fetch(`/api/admin/events?eventId=${encodeURIComponent(eventId)}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ eventId }),
       });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
@@ -414,11 +412,9 @@ export default function AdminEventsPage() {
   const handleDeletePastEvents = async () => {
     if (!confirm("Delete ALL past events? This cannot be undone.")) return;
     try {
-      const response = await fetch("/api/admin/events", {
+      const response = await fetch("/api/admin/events?past=true", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ past: true }),
       });
       const payload = (await response.json().catch(() => null)) as {
         deleted?: number;
