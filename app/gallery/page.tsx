@@ -46,6 +46,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/context/PermissionContext";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
+import { storage, ID } from "@/lib/appwrite";
 
 const CATEGORIES = [
   { id: "all", label: "All", Icon: Palette },
@@ -336,20 +337,58 @@ export default function GalleryPage() {
         return;
       }
 
-      // The file and the record are both written by the server. Doing either
-      // from the browser cannot work: the bucket and the gallery table are both
-      // closed to client writes.
-      const body = new FormData();
+      // Direct browser → Storage bypasses Vercel 4.5 MB proxy limit (10 MB images,
+      // 10-file albums up to 100 MB would always 413 via proxy). Falls back to
+      // FormData proxy for small files if bucket perms haven't been reconciled.
+      let directFileIds: string[] | null = null;
+      if (uploadFiles.length > 0) {
+        try {
+          directFileIds = [];
+          for (const entry of uploadFiles) {
+            const uploaded = await storage.createFile({
+              bucketId: "gallery-images",
+              fileId: ID.unique(),
+              file: entry.file,
+            });
+            directFileIds.push(uploaded.$id);
+          }
+        } catch (directError) {
+          logError("Direct gallery upload failed, falling back to proxy:", directError);
+          const hasLarge = uploadFiles.some((e) => e.file.size > 4.5 * 1024 * 1024);
+          if (hasLarge) {
+            toast.error("Direct upload failed — bucket permissions need reconciling. Run `node scripts/setup-appwrite.js` and redeploy.");
+            setUploading(false);
+            return;
+          }
+          directFileIds = null;
+        }
+      }
 
-      body.set("title", uploadForm.title.trim());
-      body.set("description", uploadForm.description);
-      body.set("category", uploadForm.category);
-      body.set("tags", uploadForm.tags);
-      for (const entry of uploadFiles) body.append("file", entry.file);
-      if (uploadFiles.length === 0)
-        body.set("imageUrl", uploadForm.imageUrl.trim());
-
-      const response = await fetch("/api/gallery", { method: "POST", body });
+      const response =
+        directFileIds && directFileIds.length === uploadFiles.length
+          ? await fetch("/api/gallery", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                title: uploadForm.title.trim(),
+                description: uploadForm.description,
+                category: uploadForm.category,
+                tags: uploadForm.tags,
+                fileIds: directFileIds,
+                ...(uploadFiles.length === 0 ? { imageUrl: uploadForm.imageUrl.trim() } : {}),
+              }),
+            })
+          : await (() => {
+              const body = new FormData();
+              body.set("title", uploadForm.title.trim());
+              body.set("description", uploadForm.description);
+              body.set("category", uploadForm.category);
+              body.set("tags", uploadForm.tags);
+              for (const entry of uploadFiles) body.append("file", entry.file);
+              if (uploadFiles.length === 0) body.set("imageUrl", uploadForm.imageUrl.trim());
+              return fetch("/api/gallery", { method: "POST", body, credentials: "include" as RequestCredentials });
+            })();
       const data = (await response.json().catch(() => ({}))) as {
         images?: GalleryImage[];
         error?: string;
