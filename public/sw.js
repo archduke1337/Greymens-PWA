@@ -1,4 +1,4 @@
-const CACHE_VERSION = "greymens-v3";
+const CACHE_VERSION = "greymens-v4";
 const STATIC_ASSETS = ["/", "/offline.html", "/manifest.json", "/favicon.ico"];
 
 self.addEventListener("install", (event) => {
@@ -66,5 +66,49 @@ self.addEventListener("fetch", (event) => {
         .catch(() => cached);
       return cached || fetched;
     }),
+  );
+});
+
+// Web Push: the server posts { title, body, url }. Tapping focuses an open
+// club tab or opens the inbox — a push that strands the member is a dead end.
+self.addEventListener("push", (event) => {
+  let payload = { title: "Greymens Club", body: "", url: "/notifications" };
+
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {
+    // Unparseable payload: still show something tappable.
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Greymens Club", {
+      body: payload.body || "",
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/icon-192x192.png",
+      data: { url: payload.url || "/notifications" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const path = (event.notification.data && event.notification.data.url) || "/notifications";
+  const url = new URL(path, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windows) => {
+        for (const window of windows) {
+          if (window.url === url) return window.focus();
+        }
+        for (const window of windows) {
+          if (new URL(window.url).origin === self.location.origin) {
+            return window.navigate(url).then((window) => window.focus());
+          }
+        }
+        return self.clients.openWindow(url);
+      }),
   );
 });
