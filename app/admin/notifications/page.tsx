@@ -3,6 +3,7 @@
 import type { Notification } from "@/lib/types";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
@@ -316,7 +317,14 @@ export default function AdminNotificationsPage() {
             Notification Management
           </h1>
           <p className="text-default-500 mt-1 md:mt-2 text-sm md:text-base">
-            View and send system notifications
+            View and send system notifications ·{" "}
+            <Link
+              className="font-medium text-foreground underline underline-offset-4"
+              href="/admin/notifications/compose"
+            >
+              open the full composer
+            </Link>{" "}
+            for offices and hand-picked members
           </p>
         </div>
         <Button variant="primary" onPress={open}>

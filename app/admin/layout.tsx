@@ -188,7 +188,7 @@ const SECTION_GROUPS: Array<{ label: string; hrefs: string[] }> = [
       "/admin/sponsors",
     ],
   },
-  { label: "Engage", hrefs: ["/admin/notifications"] },
+  { label: "Engage", hrefs: ["/admin/notifications", "/admin/notifications/compose"] },
   {
     label: "Govern",
     hrefs: [
