@@ -3,6 +3,7 @@
 import type { Application, Profile, Department } from "@/lib/types";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -729,12 +730,12 @@ export default function AdminMembershipPage() {
                   {counts.approved} approved members
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a
+                  <Link
                     className="text-primary hover:underline"
                     href="/admin/membership/approved"
                   >
                     View all approved members
-                  </a>
+                  </Link>
                 </p>
               </div>
             </TabPanel>
@@ -746,12 +747,12 @@ export default function AdminMembershipPage() {
                   {counts.rejected} rejected applications
                 </p>
                 <p className="text-default-400 text-sm mt-1">
-                  <a
+                  <Link
                     className="text-primary hover:underline"
                     href="/admin/membership/rejected"
                   >
                     View all rejected applications
-                  </a>
+                  </Link>
                 </p>
               </div>
             </TabPanel>
@@ -761,12 +762,12 @@ export default function AdminMembershipPage() {
                 <p className="text-sm text-default-500 mb-4">
                   Registered accounts that never started the onboarding form.
                   Nudge them from{" "}
-                  <a
+                  <Link
                     className="text-primary hover:underline"
                     href="/admin/notifications"
                   >
                     notifications
-                  </a>{" "}
+                  </Link>{" "}
                   with the “Not onboarded” audience.
                   {unonboardedCapped &&
                     " Showing the first 300 — the rest follow the same pattern."}
