@@ -19,7 +19,9 @@ export const siteConfig = {
     { label: "Logout", href: "/logout" },
   ],
   links: {
-    discord: "https://discord.gg/6v89E3SaZT",
+    discord: "https://discord.gg/k2G5ReVHxX",
+    whatsapp: "https://whatsapp.com/channel/0029VbDw6doJJhzR3E8rm52U",
+    instagram: "https://www.instagram.com/greymens.club/",
     linkedin: "https://www.linkedin.com/company/greymen-s-club-adypu/",
   },
 };

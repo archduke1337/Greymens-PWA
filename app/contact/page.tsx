@@ -24,7 +24,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { LinkedinIcon } from "@/components/icons";
+import { LinkedinIcon, InstagramIcon, WhatsAppIcon } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 import { readApiError } from "@/lib/errorHandler";
 
@@ -44,6 +44,20 @@ const CHANNELS = [
     pace: "hello@greymens.club · replies in 2–3 working days",
     href: "mailto:hello@greymens.club",
     external: false,
+  },
+  {
+    Icon: WhatsAppIcon,
+    name: "WhatsApp channel",
+    pace: "One-way updates — events and results, no noise",
+    href: siteConfig.links.whatsapp,
+    external: true,
+  },
+  {
+    Icon: InstagramIcon,
+    name: "Instagram",
+    pace: "Photos from workshops and events",
+    href: siteConfig.links.instagram,
+    external: true,
   },
   {
     Icon: LinkedinIcon,

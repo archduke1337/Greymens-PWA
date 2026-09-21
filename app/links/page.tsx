@@ -240,9 +240,14 @@ const SECTIONS: LinkSection[] = [
         href: siteConfig.links.discord,
       },
       {
+        title: "WhatsApp channel",
+        blurb: "One-way updates — event alerts and results, no noise.",
+        href: siteConfig.links.whatsapp,
+      },
+      {
         title: "Instagram",
         blurb: "Photos from workshops, events, and the chaos between.",
-        href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh",
+        href: siteConfig.links.instagram,
       },
       {
         title: "LinkedIn",

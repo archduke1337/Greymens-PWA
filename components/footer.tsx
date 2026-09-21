@@ -10,6 +10,13 @@ import { useAuth } from "@/context/AuthContext";
 import { siteConfig } from "@/config/site";
 
 import { FooterSponsors } from "./footer-sponsors";
+import {
+  DiscordIcon,
+  InstagramIcon,
+  LinkedinIcon,
+  TwitterIcon,
+  WhatsAppIcon,
+} from "./icons";
 
 const CLUB_LINKS = [
   { href: "/about", label: "About" },
@@ -38,13 +45,15 @@ const TRUST_LINKS = [
 ];
 
 const SOCIALS = [
-  { label: "LinkedIn", href: siteConfig.links.linkedin },
+  { label: "Discord", href: siteConfig.links.discord, Icon: DiscordIcon },
+  { label: "WhatsApp", href: siteConfig.links.whatsapp, Icon: WhatsAppIcon },
   {
     label: "Instagram",
-    href: "https://www.instagram.com/greymens?igsh=bzhycW1rMG12Z2Vh",
+    href: siteConfig.links.instagram,
+    Icon: InstagramIcon,
   },
-  { label: "X", href: "https://twitter.com/GreymensADYPU" },
-  { label: "Discord", href: siteConfig.links.discord },
+  { label: "LinkedIn", href: siteConfig.links.linkedin, Icon: LinkedinIcon },
+  { label: "X", href: "https://twitter.com/GreymensADYPU", Icon: TwitterIcon },
 ];
 
 export const Footer = () => {
@@ -177,16 +186,18 @@ export const Footer = () => {
             © {new Date().getFullYear()} Greymens Club · Constitution v1.0 · In
             force
           </p>
-          <ul className="flex flex-wrap gap-x-5 gap-y-1">
-            {SOCIALS.map((social) => (
-              <li key={social.label}>
+          <ul className="flex flex-wrap items-center gap-2">
+            {SOCIALS.map(({ label, href, Icon }) => (
+              <li key={label}>
                 <a
-                  className="text-xs text-muted transition-colors hover:text-foreground"
-                  href={social.href}
+                  aria-label={`Greymens on ${label}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-default-200/70 text-muted transition-colors hover:border-foreground/30 hover:text-foreground"
+                  href={href}
                   rel="noopener noreferrer"
                   target="_blank"
+                  title={`Greymens on ${label}`}
                 >
-                  {social.label}
+                  <Icon size={17} />
                 </a>
               </li>
             ))}
