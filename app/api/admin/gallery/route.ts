@@ -188,14 +188,18 @@ export async function PATCH(request: NextRequest) {
           });
         }
 
-        await recordAudit({
-          request,
-          actor: authenticated.user,
-          action: `gallery.${String(action)}`,
-          entityType: "gallery_image",
-          entityId: id,
-          details: { action: String(action), bulk: imageIds.length > 1 },
-        });
+        try {
+          await recordAudit({
+            request,
+            actor: authenticated.user,
+            action: `gallery.${String(action)}`,
+            entityType: "gallery_image",
+            entityId: id,
+            details: { action: String(action), bulk: imageIds.length > 1 },
+          });
+        } catch (auditError) {
+          logError("Gallery audit failed (non-fatal):", auditError);
+        }
         decided.push(image);
       } catch (rowError) {
         failed.push({
