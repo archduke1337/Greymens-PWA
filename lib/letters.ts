@@ -16,8 +16,8 @@ export function welcomeLetter(data: {
 }): LetterData {
   return {
     template: "welcome",
-    subject: "Welcome to Greymens",
-    body: `Hi ${data.name},\n\nYou're in. Your application is approved${data.department ? `, starting in ${data.department}` : ""}.\n\nMembership number: ${data.membershipId}\nApproved: ${new Date().toLocaleDateString()}\n\nWhat now: come to the next session (see Events), join the Discord, and introduce yourself in your department channel. Member workshops, resources, and CTF teams are open to you from here.\n\nSee you at the next session.\nTeam Greymens`,
+    subject: "Congratulations — welcome to Greymens",
+    body: `Hi ${data.name},\n\nCongratulations — you're officially a Greymen.\n\nWe don't hand that out lightly. This club runs on its members: every workshop taught, every late-night CTF, every project on the shelf exists because members showed up and did the work. You earned your place among them, and we're proud to have you. Wear it well.\n\nMembership number: ${data.membershipId}\n${data.department ? `Starting in: ${data.department}\n` : ""}Approved: ${new Date().toLocaleDateString()}\n\nWhat now: come to the next session (see Events), join the Discord, and introduce yourself${data.department ? ` in the ${data.department} channel` : ""}. Member workshops, resources, and CTF teams are open to you from here.\n\nThis is your club now. Build something great with it.\n\nWith respect,\nTeam Greymens`,
     metadata: { membershipId: data.membershipId, department: data.department },
   };
 }

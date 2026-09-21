@@ -12,6 +12,7 @@ import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import OnboardingNudge from "@/components/OnboardingNudge";
 
 import { Providers } from "./providers";
 
@@ -66,6 +67,7 @@ export default function RootLayout({
                 </main>
                 <Footer />
               </div>
+              <OnboardingNudge />
               <Toaster />
             </PermissionProvider>
           </AuthProvider>
