@@ -114,12 +114,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     await authService.login(email, password);
-    await checkUser();
+    // The session now exists server-side, but the verify-read below can lose
+    // a race with session persistence and return null — leaving a valid
+    // session with a logged-out UI and no error (the classic "have to log
+    // in twice"). One delayed retry before giving up.
+    const current = await checkUser();
+
+    if (!current) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const retried = await checkUser();
+
+      if (!retried) throw new Error("Login succeeded but the session could not be verified. Please try again.");
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
     await authService.createAccount(email, password, name);
-    await checkUser();
+    const current = await checkUser();
+
+    if (!current) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const retried = await checkUser();
+
+      if (!retried) throw new Error("Account created but the session could not be verified. Try logging in.");
+    }
   };
 
   const loginWithGoogle = async () => {

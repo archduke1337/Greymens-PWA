@@ -31,6 +31,31 @@ function getSafeNext(next: string | null): string {
 function mapLoginError(err: unknown): string {
   const message = err instanceof Error ? err.message.toLowerCase() : "";
 
+  // Already user-facing (thrown by AuthContext after a verified session
+  // could not be read back): show verbatim instead of generic-mapping it.
+  if (
+    message.includes("could not be verified") ||
+    message.includes("try logging in")
+  ) {
+    return err instanceof Error ? err.message : "Please try again.";
+  }
+  if (
+    message.includes("blocked") ||
+    message.includes("suspended") ||
+    message.includes("deactivated")
+  ) {
+    return "This account has been blocked. Contact the club if you think this is a mistake.";
+  }
+  if (
+    message.includes("rate limit") ||
+    message.includes("ratelimited") ||
+    message.includes("too many")
+  ) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+  if (message.includes("not verified") || message.includes("verify")) {
+    return "Verify your email first — check your inbox for the link, then log in.";
+  }
   if (
     message.includes("invalid credential") ||
     message.includes("invalid email") ||

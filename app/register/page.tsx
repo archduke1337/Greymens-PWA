@@ -31,7 +31,15 @@ function getSafeNext(next: string | null): string {
 
 function mapRegisterError(err: unknown): string {
   const message = err instanceof Error ? err.message.toLowerCase() : "";
+  const raw = err instanceof Error ? err.message : "";
 
+  // Already user-facing (thrown by AuthContext): show verbatim.
+  if (
+    message.includes("could not be verified") ||
+    message.includes("try logging in")
+  ) {
+    return raw || "Please try again.";
+  }
   if (
     message.includes("already exists") ||
     message.includes("already in use") ||
@@ -47,6 +55,19 @@ function mapRegisterError(err: unknown): string {
     message.includes("load failed")
   ) {
     return "Network error. Check your connection and retry.";
+  }
+  if (
+    message.includes("rate limit") ||
+    message.includes("ratelimited") ||
+    message.includes("too many")
+  ) {
+    return "Too many attempts. Wait a minute and try again.";
+  }
+  // Password-policy rejections from the server ("Password must not be
+  // longer than…", "Password should not contain…") are already actionable
+  // instructions — pass them through instead of generic-mapping them.
+  if (message.includes("password")) {
+    return raw || "That password doesn't meet the requirements.";
   }
 
   return "Something went wrong. Please try again.";
