@@ -347,17 +347,30 @@ async function createTable(id, name, columns, indexes = []) {
 
 async function createBucket(id, name, maxSize, extensions, visibility = "public") {
   process.stdout.write(`  ${name}...`);
-  const bucketPermissions =
-    id === "resources"
-      ? // Resources need direct browser upload to bypass Vercel 4.5 MB proxy limit for 8+ MB PDFs.
-        // Keep fileSecurity:true so per-file perms still gate reads (owner vs members).
-        [
-          Permission.read(Role.users()),
-          Permission.create(Role.users()),
-          Permission.update(Role.users()),
-          Permission.delete(Role.users()),
-        ]
-      : [visibility === "members" ? Permission.read(Role.users()) : Permission.read(Role.any())];
+  // All buckets that proxy uploads through Vercel hit the 4.5 MB hard limit — even a
+  // 5 MB avatar or 10 MB gallery image 413s before reaching the route. Direct
+  // browser → Storage bypasses Vercel, but needs bucket create/update/delete for
+  // Role.users(). Keep fileSecurity:true so per-file perms still gate reads
+  // (owner vs members vs public) exactly as the server sets them.
+  const needsDirectUpload = new Set([
+    "resources",
+    "gallery-images",
+    "blog-images",
+    "profile-pictures",
+    "event-images",
+    "sponsor-logos",
+  ]).has(id);
+  const bucketPermissions = needsDirectUpload
+    ? [
+        Permission.read(Role.users()),
+        Permission.create(Role.users()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
+        // gallery/blog/event images are public reads after approval — keep
+        // Role.any() read so approved public files are world-readable via view URL
+        ...(id === "gallery-images" || id === "blog-images" || id === "event-images" ? [Permission.read(Role.any())] : []),
+      ]
+    : [visibility === "members" ? Permission.read(Role.users()) : Permission.read(Role.any())];
   try {
     await storage.createBucket({
       bucketId: id,
