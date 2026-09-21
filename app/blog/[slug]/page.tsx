@@ -132,7 +132,7 @@ export default function BlogDetailPage() {
         aria-label="Loading post"
         className="mx-auto w-full max-w-3xl space-y-5 px-4 py-10 sm:px-6"
       >
-        <div className="h-64 animate-pulse rounded-3xl bg-surface-secondary sm:h-80" />
+        <div className="h-60 animate-pulse rounded-3xl bg-surface-secondary sm:h-80" />
         <div className="h-8 w-3/4 animate-pulse rounded-full bg-surface-tertiary" />
         <div className="space-y-2.5">
           {[0, 1, 2, 3, 4].map((n) => (
@@ -213,7 +213,7 @@ export default function BlogDetailPage() {
         {blog.coverImage ? (
           <Image
             unoptimized
-            alt=""
+            alt={blog.title}
             className="h-60 w-full object-cover sm:h-80"
             height={320}
             src={blog.coverImage}
@@ -250,7 +250,7 @@ export default function BlogDetailPage() {
         <span className="flex items-center gap-2.5">
           <Avatar className="h-9 w-9">
             <AvatarImage
-              alt=""
+              alt={blog.authorName || "Author"}
               src={
                 blog.authorAvatar ||
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(blog.authorName)}`

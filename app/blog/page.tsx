@@ -75,18 +75,31 @@ export default function BlogPage() {
     }
 
     if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+
       filtered = filtered.filter(
         (blog) =>
-          blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (blog.tags ?? []).some((tag) =>
-            tag.toLowerCase().includes(searchQuery.toLowerCase()),
-          ),
+          blog.title.toLowerCase().includes(q) ||
+          blog.excerpt.toLowerCase().includes(q) ||
+          blog.content.toLowerCase().includes(q) ||
+          (blog.tags ?? []).some((tag) => tag.toLowerCase().includes(q)),
       );
     }
 
     setFilteredBlogs(filtered);
   };
+
+  const isBrowsing =
+    !searchQuery.trim() && selectedCategory === "all" && !error;
+  // Editorial hierarchy: when browsing unfiltered, the first featured post
+  // gets the lead slot and the rest fill the grid — every card the same
+  // size buries the best work.
+  const leadPost = isBrowsing
+    ? filteredBlogs.find((blog) => blog.featured)
+    : undefined;
+  const gridBlogs = leadPost
+    ? filteredBlogs.filter((blog) => blog.$id !== leadPost.$id)
+    : filteredBlogs;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -105,7 +118,7 @@ export default function BlogPage() {
         >
           {[0, 1, 2, 3, 4, 5].map((n) => (
             <Card key={n}>
-              <div className="h-44 animate-pulse bg-surface-secondary" />
+              <div className="h-52 animate-pulse bg-surface-secondary" />
               <Card.Content className="space-y-3 p-6">
                 <div className="h-4 w-3/4 animate-pulse rounded-full bg-surface-tertiary" />
                 <div className="h-3 w-full animate-pulse rounded-full bg-surface-secondary" />
@@ -157,27 +170,18 @@ export default function BlogPage() {
       <Card>
         <Card.Content className="space-y-2.5 p-6 sm:p-7">
           <h2 className="font-bold tracking-tight">
-            Welcome to the Greymens blog
+            Written by members, reviewed before it goes up
           </h2>
           <div className="max-w-3xl space-y-2.5 text-sm leading-relaxed text-muted">
             <p>
-              This is where members write down what they&apos;re learning —
-              workshop recaps, CTF write-ups, project notes, half-formed ideas
-              defended bravely. If it taught you something, it&apos;ll teach
-              someone else.
-            </p>
-            <p>
-              New here? Your first post doesn&apos;t need to be big. Explain one
-              thing you figured out this month, in plain words. The editorial
-              board reads everything before it goes live, and they&apos;ll help
-              with the rest.
+              Workshop recaps, CTF write-ups, project notes — if it taught you
+              something, it&apos;ll teach someone else. New here? Explain one
+              thing you figured out this month, in plain words; the editorial
+              board reads everything and helps with the rest.
             </p>
             <p className="text-foreground">
-              Write it down. Someone out there is stuck exactly where you were.
-            </p>
-            <p>
-              And it counts: every published post is recorded as contribution
-              toward Active Member standing. Writing is doing.
+              Every published post counts as contribution toward Active Member
+              standing. Writing is doing.
             </p>
           </div>
         </Card.Content>
@@ -197,7 +201,7 @@ export default function BlogPage() {
             <Input
               className="pl-9"
               id="blog-search"
-              placeholder="Search titles, excerpts, tags…"
+              placeholder="Search titles, excerpts, tags, content…"
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
@@ -304,20 +308,90 @@ export default function BlogPage() {
               ` in ${blogCategories.find((c) => c.value === selectedCategory)?.label ?? selectedCategory}`}
             {searchQuery && ` matching “${searchQuery}”`}
           </p>
+          {leadPost && (
+            <Link
+              className="group block rounded-3xl focus-visible:outline-2 focus-visible:outline-accent"
+              href={`/blog/${leadPost.slug}`}
+            >
+              <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-lg md:grid md:grid-cols-2">
+                <div className="relative h-56 overflow-hidden bg-surface-secondary sm:h-72 md:h-full md:min-h-[320px]">
+                  {leadPost.coverImage ? (
+                    <Image
+                      fill
+                      unoptimized
+                      alt={leadPost.title}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      src={leadPost.coverImage}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <Newspaper
+                        aria-hidden="true"
+                        className="h-12 w-12 text-muted"
+                      />
+                    </span>
+                  )}
+                  <div className="absolute left-4 top-4 flex gap-1.5">
+                    <Chip color="warning" size="sm" variant="primary">
+                      Featured
+                    </Chip>
+                    <Chip
+                      className="bg-black/55 text-white"
+                      size="sm"
+                      variant="primary"
+                    >
+                      {(leadPost.category || "other").replace("-", " ")}
+                    </Chip>
+                  </div>
+                </div>
+                <Card.Content className="flex flex-col justify-center space-y-4 p-6 sm:p-8">
+                  <h2 className="text-xl font-bold leading-tight tracking-tight transition-colors group-hover:text-accent sm:text-2xl">
+                    {leadPost.title}
+                  </h2>
+                  <p className="line-clamp-4 text-[15px] leading-relaxed text-muted">
+                    {leadPost.excerpt}
+                  </p>
+                  <span className="flex items-center gap-2 text-sm">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage
+                        alt={leadPost.authorName || "Author"}
+                        src={leadPost.authorAvatar}
+                      />
+                      <AvatarFallback>
+                        {leadPost.authorName?.charAt(0) || "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{leadPost.authorName}</span>
+                    <span className="text-muted">
+                      ·{" "}
+                      {leadPost.publishedAt
+                        ? formatDate(leadPost.publishedAt)
+                        : "Draft"}{" "}
+                      · {leadPost.readTime} min read
+                    </span>
+                  </span>
+                </Card.Content>
+              </Card>
+            </Link>
+          )}
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filteredBlogs.map((blog) => (
+            {gridBlogs.map((blog) => (
               <Link
                 key={blog.$id}
                 className="group rounded-3xl focus-visible:outline-2 focus-visible:outline-accent"
                 href={`/blog/${blog.slug}`}
               >
                 <Card className="h-full overflow-hidden transition-shadow duration-200 hover:shadow-lg">
-                  <div className="relative h-44 overflow-hidden bg-surface-secondary">
+                  <div className="relative h-52 overflow-hidden bg-surface-secondary">
                     {blog.coverImage ? (
                       <Image
                         fill
                         unoptimized
-                        alt=""
+                        alt={blog.title}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
                         loading="lazy"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -371,7 +445,10 @@ export default function BlogPage() {
                   <Card.Footer className="items-center justify-between px-5 pb-5">
                     <span className="flex min-w-0 items-center gap-2">
                       <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage alt="" src={blog.authorAvatar} />
+                        <AvatarImage
+                          alt={blog.authorName || "Author"}
+                          src={blog.authorAvatar}
+                        />
                         <AvatarFallback>
                           {blog.authorName?.charAt(0) || "A"}
                         </AvatarFallback>
