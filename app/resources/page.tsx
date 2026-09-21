@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { usePermissions } from "@/context/PermissionContext";
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { logError } from "@/lib/logger";
+import { storage, ID } from "@/lib/appwrite";
 
 const LAYERS = [
   { value: "all", label: "All" },
@@ -319,26 +320,62 @@ export default function ResourcesPage() {
 
     setUploading(true);
     try {
-      // The file and the record are both written by the server: the bucket and
-      // the resources table are closed to client writes.
-      const body = new FormData();
+      // Direct browser → Storage bypasses Vercel 4.5 MB proxy limit for 50 MB
+      // resources. Falls back to FormData proxy for small files if bucket perms
+      // haven't been reconciled.
+      let directFileId: string | null = null;
+      if (uploadFile) {
+        try {
+          const uploaded = await storage.createFile({
+            bucketId: "resources",
+            fileId: ID.unique(),
+            file: uploadFile,
+          });
+          directFileId = uploaded.$id;
+        } catch (directError) {
+          logError("Direct resource upload failed, falling back to proxy:", directError);
+          if (uploadFile.size > 4.5 * 1024 * 1024) {
+            toast.error("Direct upload failed — bucket permissions need reconciling. Run `node scripts/setup-appwrite.js` and redeploy.");
+            setUploading(false);
+            return;
+          }
+        }
+      }
 
-      body.set("title", uploadForm.title.trim());
-      body.set("description", uploadForm.description.trim());
-      body.set("category", uploadForm.category);
-      body.set("type", uploadForm.type);
-      body.set("tags", uploadForm.tags);
-      if (uploadForm.url.trim()) body.set("url", uploadForm.url.trim());
-      if (uploadForm.category === "department")
-        body.set("departmentId", uploadForm.departmentId);
-      if (uploadForm.category === "role")
-        body.set("requiredRole", uploadForm.requiredRole);
-      if (uploadFile) body.set("file", uploadFile);
-
-      const response = await fetch("/api/resources", {
-        method: "POST",
-        body,
-      });
+      const response = directFileId
+        ? await fetch("/api/resources", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              title: uploadForm.title.trim(),
+              description: uploadForm.description.trim(),
+              category: uploadForm.category,
+              type: uploadForm.type,
+              tags: uploadForm.tags,
+              url: uploadForm.url.trim() || undefined,
+              departmentId: uploadForm.category === "department" ? uploadForm.departmentId : undefined,
+              requiredRole: uploadForm.category === "role" ? uploadForm.requiredRole : undefined,
+              fileId: directFileId,
+            }),
+          })
+        : await fetch("/api/resources", {
+            method: "POST",
+            credentials: "include",
+            body: (() => {
+              const body = new FormData();
+              body.set("title", uploadForm.title.trim());
+              body.set("description", uploadForm.description.trim());
+              body.set("category", uploadForm.category);
+              body.set("type", uploadForm.type);
+              body.set("tags", uploadForm.tags);
+              if (uploadForm.url.trim()) body.set("url", uploadForm.url.trim());
+              if (uploadForm.category === "department") body.set("departmentId", uploadForm.departmentId);
+              if (uploadForm.category === "role") body.set("requiredRole", uploadForm.requiredRole);
+              if (uploadFile) body.set("file", uploadFile);
+              return body;
+            })(),
+          });
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
         resource?: { status?: string };
