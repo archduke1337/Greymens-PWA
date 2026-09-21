@@ -1,5 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
+import NextImage from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -242,6 +243,7 @@ export default function AdminLayout({
   const [verifyFailed, setVerifyFailed] = useState(false);
   // Badge per review queue for the sidebar. Keyed by REVIEW_QUEUES key.
   const [queueCounts, setQueueCounts] = useState<Record<string, number>>({});
+  const mobileNavRef = useRef<HTMLElement | null>(null);
   // The bootstrap admin-check fires at most once per sign-in: without the
   // guard, every permission refresh would re-fire it and bounce the shell.
   const adminCheckDoneRef = useRef<string | null>(null);
@@ -348,6 +350,16 @@ export default function AdminLayout({
     return () => controller.abort();
   }, [admitted, permLoading, pathname]);
 
+  // Keep the active pill visible in the mobile section nav: without this,
+  // deep sections (Audit Log, Governance) load scrolled out of sight with
+  // no hint they exist.
+  useEffect(() => {
+    if (admitted !== true) return;
+    mobileNavRef.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [admitted, pathname]);
+
   if (loading || permLoading || (admitted === null && !verifyFailed)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -424,9 +436,21 @@ export default function AdminLayout({
           movement, typeahead, and visible focus rings for free; Enter or
           click routes via onAction. */}
       <aside className="hidden w-72 shrink-0 rounded-3xl border border-default-200/70 bg-surface lg:sticky lg:top-5 lg:block lg:h-[calc(100vh-2.5rem)] lg:overflow-y-auto">
-        <div className="p-5 pb-3">
-          <h2 className="text-lg font-bold tracking-tight">Console</h2>
-          <p className="text-xs text-muted">Club Management</p>
+        <div className="flex items-center gap-3 p-5 pb-3">
+          <NextImage
+            alt=""
+            aria-hidden="true"
+            className="h-9 w-9 rounded-xl object-cover"
+            height={72}
+            src="/logo-eyes.png"
+            width={72}
+          />
+          <div>
+            <h2 className="text-[15px] font-bold leading-tight tracking-tight">
+              Console
+            </h2>
+            <p className="text-xs text-muted">Club management</p>
+          </div>
         </div>
         <ListBox
           aria-label="Console sections"
@@ -452,16 +476,21 @@ export default function AdminLayout({
                 return (
                   <ListBox.Item
                     key={section.href}
-                    className={`rounded-xl ${active ? "bg-accent/15 font-medium text-accent" : ""}`}
+                    aria-current={active ? "page" : undefined}
+                    className={`rounded-xl py-2 text-sm ${active ? "bg-accent/15 font-semibold text-accent" : "text-muted hover:text-foreground"}`}
                     id={section.href}
                     textValue={section.label}
                   >
+                    <span
+                      aria-hidden="true"
+                      className={`w-1 self-stretch rounded-full ${active ? "bg-accent" : "bg-transparent"}`}
+                    />
                     <section.Icon aria-hidden className="size-4 shrink-0" />
-                    <Label>{section.label}</Label>
+                    <Label className="truncate">{section.label}</Label>
                     {waiting > 0 && (
                       <span
                         aria-label={`${waiting} awaiting review`}
-                        className="ml-auto rounded-full bg-accent/20 px-1.5 text-[11px] font-semibold tabular-nums text-accent"
+                        className="ml-auto rounded-full bg-accent/20 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-accent"
                       >
                         {waiting > 99 ? "99+" : waiting}
                       </span>
@@ -507,6 +536,7 @@ export default function AdminLayout({
           <nav
             aria-label="Admin sections"
             className="flex gap-2 overflow-x-auto px-3 pb-3"
+            ref={mobileNavRef}
           >
             {visibleSections.map((section) => {
               const active = isActiveSection(pathname, section.href);
