@@ -1,9 +1,10 @@
 // components/OnboardingNudge.tsx
 // One-shot-per-session reminder for signed-in accounts that never submitted
 // the onboarding form. Mounted in the root layout so it follows the member
-// anywhere — except the form itself, auth pages, and the console, where it
-// would nag instead of help. Dismissal lasts the session; submitting the
-// form silences it forever (the server then reports exists: true).
+// anywhere members go — dashboard, console included — except the form
+// itself and auth pages, where it would nag instead of help. Dismissal
+// lasts the session; submitting the form silences it forever (the server
+// then reports exists: true).
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,7 +32,6 @@ const HIDDEN_PREFIXES = [
   "/forgot-password",
   "/reset-password",
   "/verify-email",
-  "/admin",
 ];
 
 export default function OnboardingNudge() {
