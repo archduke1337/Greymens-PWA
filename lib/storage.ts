@@ -46,3 +46,41 @@ export function getStorageFileViewUrl(
 
   return `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
 }
+
+/**
+ * Ownership check for a file the client uploaded directly and is now asking
+ * the route to adopt. Size/mime alone would let any signed-in user attach a
+ * fileId they learned (or guessed) inside a shared bucket as their own row.
+ *
+ * `$createdBy` is set by Appwrite on create; if the platform ever omits it we
+ * fail closed only when the uploader identity is present and mismatched —
+ * an absent field is treated as unknown and allowed (legacy files), while an
+ * explicit other-user id is rejected.
+ */
+export function isOwnedBy(file: unknown, userId: string): boolean {
+  if (!file || typeof file !== "object") return false;
+  const createdBy = (file as { $createdBy?: unknown }).$createdBy;
+
+  if (typeof createdBy !== "string" || !createdBy) return true;
+  return createdBy === userId;
+}
+
+/**
+ * Best-effort compensation after a direct upload whose row insert failed.
+ * Never throws: a leftover file is storage noise, a thrown cleanup would
+ * mask the original error.
+ */
+export async function safeDeleteFile(
+  storage: {
+    deleteFile: (bucketId: string, fileId: string) => Promise<unknown>;
+  },
+  bucketId: string,
+  fileId: string | null | undefined,
+): Promise<void> {
+  if (!fileId) return;
+  try {
+    await storage.deleteFile(bucketId, fileId);
+  } catch {
+    // Orphan is acceptable; the route already failed the user-facing path.
+  }
+}

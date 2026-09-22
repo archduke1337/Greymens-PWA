@@ -24,7 +24,9 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 import {
   MEMBER_FILE_PERMISSIONS,
   getStorageFileViewUrl,
+  isOwnedBy,
   ownerFilePermissions,
+  safeDeleteFile,
 } from "@/lib/storage";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -258,6 +260,16 @@ export async function PATCH(request: NextRequest) {
 
   if (!authenticated.user) return authenticated.response;
 
+  const limited = consumeRateLimit(
+    `resource-manage:${authenticated.user.$id}`,
+    60,
+    60 * 10 * 1000,
+  );
+
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
+
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const resourceId =
@@ -426,6 +438,16 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "resources.manage");
 
   if (!authenticated.user) return authenticated.response;
+
+  const limited = consumeRateLimit(
+    `resource-manage:${authenticated.user.$id}`,
+    60,
+    60 * 10 * 1000,
+  );
+
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     // The id travels on the query string — some proxies and CDNs drop DELETE
@@ -646,11 +668,14 @@ export async function POST(request: NextRequest) {
       // Direct browser → Storage path (bypasses Vercel 4.5 MB limit for 8.3 MB PDFs).
       // The file already exists; validate it and reconcile its per-file permissions
       // to the intended audience (owner-only for pending, members for approved).
-      let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string } | null = null;
+      let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string; $createdBy?: string } | null = null;
       try {
         existingFile = await storage.getFile(BUCKET_ID, directFileId);
       } catch {
         return fail("VALIDATION", "Uploaded file not found — please re-attach", 400);
+      }
+      if (!isOwnedBy(existingFile, authenticated.user.$id)) {
+        return fail("FORBIDDEN", "That file does not belong to this account", 403);
       }
       const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
       const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
@@ -679,31 +704,41 @@ export async function POST(request: NextRequest) {
       authenticated.user.name?.trim() ||
       authenticated.user.email ||
       authenticated.user.$id;
-    const resource = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.RESOURCES,
-      ID.unique(),
-      {
-        title,
-        description,
-        category,
-        layer: category,
-        type,
-        url: fileUrl ?? null,
-        fileId: fileId ?? null,
-        departmentId: category === "department" ? departmentId : null,
-        requiredRole: category === "role" ? requiredRole : null,
-        uploadedBy: authenticated.user.$id,
-        uploadedByName: uploaderName,
-        tags,
-        downloads: 0,
-        status: canModerate ? "approved" : "pending",
-        isActive: true,
-        ...(canModerate
-          ? { approvedBy: authenticated.user.$id, approvedAt: now }
-          : {}),
-      },
-    );
+    let resource: { $id: string };
+    try {
+      resource = (await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.RESOURCES,
+        ID.unique(),
+        {
+          title,
+          description,
+          category,
+          layer: category,
+          type,
+          url: fileUrl ?? null,
+          fileId: fileId ?? null,
+          departmentId: category === "department" ? departmentId : null,
+          requiredRole: category === "role" ? requiredRole : null,
+          uploadedBy: authenticated.user.$id,
+          uploadedByName: uploaderName,
+          tags,
+          downloads: 0,
+          status: canModerate ? "approved" : "pending",
+          isActive: true,
+          ...(canModerate
+            ? { approvedBy: authenticated.user.$id, approvedAt: now }
+            : {}),
+        },
+      )) as { $id: string };
+    } catch (insertError) {
+      // Server-created blob with no row is pure waste; a direct fileId stays
+      // for the client to re-submit with.
+      if (file instanceof File && fileId) {
+        await safeDeleteFile(storage, BUCKET_ID, fileId);
+      }
+      throw insertError;
+    }
 
     try {
       await recordAudit({

@@ -3,7 +3,7 @@ import { ID } from "appwrite";
 
 import { createServerStorage } from "@/lib/appwrite-server";
 import { requireCapability } from "@/lib/access-control";
-import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl } from "@/lib/storage";
+import { PUBLIC_FILE_PERMISSIONS, getStorageFileViewUrl, isOwnedBy } from "@/lib/storage";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
     if (directFileId) {
       let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string } | null = null;
       try { existingFile = await storage.getFile(BUCKET_ID, directFileId); } catch { return fail("VALIDATION", "Uploaded file not found — please re-attach", 400); }
+      if (!isOwnedBy(existingFile, authenticated.user.$id)) {
+        return fail("FORBIDDEN", "That file does not belong to this account", 403);
+      }
       const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
       const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
       if (size > MAX_FILE_SIZE || (mime && !ALLOWED_TYPES.has(mime))) {

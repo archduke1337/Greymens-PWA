@@ -10,9 +10,11 @@ import { requireMember } from "@/lib/server-auth";
 import { hasServerCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import {
-  MEMBER_FILE_PERMISSIONS,
   PUBLIC_FILE_PERMISSIONS,
   getStorageFileViewUrl,
+  isOwnedBy,
+  ownerFilePermissions,
+  safeDeleteFile,
 } from "@/lib/storage";
 import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { isHttpUrl } from "@/lib/validation";
@@ -144,6 +146,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { storage } = createServerStorage();
+  const { databases } = createServerDatabases();
+  // Files this request creates in Storage: tracked immediately so any failure
+  // after the first createFile (mid-loop throw, later validation return, or
+  // DB insert error) rolls them back instead of leaving orphaned blobs.
+  const serverUploadedIds: string[] = [];
+  let succeeded = false;
+
   try {
     const contentType = request.headers.get("content-type") || "";
     let title = "";
@@ -190,9 +200,6 @@ export async function POST(request: NextRequest) {
       imageUrlFromBody = text(form.get("imageUrl"), 500) || null;
     }
 
-    const { storage } = createServerStorage();
-    const { databases } = createServerDatabases();
-
     // Moderation authority is the capability, the same one /api/admin/gallery
     // requires. It used to be read here as the legacy `gallery_manager` power,
     // so a manager who held gallery.manage still had their own uploads queued
@@ -203,6 +210,9 @@ export async function POST(request: NextRequest) {
     const canModerate =
       (await hasServerCapability(authenticated.user.$id, "gallery.manage", undefined, authenticated.user.email)) ||
       (await hasServerCapability(authenticated.user.$id, "gallery.approve", undefined, authenticated.user.email));
+    // Pending bytes are the uploader's alone until a reviewer publishes them —
+    // same rule as resources. Moderators' own uploads publish immediately.
+    const pendingPerms = ownerFilePermissions(authenticated.user.$id);
     const uploaded: Array<{ url: string; fileId: string | null }> = [];
 
     for (const file of files) {
@@ -210,13 +220,10 @@ export async function POST(request: NextRequest) {
         BUCKET_ID,
         ID.unique(),
         file,
-        // A pending upload is members-only. Publishing it to the world at
-        // upload time made unreviewed images reachable by anyone who had the
-        // view URL, which is exactly what "review before publishing" is
-        // supposed to prevent. Approval flips this file to public.
-        canModerate ? PUBLIC_FILE_PERMISSIONS : MEMBER_FILE_PERMISSIONS,
+        canModerate ? PUBLIC_FILE_PERMISSIONS : pendingPerms,
       );
 
+      serverUploadedIds.push(stored.$id);
       uploaded.push({
         url: getStorageFileViewUrl(BUCKET_ID, stored.$id),
         fileId: stored.$id,
@@ -227,11 +234,15 @@ export async function POST(request: NextRequest) {
     if (directFileIds.length > 0) {
       if (directFileIds.length > MAX_FILES) return fail("VALIDATION", `Upload at most ${MAX_FILES} images at once`, 400);
       for (const fileId of directFileIds) {
-        let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string } | null = null;
+        let existingFile: { sizeOriginal?: number; mimeType?: string; $id?: string; $createdBy?: string } | null = null;
         try {
           existingFile = await storage.getFile(BUCKET_ID, fileId);
         } catch {
           return fail("VALIDATION", "Uploaded file not found — please re-attach", 400);
+        }
+        // Only the uploader may adopt a direct file into a gallery row.
+        if (!isOwnedBy(existingFile, authenticated.user.$id)) {
+          return fail("FORBIDDEN", "That file does not belong to this account", 403);
         }
         const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
         const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
@@ -239,7 +250,7 @@ export async function POST(request: NextRequest) {
           try { await storage.deleteFile(BUCKET_ID, fileId); } catch {}
           return fail("VALIDATION", "Unsupported file type or file exceeds 10MB", 400);
         }
-        const targetPerms = canModerate ? PUBLIC_FILE_PERMISSIONS : MEMBER_FILE_PERMISSIONS;
+        const targetPerms = canModerate ? PUBLIC_FILE_PERMISSIONS : pendingPerms;
         try { await storage.updateFile(BUCKET_ID, fileId, undefined, targetPerms); } catch (e) { logError("Gallery direct file perm update failed:", e); }
         uploaded.push({ url: getStorageFileViewUrl(BUCKET_ID, fileId), fileId });
       }
@@ -305,10 +316,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    succeeded = true;
     return ok({ images, image: images[0] }, 201);
   } catch (error) {
     logError("Gallery upload error:", error);
 
     return fail("INTERNAL", "Unable to upload image", 500);
+  } finally {
+    // Roll back every server-created blob on any non-success exit — including
+    // early validation returns after the upload loop. Direct-upload fileIds
+    // belong to the client and are never in serverUploadedIds.
+    if (!succeeded) {
+      for (const fileId of serverUploadedIds) {
+        await safeDeleteFile(storage, BUCKET_ID, fileId);
+      }
+    }
   }
 }

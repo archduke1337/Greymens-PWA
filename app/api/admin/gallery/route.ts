@@ -7,13 +7,15 @@ import {
 } from "@/lib/appwrite-server";
 import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import {
-  MEMBER_FILE_PERMISSIONS,
   PUBLIC_FILE_PERMISSIONS,
+  getStorageFileViewUrl,
+  ownerFilePermissions,
 } from "@/lib/storage";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { getAccountNames } from "@/lib/server-users";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -69,6 +71,15 @@ export async function PATCH(request: NextRequest) {
   ]);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `gallery-moderate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     const body = (await request.json()) as {
@@ -155,7 +166,9 @@ export async function PATCH(request: NextRequest) {
               permissions:
                 action === "approve"
                   ? PUBLIC_FILE_PERMISSIONS
-                  : MEMBER_FILE_PERMISSIONS,
+                  : // Rejected/pending bytes go back to the uploader alone —
+                    // not every signed-in account (MEMBER would re-open them).
+                    ownerFilePermissions(String(image.uploadedBy ?? "")),
             })
             .catch((error) => {
               logError("Gallery file permission update failed:", error);
@@ -230,6 +243,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "gallery.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `gallery-moderate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     const imageId = new URL(request.url).searchParams.get("imageId")?.trim();
@@ -237,7 +259,34 @@ export async function DELETE(request: NextRequest) {
     if (!imageId) return fail("VALIDATION", "imageId is required", 400);
     const { databases } = createServerDatabases();
 
+    // Read the row first: deleting the document without removing the storage
+    // object left public (or member-readable) blobs in the bucket forever.
+    let storageFileId = "";
+    try {
+      const image = await databases.getDocument(
+        DATABASE_ID,
+        COLLECTIONS.GALLERY,
+        imageId,
+      );
+      storageFileId = String(
+        (image as Record<string, unknown>).storageFileId ?? "",
+      );
+    } catch {
+      // Row already gone — still attempt storage cleanup below if we learn an
+      // id from the query string later; 404 surfaces from deleteDocument.
+    }
+
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.GALLERY, imageId);
+
+    if (storageFileId) {
+      const { storage } = createServerStorage();
+
+      await storage.deleteFile(BUCKET_ID, storageFileId).catch((error) => {
+        // Document is gone; a leftover file is logged, not fatal.
+        logError("Gallery storage delete failed (non-fatal):", error);
+      });
+    }
+
     await recordAudit({
       request,
       actor: authenticated.user,

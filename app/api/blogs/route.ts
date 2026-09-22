@@ -295,6 +295,15 @@ export async function PATCH(request: NextRequest) {
     const authenticated = await requireAuthenticatedUser(request);
 
     if (!authenticated.user) return authenticated.response;
+    if (
+      !consumeRateLimit(
+        `blog-edit:${authenticated.user.$id}`,
+        60,
+        10 * 60 * 1000,
+      ).allowed
+    ) {
+      return fail("RATE_LIMITED", "Too many requests", 429);
+    }
 
     const title = stringField(body.title, 255, true);
     const excerpt = stringField(body.excerpt, 500, true);
@@ -405,6 +414,15 @@ export async function PATCH(request: NextRequest) {
   const authenticated = await requireCapability(request, capability);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `blog-review:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   const reason =
     typeof body.reason === "string"
@@ -531,6 +549,15 @@ export async function DELETE(request: NextRequest) {
   const blogId = (request.nextUrl.searchParams.get("blogId") ?? "").trim();
 
   if (!blogId) return fail("VALIDATION", "blogId is required", 400);
+  if (
+    !consumeRateLimit(
+      `blog-delete:${authenticated.user.$id}`,
+      30,
+      60 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     const { databases, blog } = await loadBlog(blogId);
@@ -554,6 +581,22 @@ export async function DELETE(request: NextRequest) {
     }
 
     await databases.deleteDocument(DATABASE_ID, COLLECTIONS.BLOGS, blogId);
+
+    // Best-effort cover cleanup: extract the storage file id from the view URL
+    // so deleting a post does not leave an orphan blob in blog-images.
+    const coverImage = String(blog.coverImage ?? "");
+    const coverMatch = coverImage.match(
+      /\/storage\/buckets\/[^/]+\/files\/([^/?#]+)\//,
+    );
+
+    if (coverMatch) {
+      const { createServerStorage } = await import("@/lib/appwrite-server");
+      const { storage } = createServerStorage();
+
+      await storage.deleteFile("blog-images", coverMatch[1]).catch((error) => {
+        logError("Blog cover storage delete failed (non-fatal):", error);
+      });
+    }
 
     await recordAudit({
       request,

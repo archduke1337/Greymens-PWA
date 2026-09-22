@@ -11,9 +11,11 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/server-auth";
 import {
-  MEMBER_FILE_PERMISSIONS,
   PUBLIC_FILE_PERMISSIONS,
   getStorageFileViewUrl,
+  isOwnedBy,
+  ownerFilePermissions,
+  safeDeleteFile,
 } from "@/lib/storage";
 import { validateProfilePatch } from "@/lib/profile-fields";
 import { recordAudit } from "@/lib/server-audit";
@@ -28,6 +30,7 @@ const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_PROFILE_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
+  "image/gif",
   "image/webp",
 ]);
 
@@ -187,13 +190,13 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes("application/json")) {
       const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-      if (!body || typeof body.fileId !== "string" || !body.fileId.trim()) return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+      if (!body || typeof body.fileId !== "string" || !body.fileId.trim()) return fail("VALIDATION", "Invalid image. Use JPG, PNG, GIF, or WebP under 5MB.", 400);
       directFileId = body.fileId.trim().slice(0, 36);
     } else {
       const form = await request.formData();
       file = form.get("file");
       if (!(file instanceof File) || !ALLOWED_PROFILE_IMAGE_TYPES.has((file as File).type) || (file as File).size > MAX_PROFILE_IMAGE_SIZE) {
-        return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+        return fail("VALIDATION", "Invalid image. Use JPG, PNG, GIF, or WebP under 5MB.", 400);
       }
     }
 
@@ -209,20 +212,26 @@ export async function POST(request: NextRequest) {
       (existing as Record<string, unknown> | null)?.profileVisibility ??
         "public",
     );
+    // Non-public visibility keeps the avatar owner-readable only — MEMBER would
+    // let any signed-in account open a private member's picture via the URL.
     const perms =
       visibility === "public"
         ? PUBLIC_FILE_PERMISSIONS
-        : MEMBER_FILE_PERMISSIONS;
+        : ownerFilePermissions(authenticated.user.$id);
     let avatar: string;
     let newFileId: string;
+    let createdInThisRequest = false;
     if (directFileId) {
       let existingFile: { sizeOriginal?: number; mimeType?: string } | null = null;
       try { existingFile = await storage.getFile(PROFILE_IMAGE_BUCKET_ID, directFileId); } catch { return fail("VALIDATION", "Uploaded file not found — please re-attach", 400); }
+      if (!isOwnedBy(existingFile, authenticated.user.$id)) {
+        return fail("FORBIDDEN", "That file does not belong to this account", 403);
+      }
       const size = (existingFile as unknown as { sizeOriginal: number })?.sizeOriginal ?? 0;
       const mime = (existingFile as unknown as { mimeType: string })?.mimeType ?? "";
       if (size > MAX_PROFILE_IMAGE_SIZE || (mime && !ALLOWED_PROFILE_IMAGE_TYPES.has(mime))) {
         try { await storage.deleteFile(PROFILE_IMAGE_BUCKET_ID, directFileId); } catch {}
-        return fail("VALIDATION", "Invalid image. Use JPG, PNG, or WebP under 5MB.", 400);
+        return fail("VALIDATION", "Invalid image. Use JPG, PNG, GIF, or WebP under 5MB.", 400);
       }
       try { await storage.updateFile(PROFILE_IMAGE_BUCKET_ID, directFileId, undefined, perms); } catch (e) { logError("Profile direct file perm update failed:", e); }
       avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, directFileId);
@@ -236,23 +245,33 @@ export async function POST(request: NextRequest) {
       );
       avatar = getStorageFileViewUrl(PROFILE_IMAGE_BUCKET_ID, uploaded.$id);
       newFileId = uploaded.$id;
+      createdInThisRequest = true;
     }
-    const profile = existing
-      ? await databases.updateDocument(
-          DATABASE_ID,
-          COLLECTIONS.PROFILES,
-          existing.$id,
-          { avatar },
-        )
-      : await databases.createDocument(
-          DATABASE_ID,
-          COLLECTIONS.PROFILES,
-          ID.unique(),
-          {
-            userId: authenticated.user.$id,
-            avatar,
-          },
-        );
+
+    let profile: { $id: string };
+    try {
+      profile = (existing
+        ? await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTIONS.PROFILES,
+            existing.$id,
+            { avatar },
+          )
+        : await databases.createDocument(
+            DATABASE_ID,
+            COLLECTIONS.PROFILES,
+            ID.unique(),
+            {
+              userId: authenticated.user.$id,
+              avatar,
+            },
+          )) as { $id: string };
+    } catch (insertError) {
+      if (createdInThisRequest) {
+        await safeDeleteFile(storage, PROFILE_IMAGE_BUCKET_ID, newFileId);
+      }
+      throw insertError;
+    }
 
     // Best-effort cleanup: a leftover file is harmless, a failed upload is not.
     if (previousFileId && previousFileId !== newFileId) {
@@ -284,6 +303,15 @@ export async function PATCH(request: NextRequest) {
   if (!authenticated.user) return authenticated.response;
   if (RESTRICTED.has(await getMembershipStatus(authenticated.user))) {
     return fail("FORBIDDEN", "Forbidden", 403);
+  }
+  if (
+    !consumeRateLimit(
+      `profile-update:${authenticated.user.$id}`,
+      60,
+      60 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
   }
 
   try {
