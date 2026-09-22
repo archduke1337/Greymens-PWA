@@ -1077,6 +1077,7 @@ export default function AdminResourcesPage() {
                         </span>
                       </label>
                       <input
+                        accept=".pdf,.txt,.csv,.zip,.rar,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mp3"
                         className="block w-full text-sm text-default-600 file:mr-3 file:rounded-lg file:border file:border-default-300 file:bg-default-100 file:px-3 file:py-1.5 file:text-sm file:font-medium"
                         id="resource-file"
                         type="file"

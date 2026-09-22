@@ -145,16 +145,23 @@ export default function WriteBlogPage() {
 
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    // Validate file type — mirror the server allowlist (not any image/*).
+    const okTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ]);
+
+    if (!okTypes.has(file.type)) {
+      toast.error("Please select a JPG, PNG, GIF, or WebP image");
 
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+    // Validate file size (max 10MB — matches /api/blogs/image and the bucket)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
 
       return;
     }
@@ -503,7 +510,7 @@ export default function WriteBlogPage() {
                   <div>
                     <input
                       ref={fileInputRef}
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       aria-label="Upload cover image"
                       className="sr-only"
                       id="cover-image-upload"

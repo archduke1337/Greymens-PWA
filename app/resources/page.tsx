@@ -80,11 +80,24 @@ const UPLOAD_ROLES = [
   { value: "dev", label: "Developers" },
 ] as const;
 
+// Mirror /api/resources ALLOWED_TYPES so the picker and the server agree.
 const ALLOWED_FILE_TYPES = new Set([
   "application/pdf",
   "text/plain",
   "text/csv",
   "application/zip",
+  "application/x-zip-compressed",
+  "application/x-rar-compressed",
+  "application/vnd.rar",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "audio/mpeg",
+  "audio/mp3",
 ]);
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
@@ -1023,7 +1036,7 @@ export default function ResourcesPage() {
                       </span>
                     </label>
                     <input
-                      accept=".pdf,.txt,.csv,.zip"
+                      accept=".pdf,.txt,.csv,.zip,.rar,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.mp3"
                       className="w-full text-sm text-default-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
                       id="resource-file"
                       type="file"
