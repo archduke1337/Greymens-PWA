@@ -7,6 +7,7 @@ import { requireCapability } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
 import { getAccountNames } from "@/lib/server-users";
 import { isRecord } from "@/lib/validation";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -121,6 +122,15 @@ export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "designations.assign");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `designation-assign:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   let body: unknown;
 
@@ -226,6 +236,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "designations.assign");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `designation-assign:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   const userId = request.nextUrl.searchParams.get("userId")?.trim() ?? "";
   const designationId =

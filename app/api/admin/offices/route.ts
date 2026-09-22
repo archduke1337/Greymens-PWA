@@ -169,6 +169,15 @@ export async function PATCH(request: NextRequest) {
   );
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `office-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as {
       assignmentId?: unknown;

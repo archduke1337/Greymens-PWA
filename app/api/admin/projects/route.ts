@@ -6,6 +6,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -150,6 +151,15 @@ export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "projects.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-project-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const fields = pickProjectFields(body);
@@ -215,6 +225,15 @@ export async function PATCH(request: NextRequest) {
       : await requireCapability(request, "projects.manage");
 
     if (!authenticated.user) return authenticated.response;
+    if (
+      !consumeRateLimit(
+        `admin-project-mutate:${authenticated.user.$id}`,
+        60,
+        10 * 60 * 1000,
+      ).allowed
+    ) {
+      return fail("RATE_LIMITED", "Too many requests", 429);
+    }
 
     // Review decisions ride the same endpoint as metadata edits: approve or
     // reject a member proposal, tell the proposer (in-app + mail), audit it.
@@ -381,6 +400,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "projects.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-project-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const projectId = new URL(request.url).searchParams
       .get("projectId")

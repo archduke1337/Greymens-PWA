@@ -882,6 +882,15 @@ export async function PATCH(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `notification-update:${authenticated.user.$id}`,
+      120,
+      60 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   let body: unknown;
 
@@ -956,6 +965,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `notification-delete:${authenticated.user.$id}`,
+      120,
+      60 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   const notificationId = readOptionalString(
     request.nextUrl.searchParams.get("id"),

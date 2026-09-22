@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { getAuthenticatedUser, isAdminUser } from "@/lib/server-auth";
+import { consumeRateLimit, getClientAddress } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 
 /**
@@ -13,6 +14,15 @@ import { ok, fail } from "@/lib/api";
  * Admin identity is now resolved from the verified session only.
  */
 export async function POST(request: NextRequest) {
+  if (
+    !consumeRateLimit(
+      `admin-check:${getClientAddress(request)}`,
+      60,
+      60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   const user = await getAuthenticatedUser(request);
 
   if (!user) {

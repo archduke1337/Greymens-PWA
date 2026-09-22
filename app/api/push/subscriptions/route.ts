@@ -155,6 +155,16 @@ export async function DELETE(request: NextRequest) {
 
   if (!authenticated.user) return authenticated.response;
 
+  const limited = consumeRateLimit(
+    `push:unsubscribe:${authenticated.user.$id}`,
+    60,
+    60 * 60 * 1000,
+  );
+
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
+
   const endpoint = (request.nextUrl.searchParams.get("endpoint") ?? "").trim();
 
   if (!endpoint) {

@@ -172,6 +172,15 @@ export async function PATCH(request: NextRequest) {
   ]);
 
   if (!authenticated.user) return authenticated.response;
+  const limited = consumeRateLimit(
+    `security-activity-decide:${authenticated.user.$id}`,
+    60,
+    60 * 10 * 1000,
+  );
+
+  if (!limited.allowed) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as {
       activityId?: unknown;

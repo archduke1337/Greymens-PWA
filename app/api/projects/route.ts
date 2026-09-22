@@ -249,6 +249,15 @@ export async function PATCH(request: NextRequest) {
   const authenticated = await requireAuthenticatedUser(request);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `project-edit:${authenticated.user.$id}`,
+      30,
+      60 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   let body: unknown;
 

@@ -10,6 +10,7 @@ import { MEMBER_FILE_PERMISSIONS, ownerFilePermissions } from "@/lib/storage";
 import { requireAnyCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -70,6 +71,15 @@ export async function PATCH(request: NextRequest) {
   ]);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `resource-moderate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     const body = (await request.json()) as {

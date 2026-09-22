@@ -6,6 +6,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -135,6 +136,15 @@ export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "sponsors.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-sponsor-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const fields = pickSponsorFields(body);
@@ -195,6 +205,15 @@ export async function PATCH(request: NextRequest) {
       : await requireCapability(request, "sponsors.manage");
 
     if (!authenticated.user) return authenticated.response;
+    if (
+      !consumeRateLimit(
+        `admin-sponsor-mutate:${authenticated.user.$id}`,
+        60,
+        10 * 60 * 1000,
+      ).allowed
+    ) {
+      return fail("RATE_LIMITED", "Too many requests", 429);
+    }
 
     // Review decisions ride the same endpoint as edits (projects/gallery
     // model): approve or reject a member proposal, then tell the submitter
@@ -360,6 +379,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "sponsors.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-sponsor-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const sponsorId = new URL(request.url).searchParams
       .get("sponsorId")

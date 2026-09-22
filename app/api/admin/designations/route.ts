@@ -11,6 +11,7 @@ import {
   LEGACY_CAPABILITY_ALIASES,
 } from "@/lib/access-control";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { logError } from "@/lib/logger";
 
@@ -169,6 +170,15 @@ export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "designations.assign");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `designation-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const validationError = validate(body);
@@ -233,6 +243,15 @@ export async function PATCH(request: NextRequest) {
   const authenticated = await requireCapability(request, "designations.assign");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `designation-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const designationId =
@@ -296,6 +315,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "designations.assign");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `designation-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const designationId = new URL(request.url).searchParams
       .get("designationId")

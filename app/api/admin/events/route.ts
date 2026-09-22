@@ -7,6 +7,7 @@ import { COLLECTIONS, DATABASE_ID } from "@/lib/database";
 import { requireAnyCapability, requireCapability } from "@/lib/access-control";
 import { dispatchNotification } from "@/lib/notify";
 import { recordAudit } from "@/lib/server-audit";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { ok, fail } from "@/lib/api";
 import { isHttpUrl } from "@/lib/validation";
 import { logError } from "@/lib/logger";
@@ -63,6 +64,15 @@ export async function POST(request: NextRequest) {
   const authenticated = await requireCapability(request, "events.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-event-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
@@ -203,6 +213,15 @@ export async function PATCH(request: NextRequest) {
   ]);
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-event-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     const body = (await request.json()) as {
       eventId?: unknown;
@@ -473,6 +492,15 @@ export async function DELETE(request: NextRequest) {
   const authenticated = await requireCapability(request, "events.manage");
 
   if (!authenticated.user) return authenticated.response;
+  if (
+    !consumeRateLimit(
+      `admin-event-mutate:${authenticated.user.$id}`,
+      60,
+      10 * 60 * 1000,
+    ).allowed
+  ) {
+    return fail("RATE_LIMITED", "Too many requests", 429);
+  }
   try {
     // Query string is primary — some proxies/CDNs drop DELETE bodies. Keep
     // JSON-body fallback for older clients.
