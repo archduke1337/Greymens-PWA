@@ -331,6 +331,12 @@ export async function getMembershipStatus(user: AppwriteUser): Promise<string> {
   return resolved ?? "account";
 }
 
+/**
+ * True for statuses that unlock member-facing resources/content.
+ *
+ * `lead`/`head` remain accepted so legacy resource `requiredRole` rows and any
+ * older data still resolve; the status ladder itself no longer produces them.
+ */
 export function isMemberStatus(status: string): boolean {
   return ["member", "core_member", "lead", "head", "admin", "dev"].includes(
     status,

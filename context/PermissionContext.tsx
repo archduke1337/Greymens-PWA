@@ -58,14 +58,15 @@ interface PermissionContextType {
   refresh: () => Promise<void>;
 }
 
+// Server resolveMembershipStatus never emits `lead`/`head` — those tiers were
+// folded into capabilities long ago. Keeping them here made isRoleOrAbove
+// compare against slots the server cannot return. Order is still ascending.
 const ROLE_HIERARCHY: MembershipStatus[] = [
   "no_account",
   "account",
   "applicant",
   "member",
   "core_member",
-  "lead",
-  "head",
   "admin",
   "dev",
 ];

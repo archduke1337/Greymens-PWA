@@ -6,6 +6,7 @@ import { ArrowRight, Inbox } from "lucide-react";
 import { Button, Card, CardContent, Chip, Spinner } from "@heroui/react";
 
 import { logError } from "@/lib/logger";
+import { readApiError } from "@/lib/errorHandler";
 
 interface PendingItem {
   id: string;
@@ -50,10 +51,16 @@ export default function PendingOverviewPage() {
         credentials: "include",
       });
 
-      if (!response.ok) throw new Error("Unable to load pending work");
       const payload = (await response.json().catch(() => null)) as {
         queues?: QueueGroup[];
+        error?: unknown;
       } | null;
+
+      if (!response.ok) {
+        throw new Error(
+          readApiError(payload, "Unable to load pending work"),
+        );
+      }
 
       setGroups((payload?.queues ?? []).filter((g) => g.items.length > 0));
     } catch (error) {

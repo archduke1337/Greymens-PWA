@@ -565,3 +565,8 @@ export const REVIEW_QUEUES: Array<{
     capabilities: ["sponsors.approve", "sponsors.manage"],
   },
 ];
+
+/** Union of every capability that can open at least one review queue. */
+export const REVIEW_QUEUE_CAPABILITIES: Capability[] = [
+  ...new Set(REVIEW_QUEUES.flatMap((queue) => queue.capabilities)),
+];

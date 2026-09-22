@@ -66,16 +66,23 @@ function activeDate(expiresAt: unknown): boolean {
   );
 }
 
-// Bootstrap admin email lookup — cached per request burst so repeated
-// capability checks for the same user don't hammer the Users API.
-const bootstrapEmailCache = new Map<string, string | null>();
+// Bootstrap admin email lookup — cached briefly so repeated capability checks
+// in one burst don't hammer the Users API, but a rotated ADMIN_EMAILS list or
+// an email change is visible within TTL instead of lasting until cold start.
+// Failures are NOT cached past the short TTL: a transient Users-API blip must
+// not pin null until the next deploy.
+const BOOTSTRAP_EMAIL_TTL_MS = 60_000;
+const bootstrapEmailCache = new Map<string, { email: string | null; at: number }>();
 async function getBootstrapEmail(userId: string): Promise<string | null> {
-  if (bootstrapEmailCache.has(userId)) return bootstrapEmailCache.get(userId)!;
+  const cached = bootstrapEmailCache.get(userId);
+  if (cached && Date.now() - cached.at < BOOTSTRAP_EMAIL_TTL_MS) {
+    return cached.email;
+  }
   const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
   const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
   if (!endpoint || !projectId || !apiKey) {
-    bootstrapEmailCache.set(userId, null);
+    bootstrapEmailCache.set(userId, { email: null, at: Date.now() });
     return null;
   }
   try {
@@ -83,10 +90,11 @@ async function getBootstrapEmail(userId: string): Promise<string | null> {
     const users = new Users(client);
     const user = await users.get(userId);
     const email = typeof user.email === "string" ? user.email : null;
-    bootstrapEmailCache.set(userId, email);
+    bootstrapEmailCache.set(userId, { email, at: Date.now() });
     return email;
   } catch {
-    bootstrapEmailCache.set(userId, null);
+    // Short negative cache only — see TTL note above.
+    bootstrapEmailCache.set(userId, { email: null, at: Date.now() });
     return null;
   }
 }

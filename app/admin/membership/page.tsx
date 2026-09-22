@@ -56,6 +56,7 @@ import {
 
 import { getErrorMessage, readApiError } from "@/lib/errorHandler";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/context/PermissionContext";
 import { ApplicantDetails } from "@/components/admin/ApplicantDetails";
 import { logError } from "@/lib/logger";
 
@@ -70,7 +71,16 @@ interface UnonboardedContact {
 
 export default function AdminMembershipPage() {
   const { user, loading: authLoading } = useAuth();
+  const { hasCapability, loading: permLoading } = usePermissions();
   const router = useRouter();
+  // Client-side gate mirrors requireCapability on the API: without this, any
+  // shell-admitted user (e.g. events.create only) lands here and 403s on
+  // every fetch. Server still enforces — this is UX, not security.
+  const canView =
+    hasCapability("membership.view_applications") ||
+    hasCapability("membership.approve") ||
+    hasCapability("membership.reject") ||
+    hasCapability("*");
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -146,14 +156,15 @@ export default function AdminMembershipPage() {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || permLoading) return;
     if (!user) {
       router.push("/login");
 
       return;
     }
+    if (!canView) return;
     loadData();
-  }, [user, authLoading, router, loadData]);
+  }, [user, authLoading, permLoading, canView, router, loadData]);
 
   /**
    * Accounts that registered but never started the onboarding form. Loaded
@@ -191,9 +202,10 @@ export default function AdminMembershipPage() {
   }, []);
 
   useEffect(() => {
-    if (!user || authLoading) return;
+    if (!user || authLoading || permLoading) return;
+    if (!canView) return;
     void loadUnonboarded();
-  }, [user, authLoading, loadUnonboarded]);
+  }, [user, authLoading, permLoading, canView, loadUnonboarded]);
 
   const getFilteredUnonboarded = () => {
     const q = searchQuery.trim().toLowerCase();
@@ -333,7 +345,7 @@ export default function AdminMembershipPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || permLoading || (canView && loading)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div
@@ -343,6 +355,28 @@ export default function AdminMembershipPage() {
         >
           <Spinner size="lg" />
           <p className="text-default-500">Loading membership queue...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canView) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4 max-w-md px-4">
+          <ShieldCheckIcon
+            aria-hidden
+            className="w-12 h-12 text-default-300 mx-auto"
+          />
+          <h1 className="text-xl font-semibold text-foreground">
+            Membership queue unavailable
+          </h1>
+          <p className="text-default-500 text-sm">
+            You need a membership review capability to open this page.
+          </p>
+          <Link className="text-primary hover:underline" href="/dashboard">
+            Back to dashboard
+          </Link>
         </div>
       </div>
     );

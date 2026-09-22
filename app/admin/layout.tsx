@@ -256,6 +256,19 @@ export default function AdminLayout({
         return;
       }
 
+      // Restricted accounts never enter the console, even if stale role rows
+      // still grant capabilities — mirrors requireAnyCapability's ban check.
+      const restricted =
+        status === "banned" ||
+        status === "suspended" ||
+        status === "deactivated";
+
+      if (restricted) {
+        router.push(`/unauthorized?from=${encodeURIComponent(pathname)}`);
+
+        return;
+      }
+
       // Option B admission: any server-resolved capability granting at least
       // one section, or admin tier ("*" covers everything). hasCapability is
       // the only authority check left — the legacy resolver that used to sit

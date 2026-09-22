@@ -3,7 +3,7 @@
  * Offices, charter metadata, membership categories, principles, plus RBAC page mapping.
  */
 
-import { OFFICE_CAPABILITIES } from "./capabilities";
+import { OFFICE_CAPABILITIES, REVIEW_QUEUE_CAPABILITIES } from "./capabilities";
 
 export interface GovernanceOffice {
   id: string;
@@ -543,12 +543,14 @@ export const GOVERNED_PAGES: GovernedPage[] = [
   },
   {
     // One screen for everything waiting on a decision across the queues the
-    // caller can act on — the capability union is derived from REVIEW_QUEUES,
-    // so this entry is documentation, not a second gate to drift from.
+    // caller can act on — same capability union as REVIEW_QUEUES / sidebar
+    // badges / GET /api/admin/pending. Listed with every queue-cap so a
+    // reviewer who can act on blogs (etc.) still sees this destination in
+    // AccessCard, not only presidents.
     href: "/admin/pending",
     label: "Awaiting review (all queues)",
     office: "president",
-    capabilities: ["governance.manage"],
+    capabilities: REVIEW_QUEUE_CAPABILITIES,
   },
   {
     href: "/admin/events/create",
