@@ -130,7 +130,11 @@ export async function GET(request: NextRequest) {
       [Query.equal("userId", [authenticated.user.$id]), Query.limit(1)],
     );
 
-    return ok({ exists: applications.documents.length > 0 });
+    const status = applications.documents[0]?.status ?? null;
+
+    // exists covers every status — pending included. A submitted form is a
+    // submitted form; review outcome must never re-trigger the nudge.
+    return ok({ exists: applications.documents.length > 0, status });
   } catch (error) {
     logError("Onboarding status error:", error);
 
