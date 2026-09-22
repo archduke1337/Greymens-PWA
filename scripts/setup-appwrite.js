@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // ============================================================
 // Greymens Appwrite Setup Script (Node.js SDK)
-// Creates: 29 tables, their indexes, and 7 storage buckets.
+// Creates: 31 tables, their indexes, and 7 storage buckets.
 // Run: npm run db:setup
 //
-// Permissions model: catalog tables (events, blogs, departments, ...) are
-// public-read; every identity, membership, ticket, notification, audit and
-// governance table is server-only. All writes go through authenticated API
-// routes, never through the browser SDK.
+// Permissions model: every table is server-only (API key). The browser SDK
+// never queries TablesDB — pages read through /api/* which re-checks session
+// and capabilities. Public pages use public API routes, not public table read.
+// Buckets keep Role.users() create for direct upload past Vercel's 4.5MB limit.
 // ============================================================
 
 const fs = require("fs");
@@ -61,9 +61,17 @@ const storage = new Storage(client);
 let ok = 0;
 let fail = 0;
 
-// Catalog tables are intentionally public-read: they back the public pages and
-// hold no personal data.
-const PUBLIC_READ_TABLES = new Set([
+// Table permissions: every table is server-only.
+//
+// The app no longer reads TablesDB from the browser (pages use /api/* only).
+// Keeping Role.any()/Role.users() read on catalog or identity tables would
+// still expose draft/pending rows to anyone with the endpoint + project id,
+// because row security is off. Fail closed: no client document permissions.
+//
+// `push_subscriptions` and all other tables land here explicitly — no
+// unclassified fallback path.
+const SERVER_ONLY_TABLES = new Set([
+  // Public catalog (served by API routes with status filtering)
   "events",
   "projects",
   "departments",
@@ -72,16 +80,7 @@ const PUBLIC_READ_TABLES = new Set([
   "event_types",
   "blogs",
   "sponsors",
-]);
-
-// Tables that member/moderator pages still read through the browser SDK.
-// Authenticated read only; never world-readable and never client-writable.
-//
-// WARNING — this is a temporary concession, not a safe end state: `Role.users()`
-// means any signed-in account can read every row, including rows belonging to
-// other members. Each table here is a candidate for the API migration listed in
-// docs/ACCESS_MODEL.md, after which it should move to SERVER_ONLY_TABLES.
-const AUTHENTICATED_READ_TABLES = new Set([
+  // Authenticated-read candidates (previously Role.users() — temporary)
   "event_type_data",
   "profiles",
   "applications",
@@ -93,19 +92,8 @@ const AUTHENTICATED_READ_TABLES = new Set([
   "ticket_verifications",
   "resources",
   "approval_workflows",
-]);
-
-// Tables that are only ever touched by server API routes. No client read and no
-// client write.
-//
-// `gallery` lives here even though the public gallery page renders its rows:
-// the page reads through GET /api/gallery (admin client, approved + active
-// only). Table-level public read would expose pending/rejected submissions to
-// anyone with the endpoint, since row security is off.
-const SERVER_ONLY_TABLES = new Set([
+  // Previously server-only
   "gallery",
-  // Registrations are written and read only through /api/events/register and
-  // the admin queue, which scope every read to the session owner or the door.
   "registrations",
   "role_templates",
   "role_assignments",
@@ -118,17 +106,12 @@ const SERVER_ONLY_TABLES = new Set([
   // the database: no client permissions at all, writes only through a
   // capability-gated route, and every change is audited.
   "user_roles",
-  // Audit records name specific accounts and actions. They are written and read
-  // only through /api/audit, which derives the actor from the verified session.
   "audit_logs",
-  // One row per recipient. Read and written only through /api/notifications,
-  // which scopes member reads to the session owner.
   "notifications",
+  "push_subscriptions",
 ]);
 
 function tablePermissions(id) {
-  if (PUBLIC_READ_TABLES.has(id)) return [Permission.read(Role.any())];
-  if (AUTHENTICATED_READ_TABLES.has(id)) return [Permission.read(Role.users())];
   if (SERVER_ONLY_TABLES.has(id)) return [];
   // Unclassified table: fail closed and make the omission obvious.
   console.warn(`    ! ${id} has no permission classification; defaulting to server-only`);
@@ -357,8 +340,6 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
     "gallery-images",
     "blog-images",
     "profile-pictures",
-    "event-images",
-    "sponsor-logos",
   ]).has(id);
   const bucketPermissions = needsDirectUpload
     ? [
@@ -366,9 +347,9 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
         Permission.create(Role.users()),
         Permission.update(Role.users()),
         Permission.delete(Role.users()),
-        // gallery/blog/event images are public reads after approval — keep
+        // gallery/blog images are public reads after approval — keep
         // Role.any() read so approved public files are world-readable via view URL
-        ...(id === "gallery-images" || id === "blog-images" || id === "event-images" ? [Permission.read(Role.any())] : []),
+        ...(id === "gallery-images" || id === "blog-images" ? [Permission.read(Role.any())] : []),
       ]
     : [visibility === "members" ? Permission.read(Role.users()) : Permission.read(Role.any())];
   try {
@@ -1114,14 +1095,11 @@ async function createBucket(id, name, maxSize, extensions, visibility = "public"
   // ===== BUCKETS =====
   console.log("\n\x1b[36m  Buckets:\x1b[0m");
 
-  await createBucket("event-images", "Event Images", 10 * MB, ["jpg","jpeg","png","gif","webp"]);
-  await createBucket("sponsor-logos", "Sponsor Logos", 5 * MB, ["jpg","jpeg","png","svg","webp"]);
   await createBucket("blog-images", "Blog Images", 10 * MB, ["jpg","jpeg","png","gif","webp"]);
   await createBucket("profile-pictures", "Profile Pictures", 5 * MB, ["jpg","jpeg","png","gif","webp"]);
   await createBucket("gallery-images", "Gallery Images", 10 * MB, ["jpg","jpeg","png","gif","webp"]);
   // Learning resources are gated content: the API already requires membership.
   await createBucket("resources", "Resources", 50 * MB, ["pdf","doc","docx","xls","xlsx","ppt","pptx","zip","rar","txt","csv","mp4","mp3"], "members");
-  await createBucket("general", "General Storage", 50 * MB, ["jpg","jpeg","png","gif","webp","pdf","doc","docx"]);
 
   // ===== SUMMARY =====
   console.log("\n\x1b[35m============================================\x1b[0m");

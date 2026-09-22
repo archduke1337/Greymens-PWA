@@ -37,7 +37,6 @@ vi.mock("@/lib/appwrite", () => ({
     eventsCollectionId: "events",
     registrationsCollectionId: "registrations",
     projectsCollectionId: "projects",
-    eventImagesBucketId: "event-images",
   },
 }));
 

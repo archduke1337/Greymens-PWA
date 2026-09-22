@@ -59,8 +59,12 @@ const nextConfig = {
       bodySizeLimit: "50mb",
     },
   },
-  // Allow large resource uploads (Vercel's default 4.5 MB would 413 any
-  // file >4.5 MB before it even reaches the route handler).
+  // NOTE: `api.bodyParser.sizeLimit` only applies to the Pages Router
+  // (/pages/api). These uploads are App Router route handlers; the real
+  // request-body ceiling on Vercel is ~4.5 MB, which is why every upload
+  // path prefers browser → Storage direct upload with a tiny JSON fileId
+  // adoption (FormData proxy remains only as a ≤4.5 MB fallback).
+  // Kept for any future Pages handlers; harmless otherwise.
   api: {
     bodyParser: {
       sizeLimit: "50mb",

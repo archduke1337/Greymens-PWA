@@ -8,7 +8,6 @@ const {
   eventsCollectionId: EVENTS_COLLECTION_ID,
   registrationsCollectionId: REGISTRATIONS_COLLECTION_ID,
   projectsCollectionId: PROJECTS_COLLECTION_ID,
-  eventImagesBucketId: EVENT_IMAGES_BUCKET_ID,
 } = APPWRITE_CONFIG;
 
 export {
@@ -16,7 +15,6 @@ export {
   EVENTS_COLLECTION_ID,
   REGISTRATIONS_COLLECTION_ID,
   PROJECTS_COLLECTION_ID,
-  EVENT_IMAGES_BUCKET_ID,
 };
 
 // Re-export types for backward compatibility with existing imports

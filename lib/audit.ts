@@ -1,5 +1,7 @@
 import type { AuditLog } from "./types";
 
+import { readApiError } from "./errorHandler";
+
 /**
  * Audit records are written server-side only (`recordAudit` in
  * lib/server-audit.ts writes direct to the table) and read through
@@ -73,7 +75,7 @@ async function fetchAuditLogs(filters: AuditLogFilters): Promise<AuditLogPage> {
     (Partial<AuditLogPage> & { error?: string }) | null;
 
   if (!response.ok) {
-    throw new Error(payload?.error || "Failed to load audit logs");
+    throw new Error(readApiError(payload, "Failed to load audit logs"));
   }
 
   return {

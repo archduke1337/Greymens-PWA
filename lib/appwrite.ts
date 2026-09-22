@@ -105,11 +105,10 @@ export const APPWRITE_CONFIG = {
   approvalWorkflowsCollectionId: "approval_workflows",
   galleryCollectionId: "gallery",
   // Buckets
-  eventImagesBucketId: "event-images",
-  sponsorLogosBucketId: "sponsor-logos",
   blogImagesBucketId: "blog-images",
   profilePicturesBucketId: "profile-pictures",
   galleryImagesBucketId: "gallery-images",
+  resourcesBucketId: "resources",
 };
 export const authService = {
   // Create a new account

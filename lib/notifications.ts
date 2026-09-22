@@ -1,6 +1,7 @@
 import type { Notification, LetterData } from "./types";
 
 import { welcomeLetter, promotionLetter, designationLetter } from "./letters";
+import { readApiError } from "./errorHandler";
 
 export type { Notification, LetterData };
 
@@ -32,7 +33,7 @@ async function requestNotifications(query = ""): Promise<NotificationPage> {
     (Partial<NotificationPage> & { error?: string }) | null;
 
   if (!response.ok) {
-    throw new Error(payload?.error || "Failed to load notifications");
+    throw new Error(readApiError(payload, "Failed to load notifications"));
   }
 
   return {
@@ -64,7 +65,7 @@ export const notificationService = {
     } | null;
 
     if (!response.ok || !payload?.notification) {
-      throw new Error(payload?.error || "Failed to send notification");
+      throw new Error(readApiError(payload, "Failed to send notification"));
     }
 
     return payload.notification;
@@ -105,7 +106,9 @@ export const notificationService = {
         error?: string;
       } | null;
 
-      throw new Error(payload?.error || "Failed to mark notification as read");
+      throw new Error(
+        readApiError(payload, "Failed to mark notification as read"),
+      );
     }
   },
 
@@ -122,7 +125,9 @@ export const notificationService = {
         error?: string;
       } | null;
 
-      throw new Error(payload?.error || "Failed to mark notifications as read");
+      throw new Error(
+        readApiError(payload, "Failed to mark notifications as read"),
+      );
     }
   },
 
@@ -140,7 +145,7 @@ export const notificationService = {
         error?: string;
       } | null;
 
-      throw new Error(payload?.error || "Failed to delete notification");
+      throw new Error(readApiError(payload, "Failed to delete notification"));
     }
   },
 
