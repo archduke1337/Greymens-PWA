@@ -63,21 +63,10 @@ export default function MemberDashboard() {
 
     const loadData = async () => {
       try {
-        const [
-          dashboardResponse,
-          ticketResponse,
-          notificationResponse,
-          resourceResponse,
-        ] = await Promise.all([
+        // Two round-trips: /api/dashboard already carries tickets + a
+        // notifications slice; only resources need a separate call.
+        const [dashboardResponse, resourceResponse] = await Promise.all([
           fetch("/api/dashboard", {
-            credentials: "include",
-            cache: "no-store",
-          }),
-          fetch("/api/events/register", {
-            credentials: "include",
-            cache: "no-store",
-          }),
-          fetch("/api/notifications?limit=10", {
             credentials: "include",
             cache: "no-store",
           }),
@@ -90,13 +79,9 @@ export default function MemberDashboard() {
           upcomingEvents?: Event[];
           registrations?: Registration[];
           myEvents?: Array<{ event: Event | null }>;
-          error?: string;
-        };
-        const ticketPayload = (await ticketResponse.json()) as {
           tickets?: MemberTicket[];
-        };
-        const notificationPayload = (await notificationResponse.json()) as {
           notifications?: Notification[];
+          error?: string;
         };
         const resourcePayload = (await resourceResponse.json()) as {
           resources?: Resource[];
@@ -112,12 +97,8 @@ export default function MemberDashboard() {
             ),
           );
           setRegistrations(dashboard.registrations ?? []);
-          setTickets(ticketResponse.ok ? (ticketPayload.tickets ?? []) : []);
-          setNotifications(
-            notificationResponse.ok
-              ? (notificationPayload.notifications ?? [])
-              : [],
-          );
+          setTickets(dashboard.tickets ?? []);
+          setNotifications((dashboard.notifications ?? []).slice(0, 10));
           setResources(
             resourceResponse.ok
               ? (resourcePayload.resources ?? []).slice(0, 6)

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         () =>
           databases.listDocuments(DATABASE_ID, COLLECTIONS.TICKETS, [
             Query.equal("userId", [userId]),
-            Query.equal("status", ["issued", "active"]),
+            Query.orderDesc("$createdAt"),
             Query.limit(100),
           ]),
         { documents: [], total: 0 },
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
           databases.listDocuments(DATABASE_ID, COLLECTIONS.NOTIFICATIONS, [
             Query.equal("userId", [userId]),
             Query.orderDesc("createdAt"),
-            Query.limit(5),
+            Query.limit(10),
           ]),
         { documents: [], total: 0 },
       ),
@@ -280,7 +280,9 @@ export async function GET(request: NextRequest) {
           memberCount: memberRows.filter(
             (assignment) => String(assignment.departmentId) === department.$id,
           ).length,
-          eventCount: ownEvents.documents.length,
+          // Events carry no departmentId — report 0 rather than repeating the
+          // lead's global pipeline total on every department card.
+          eventCount: 0,
         })),
         departmentMemberCounts: Object.fromEntries(
           deptDocs.map((department) => [
@@ -323,6 +325,8 @@ export async function GET(request: NextRequest) {
             ]),
           { documents: [], total: 0 },
         ),
+        // Full membership scan (all statuses) so active/inactive/banned can
+        // be counted from the same rows; capped at 500 with statsApproximate.
         safe(
           "admin.memberships",
           () =>
@@ -364,6 +368,9 @@ export async function GET(request: NextRequest) {
 
       result.admin = {
         stats: {
+          // Pending/approved/rejected come from full-table totals where the
+          // query used total; active/banned/inactive still need status scans
+          // (limit 500 — documented as approximate for very large clubs).
           activeMembers: countByStatus(allMemberships.documents, "active"),
           inactiveMembers: countByStatus(allMemberships.documents, "inactive"),
           bannedMembers: countByStatus(allMemberships.documents, "banned"),
@@ -383,6 +390,10 @@ export async function GET(request: NextRequest) {
         departments: allDepartments.documents,
         events: allEvents.documents,
         pendingApplications: pendingApplications.documents,
+        // True when a status scan hit the query cap and counts may be low.
+        statsApproximate:
+          allMemberships.documents.length >= 500 ||
+          allApplications.documents.length >= 500,
       };
       const memberCountByDepartment = Object.fromEntries(
         allDepartments.documents.map((department) => {
@@ -406,12 +417,15 @@ export async function GET(request: NextRequest) {
       result.head = {
         stats: {
           totalDepartments: allDepartments.total,
-          totalMembers: allMembers.total,
+          // Active membership rows ≈ people with a club membership (dept
+          // assignment rows would double-count multi-department members).
+          totalMembers: countByStatus(allMemberships.documents, "active"),
           pendingApprovals: reviewEvents.length,
           totalEvents: allEvents.total,
           inactiveMembers: countByStatus(allMemberships.documents, "inactive"),
           bannedMembers: countByStatus(allMemberships.documents, "banned"),
         },
+        statsApproximate: allMemberships.documents.length >= 500,
         pendingApprovalEvents: reviewEvents,
         pendingApplications: pendingApplications.total,
         departments: allDepartments.documents,

@@ -35,6 +35,13 @@ export default function LeadDashboard() {
   const [data, setData] = useState<LeadDashboardPayload["lead"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  const retry = () => {
+    setLoading(true);
+    setError(null);
+    setRetryKey((key) => key + 1);
+  };
 
   const leadDepartments = userDepartments.filter((ud) => ud.role === "lead");
 
@@ -80,7 +87,7 @@ export default function LeadDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
 
   const events = data?.events ?? [];
   const pendingApplications = data?.pendingApplications ?? [];
@@ -114,6 +121,13 @@ export default function LeadDashboard() {
         <p className="text-muted mt-2">
           {error || "The server did not return a lead view."}
         </p>
+        <button
+          className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+          type="button"
+          onClick={retry}
+        >
+          Try again
+        </button>
       </div>
     );
   }
